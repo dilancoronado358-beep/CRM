@@ -49,6 +49,7 @@ export function useSupaState() {
 
   const [estadoSupa, setEstadoSupa] = useState("conectando");
   const [cargando, setCargando] = useState(true);
+  const [isAppReady, setIsAppReady] = useState(false);
   const [session, setSession] = useState(null);
 
   const setDb = useCallback((next) => {
@@ -178,12 +179,18 @@ export function useSupaState() {
   };
 
   // ── Auth + Carga inicial ───────────────────────────────────────────────────
+  // ── Auth + Carga inicial ───────────────────────────────────────────────────
   useEffect(() => {
-    // Obtener sesión actual — consultar Supabase directamente para evitar race conditions
-    sb.auth.getSession().then(async ({ data: { session } }) => {
+    let montado = true;
+
+    const iniciarApp = async () => {
+      // 1. Obtener sesión actual
+      const { data: { session } } = await sb.auth.getSession();
+      if (!montado) return;
       setSession(session);
+
       if (session) {
-        // 1. Mostrar nombre provisional de inmediato (email o metadata) para evitar usuario vacío
+        // Mostrar nombre provisional (evita usuario vacío temporalmente)
         setDb((d) => {
           const tempName = d.usuario?.name || session.user.user_metadata?.name || session.user.email;
           const tempAvatar = tempName.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase() || "U";
@@ -200,10 +207,9 @@ export function useSupaState() {
           };
         });
 
-        // 2. Consultar directamente a Supabase para obtener datos reales (nombre, foto, tema)
+        // Consultar directamente a Supabase para obtener datos reales
         const { data: uLocal } = await sb.from("usuariosApp").select("*").eq("email", session.user.email).maybeSingle();
-        if (uLocal) {
-          // Aplicar tema guardado en Supabase
+        if (uLocal && montado) {
           if (uLocal.temaActivo) {
             applyTheme(uLocal.temaActivo);
             localStorage.setItem("crm_theme", uLocal.temaActivo);
@@ -223,10 +229,22 @@ export function useSupaState() {
           });
         }
       }
-    });
 
+      // 2. Cargar datos desde Supabase
+      if (montado) {
+        await cargarDeSupa();
+      }
+
+      // 3. Marcar la app como lista
+      if (montado) {
+        setIsAppReady(true);
+      }
+    };
+
+    iniciarApp();
 
     const { data: { subscription } } = sb.auth.onAuthStateChange((_event, session) => {
+      if (!montado) return;
       setSession(session);
       if (!session) {
         setDb((d) => {
@@ -236,10 +254,10 @@ export function useSupaState() {
       }
     });
 
-    // Cargar datos desde Supabase al iniciar
-    cargarDeSupa();
-
-    return () => subscription.unsubscribe();
+    return () => {
+      montado = false;
+      subscription.unsubscribe();
+    };
   }, [cargarDeSupa, setDb]);
 
   // ── CRUD helper: guardar en Supabase y actualizar estado local ────────────

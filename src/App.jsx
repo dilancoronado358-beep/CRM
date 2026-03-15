@@ -221,7 +221,7 @@ const DICT = {
 
 
 export default function App() {
-  const { db, setDb, session, estadoSupa, cargando, guardarEnSupa, eliminarDeSupa } = useSupaState();
+  const { db, setDb, session, estadoSupa, cargando, isAppReady, guardarEnSupa, eliminarDeSupa } = useSupaState();
   const [modulo, setModulo] = useState("dashboard");
   const [menuAbierto, setMenuAbierto] = useState(true);
   const [spotlightOpen, setSpotlightOpen] = useState(false);
@@ -229,9 +229,9 @@ export default function App() {
 
   useEffect(() => {
     // Apply theme on mount and whenever user changes it
-    const themeId = db.usuario?.tema || "dark";
+    const themeId = db.usuario?.temaActivo || "dark";
     applyTheme(themeId);
-  }, [db.usuario?.tema]);
+  }, [db.usuario?.temaActivo]);
 
   useEffect(() => {
     const onHashChange = () => setHashURL(window.location.hash);
@@ -250,6 +250,28 @@ export default function App() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
+  // 1. Mostrar pantalla de carga global mientras Supabase inicializa auth y datos
+  if (!isAppReady) {
+    return (
+      <div style={{ display: "flex", flexDirection: "column", height: "100vh", width: "100vw", alignItems: "center", justifyContent: "center", background: T.bg0, color: T.white }}>
+        <div style={{ width: 48, height: 48, borderRadius: 12, background: T.grad, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 15px rgba(6, 182, 212, 0.4)", marginBottom: 24, animation: "pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite" }}>
+          <Ico k="check" size={28} style={{ color: "#FFF" }} />
+        </div>
+        <div style={{ fontWeight: 800, fontSize: 24, letterSpacing: "-.02em", marginBottom: 16 }}>
+          ENSING<span style={{ color: T.teal }}>CRM</span>
+        </div>
+        <div style={{ display: "flex", gap: 8, alignItems: "center", color: T.whiteDim, fontSize: 13, fontWeight: 500 }}>
+          <div style={{ width: 14, height: 14, border: `2px solid ${T.tealSoft}`, borderTopColor: T.teal, borderRadius: "50%", animation: "spin 1s linear infinite" }} />
+          Cargando entorno de trabajo...
+        </div>
+        <style>{`
+          @keyframes spin { to { transform: rotate(360deg); } }
+          @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: .7; transform: scale(0.95); } }
+        `}</style>
+      </div>
+    );
+  }
+
   if (hashURL.startsWith("#/f/")) {
     const formId = hashURL.replace("#/f/", "");
     return <FormularioPublico formId={formId} />;
@@ -259,7 +281,7 @@ export default function App() {
     return <LandingPagePublica siteSlug={siteSlug} />;
   }
 
-  // Si no hay sesión de Supabase Y TAMPOCO hay sesión activa inyectada localmente, ir a login
+  // 2. Si ya cargó y no hay sesión de Supabase, ir a login
   if (!session && !db.usuario) {
     return <Login />;
   }
