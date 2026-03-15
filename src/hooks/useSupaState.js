@@ -23,6 +23,7 @@ const TABLAS_SUPA = [
   "plantillasEmail",
   "usuariosApp",
   "documentos",
+  "chatbotRules",
 ];
 
 /* ═══════════════════════════════════════════
@@ -49,18 +50,49 @@ export function useSupaState() {
   const setDb = useCallback((next) => {
     setDbRaw((prev) => {
       const v = typeof next === "function" ? next(prev) : next;
-      // Persistir solo el usuario activo en localStorage (no datos de negocio)
+
+      // Persistir sesión de usuario activo en localStorage
       if (v?.usuario) {
         try { localStorage.setItem("crm_usuario_activo", JSON.stringify(v.usuario)); } catch (e) {}
       }
+
+      // ── Auto-sync: detectar cambios en tablas de Supabase ─────────────────
+      TABLAS_SUPA.forEach((tabla) => {
+        const anterior = prev[tabla];
+        const nuevo = v[tabla];
+        if (!Array.isArray(nuevo) || nuevo === anterior) return;
+
+        // Upsert registros nuevos o modificados
+        const mapaAnterior = new Map((anterior || []).map((r) => [r.id, JSON.stringify(r)]));
+        const cambiados = nuevo.filter((r) => mapaAnterior.get(r.id) !== JSON.stringify(r));
+        if (cambiados.length > 0) {
+          sb.from(tabla).upsert(cambiados).then(({ error }) => {
+            if (error) console.error(`❌ Sync upsert '${tabla}':`, error.message);
+            else console.log(`☁️ Sync '${tabla}': ${cambiados.length} registro(s) guardado(s)`);
+          });
+        }
+
+        // Eliminar registros borrados
+        const idsNuevos = new Set(nuevo.map((r) => r.id));
+        const eliminados = (anterior || []).filter((r) => !idsNuevos.has(r.id));
+        eliminados.forEach((r) => {
+          sb.from(tabla).delete().eq("id", r.id).then(({ error }) => {
+            if (error) console.error(`❌ Sync delete '${tabla}':`, error.message);
+            else console.log(`🗑️ Sync '${tabla}': registro ${r.id} eliminado`);
+          });
+        });
+      });
+
       return v;
     });
   }, []);
+
 
   // ── Cargar todos los datos desde Supabase ──────────────────────────────────
   const cargarDeSupa = useCallback(async () => {
     try {
       setCargando(true);
+      console.log("🔌 Conectando a Supabase...", SUPA_URL);
       const resultados = await Promise.all(
         TABLAS_SUPA.map((tabla) => sb.from(tabla).select("*"))
       );
@@ -68,7 +100,10 @@ export function useSupaState() {
       const nuevoEstado = {};
       TABLAS_SUPA.forEach((tabla, i) => {
         const { data, error } = resultados[i];
-        if (!error && data) {
+        if (error) {
+          console.error(`❌ Error cargando tabla '${tabla}':`, error.message, error.code, error.hint);
+        } else {
+          console.log(`✅ Tabla '${tabla}': ${data?.length || 0} registros`);
           nuevoEstado[tabla] = data;
         }
       });
