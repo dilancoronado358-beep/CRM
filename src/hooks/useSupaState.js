@@ -179,27 +179,45 @@ export function useSupaState() {
 
   // ── Auth + Carga inicial ───────────────────────────────────────────────────
   useEffect(() => {
-    // Obtener sesión actual
     // Obtener sesión actual — consultar Supabase directamente para evitar race conditions
     sb.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
       if (session) {
-        // Consultar directamente a Supabase en vez de leer del estado local (puede ser SEMILLA vieja)
-        const { data: uLocal } = await sb.from("usuariosApp").select("*").eq("email", session.user.email).maybeSingle();
-        setDb((d) => {
-          const mapped = {
-            name: uLocal?.name || session.user.user_metadata?.name || "Usuario",
+        // 1. Mostrar nombre provisional de inmediato (email o metadata) para evitar usuario vacío
+        setDb((d) => ({
+          ...d,
+          usuario: {
+            ...d.usuario,
+            name: d.usuario?.name || session.user.user_metadata?.name || session.user.email,
             email: session.user.email,
-            role: uLocal?.role || session.user.user_metadata?.role || "user",
-            avatar: uLocal?.avatar || "U",
-            whatsappAccess: uLocal?.whatsappAccess || false,
-            profilePic: uLocal?.profilePic || null,
-            activo: uLocal?.activo !== false,
-          };
-          return { ...d, usuario: { ...d.usuario, ...mapped } };
-        });
+          }
+        }));
+
+        // 2. Consultar directamente a Supabase para obtener datos reales (nombre, foto, tema)
+        const { data: uLocal } = await sb.from("usuariosApp").select("*").eq("email", session.user.email).maybeSingle();
+        if (uLocal) {
+          // Aplicar tema guardado en Supabase
+          if (uLocal.temaActivo) {
+            applyTheme(uLocal.temaActivo);
+            localStorage.setItem("crm_theme", uLocal.temaActivo);
+          }
+          setDb((d) => {
+            const mapped = {
+              name: uLocal.name || session.user.user_metadata?.name || "Usuario",
+              email: session.user.email,
+              role: uLocal.role || "user",
+              avatar: uLocal.avatar || "U",
+              whatsappAccess: uLocal.whatsappAccess || false,
+              profilePic: uLocal.profilePic || null,
+              temaActivo: uLocal.temaActivo || null,
+              activo: uLocal.activo !== false,
+            };
+            return { ...d, usuario: { ...d.usuario, ...mapped } };
+          });
+        }
       }
     });
+
 
     const { data: { subscription } } = sb.auth.onAuthStateChange((_event, session) => {
       setSession(session);

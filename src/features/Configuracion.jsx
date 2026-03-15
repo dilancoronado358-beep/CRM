@@ -155,9 +155,17 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
 
   const cambiarTema = (themeId) => {
     applyTheme(themeId);
-    setDb(d => ({ ...d, usuario: { ...d.usuario, temaActivo: themeId } }));
     localStorage.setItem("crm_theme", themeId);
+    // Guardar en usuario Y en usuariosApp para que persista en Supabase
+    setDb(d => ({
+      ...d,
+      usuario: { ...d.usuario, temaActivo: themeId },
+      usuariosApp: (d.usuariosApp || []).map(u =>
+        u.email === d.usuario?.email ? { ...u, temaActivo: themeId } : u
+      )
+    }));
   };
+
 
   const guardarRecordatorios = () => {
     setDb(d => ({ ...d, recordatorios }));
