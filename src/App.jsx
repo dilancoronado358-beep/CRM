@@ -421,7 +421,7 @@ export default function App() {
               <input placeholder="Búsqueda rápida..." style={{ background: T.bg2, border: `1px solid ${T.borderHi}`, borderRadius: 20, padding: "8px 16px 8px 34px", fontSize: 13, color: T.white, width: 220, outline: "none", transition: "all .2s", fontFamily: "inherit" }} onFocus={e => e.target.style.background = T.bg1} onBlur={e => e.target.style.background = T.bg2} />
             </div>
             <Btn variant="secundario" style={{ padding: 8, borderRadius: "50%" }}><Ico k="refresh" size={16} /></Btn>
-            <Btn variant="secundario" style={{ padding: 8, borderRadius: "50%", color: T.red, borderColor: T.red }} onClick={() => { if(confirm(t("¿Cerrar sesión?"))) { localStorage.removeItem("crm_nexus_v4"); setDb(d => ({ ...d, usuario: null })); sb.auth.signOut().then(() => { window.location.href = "/"; }); } }} title={t("Cerrar")}>
+            <Btn variant="secundario" style={{ padding: 8, borderRadius: "50%", color: T.red, borderColor: T.red }} onClick={async () => { if(confirm(t("¿Cerrar sesión?"))) { await sb.auth.signOut(); localStorage.removeItem("crm_usuario_activo"); localStorage.removeItem("crm_theme"); sessionStorage.clear(); window.location.reload(); } }} title={t("Cerrar sesión")}>
               <Ico k="lock" size={16} />
             </Btn>
           </div>
