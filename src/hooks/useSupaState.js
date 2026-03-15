@@ -181,11 +181,18 @@ export function useSupaState() {
   };
 
   // ── Auth + Carga inicial ───────────────────────────────────────────────────
-  // ── Auth + Carga inicial ───────────────────────────────────────────────────
   useEffect(() => {
     let montado = true;
 
     const iniciarApp = async () => {
+      // Temporizador estricto de seguridad: máximo 2.5 segundos de pantalla de carga
+      const timeoutFallback = setTimeout(() => {
+        if (montado) {
+          console.warn("⚠️ Tiempo de carga excedido (2.5s). Forzando isAppReady a true.");
+          setIsAppReady(true);
+        }
+      }, 2500);
+
       try {
         // 1. Obtener sesión actual
         const { data: { session }, error: sessionError } = await sb.auth.getSession();
@@ -242,6 +249,7 @@ export function useSupaState() {
       } catch (err) {
         console.error("Critical error during app initialization:", err);
       } finally {
+        clearTimeout(timeoutFallback);
         // 3. Marcar la app como lista SIEMPRE, haya error o no
         if (montado) {
           setIsAppReady(true);
