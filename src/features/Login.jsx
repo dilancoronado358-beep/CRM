@@ -20,6 +20,10 @@ export function Login() {
       password,
     });
 
+    if (!error) {
+      sessionStorage.setItem("just_logged_in", "true");
+    }
+
     if (error) {
       // Intentamos fallback local (Directorio IAM de la semilla/estado guardado)
       const locUser = db.usuariosApp?.find(u => u.email === email && (u.password === password || (!u.password && password === "admin123")));

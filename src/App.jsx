@@ -250,8 +250,15 @@ export default function App() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  // 1. Mostrar pantalla de carga global mientras Supabase inicializa auth y datos
-  if (!isAppReady) {
+  // 1. Mostrar pantalla de carga global SOLO acaba de hacer login explícitamente
+  const isJustLoggedIn = sessionStorage.getItem("just_logged_in") === "true";
+  
+  // Limpiar la bandera cuando ya terminó de cargar
+  if (isJustLoggedIn && !cargando) {
+    sessionStorage.removeItem("just_logged_in");
+  }
+
+  if (isJustLoggedIn && cargando) {
     return (
       <div style={{ display: "flex", flexDirection: "column", height: "100vh", width: "100vw", alignItems: "center", justifyContent: "center", background: T.bg0, color: T.white }}>
         <div style={{ width: 48, height: 48, borderRadius: 12, background: T.grad, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 15px rgba(6, 182, 212, 0.4)", marginBottom: 24, animation: "pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite" }}>
@@ -262,7 +269,7 @@ export default function App() {
         </div>
         <div style={{ display: "flex", gap: 8, alignItems: "center", color: T.whiteDim, fontSize: 13, fontWeight: 500 }}>
           <div style={{ width: 14, height: 14, border: `2px solid ${T.tealSoft}`, borderTopColor: T.teal, borderRadius: "50%", animation: "spin 1s linear infinite" }} />
-          Cargando entorno de trabajo...
+          Entrando a tu cuenta y sincronizando...
         </div>
         <style>{`
           @keyframes spin { to { transform: rotate(360deg); } }
