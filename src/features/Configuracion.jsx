@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { T, THEMES, applyTheme } from "../theme";
 import { Btn, Inp, Sel, Campo, Tarjeta, EncabezadoSeccion, Celda, CabeceraTabla, FilaTabla, Chip, Ico, Modal } from "../components/ui";
 import { fdtm } from "../utils";
@@ -14,6 +14,20 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
   const [tab, setTab] = useState("perfil");
   
   const [fPerfil, setFPerfil] = useState({ name: db.usuario?.name || "", email: db.usuario?.email || "", idioma: db.usuario?.idioma || "es" });
+  const profilePicRef = useRef(null);
+
+  const handleProfilePicChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { alert("La foto no debe superar 5MB."); return; }
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const b64 = ev.target.result;
+      setDb(d => ({ ...d, usuario: { ...d.usuario, profilePic: b64 } }));
+    };
+    reader.readAsDataURL(file);
+    e.target.value = null;
+  };
   const [fPassword, setFPassword] = useState({ nueva: "", confirmar: "" });
   const [cargandoPass, setCargandoPass] = useState(false);
   const [fEmail, setFEmail] = useState(db.cuentaEmail || {});
@@ -333,13 +347,26 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
             <div style={{ fontSize: 20, fontWeight: 800, color: T.white, marginBottom: 24, display: "flex", alignItems: "center", gap: 10 }}><Ico k="user" size={24} style={{ color: T.teal }} /> Preferencias de Cuenta</div>
             <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 24, padding: "20px", background: T.bg2, borderRadius: 12, border: `1px solid ${T.borderHi}` }}>
-                <div style={{ width: 80, height: 80, borderRadius: "50%", background: "linear-gradient(45deg, #14B8A6, #3b82f6)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, fontWeight: 800, color: "#fff", boxShadow: "0 10px 25px rgba(20, 184, 166, 0.4)" }}>
-                  {fPerfil.name ? fPerfil.name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase() : "??"}
+                <input type="file" ref={profilePicRef} accept="image/*" onChange={handleProfilePicChange} style={{ display: "none" }} />
+                <div style={{ position: "relative", cursor: "pointer" }} onClick={() => profilePicRef.current?.click()} title="Cambiar foto de perfil">
+                  {db.usuario?.profilePic ? (
+                    <img src={db.usuario.profilePic} alt="Foto de Perfil" style={{ width: 80, height: 80, borderRadius: "50%", objectFit: "cover", border: `3px solid ${T.teal}`, boxShadow: "0 10px 25px rgba(20, 184, 166, 0.4)" }} />
+                  ) : (
+                    <div style={{ width: 80, height: 80, borderRadius: "50%", background: "linear-gradient(45deg, #14B8A6, #3b82f6)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, fontWeight: 800, color: "#fff", boxShadow: "0 10px 25px rgba(20, 184, 166, 0.4)" }}>
+                      {fPerfil.name ? fPerfil.name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase() : "??"}
+                    </div>
+                  )}
+                  <div style={{ position: "absolute", bottom: 0, right: 0, width: 26, height: 26, borderRadius: "50%", background: T.teal, display: "flex", alignItems: "center", justifyContent: "center", border: `2px solid ${T.bg2}` }}>
+                    <Ico k="edit" size={12} style={{ color: "#000" }} />
+                  </div>
                 </div>
                 <div>
-                  <div style={{ fontSize: 16, fontWeight: 800, color: T.white, marginBottom: 4 }}>Avatar Generado por IA</div>
-                  <div style={{ fontSize: 13, color: T.whiteDim, marginBottom: 16 }}>Basado en la firma de tu perfil y tu rol de sistema.</div>
-                  <Btn variant="secundario" size="sm">Cambiar Imagen</Btn>
+                  <div style={{ fontSize: 16, fontWeight: 800, color: T.white, marginBottom: 4 }}>Foto de Perfil</div>
+                  <div style={{ fontSize: 13, color: T.whiteDim, marginBottom: 16 }}>Haz clic en tu avatar para subir una foto desde tu dispositivo. Máximo 5MB.</div>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <Btn variant="secundario" size="sm" onClick={() => profilePicRef.current?.click()}>Cambiar Foto</Btn>
+                    {db.usuario?.profilePic && <Btn variant="fantasma" size="sm" style={{ color: T.red }} onClick={() => setDb(d => ({ ...d, usuario: { ...d.usuario, profilePic: null } }))}>Eliminar</Btn>}
+                  </div>
                 </div>
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>

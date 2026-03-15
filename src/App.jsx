@@ -360,7 +360,11 @@ export default function App() {
         <div style={{ padding: "16px 12px", borderTop: `1px solid ${T.borderHi}`, background: T.bg1, flexShrink: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, justifyContent: menuAbierto ? "space-between" : "center" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10, overflow: "hidden" }}>
-              <Av text={db.usuario?.avatar} color={T.teal} size={36} fs={14} />
+              {db.usuario?.profilePic ? (
+                <img src={db.usuario.profilePic} alt="avatar" style={{ width: 36, height: 36, borderRadius: "50%", objectFit: "cover", flexShrink: 0, border: `2px solid ${T.teal}` }} />
+              ) : (
+                <Av text={db.usuario?.avatar} color={T.teal} size={36} fs={14} />
+              )}
               {menuAbierto && (
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 13, fontWeight: 700, color: T.white, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{db.usuario?.name || "Usuario"}</div>
