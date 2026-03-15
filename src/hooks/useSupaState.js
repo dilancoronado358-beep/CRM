@@ -119,9 +119,10 @@ export function useSupaState() {
         }
       });
 
-      // Si las tablas principales están vacías, sembrar datos iniciales
+      // Si las tablas principales están vacías, NO sembramos automáticamente
+      // para evitar que el arranque demore +10 segundos y sobrescriba el estado vacío del usuario.
+      /*
       const necesitaSeed = !nuevoEstado.contactos?.length && !nuevoEstado.deals?.length;
-
       if (necesitaSeed) {
         console.log("Tablas vacías detectadas. Sembrando datos iniciales en Supabase...");
         await sembrarDatos();
@@ -136,6 +137,7 @@ export function useSupaState() {
           }
         });
       }
+      */
 
       // Aplicar datos de Supabase al estado (manteniendo usuario actual)
       setDb((d) => ({
