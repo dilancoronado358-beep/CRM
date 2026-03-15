@@ -22,6 +22,9 @@ export function Login() {
 
     if (!error) {
       sessionStorage.setItem("just_logged_in", "true");
+      // Forzar recarga automática tras inicio de sesión exitoso
+      window.location.reload();
+      return;
     }
 
     if (error) {
