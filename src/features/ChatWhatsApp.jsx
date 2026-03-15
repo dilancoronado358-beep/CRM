@@ -13,6 +13,7 @@ export function ChatWhatsApp({ t }) {
   const [messages, setMessages] = useState({});
   const [inputMsg, setInputMsg] = useState("");
   const [tab, setTab] = useState("chats"); // 'chats' o 'automatizacion'
+  const [syncError, setSyncError] = useState("");
 
   // Nuevo: Estados para reglas extraídas globalmente
   const [reglas, setReglas] = useState([]);
@@ -48,15 +49,21 @@ export function ChatWhatsApp({ t }) {
     socket.on('whatsapp_ready', () => {
       setWaConnected(true);
       setWaQR("");
+      setSyncError("Sincronizando chats (puede tardar unos minutos en servidores nuevos)...");
       socket.emit('get_whatsapp_chats'); // Pedir chats si ya está listo
     });
 
     socket.on('whatsapp_chats_list', (data) => {
+      setSyncError("");
       setChats(data);
       // Solicitar avatares secuencialmente
       data.forEach(c => {
         socket.emit('whatsapp_get_avatar', c.id._serialized);
       });
+    });
+
+    socket.on('whatsapp_chats_error', (data) => {
+      setSyncError(data.message);
     });
 
     socket.on('whatsapp_avatar_res', ({ id, url }) => {
@@ -100,6 +107,7 @@ export function ChatWhatsApp({ t }) {
       socket.off('whatsapp_qr');
       socket.off('whatsapp_ready');
       socket.off('whatsapp_chats_list');
+      socket.off('whatsapp_chats_error');
       socket.off('whatsapp_message');
       socket.off('whatsapp_message_ack');
     };
@@ -272,7 +280,7 @@ export function ChatWhatsApp({ t }) {
         <button onClick={() => setTab("automatizacion")} style={{ background: "none", border: "none", color: tab === "automatizacion" ? T.teal : T.whiteDim, fontSize: 16, fontWeight: tab === "automatizacion" ? 700 : 500, cursor: "pointer", pb: 5 }}>Bot & Auto-Respuestas</button>
         <div style={{ marginLeft: "auto", display: "flex", gap: 10, alignItems: "center" }}>
           <Chip label="Conexión Activa" color={T.green} bg={T.green+"20"} />
-          <Btn variant="secundario" size="sm" onClick={() => socket.emit('get_whatsapp_chats')}><Ico k="refresh" size={14} /> Sincronizar</Btn>
+          <Btn variant="secundario" size="sm" onClick={() => { setSyncError("Re-sincronizando..."); socket.emit('get_whatsapp_chats'); }}><Ico k="refresh" size={14} /> Sincronizar</Btn>
         </div>
       </div>
 
@@ -305,7 +313,8 @@ export function ChatWhatsApp({ t }) {
                   </div>
                 </div>
               ))}
-              {chats.length === 0 && <div style={{ padding: 32, textAlign: "center", color: T.whiteDim, fontSize: 13 }}>No hay chats recientes.</div>}
+              {syncError && <div style={{ padding: 16, textAlign: "center", color: T.amber, fontSize: 12, borderBottom: `1px solid ${T.borderHi}` }}><Ico k="refresh" size={24} style={{ animation: "spin 1s linear infinite", display: "block", margin: "0 auto 8px" }} />{syncError}</div>}
+              {chats.length === 0 && !syncError && <div style={{ padding: 32, textAlign: "center", color: T.whiteDim, fontSize: 13 }}>No hay chats recientes.</div>}
             </div>
           </div>
 

@@ -17,6 +17,7 @@ const io = new Server(server, {
 });
 
 let clientReady = false;
+let isFetchingChats = false;
 let autoRules = [
   { id: 1, keyword: "hola", reply: "¡Hola! Soy el asistente virtual de ENSING CRM 🤖. ¿En qué te puedo ayudar hoy? Escribe 'opciones' para ver más." },
   { id: 2, keyword: "opciones", reply: "1. Consultar Servicios\n2. Hablar con Asesor\n3. Soporte Integraciones" }
@@ -46,10 +47,23 @@ io.on('connection', (socket) => {
 
   socket.on('get_whatsapp_chats', async () => {
     console.log('Frontend solicitó la lista de chats');
-    if (!clientReady) return;
+    if (!clientReady) {
+      console.log('Abortado: clientReady = false');
+      return;
+    }
+    if (isFetchingChats) {
+       console.log('Abortado: isFetchingChats = true (ya hay una en curso)');
+       socket.emit('whatsapp_chats_error', { message: 'Sincronización pesada en curso. Por favor, dale unos segundos más...' });
+       return;
+    }
+    
+    isFetchingChats = true;
     try {
-      const chats = await whatsappClient.getChats();
-      // Enviar solo objetos planos sin referencias circulares!
+      console.log('[DEBUG] Ejecutando getChats() con timeout interno de 60s...');
+      const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('TIMEOUT_GET_CHATS')), 60000));
+      const chats = await Promise.race([whatsappClient.getChats(), timeout]);
+      
+      console.log(`[DEBUG] getChats() completado: recibidos ${chats.length} chats.`);
       const list = chats.slice(0, 30).map(c => ({
         id: { _serialized: c.id._serialized, user: c.id.user },
         name: c.name,
@@ -58,7 +72,16 @@ io.on('connection', (socket) => {
       }));
       socket.emit('whatsapp_chats_list', list);
       console.log(`Enviados ${list.length} chats al frontend`);
-    } catch (e) { console.error('Error enviando chats', e); }
+    } catch (e) { 
+      console.error('Error enviando chats:', e.message);
+      if (e.message === 'TIMEOUT_GET_CHATS') {
+        socket.emit('whatsapp_chats_error', { 
+          message: 'Tu WhatsApp tiene muchos mensajes y está tardando más de lo normal en enviarlos a la computadora. Sigue esperando...'
+        });
+      }
+    } finally {
+      isFetchingChats = false;
+    }
   });
 
   socket.on('whatsapp_get_avatar', async (chatId) => {
