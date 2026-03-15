@@ -81,22 +81,19 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
 
   const guardarPerfil = async () => {
     const newAvatar = fPerfil.name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
-    const act = { ...db.usuario, ...fPerfil, avatar: newAvatar };
 
-    // 1. Actualizar estado local
-    setDb(d => ({ ...d, usuario: act }));
-
-    // 2. Actualizar registro en usuariosApp para que persista en Supabase
-    setDb(d => ({
-      ...d,
-      usuariosApp: (d.usuariosApp || []).map(u =>
-        u.email === db.usuario?.email
-          ? { ...u, name: fPerfil.name, email: fPerfil.email, avatar: newAvatar }
+    // Actualizar en un solo setDb para que auto-sync detecte el cambio en usuariosApp
+    setDb(d => {
+      const usuarioActualizado = { ...d.usuario, ...fPerfil, avatar: newAvatar };
+      const usuariosAppActualizada = (d.usuariosApp || []).map(u =>
+        u.email === d.usuario?.email
+          ? { ...u, name: fPerfil.name, email: fPerfil.email, avatar: newAvatar, profilePic: d.usuario?.profilePic || null }
           : u
-      )
-    }));
+      );
+      return { ...d, usuario: usuarioActualizado, usuariosApp: usuariosAppActualizada };
+    });
 
-    // 3. Actualizar email/nombre en Supabase Auth si cambiaron
+    // Actualizar email/nombre en Supabase Auth si cambiaron
     try {
       const updates = {};
       if (fPerfil.name !== db.usuario?.name) updates.data = { name: fPerfil.name };
@@ -109,6 +106,7 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
 
     alert("Perfil actualizado correctamente ✅");
   };
+
 
   const cambiarPassword = async () => {
     if (!fPassword.nueva || fPassword.nueva !== fPassword.confirmar) {
