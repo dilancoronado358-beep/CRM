@@ -3,7 +3,10 @@ import { T } from "../theme";
 import { Btn, Inp, Tarjeta, Celda, Chip, Ico } from "../components/ui";
 import { io } from "socket.io-client";
 
-const socket = io("http://localhost:3001", { autoConnect: true });
+// URL del servidor WhatsApp — se detecta automáticamente según el host del CRM
+// (funciona en localhost Y desde otros dispositivos en la misma red)
+const WA_SERVER_URL = `http://${window.location.hostname}:3001`;
+const socket = io(WA_SERVER_URL, { autoConnect: true });
 
 export function ChatWhatsApp({ t }) {
   const [waConnected, setWaConnected] = useState(false);
