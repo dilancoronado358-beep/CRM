@@ -29,6 +29,7 @@ export function useSupaState() {
   });
   const [estadoSupa, setEstadoSupa] = useState("conectando");
   const [cargando, setCargando] = useState(false);
+  const [session, setSession] = useState(null);
 
   const setDb = useCallback((next) => {
     setDbRaw(prev => {
@@ -38,7 +39,7 @@ export function useSupaState() {
     });
   }, []);
 
-  // Verificar conexión Supabase al inicio
+  // Verificar conexión Supabase al inicio y Auth
   useEffect(() => {
     const verificar = async () => {
       try {
@@ -58,7 +59,54 @@ export function useSupaState() {
       }
     };
     verificar();
-  }, []); // eslint-disable-line
+
+    // Setup Auth Listener
+    sb.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      if (session) {
+        setDb(d => {
+          const uLocal = (d.usuariosApp || SEMILLA.usuariosApp).find(x => x.email === session.user.email);
+          const mapped = {
+            name: uLocal?.name || session.user.user_metadata?.name || 'Usuario',
+            email: session.user.email,
+            role: uLocal?.role || session.user.user_metadata?.role || 'user',
+            avatar: uLocal?.avatar || 'U',
+            whatsappAccess: uLocal?.whatsappAccess || false,
+            activo: uLocal?.activo !== false
+          };
+          return { ...d, usuario: { ...d.usuario, ...mapped } };
+        });
+      }
+    });
+
+    const { data: { subscription } } = sb.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      if (session) {
+        setDb(d => {
+          const uLocal = (d.usuariosApp || SEMILLA.usuariosApp).find(x => x.email === session.user.email);
+          const mapped = {
+            name: uLocal?.name || session.user.user_metadata?.name || 'Usuario',
+            email: session.user.email,
+            role: uLocal?.role || session.user.user_metadata?.role || 'user',
+            avatar: uLocal?.avatar || 'U',
+            whatsappAccess: uLocal?.whatsappAccess || false,
+            activo: uLocal?.activo !== false
+          };
+          return { ...d, usuario: { ...d.usuario, ...mapped } };
+        });
+      } else {
+        // En lugar de borrar destructivamente siempre, verificamos si existe un usuario inyectado localmente.
+        // Si el usuario presionó logout (limpio localStorage), o si simplemente falló la validación
+        setDb(d => {
+          if (d.usuario && !localStorage.getItem("crm_nexus_v4")) return { ...d, usuario: null };
+          // Si d.usuario existe, es nuestra sesión fallback. Solo lo borramos explícitamente en el App.jsx logout.
+          return d;
+        });
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [setDb]); // eslint-disable-line
 
   const cargarDeSupa = async () => {
     try {
@@ -96,5 +144,5 @@ export function useSupaState() {
     } catch (e) { console.log("Supabase no disponible."); }
   };
 
-  return { db, setDb, estadoSupa, cargando, guardarEnSupa, eliminarDeSupa };
+  return { db, setDb, session, estadoSupa, cargando, guardarEnSupa, eliminarDeSupa };
 }

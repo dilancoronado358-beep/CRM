@@ -10,7 +10,7 @@ export const SEMILLA = {
     ]
   },
   usuariosApp: [
-    { id: "u1", name: "Alejandro Vega", email: "alejandro@miempresa.com", role: "admin", avatar: "AV", activo: true, area: "Sistemas" },
+    { id: "u1", name: "Administrador ENSING", email: "admin@ensing.lat", role: "admin", avatar: "AD", activo: true, area: "Sistemas" },
     { id: "u2", name: "María López", email: "maria@miempresa.com", role: "manager", avatar: "ML", activo: true, area: "Ventas B2B" },
     { id: "u3", name: "Carlos Ruiz", email: "carlos@miempresa.com", role: "ventas", avatar: "CR", activo: true, area: "Ventas SMB" },
   ],

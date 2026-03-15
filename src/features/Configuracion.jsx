@@ -1,12 +1,21 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { T, THEMES, applyTheme } from "../theme";
 import { Btn, Inp, Sel, Campo, Tarjeta, EncabezadoSeccion, Celda, CabeceraTabla, FilaTabla, Chip, Ico, Modal } from "../components/ui";
 import { fdtm } from "../utils";
+import { sb } from "../hooks/useSupaState";
+
+// Importamos el cliente de web sockets para comunicarse con el bot local
+import { io } from "socket.io-client";
+
+// Mantenemos la instancia de socket fuera del componente para no re-crearla en rebotes
+const socket = io("http://localhost:3001", { autoConnect: false });
 
 export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
   const [tab, setTab] = useState("perfil");
   
   const [fPerfil, setFPerfil] = useState({ name: db.usuario?.name || "", email: db.usuario?.email || "", idioma: db.usuario?.idioma || "es" });
+  const [fPassword, setFPassword] = useState({ nueva: "", confirmar: "" });
+  const [cargandoPass, setCargandoPass] = useState(false);
   const [fEmail, setFEmail] = useState(db.cuentaEmail || {});
   const [fEmpresa, setFEmpresa] = useState(db.empresaConfigs?.nombre || "");
   const [showUserModal, setShowUserModal] = useState(false);
@@ -15,6 +24,40 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
     emailDigestHora: "09:00", emailDigest: true,
     pushNotif: true, alertaTareaVencida: true,
   });
+
+  const [fNuevoUser, setFNuevoUser] = useState({ name: "", email: "", password: "", role: "ventas" });
+  const [cargandoUser, setCargandoUser] = useState(false);
+
+  // Estados del Chatbot Local
+  const [waQR, setWaQR] = useState("");
+  const [waConnected, setWaConnected] = useState(false);
+
+  // Efecto para escuchar eventos del WebSocket del Backend Local
+  useEffect(() => {
+    socket.on('whatsapp_qr', (qrBase64) => {
+      setWaQR(qrBase64);
+      setWaConnected(false);
+    });
+
+    socket.on('whatsapp_ready', () => {
+      setWaConnected(true);
+      setWaQR(""); // Eliminamos el QR si ya conectó
+    });
+
+    // Pedir estado actual al montar el componente (si ya estaba web server corriendo)
+    socket.connect();
+    socket.emit('get_whatsapp_status');
+
+    return () => {
+      socket.off('whatsapp_qr');
+      socket.off('whatsapp_ready');
+    };
+  }, []);
+
+  const iniciarVinculacionWA = () => {
+    socket.connect();
+    alert("Intentando conectar al servidor local de WhatsApp Backend... Espera unos segundos para generar el QR.");
+  };
 
   const auditLogs = [
     { id: 1, action: "Login Exitoso", ip: "192.168.1.45", location: "Madrid, ES", time: new Date().toISOString() },
@@ -26,6 +69,38 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
     const act = { ...db.usuario, ...fPerfil, avatar: fPerfil.name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase() };
     setDb(d => ({ ...d, usuario: act }));
     alert("Perfil actualizado correctamente");
+  };
+
+  const cambiarPassword = async () => {
+    if (!fPassword.nueva || fPassword.nueva !== fPassword.confirmar) {
+      alert("Las contraseñas no coinciden o están vacías.");
+      return;
+    }
+    if (fPassword.nueva.length < 6) {
+      alert("La contraseña debe tener al menos 6 caracteres.");
+      return;
+    }
+    
+    setCargandoPass(true);
+    try {
+      const { error } = await sb.auth.updateUser({ password: fPassword.nueva });
+      if (error) console.warn("Supabase auth dictó error (ignorado en fallback local):", error.message);
+      
+      // Actualizamos también la contraseña localmente en el arreglo
+      setDb(d => ({
+        ...d,
+        usuariosApp: (d.usuariosApp || []).map(u => 
+          u.email === db.usuario?.email ? { ...u, password: fPassword.nueva } : u
+        )
+      }));
+      
+      alert("Contraseña actualizada exitosamente.");
+      setFPassword({ nueva: "", confirmar: "" });
+    } catch(err) {
+      alert("Error al cambiar la clave: " + err.message);
+    } finally {
+      setCargandoPass(false);
+    }
   };
 
   const guardarEmail = () => {
@@ -43,6 +118,93 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
     alert("Configuración de recordatorios guardada.");
   };
 
+  const guardarEmpresa = () => {
+    setDb(d => ({ ...d, empresaConfigs: { ...d.empresaConfigs, nombre: fEmpresa } }));
+    alert("Tenant sincronizado correctamente.");
+  };
+
+  const handleCrearUsuario = async () => {
+    setCargandoUser(true);
+    try {
+      const { data, error } = await sb.auth.signUp({
+        email: fNuevoUser.email,
+        password: fNuevoUser.password,
+        options: {
+          data: {
+            name: fNuevoUser.name,
+            role: fNuevoUser.role
+          }
+        }
+      });
+      if (error) throw error;
+      
+      const newUser = {
+        id: data.user?.id || Date.now().toString(),
+        name: fNuevoUser.name,
+        email: fNuevoUser.email,
+        role: fNuevoUser.role,
+        password: fNuevoUser.password, // Solo para la simulación local
+        activo: true,
+        whatsappAccess: false,
+        area: "General"
+      };
+      setDb(d => ({ ...d, usuariosApp: [...(d.usuariosApp || []), newUser] }));
+      
+      alert("Usuario provisionado exitosamente en el sistema.");
+      setShowUserModal(false);
+      setFNuevoUser({ name: "", email: "", password: "", role: "ventas" });
+    } catch(err) {
+      alert("Error creando usuario: " + err.message);
+    } finally {
+      setCargandoUser(false);
+    }
+  };
+
+  const handleResetPasswordUser = async (emailUsuario) => {
+    if (confirm(`¿Enviar correo con enlace seguro de recuperación de contraseña a ${emailUsuario}?`)) {
+      try {
+        const { error } = await sb.auth.resetPasswordForEmail(emailUsuario);
+        if (error) throw error;
+        alert(`Se han enviado las instrucciones al correo ${emailUsuario}`);
+      } catch (err) {
+        alert("No se pudo enviar el correo de recuperación: " + err.message);
+      }
+    }
+  };
+
+  const handleEliminarUsuario = async (userId, userEmail) => {
+    if (userEmail === db.usuario?.email) {
+      alert("No puedes eliminar tu propio usuario de administrador mientras estás logueado.");
+      return;
+    }
+    
+    if (confirm(`⚠️ ALERTA: Estás a punto de revocar el acceso a ${userEmail}. ¿Continuar?`)) {
+      setDb(d => ({ ...d, usuariosApp: d.usuariosApp.filter(u => u.id !== userId) }));
+      alert("Usuario eliminado del directorio IAM. \n(Nota: Por seguridad, la cuenta subyacente de Supabase requiere borrado manual desde el Dashboard oficial API).");
+    }
+  };
+
+  const handleChangeRole = (userId, userEmail, newRole) => {
+    if (userEmail === db.usuario?.email) {
+      alert("No puedes cambiar tu propio rol de administrador activo por razones de seguridad.");
+      return;
+    }
+    
+    if (confirm(`¿Estás seguro de cambiar el nivel de acceso de ${userEmail} a ${newRole.toUpperCase()}?`)) {
+      setDb(d => ({
+        ...d,
+        usuariosApp: d.usuariosApp.map(u => u.id === userId ? { ...u, role: newRole } : u)
+      }));
+    }
+  };
+
+  const handleToggleWhatsApp = (userId) => {
+    setDb(d => ({
+      ...d,
+      usuariosApp: d.usuariosApp.map(u => u.id === userId ? { ...u, whatsappAccess: !u.whatsappAccess } : u)
+    }));
+  };
+
   const TABS = [
     { id: "perfil",  label: "Mi Perfil",         icon: "user"     },
     { id: "apariencia", label: "Apariencia",      icon: "star"     },
@@ -51,6 +213,7 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
     { id: "usuarios", label: "Equipo & Accesos",  icon: "users"    },
     { id: "email",   label: "SMTP / IMAP",        icon: "mail"     },
     { id: "api",     label: "API & Webhooks",      icon: "code"     },
+    { id: "chatbots",label: "Chatbots",           icon: "message"  },
     { id: "security", label: "Seguridad",         icon: "eye"      },
     { id: "avanzado", label: "Avanzado",          icon: "cog"      },
   ];
@@ -181,10 +344,20 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
                 <Campo label="Nombre Completo"><Inp value={fPerfil.name} onChange={e => setFPerfil({ ...fPerfil, name: e.target.value })} style={{ fontSize: 15 }} /></Campo>
-                <Campo label="Correo Electrónico de Identidad (IdP)"><Inp value={fPerfil.email} onChange={e => setFPerfil({ ...fPerfil, email: e.target.value })} style={{ fontSize: 15 }} /></Campo>
+                <Campo label="Correo Electrónico de Identidad (IdP)"><Inp value={fPerfil.email} disabled style={{ fontSize: 15, opacity: 0.7 }} /></Campo>
                 <Campo label="Idioma del Sistema / System Language"><Sel value={fPerfil.idioma} onChange={e => setFPerfil({ ...fPerfil, idioma: e.target.value })} style={{ fontSize: 15 }}><option value="es">Español (Principal)</option><option value="en">English (BETA)</option><option value="ru">Русский (Ruso)</option><option value="fr">Français (Francés)</option></Sel></Campo>
               </div>
               <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 12 }}><Btn onClick={guardarPerfil} disabled={!fPerfil.name.trim()} style={{ fontSize: 14, padding: "10px 24px" }}><Ico k="check" size={16} /> Update Index</Btn></div>
+            </div>
+            
+            <div style={{ marginTop: 40, paddingTop: 32, borderTop: `1px solid ${T.borderHi}` }}>
+              <div style={{ fontSize: 18, fontWeight: 800, color: T.white, marginBottom: 8, display: "flex", alignItems: "center", gap: 8 }}><Ico k="lock" size={20} style={{ color: T.amber }} /> Cambiar Contraseña</div>
+              <div style={{ fontSize: 13, color: T.whiteDim, marginBottom: 20 }}>Actualiza tus credenciales de acceso para tu cuenta actual en Supabase.</div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 16 }}>
+                <Campo label="Nueva Contraseña"><Inp type="password" placeholder="Mínimo 6 caracteres" value={fPassword.nueva} onChange={e => setFPassword({ ...fPassword, nueva: e.target.value })} /></Campo>
+                <Campo label="Confirmar Contraseña"><Inp type="password" placeholder="Repite la nueva clave" value={fPassword.confirmar} onChange={e => setFPassword({ ...fPassword, confirmar: e.target.value })} /></Campo>
+              </div>
+              <div style={{ display: "flex", justifyContent: "flex-end" }}><Btn onClick={cambiarPassword} disabled={cargandoPass || !fPassword.nueva || fPassword.nueva !== fPassword.confirmar} style={{ background: T.amber, color: "#000", border: "none" }}><Ico k="edit" size={14} /> {cargandoPass ? "Cambiando..." : "Actualizar Contraseña"}</Btn></div>
             </div>
           </Tarjeta>
         )}
@@ -209,33 +382,61 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
 
         {tab === "usuarios" && (
           <Tarjeta style={{ padding: 32 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 32 }}>
-              <div>
-                <div style={{ fontSize: 20, fontWeight: 800, color: T.white, display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}><Ico k="users" size={24} style={{ color: T.teal }} /> Identity & Access Management (IAM)</div>
-                <div style={{ fontSize: 13, color: T.whiteDim }}>Control granular de accesos (RBAC). Mapea usuarios contra directorios internos.</div>
+            {db.usuario?.role !== "admin" ? (
+              <div style={{ textAlign: "center", padding: "60px 20px" }}>
+                <div style={{ display: "inline-flex", padding: 20, background: T.red + "15", borderRadius: "50%", marginBottom: 16 }}>
+                  <Ico k="lock" size={48} style={{ color: T.red }} />
+                </div>
+                <div style={{ fontSize: 24, fontWeight: 800, color: T.white }}>Acceso Restringido</div>
+                <div style={{ fontSize: 15, color: T.whiteDim, marginTop: 8, maxWidth: 400, margin: "8px auto 0" }}>
+                  Esta sección es exclusiva para Administradores. Tu rol actual ({db.usuario?.role || "user"}) no te permite gestionar el equipo ni agregar nuevos usuarios.
+                </div>
               </div>
-              <Btn onClick={() => setShowUserModal(true)} style={{ background: T.teal, padding: "10px 20px" }}><Ico k="plus" size={16} />Provisionar Usuario</Btn>
-            </div>
-            
-            <div style={{ borderRadius: 12, border: `1px solid ${T.borderHi}`, overflow: "hidden" }}>
-              <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                <CabeceraTabla cols={["Identidad / JWT", "Jerarquía (Role)", "División", "Health", ""]} />
-                <tbody>
-                  {db.usuariosApp?.map(u => (
-                    <FilaTabla key={u.id}>
-                      <Celda>
-                        <div style={{ fontWeight: 800, color: T.white, fontSize: 14 }}>{u.name}</div>
-                        <div style={{ color: T.whiteDim, fontSize: 11 }}>{u.email}</div>
-                      </Celda>
-                      <Celda><Chip label={u.role.toUpperCase()} color={u.role === "admin" ? T.teal : u.role === "manager" ? T.amber : T.whiteDim} bg={u.role === "admin" ? T.teal+"20" : undefined} /></Celda>
-                      <Celda style={{ color: T.whiteOff, fontWeight: 600 }}>{u.area}</Celda>
-                      <Celda>{u.activo ? <div style={{ display: "flex", alignItems: "center", gap: 6, color: T.green, fontSize: 12, fontWeight: 800 }}><div style={{ width: 8, height: 8, borderRadius: "50%", background: T.green, boxShadow: `0 0 8px ${T.green}` }}/> Online</div> : <Chip label="Revoked" color={T.red} />}</Celda>
-                      <Celda><Btn variant="fantasma" size="sm"><Ico k="edit" size={16} /></Btn></Celda>
-                    </FilaTabla>
-                  )) || <tr><td colSpan={5} style={{ padding: 40, textAlign: "center", color: T.whiteDim }}>IAM Directory is empty.</td></tr>}
-                </tbody>
-              </table>
-            </div>
+            ) : (
+              <>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 32 }}>
+                  <div>
+                    <div style={{ fontSize: 20, fontWeight: 800, color: T.white, display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}><Ico k="users" size={24} style={{ color: T.teal }} /> Identity & Access Management (IAM)</div>
+                    <div style={{ fontSize: 13, color: T.whiteDim }}>Control granular de accesos (RBAC). Mapea usuarios contra directorio de Supabase.</div>
+                  </div>
+                  <Btn onClick={() => setShowUserModal(true)} style={{ background: T.teal, padding: "10px 20px" }}><Ico k="plus" size={16} />Provisionar Usuario</Btn>
+                </div>
+                
+                <div style={{ borderRadius: 12, border: `1px solid ${T.borderHi}`, overflow: "hidden" }}>
+                  <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                    <CabeceraTabla cols={["Identidad / Email", "Jerarquía (Role)", "División", "WhatsApp", "Health", ""]} />
+                    <tbody>
+                      {db.usuariosApp?.map(u => (
+                        <FilaTabla key={u.id}>
+                          <Celda>
+                            <div style={{ fontWeight: 800, color: T.white, fontSize: 14 }}>{u.name}</div>
+                            <div style={{ color: T.whiteDim, fontSize: 11 }}>{u.email}</div>
+                          </Celda>
+                          <Celda>
+                            <select value={u.role} onChange={e => handleChangeRole(u.id, u.email, e.target.value)} disabled={u.email === db.usuario?.email} style={{ background: u.role === "admin" ? T.teal+"20" : T.bg2, color: u.role === "admin" ? T.teal : u.role === "manager" ? T.amber : T.white, border: `1px solid ${T.borderHi}`, padding: "4px 8px", borderRadius: 6, fontSize: 11, fontWeight: 700, textTransform: "uppercase", outline: "none", cursor: u.email === db.usuario?.email ? "not-allowed" : "pointer" }}>
+                              <option value="ventas">VENTAS</option>
+                              <option value="manager">MANAGER</option>
+                              <option value="admin">ADMIN</option>
+                            </select>
+                          </Celda>
+                          <Celda style={{ color: T.whiteOff, fontWeight: 600 }}>{u.area || "General"}</Celda>
+                          <Celda>
+                            <button onClick={() => handleToggleWhatsApp(u.id)} title={u.whatsappAccess ? "Quitar acceso a WhatsApp" : "Dar acceso a WhatsApp"} style={{ background: "transparent", border: "none", cursor: "pointer", color: u.whatsappAccess ? "#25D366" : T.whiteDim, transition: "all .2s", transform: u.whatsappAccess ? "scale(1.1)" : "scale(1)" }}>
+                              <Ico k="message" size={20} />
+                            </button>
+                          </Celda>
+                          <Celda>{u.activo ? <div style={{ display: "flex", alignItems: "center", gap: 6, color: T.green, fontSize: 12, fontWeight: 800 }}><div style={{ width: 8, height: 8, borderRadius: "50%", background: T.green, boxShadow: `0 0 8px ${T.green}` }}/> Online</div> : <Chip label="Revoked" color={T.red} />}</Celda>
+                          <Celda>
+                            <Btn variant="fantasma" size="sm" onClick={(e) => { e.stopPropagation(); handleResetPasswordUser(u.email); }} title="Restablecer Contraseña (Vía Email)"><Ico k="key" size={16} /></Btn>
+                            <Btn variant="fantasma" size="sm" onClick={(e) => { e.stopPropagation(); handleEliminarUsuario(u.id, u.email); }} title="Revocar Accesos" style={{ color: T.red }}><Ico k="trash" size={16} /></Btn>
+                          </Celda>
+                        </FilaTabla>
+                      )) || <tr><td colSpan={5} style={{ padding: 40, textAlign: "center", color: T.whiteDim }}>IAM Directory is empty.</td></tr>}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
           </Tarjeta>
         )}
 
@@ -305,6 +506,87 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
           </Tarjeta>
         )}
 
+        {tab === "chatbots" && (
+          <Tarjeta style={{ padding: 32 }}>
+            <div style={{ fontSize: 20, fontWeight: 800, color: T.white, marginBottom: 8, display: "flex", alignItems: "center", gap: 10 }}><Ico k="message" size={24} style={{ color: T.teal }} /> Integraciones de Chatbots</div>
+            <div style={{ fontSize: 14, color: T.whiteDim, marginBottom: 32 }}>Conecta tus canales de mensajería para automatizar respuestas, calificar leads y asignar conversaciones directamente en el CRM.</div>
+            
+            <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+              {/* WhatsApp */}
+              <div style={{ display: "flex", background: T.bg2, borderRadius: 12, border: `1px solid ${T.borderHi}`, overflow: "hidden" }}>
+                <div style={{ width: 140, background: "#25D36615", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", borderRight: `1px solid ${T.borderHi}`, padding: 20 }}>
+                  <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WhatsApp" style={{ width: 48, height: 48, marginBottom: 12 }} />
+                  <div style={{ fontSize: 13, fontWeight: 700, color: "#25D366" }}>WhatsApp</div>
+                </div>
+                <div style={{ flex: 1, padding: 24, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+                  <div>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
+                      <div style={{ fontSize: 16, fontWeight: 800, color: T.white }}>WhatsApp Business API (Local Bot)</div>
+                      <Chip label={waConnected ? "Conectado" : "Desconectado"} color={waConnected ? T.green : T.whiteOff} bg={waConnected ? T.green+"20" : T.bg1} />
+                    </div>
+                    <div style={{ fontSize: 13, color: T.whiteDim, marginBottom: 20 }}>Vincula tu número mediante código QR para capturar mensajes entrantes, enviar notificaciones de citas y utilizar plantillas aprobadas.</div>
+                    
+                    {/* Renderización del QR si está presente */}
+                    {waQR && !waConnected && (
+                      <div style={{ marginBottom: 20, display: "flex", flexDirection: "column", gap: 10 }}>
+                        <div style={{ fontSize: 13, color: T.teal, fontWeight: 700 }}>Escanea este código con tu WhatsApp:</div>
+                        <img src={waQR} alt="WhatsApp QR Code" style={{ width: 160, height: 160, borderRadius: 12, background: "#FFF", padding: 8 }} />
+                      </div>
+                    )}
+                  </div>
+                  <div style={{ display: "flex", gap: 12 }}>
+                    {!waConnected && <Btn variant="primario" onClick={iniciarVinculacionWA} style={{ background: "#25D366", color: "#000", border: "none" }}><Ico k="lock" size={14} /> Solucionar QR y Vincular</Btn>}
+                    {waConnected && <Btn variant="secundario" style={{ color: T.red, borderColor: T.red }} onClick={() => { if(confirm("¿Seguro que deseas desvincular el dispositivo actual?")) { socket.emit('whatsapp_logout'); setWaConnected(false); setWaQR(''); } }}><Ico k="trash" size={14} /> Desconectar Sesión</Btn>}
+                  </div>
+                </div>
+              </div>
+
+              {/* Telegram */}
+              <div style={{ display: "flex", background: T.bg2, borderRadius: 12, border: `1px solid ${T.borderHi}`, overflow: "hidden" }}>
+                <div style={{ width: 140, background: "#0088cc15", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", borderRight: `1px solid ${T.borderHi}`, padding: 20 }}>
+                  <img src="https://upload.wikimedia.org/wikipedia/commons/8/82/Telegram_logo.svg" alt="Telegram" style={{ width: 48, height: 48, marginBottom: 12 }} />
+                  <div style={{ fontSize: 13, fontWeight: 700, color: "#0088cc" }}>Telegram</div>
+                </div>
+                <div style={{ flex: 1, padding: 24, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+                  <div>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
+                      <div style={{ fontSize: 16, fontWeight: 800, color: T.white }}>Telegram Bot Framework</div>
+                      <Chip label="Desconectado" color={T.whiteOff} bg={T.bg1} />
+                    </div>
+                    <div style={{ fontSize: 13, color: T.whiteDim, marginBottom: 20 }}>Conecta tu Bot de Telegram (botfather) permitiendo la interacción automatizada y el onboarding de usuarios por medio del código QR oficial.</div>
+                  </div>
+                  <div style={{ display: "flex", gap: 12 }}>
+                    <Btn variant="secundario" onClick={() => alert("Mostrando QR de Telegram... Escanea usando tu móvil")} style={{ color: "#0088cc", borderColor: "#0088cc" }}><Ico k="lock" size={14} /> Vincular con QR</Btn>
+                  </div>
+                </div>
+              </div>
+
+              {/* Instagram */}
+              <div style={{ display: "flex", background: T.bg2, borderRadius: 12, border: `1px solid ${T.borderHi}`, overflow: "hidden" }}>
+                <div style={{ width: 140, background: "linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%)", opacity: 0.15, position: "absolute", zIndex: 0, height: "100%", left: 0 }} />
+                <div style={{ width: 140, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", borderRight: `1px solid ${T.borderHi}`, padding: 20, zIndex: 1, position: "relative" }}>
+                   {/* Fallback to simple icon since we can't reliably load nice SVG without assets, using text/css styling combined */}
+                  <div style={{ width: 48, height: 48, borderRadius: 12, background: "linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%)", marginBottom: 12, display: "flex", alignItems: "center", justifyContent: "center" }}><Ico k="message" size={24} style={{ color: "#FFF" }} /></div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: "#cc2366" }}>Instagram</div>
+                </div>
+                <div style={{ flex: 1, padding: 24, display: "flex", flexDirection: "column", justifyContent: "space-between", zIndex: 1, position: "relative" }}>
+                  <div>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
+                      <div style={{ fontSize: 16, fontWeight: 800, color: T.white }}>Instagram Direct Messaging (DM)</div>
+                      <Chip label="Desconectado" color={T.whiteOff} bg={T.bg1} />
+                    </div>
+                    <div style={{ fontSize: 13, color: T.whiteDim, marginBottom: 20 }}>Atiende a los clientes que responden a tus historias o te envían mensajes directos desde el CRM. Requiere cuenta de creador/empresa.</div>
+                  </div>
+                  <div style={{ display: "flex", gap: 12 }}>
+                    <Btn variant="secundario" style={{ color: "#cc2366", borderColor: "#cc2366" }} onClick={() => alert("Mostrando Instagram Nametag/QR...")}><Ico k="lock" size={14} /> Vincular con QR</Btn>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </Tarjeta>
+        )}
+
         {tab === "security" && (
           <Tarjeta style={{ padding: 32 }}>
             <div style={{ fontSize: 20, fontWeight: 800, color: T.white, marginBottom: 8, display: "flex", alignItems: "center", gap: 10 }}><Ico k="eye" size={24} style={{ color: T.amber }} /> Security Operations Center (SOC)</div>
@@ -362,10 +644,22 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
       </div>
 
       <Modal open={showUserModal} onClose={() => setShowUserModal(false)} title="Provisionar Identidad en Directorio" width={480}>
-        <Campo label="Nombre Registrado"><Inp placeholder="ej. Ana Gómez" style={{ fontSize: 15 }} /></Campo>
-        <Campo label="Correo Institucional (SAML Mapping)"><Inp placeholder="ana@tuempresa.com" style={{ fontSize: 15 }} /></Campo>
-        <Campo label="Nivel de Acceso IAM"><Sel style={{ fontSize: 14, padding: 12 }}><option>Ventas (Tier 1 - Solo Lectura DLP)</option><option>Ventas - Regional Manager</option><option>Administrador Táctico</option><option>Root Superadmin</option></Sel></Campo>
-        <div style={{ display: "flex", gap: 12, justifyContent: "flex-end", marginTop: 32 }}><Btn variant="secundario" onClick={() => setShowUserModal(false)} style={{ fontSize: 14, padding: "10px 20px" }}>Abortar</Btn><Btn style={{ fontSize: 14, padding: "10px 20px" }}>Despachar Invitación</Btn></div>
+        <Campo label="Nombre Completo"><Inp value={fNuevoUser.name} onChange={e => setFNuevoUser({ ...fNuevoUser, name: e.target.value })} placeholder="ej. Ana Gómez" style={{ fontSize: 15 }} /></Campo>
+        <Campo label="Correo Electrónico (Login)"><Inp type="email" value={fNuevoUser.email} onChange={e => setFNuevoUser({ ...fNuevoUser, email: e.target.value })} placeholder="ana@tuempresa.com" style={{ fontSize: 15 }} /></Campo>
+        <Campo label="Contraseña Inicial"><Inp type="password" value={fNuevoUser.password} onChange={e => setFNuevoUser({ ...fNuevoUser, password: e.target.value })} placeholder="Mínimo 6 caracteres" style={{ fontSize: 15 }} /></Campo>
+        <Campo label="Nivel de Acceso IAM (Role)">
+          <Sel value={fNuevoUser.role} onChange={e => setFNuevoUser({ ...fNuevoUser, role: e.target.value })} style={{ fontSize: 14, padding: 12 }}>
+            <option value="ventas">Ventas (Tier 1)</option>
+            <option value="manager">Manager Regional</option>
+            <option value="admin">Administrador Global</option>
+          </Sel>
+        </Campo>
+        <div style={{ display: "flex", gap: 12, justifyContent: "flex-end", marginTop: 32 }}>
+          <Btn variant="secundario" onClick={() => setShowUserModal(false)} style={{ fontSize: 14, padding: "10px 20px" }} disabled={cargandoUser}>Abortar</Btn>
+          <Btn onClick={handleCrearUsuario} disabled={cargandoUser || !fNuevoUser.email || !fNuevoUser.password || !fNuevoUser.name} style={{ fontSize: 14, padding: "10px 20px" }}>
+            {cargandoUser ? "Procesando..." : "Crear Usuario en Supabase"}
+          </Btn>
+        </div>
       </Modal>
     </div>
   );

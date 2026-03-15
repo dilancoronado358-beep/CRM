@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useSupaState } from "./hooks/useSupaState";
+import { useSupaState, sb } from "./hooks/useSupaState";
 import { T, applyTheme } from "./theme";
 
 import { Av, Btn, ControlSegmentado, IndSupa, Ico, SpotlightSearch } from "./components/ui";
@@ -23,10 +23,17 @@ import { Automatizaciones } from "./features/Automatizaciones";
 import { Documentos } from "./features/Documentos";
 import { Formularios } from "./features/Formularios";
 import { Websites } from "./features/Websites";
+import { Login } from "./features/Login";
 
 // Public Views
 import { FormularioPublico } from "./features/FormularioPublico";
 import { LandingPagePublica } from "./features/LandingPagePublica";
+
+// Chatbots
+import { ChatWhatsApp } from "./features/ChatWhatsApp";
+import { ChatTelegram } from "./features/ChatTelegram";
+import { ChatInstagram } from "./features/ChatInstagram";
+import { ChatFacebook } from "./features/ChatFacebook";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // DICCIONARIO GLOBAL COMPLETO  (es = clave, en/ru/fr = traducciones)
@@ -51,6 +58,10 @@ const DICT = {
   "Configuración": { en: "Settings", ru: "Настройки", fr: "Paramètres" },
   "Form Builder": { en: "Form Builder", ru: "Формы", fr: "Formulaires" },
   "Landing Pages": { en: "Landing Pages", ru: "Лендинги", fr: "Pages Web" },
+  "WhatsApp": { en: "WhatsApp", ru: "WhatsApp", fr: "WhatsApp" },
+  "Telegram": { en: "Telegram", ru: "Telegram", fr: "Telegram" },
+  "Instagram": { en: "Instagram", ru: "Instagram", fr: "Instagram" },
+  "Facebook": { en: "Facebook", ru: "Facebook", fr: "Facebook" },
   // ── Grupos de navegación ──────────────────────────────────────────────────
   "Ventas": { en: "Sales", ru: "Продажи", fr: "Ventes" },
   "Agenda": { en: "Planner", ru: "Органайзер", fr: "Agenda" },
@@ -210,7 +221,7 @@ const DICT = {
 
 
 export default function App() {
-  const { db, setDb, estadoSupa, cargando, guardarEnSupa, eliminarDeSupa } = useSupaState();
+  const { db, setDb, session, estadoSupa, cargando, guardarEnSupa, eliminarDeSupa } = useSupaState();
   const [modulo, setModulo] = useState("dashboard");
   const [menuAbierto, setMenuAbierto] = useState(true);
   const [spotlightOpen, setSpotlightOpen] = useState(false);
@@ -248,6 +259,11 @@ export default function App() {
     return <LandingPagePublica siteSlug={siteSlug} />;
   }
 
+  // Si no hay sesión de Supabase Y TAMPOCO hay sesión activa inyectada localmente, ir a login
+  if (!session && !db.usuario) {
+    return <Login />;
+  }
+
   const lng = db.usuario?.idioma || "es";
   // Self-contained translator: t("Spanish key") → translated string for current language
   const t = (es) => {
@@ -267,6 +283,10 @@ export default function App() {
     { id: "tareas", label: t("Gestión de Tareas"), role: t("Agenda"), comp: Tareas },
     { id: "catalogo", label: t("Catálogo & Precios"), role: t("Facturación"), comp: Productos },
     { id: "email", label: t("Bandeja de Correo"), role: t("Comunicación"), comp: ModuloEmail },
+    { id: "whatsapp", label: t("WhatsApp"), role: t("Comunicación"), comp: ChatWhatsApp, reqWhatsApp: true },
+    { id: "telegram", label: t("Telegram"), role: t("Comunicación"), comp: ChatTelegram },
+    { id: "instagram", label: t("Instagram"), role: t("Comunicación"), comp: ChatInstagram },
+    { id: "facebook", label: t("Facebook"), role: t("Comunicación"), comp: ChatFacebook },
     { id: "plantillas", label: t("Plantillas Email"), role: t("Comunicación"), comp: PlantillasEmail },
     { id: "calendario", label: t("Calendario Global"), role: t("Herramientas"), comp: Calendario },
     { id: "documentos", label: t("Gestión Documental"), role: t("Sistema"), comp: Documentos },
@@ -276,7 +296,7 @@ export default function App() {
     { id: "config", label: t("Configuración"), role: t("Sistema"), comp: Configuracion },
     { id: "formularios", label: t("Form Builder"), role: t("Captación Leads"), comp: Formularios },
     { id: "websites", label: t("Landing Pages"), role: t("Captación Leads"), comp: Websites },
-  ];
+  ].filter(m => !m.reqWhatsApp || db.usuario?.role === "admin" || db.usuario?.whatsappAccess === true);
 
 
   const grp = MODULOS.reduce((acc, m) => { (acc[m.role] = acc[m.role] || []).push(m); return acc; }, {});
@@ -312,7 +332,7 @@ export default function App() {
               <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                 {mods.map(m => {
                   const act = modulo === m.id;
-                  const icons = { dashboard: "board", pipeline: "funnel", deals: "dollar", contactos: "users", empresas: "building", actividades: "lightning", tareas: "check", catalogo: "grid", email: "mail", plantillas: "template", calendario: "calendar", documentos: "note", workflows: "var", notas: "note", reportes: "chart", config: "cog", formularios: "template", websites: "link" };
+                  const icons = { dashboard: "board", pipeline: "funnel", deals: "dollar", contactos: "users", empresas: "building", actividades: "lightning", tareas: "check", catalogo: "grid", email: "mail", whatsapp: "phone", telegram: "paper-plane", instagram: "camera", facebook: "users", plantillas: "template", calendario: "calendar", documentos: "note", workflows: "var", notas: "note", reportes: "chart", config: "cog", formularios: "template", websites: "link" };
                   return (
                     <button key={m.id} onClick={() => setModulo(m.id)} title={!menuAbierto ? m.label : undefined}
                       style={{ display: "flex", alignItems: "center", gap: 12, padding: menuAbierto ? "10px 14px" : "12px", width: "100%", border: "none", background: act ? T.tealSoft : "transparent", color: act ? T.teal : T.whiteOff, borderRadius: 8, cursor: "pointer", transition: "all .15s", fontFamily: "inherit", fontWeight: act ? 700 : 500, justifyContent: menuAbierto ? "flex-start" : "center" }}
@@ -331,14 +351,16 @@ export default function App() {
 
         {/* FOOTER SIDEBAR */}
         <div style={{ padding: "16px 12px", borderTop: `1px solid ${T.borderHi}`, background: T.bg1, flexShrink: 0 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, justifyContent: menuAbierto ? "flex-start" : "center" }}>
-            <Av text={db.usuario?.avatar} color={T.teal} size={36} fs={14} />
-            {menuAbierto && (
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: T.white, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{db.usuario?.name || "Usuario"}</div>
-                <div style={{ fontSize: 11, color: T.whiteDim, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{db.usuario?.email}</div>
-              </div>
-            )}
+          <div style={{ display: "flex", alignItems: "center", gap: 10, justifyContent: menuAbierto ? "space-between" : "center" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, overflow: "hidden" }}>
+              <Av text={db.usuario?.avatar} color={T.teal} size={36} fs={14} />
+              {menuAbierto && (
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: T.white, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{db.usuario?.name || "Usuario"}</div>
+                  <div style={{ fontSize: 11, color: T.whiteDim, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{db.usuario?.email}</div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -359,6 +381,9 @@ export default function App() {
               <input placeholder="Búsqueda rápida..." style={{ background: T.bg2, border: `1px solid ${T.borderHi}`, borderRadius: 20, padding: "8px 16px 8px 34px", fontSize: 13, color: T.white, width: 220, outline: "none", transition: "all .2s", fontFamily: "inherit" }} onFocus={e => e.target.style.background = T.bg1} onBlur={e => e.target.style.background = T.bg2} />
             </div>
             <Btn variant="secundario" style={{ padding: 8, borderRadius: "50%" }}><Ico k="refresh" size={16} /></Btn>
+            <Btn variant="secundario" style={{ padding: 8, borderRadius: "50%", color: T.red, borderColor: T.red }} onClick={() => { if(confirm(t("¿Cerrar sesión?"))) { localStorage.removeItem("crm_nexus_v4"); setDb(d => ({ ...d, usuario: null })); sb.auth.signOut().then(() => { window.location.href = "/"; }); } }} title={t("Cerrar")}>
+              <Ico k="lock" size={16} />
+            </Btn>
           </div>
         </div>
 
