@@ -79,10 +79,35 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
     { id: 3, action: "Exportación Bloqueada", ip: "Unknown", location: "Beijing, CN", time: new Date(Date.now() - 86400000).toISOString(), threat: true },
   ];
 
-  const guardarPerfil = () => {
-    const act = { ...db.usuario, ...fPerfil, avatar: fPerfil.name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase() };
+  const guardarPerfil = async () => {
+    const newAvatar = fPerfil.name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
+    const act = { ...db.usuario, ...fPerfil, avatar: newAvatar };
+
+    // 1. Actualizar estado local
     setDb(d => ({ ...d, usuario: act }));
-    alert("Perfil actualizado correctamente");
+
+    // 2. Actualizar registro en usuariosApp para que persista en Supabase
+    setDb(d => ({
+      ...d,
+      usuariosApp: (d.usuariosApp || []).map(u =>
+        u.email === db.usuario?.email
+          ? { ...u, name: fPerfil.name, email: fPerfil.email, avatar: newAvatar }
+          : u
+      )
+    }));
+
+    // 3. Actualizar email/nombre en Supabase Auth si cambiaron
+    try {
+      const updates = {};
+      if (fPerfil.name !== db.usuario?.name) updates.data = { name: fPerfil.name };
+      if (fPerfil.email !== db.usuario?.email) updates.email = fPerfil.email;
+      if (Object.keys(updates).length > 0) {
+        const { error } = await sb.auth.updateUser(updates);
+        if (error) console.warn("Supabase auth update:", error.message);
+      }
+    } catch (e) { console.warn("Auth update err:", e.message); }
+
+    alert("Perfil actualizado correctamente ✅");
   };
 
   const cambiarPassword = async () => {
