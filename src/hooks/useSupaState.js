@@ -9,70 +9,145 @@ const SUPA_URL = "https://eoylgxwlhsmwqgadahvk.supabase.co";
 const SUPA_KEY = "sb_publishable_wKUbf7IFOoH4HIUayIAJdQ_Boj1jgZa";
 export const sb = createClient(SUPA_URL, SUPA_KEY);
 
+// Tablas que se sincronizan con Supabase
+const TABLAS_SUPA = [
+  "contactos",
+  "empresas",
+  "deals",
+  "actividades",
+  "tareas",
+  "emails",
+  "notas",
+  "productos",
+  "pipelines",
+  "plantillasEmail",
+  "usuariosApp",
+];
+
 /* ═══════════════════════════════════════════
-   HOOK: ESTADO CON SUPABASE + localStorage
+   HOOK: ESTADO EXCLUSIVAMENTE SUPABASE
 ═══════════════════════════════════════════ */
 export function useSupaState() {
+  // Estado local inicializado con SEMILLA como fallback temporal mientras carga Supabase
   const [db, setDbRaw] = useState(() => {
+    // Solo consultar localStorage para la sesión de usuario activo
     try {
-      const raw = localStorage.getItem("crm_nexus_v4");
+      const raw = localStorage.getItem("crm_usuario_activo");
       if (raw) {
-        const p = JSON.parse(raw);
-        return {
-          ...SEMILLA, ...p,
-          cuentaEmail: p.cuentaEmail || SEMILLA.cuentaEmail,
-          plantillasEmail: (p.plantillasEmail && p.plantillasEmail.length > 0) ? p.plantillasEmail : SEMILLA.plantillasEmail,
-        };
+        const usuario = JSON.parse(raw);
+        return { ...SEMILLA, usuario };
       }
-    } catch (e) { }
+    } catch (e) {}
     return SEMILLA;
   });
+
   const [estadoSupa, setEstadoSupa] = useState("conectando");
-  const [cargando, setCargando] = useState(false);
+  const [cargando, setCargando] = useState(true);
   const [session, setSession] = useState(null);
 
   const setDb = useCallback((next) => {
-    setDbRaw(prev => {
+    setDbRaw((prev) => {
       const v = typeof next === "function" ? next(prev) : next;
-      try { localStorage.setItem("crm_nexus_v4", JSON.stringify(v)); } catch (e) { }
+      // Persistir solo el usuario activo en localStorage (no datos de negocio)
+      if (v?.usuario) {
+        try { localStorage.setItem("crm_usuario_activo", JSON.stringify(v.usuario)); } catch (e) {}
+      }
       return v;
     });
   }, []);
 
-  // Verificar conexión Supabase al inicio y Auth
-  useEffect(() => {
-    const verificar = async () => {
-      try {
-        const { error } = await sb.from("contactos").select("id").limit(1);
-        if (error) {
-          if (error.code === "42P01") {
-            setEstadoSupa("conectado");
-          } else {
-            setEstadoSupa("error");
-          }
-        } else {
-          setEstadoSupa("conectado");
-          await cargarDeSupa();
-        }
-      } catch (e) {
-        setEstadoSupa("error");
-      }
-    };
-    verificar();
+  // ── Cargar todos los datos desde Supabase ──────────────────────────────────
+  const cargarDeSupa = useCallback(async () => {
+    try {
+      setCargando(true);
+      const resultados = await Promise.all(
+        TABLAS_SUPA.map((tabla) => sb.from(tabla).select("*"))
+      );
 
-    // Setup Auth Listener
+      const nuevoEstado = {};
+      TABLAS_SUPA.forEach((tabla, i) => {
+        const { data, error } = resultados[i];
+        if (!error && data) {
+          nuevoEstado[tabla] = data;
+        }
+      });
+
+      // Si las tablas principales están vacías, sembrar datos iniciales
+      const necesitaSeed = !nuevoEstado.contactos?.length && !nuevoEstado.deals?.length;
+
+      if (necesitaSeed) {
+        console.log("Tablas vacías detectadas. Sembrando datos iniciales en Supabase...");
+        await sembrarDatos();
+        // Volver a cargar tras sembrar
+        const segundaVuelta = await Promise.all(
+          TABLAS_SUPA.map((tabla) => sb.from(tabla).select("*"))
+        );
+        TABLAS_SUPA.forEach((tabla, i) => {
+          const { data, error } = segundaVuelta[i];
+          if (!error && data && data.length > 0) {
+            nuevoEstado[tabla] = data;
+          }
+        });
+      }
+
+      // Aplicar datos de Supabase al estado (manteniendo usuario actual)
+      setDb((d) => ({
+        ...SEMILLA,
+        ...nuevoEstado,
+        usuario: d.usuario, // Conservar sesión activa
+        empresaConfigs: d.empresaConfigs || SEMILLA.empresaConfigs,
+        cuentaEmail: d.cuentaEmail || SEMILLA.cuentaEmail,
+        recordatorios: d.recordatorios || SEMILLA.recordatorios,
+      }));
+
+      setEstadoSupa("conectado");
+    } catch (e) {
+      console.error("Error cargando de Supabase:", e.message);
+      setEstadoSupa("error");
+    } finally {
+      setCargando(false);
+    }
+  }, [setDb]);
+
+  // ── Sembrar datos iniciales de seed.js en Supabase ────────────────────────
+  const sembrarDatos = async () => {
+    const operaciones = [
+      sb.from("contactos").upsert(SEMILLA.contactos || []),
+      sb.from("empresas").upsert(SEMILLA.empresas || []),
+      sb.from("deals").upsert(SEMILLA.deals || []),
+      sb.from("actividades").upsert(SEMILLA.actividades || []),
+      sb.from("tareas").upsert(SEMILLA.tareas || []),
+      sb.from("emails").upsert(SEMILLA.emails || []),
+      sb.from("notas").upsert(SEMILLA.notas || []),
+      sb.from("productos").upsert(SEMILLA.productos || []),
+      sb.from("pipelines").upsert(SEMILLA.pipelines || []),
+      sb.from("usuariosApp").upsert(SEMILLA.usuariosApp || []),
+    ];
+    const resultados = await Promise.all(operaciones);
+    resultados.forEach((r, i) => {
+      if (r.error) console.warn(`Error sembrando tabla ${i}:`, r.error.message);
+    });
+    console.log("✅ Datos iniciales sembrados en Supabase correctamente.");
+  };
+
+  // ── Auth + Carga inicial ───────────────────────────────────────────────────
+  useEffect(() => {
+    // Obtener sesión actual
     sb.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       if (session) {
-        setDb(d => {
-          const uLocal = (d.usuariosApp || SEMILLA.usuariosApp).find(x => x.email === session.user.email);
+        setDb((d) => {
+          const uLocal = (d.usuariosApp || SEMILLA.usuariosApp || []).find(
+            (x) => x.email === session.user.email
+          );
           const mapped = {
-            name: uLocal?.name || session.user.user_metadata?.name || 'Usuario',
+            name: uLocal?.name || session.user.user_metadata?.name || "Usuario",
             email: session.user.email,
-            role: uLocal?.role || session.user.user_metadata?.role || 'user',
-            avatar: uLocal?.avatar || 'U',
+            role: uLocal?.role || session.user.user_metadata?.role || "user",
+            avatar: uLocal?.avatar || "U",
             whatsappAccess: uLocal?.whatsappAccess || false,
-            activo: uLocal?.activo !== false
+            profilePic: uLocal?.profilePic || null,
+            activo: uLocal?.activo !== false,
           };
           return { ...d, usuario: { ...d.usuario, ...mapped } };
         });
@@ -81,68 +156,57 @@ export function useSupaState() {
 
     const { data: { subscription } } = sb.auth.onAuthStateChange((_event, session) => {
       setSession(session);
-      if (session) {
-        setDb(d => {
-          const uLocal = (d.usuariosApp || SEMILLA.usuariosApp).find(x => x.email === session.user.email);
-          const mapped = {
-            name: uLocal?.name || session.user.user_metadata?.name || 'Usuario',
-            email: session.user.email,
-            role: uLocal?.role || session.user.user_metadata?.role || 'user',
-            avatar: uLocal?.avatar || 'U',
-            whatsappAccess: uLocal?.whatsappAccess || false,
-            activo: uLocal?.activo !== false
-          };
-          return { ...d, usuario: { ...d.usuario, ...mapped } };
-        });
-      } else {
-        // En lugar de borrar destructivamente siempre, verificamos si existe un usuario inyectado localmente.
-        // Si el usuario presionó logout (limpio localStorage), o si simplemente falló la validación
-        setDb(d => {
-          if (d.usuario && !localStorage.getItem("crm_nexus_v4")) return { ...d, usuario: null };
-          // Si d.usuario existe, es nuestra sesión fallback. Solo lo borramos explícitamente en el App.jsx logout.
+      if (!session) {
+        setDb((d) => {
+          if (d.usuario && !localStorage.getItem("crm_usuario_activo")) return { ...d, usuario: null };
           return d;
         });
       }
     });
 
+    // Cargar datos desde Supabase al iniciar
+    cargarDeSupa();
+
     return () => subscription.unsubscribe();
-  }, [setDb]); // eslint-disable-line
+  }, [cargarDeSupa, setDb]);
 
-  const cargarDeSupa = async () => {
-    try {
-      const [rC, rE, rD, rA, rT, rEm] = await Promise.all([
-        sb.from("contactos").select("*"),
-        sb.from("empresas").select("*"),
-        sb.from("deals").select("*"),
-        sb.from("actividades").select("*"),
-        sb.from("tareas").select("*"),
-        sb.from("emails").select("*"),
-      ]);
-      const actualizar = {};
-      if (rC.data?.length) actualizar.contactos = rC.data;
-      if (rE.data?.length) actualizar.empresas = rE.data;
-      if (rD.data?.length) actualizar.deals = rD.data;
-      if (rA.data?.length) actualizar.actividades = rA.data;
-      if (rT.data?.length) actualizar.tareas = rT.data;
-      if (rEm.data?.length) actualizar.emails = rEm.data;
-      if (Object.keys(actualizar).length > 0) {
-        setDb(d => ({ ...d, ...actualizar }));
-      }
-    } catch (e) { console.log("No se pudo cargar de Supabase:", e.message); }
-  };
-
+  // ── CRUD helper: guardar en Supabase y actualizar estado local ────────────
   const guardarEnSupa = async (tabla, registro) => {
     try {
       const { error } = await sb.from(tabla).upsert(registro);
-      if (error) console.log(`Error guardando en ${tabla}:`, error.message);
-    } catch (e) { console.log("Supabase no disponible, guardado local."); }
+      if (error) {
+        console.warn(`Error guardando en ${tabla}:`, error.message);
+      } else {
+        // Actualizar el estado local con el nuevo registro
+        setDb((d) => {
+          const lista = Array.isArray(d[tabla]) ? d[tabla] : [];
+          const idx = lista.findIndex((r) => r.id === registro.id);
+          const nueva = idx >= 0
+            ? lista.map((r) => (r.id === registro.id ? { ...r, ...registro } : r))
+            : [...lista, registro];
+          return { ...d, [tabla]: nueva };
+        });
+      }
+    } catch (e) {
+      console.warn("Supabase no disponible:", e.message);
+    }
   };
 
   const eliminarDeSupa = async (tabla, id) => {
     try {
-      await sb.from(tabla).delete().eq("id", id);
-    } catch (e) { console.log("Supabase no disponible."); }
+      const { error } = await sb.from(tabla).delete().eq("id", id);
+      if (error) {
+        console.warn(`Error eliminando de ${tabla}:`, error.message);
+      } else {
+        setDb((d) => {
+          const lista = Array.isArray(d[tabla]) ? d[tabla] : [];
+          return { ...d, [tabla]: lista.filter((r) => r.id !== id) };
+        });
+      }
+    } catch (e) {
+      console.warn("Supabase no disponible:", e.message);
+    }
   };
 
-  return { db, setDb, session, estadoSupa, cargando, guardarEnSupa, eliminarDeSupa };
+  return { db, setDb, session, estadoSupa, cargando, guardarEnSupa, eliminarDeSupa, recargar: cargarDeSupa };
 }
