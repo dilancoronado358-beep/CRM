@@ -23,11 +23,19 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
     const reader = new FileReader();
     reader.onload = (ev) => {
       const b64 = ev.target.result;
-      setDb(d => ({ ...d, usuario: { ...d.usuario, profilePic: b64 } }));
+      // Actualizar usuario Y usuariosApp en un solo llamado para que auto-sync lo guarde en Supabase
+      setDb(d => ({
+        ...d,
+        usuario: { ...d.usuario, profilePic: b64 },
+        usuariosApp: (d.usuariosApp || []).map(u =>
+          u.email === d.usuario?.email ? { ...u, profilePic: b64 } : u
+        )
+      }));
     };
     reader.readAsDataURL(file);
     e.target.value = null;
   };
+
   const [fPassword, setFPassword] = useState({ nueva: "", confirmar: "" });
   const [cargandoPass, setCargandoPass] = useState(false);
   const [fEmail, setFEmail] = useState(db.cuentaEmail || {});
