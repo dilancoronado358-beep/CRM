@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@supabase/supabase-js";
 import { SEMILLA } from "../data/seed";
+import { applyTheme } from "../theme";
 
 /* ═══════════════════════════════════════════
    SUPABASE
@@ -35,6 +36,9 @@ export function useSupaState() {
     // Solo consultar localStorage para la sesión de usuario activo
     try {
       const raw = localStorage.getItem("crm_usuario_activo");
+      // Restaurar tema guardado
+      const savedTheme = localStorage.getItem("crm_theme") || "dark";
+      applyTheme(savedTheme);
       if (raw) {
         const usuario = JSON.parse(raw);
         return { ...SEMILLA, usuario };
@@ -53,7 +57,13 @@ export function useSupaState() {
 
       // Persistir sesión de usuario activo en localStorage
       if (v?.usuario) {
-        try { localStorage.setItem("crm_usuario_activo", JSON.stringify(v.usuario)); } catch (e) {}
+        try {
+          localStorage.setItem("crm_usuario_activo", JSON.stringify(v.usuario));
+          // Guardar tema por separado para que persista
+          if (v.usuario.temaActivo) {
+            localStorage.setItem("crm_theme", v.usuario.temaActivo);
+          }
+        } catch (e) {}
       }
 
       // ── Auto-sync: detectar cambios en tablas de Supabase ─────────────────
@@ -183,7 +193,8 @@ export function useSupaState() {
             role: uLocal?.role || session.user.user_metadata?.role || "user",
             avatar: uLocal?.avatar || "U",
             whatsappAccess: uLocal?.whatsappAccess || false,
-            profilePic: uLocal?.profilePic || null,
+            // Preservar foto de perfil existente si Supabase no tiene una
+            profilePic: uLocal?.profilePic || d.usuario?.profilePic || null,
             activo: uLocal?.activo !== false,
           };
           return { ...d, usuario: { ...d.usuario, ...mapped } };

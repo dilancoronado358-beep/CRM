@@ -124,7 +124,8 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
 
   const cambiarTema = (themeId) => {
     applyTheme(themeId);
-    setDb(d => ({ ...d, usuario: { ...d.usuario, tema: themeId } }));
+    setDb(d => ({ ...d, usuario: { ...d.usuario, temaActivo: themeId } }));
+    localStorage.setItem("crm_theme", themeId);
   };
 
   const guardarRecordatorios = () => {
