@@ -184,60 +184,66 @@ export function useSupaState() {
     let montado = true;
 
     const iniciarApp = async () => {
-      // 1. Obtener sesión actual
-      const { data: { session } } = await sb.auth.getSession();
-      if (!montado) return;
-      setSession(session);
+      try {
+        // 1. Obtener sesión actual
+        const { data: { session }, error: sessionError } = await sb.auth.getSession();
+        if (sessionError) console.warn("Supabase auth error:", sessionError);
+        if (!montado) return;
+        setSession(session);
 
-      if (session) {
-        // Mostrar nombre provisional (evita usuario vacío temporalmente)
-        setDb((d) => {
-          const tempName = d.usuario?.name || session.user.user_metadata?.name || session.user.email;
-          const tempAvatar = tempName.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase() || "U";
-          return {
-            ...d,
-            usuario: {
-              ...d.usuario,
-              name: tempName,
-              email: session.user.email,
-              avatar: d.usuario?.avatar || tempAvatar,
-              role: d.usuario?.role || session.user.user_metadata?.role || "user",
-              activo: d.usuario?.activo !== false,
-            }
-          };
-        });
-
-        // Consultar directamente a Supabase para obtener datos reales
-        const { data: uLocal } = await sb.from("usuariosApp").select("*").eq("email", session.user.email).maybeSingle();
-        if (uLocal && montado) {
-          if (uLocal.temaActivo) {
-            applyTheme(uLocal.temaActivo);
-            localStorage.setItem("crm_theme", uLocal.temaActivo);
-          }
+        if (session) {
+          // Mostrar nombre provisional (evita usuario vacío temporalmente)
           setDb((d) => {
-            const mapped = {
-              name: uLocal.name || session.user.user_metadata?.name || "Usuario",
-              email: session.user.email,
-              role: uLocal.role || "user",
-              avatar: uLocal.avatar || "U",
-              whatsappAccess: uLocal.whatsappAccess || false,
-              profilePic: uLocal.profilePic || null,
-              temaActivo: uLocal.temaActivo || null,
-              activo: uLocal.activo !== false,
+            const tempName = d.usuario?.name || session.user.user_metadata?.name || session.user.email;
+            const tempAvatar = tempName.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase() || "U";
+            return {
+              ...d,
+              usuario: {
+                ...d.usuario,
+                name: tempName,
+                email: session.user.email,
+                avatar: d.usuario?.avatar || tempAvatar,
+                role: d.usuario?.role || session.user.user_metadata?.role || "user",
+                activo: d.usuario?.activo !== false,
+              }
             };
-            return { ...d, usuario: { ...d.usuario, ...mapped } };
           });
+
+          // Consultar directamente a Supabase para obtener datos reales
+          const { data: uLocal, error: fetchError } = await sb.from("usuariosApp").select("*").eq("email", session.user.email).maybeSingle();
+          if (fetchError) console.warn("Supabase user fetch error:", fetchError);
+          if (uLocal && montado) {
+            if (uLocal.temaActivo) {
+              applyTheme(uLocal.temaActivo);
+              localStorage.setItem("crm_theme", uLocal.temaActivo);
+            }
+            setDb((d) => {
+              const mapped = {
+                name: uLocal.name || session.user.user_metadata?.name || "Usuario",
+                email: session.user.email,
+                role: uLocal.role || "user",
+                avatar: uLocal.avatar || "U",
+                whatsappAccess: uLocal.whatsappAccess || false,
+                profilePic: uLocal.profilePic || null,
+                temaActivo: uLocal.temaActivo || null,
+                activo: uLocal.activo !== false,
+              };
+              return { ...d, usuario: { ...d.usuario, ...mapped } };
+            });
+          }
         }
-      }
 
-      // 2. Cargar datos desde Supabase
-      if (montado) {
-        await cargarDeSupa();
-      }
-
-      // 3. Marcar la app como lista
-      if (montado) {
-        setIsAppReady(true);
+        // 2. Cargar datos desde Supabase
+        if (montado) {
+          await cargarDeSupa();
+        }
+      } catch (err) {
+        console.error("Critical error during app initialization:", err);
+      } finally {
+        // 3. Marcar la app como lista SIEMPRE, haya error o no
+        if (montado) {
+          setIsAppReady(true);
+        }
       }
     };
 
