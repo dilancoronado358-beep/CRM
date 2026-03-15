@@ -296,7 +296,14 @@ export default function App() {
     { id: "config", label: t("Configuración"), role: t("Sistema"), comp: Configuracion },
     { id: "formularios", label: t("Form Builder"), role: t("Captación Leads"), comp: Formularios },
     { id: "websites", label: t("Landing Pages"), role: t("Captación Leads"), comp: Websites },
-  ].filter(m => !m.reqWhatsApp || db.usuario?.role === "admin" || db.usuario?.whatsappAccess === true);
+  ].filter(m => {
+    // Si no requiere permisos de whatsapp, pasa directo
+    if (!m.reqWhatsApp) return true;
+    // Si es whatsapp, solo mostrar si es ADMIN o si tiene el check de whatsappAccess true
+    if (db.usuario?.role === "admin") return true;
+    if (db.usuario?.whatsappAccess === true) return true;
+    return false;
+  });
 
 
   const grp = MODULOS.reduce((acc, m) => { (acc[m.role] = acc[m.role] || []).push(m); return acc; }, {});
