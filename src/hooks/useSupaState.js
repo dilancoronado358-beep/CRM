@@ -180,21 +180,20 @@ export function useSupaState() {
   // ── Auth + Carga inicial ───────────────────────────────────────────────────
   useEffect(() => {
     // Obtener sesión actual
-    sb.auth.getSession().then(({ data: { session } }) => {
+    // Obtener sesión actual — consultar Supabase directamente para evitar race conditions
+    sb.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
       if (session) {
+        // Consultar directamente a Supabase en vez de leer del estado local (puede ser SEMILLA vieja)
+        const { data: uLocal } = await sb.from("usuariosApp").select("*").eq("email", session.user.email).maybeSingle();
         setDb((d) => {
-          const uLocal = (d.usuariosApp || SEMILLA.usuariosApp || []).find(
-            (x) => x.email === session.user.email
-          );
           const mapped = {
             name: uLocal?.name || session.user.user_metadata?.name || "Usuario",
             email: session.user.email,
             role: uLocal?.role || session.user.user_metadata?.role || "user",
             avatar: uLocal?.avatar || "U",
             whatsappAccess: uLocal?.whatsappAccess || false,
-            // Preservar foto de perfil existente si Supabase no tiene una
-            profilePic: uLocal?.profilePic || d.usuario?.profilePic || null,
+            profilePic: uLocal?.profilePic || null,
             activo: uLocal?.activo !== false,
           };
           return { ...d, usuario: { ...d.usuario, ...mapped } };
