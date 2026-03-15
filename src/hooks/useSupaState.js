@@ -184,14 +184,21 @@ export function useSupaState() {
       setSession(session);
       if (session) {
         // 1. Mostrar nombre provisional de inmediato (email o metadata) para evitar usuario vacío
-        setDb((d) => ({
-          ...d,
-          usuario: {
-            ...d.usuario,
-            name: d.usuario?.name || session.user.user_metadata?.name || session.user.email,
-            email: session.user.email,
-          }
-        }));
+        setDb((d) => {
+          const tempName = d.usuario?.name || session.user.user_metadata?.name || session.user.email;
+          const tempAvatar = tempName.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase() || "U";
+          return {
+            ...d,
+            usuario: {
+              ...d.usuario,
+              name: tempName,
+              email: session.user.email,
+              avatar: d.usuario?.avatar || tempAvatar,
+              role: d.usuario?.role || session.user.user_metadata?.role || "user",
+              activo: d.usuario?.activo !== false,
+            }
+          };
+        });
 
         // 2. Consultar directamente a Supabase para obtener datos reales (nombre, foto, tema)
         const { data: uLocal } = await sb.from("usuariosApp").select("*").eq("email", session.user.email).maybeSingle();
