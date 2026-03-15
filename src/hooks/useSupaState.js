@@ -22,6 +22,7 @@ const TABLAS_SUPA = [
   "pipelines",
   "plantillasEmail",
   "usuariosApp",
+  "documentos",
 ];
 
 /* ═══════════════════════════════════════════
@@ -122,6 +123,7 @@ export function useSupaState() {
       sb.from("productos").upsert(SEMILLA.productos || []),
       sb.from("pipelines").upsert(SEMILLA.pipelines || []),
       sb.from("usuariosApp").upsert(SEMILLA.usuariosApp || []),
+      sb.from("documentos").upsert(SEMILLA.documentos || []),
     ];
     const resultados = await Promise.all(operaciones);
     resultados.forEach((r, i) => {
