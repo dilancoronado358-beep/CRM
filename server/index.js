@@ -274,6 +274,6 @@ console.log('Iniciando Cliente WhatsApp...');
 whatsappClient.initialize();
 
 const PORT = process.env.PORT || 3001;
-server.listen(PORT, () => {
-  console.log(`Servidor de integraciones y WebSockets escuchando en puerto ${PORT}`);
+server.listen(PORT, '0.0.0.0', () => {
+  console.log(`Servidor de integraciones y WebSockets escuchando en puerto ${PORT} (todas las interfaces de red)`);
 });
