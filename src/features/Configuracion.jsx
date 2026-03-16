@@ -126,7 +126,11 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
       const url = fWaUrl || adminUrl;
       if (!url) throw new Error("No hay URL configurada.");
       
-      const res = await fetch(`${url}/health`);
+      const res = await fetch(`${url}/health`, {
+        headers: {
+          "ngrok-skip-browser-warning": "true"
+        }
+      });
       const data = await res.json();
       if (data.status === 'ok') {
         setTestResult({ success: true, msg: "¡Conexión exitosa! El servidor está respondiendo." });

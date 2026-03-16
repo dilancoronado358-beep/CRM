@@ -7,6 +7,7 @@ const qrcode = require('qrcode');
 const cors = require('cors');
 
 const app = express();
+app.get('/', (req, res) => res.send('ENSING WhatsApp Server is Running! 🚀'));
 app.get('/health', (req, res) => res.json({ status: 'ok', clientReady, latestQR: !!latestQRUrl }));
 app.use(cors());
 
@@ -37,7 +38,7 @@ const whatsappClient = new Client({
 
 io.on('connection', (socket) => {
   console.log('Cliente Web CRM conectado');
-  
+
   socket.on('get_whatsapp_status', () => {
     if (clientReady) {
       socket.emit('whatsapp_ready');
@@ -53,17 +54,17 @@ io.on('connection', (socket) => {
       return;
     }
     if (isFetchingChats) {
-       console.log('Abortado: isFetchingChats = true (ya hay una en curso)');
-       socket.emit('whatsapp_chats_error', { message: 'Sincronización pesada en curso. Por favor, dale unos segundos más...' });
-       return;
+      console.log('Abortado: isFetchingChats = true (ya hay una en curso)');
+      socket.emit('whatsapp_chats_error', { message: 'Sincronización pesada en curso. Por favor, dale unos segundos más...' });
+      return;
     }
-    
+
     isFetchingChats = true;
     try {
       console.log('[DEBUG] Ejecutando getChats() con timeout interno de 60s...');
       const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('TIMEOUT_GET_CHATS')), 60000));
       const chats = await Promise.race([whatsappClient.getChats(), timeout]);
-      
+
       console.log(`[DEBUG] getChats() completado: recibidos ${chats.length} chats.`);
       const list = chats.slice(0, 30).map(c => ({
         id: { _serialized: c.id._serialized, user: c.id.user },
@@ -73,10 +74,10 @@ io.on('connection', (socket) => {
       }));
       socket.emit('whatsapp_chats_list', list);
       console.log(`Enviados ${list.length} chats al frontend`);
-    } catch (e) { 
+    } catch (e) {
       console.error('Error enviando chats:', e.message);
       if (e.message === 'TIMEOUT_GET_CHATS') {
-        socket.emit('whatsapp_chats_error', { 
+        socket.emit('whatsapp_chats_error', {
           message: 'Tu WhatsApp tiene muchos mensajes y está tardando más de lo normal en enviarlos a la computadora. Sigue esperando...'
         });
       }
@@ -110,7 +111,7 @@ io.on('connection', (socket) => {
           ack: msg.ack
         });
       });
-    } catch(e) { console.error('Error fetching messages', e); }
+    } catch (e) { console.error('Error fetching messages', e); }
   });
 
   socket.on('whatsapp_send_message', async (data) => {
@@ -131,7 +132,7 @@ io.on('connection', (socket) => {
   socket.on('whatsapp_send_media', async (data) => {
     try {
       console.log(`Petición para enviar media a ${data.to}. Archivo: ${data.fileName}`);
-      
+
       // Decodificar Base64 data URL con tolerancia
       const matches = data.mediaData.match(/^data:(.+?);base64,(.+)$/);
       if (!matches || matches.length !== 3) {
@@ -142,14 +143,14 @@ io.on('connection', (socket) => {
       const base64Content = matches[2];
 
       const media = new MessageMedia(mimeType, base64Content, data.fileName);
-      
+
       const sentMsg = await whatsappClient.sendMessage(data.to, media, {
         caption: data.caption || "",
         sendMediaAsDocument: !mimeType.startsWith('image/') // Si no es imagen, se va como doc
       });
 
       console.log(`Adjunto enviado exitosamente a ${data.to}`);
-      
+
       // Enviamos el ack de confirmación al frontend refiriendo el ID local optimista
       socket.emit('whatsapp_message', {
         id: sentMsg.id._serialized,
@@ -162,8 +163,8 @@ io.on('connection', (socket) => {
         hasMedia: sentMsg.hasMedia
       });
 
-    } catch(e) { 
-      console.error('Error enviando archivo multimedia/adjunto', e); 
+    } catch (e) {
+      console.error('Error enviando archivo multimedia/adjunto', e);
     }
   });
 
@@ -179,16 +180,16 @@ io.on('connection', (socket) => {
         // En lugar de logout() que a veces falla si el celular pierde señal,
         // destruimos el cliente y borramos la carpeta de sesión para forzar nuevo QR.
         await whatsappClient.destroy();
-        
+
         try {
           fs.rmSync('.wwebjs_auth', { recursive: true, force: true });
           fs.rmSync('.wwebjs_cache', { recursive: true, force: true });
-        } catch(e) { console.log('No se pudo borrar caché wwebjs', e.message); }
+        } catch (e) { console.log('No se pudo borrar caché wwebjs', e.message); }
 
         console.log('Sesión destruida y caché purgado. Reinicializando...');
         clientReady = false;
         latestQRUrl = "";
-        
+
         // Re-crear el cliente limpio
         whatsappClient.initialize();
       }
@@ -240,7 +241,7 @@ whatsappClient.on('message', async msg => {
   });
 
   const text = msg.body.toLowerCase();
-  
+
   // Lógica de auto-respuestas dinámica
   for (let rule of autoRules) {
     if (text.includes(rule.keyword)) {
