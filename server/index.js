@@ -7,6 +7,7 @@ const qrcode = require('qrcode');
 const cors = require('cors');
 
 const app = express();
+app.get('/health', (req, res) => res.json({ status: 'ok', clientReady, latestQR: !!latestQRUrl }));
 app.use(cors());
 
 const server = http.createServer(app);

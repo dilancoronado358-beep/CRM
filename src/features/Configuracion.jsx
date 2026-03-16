@@ -115,6 +115,33 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
     alert(`Intentando conectar a: ${finalUrl}\n\nEspera unos segundos para que aparezca el QR.`);
   };
 
+  const [conectando, setConectando] = useState(false);
+  const [testResult, setTestResult] = useState(null);
+
+  const probarConexionHttp = async () => {
+    setConectando(true);
+    setTestResult(null);
+    try {
+      const adminUrl = db.usuariosApp?.find(u => u.role === 'admin' && u.waServerUrl)?.waServerUrl;
+      const url = fWaUrl || adminUrl;
+      if (!url) throw new Error("No hay URL configurada.");
+      
+      const res = await fetch(`${url}/health`);
+      const data = await res.json();
+      if (data.status === 'ok') {
+        setTestResult({ success: true, msg: "¡Conexión exitosa! El servidor está respondiendo." });
+        // Si el test funciona, forzamos conexión de socket
+        iniciarVinculacionWA();
+      } else {
+        throw new Error("Respuesta inválida del servidor.");
+      }
+    } catch (e) {
+      setTestResult({ success: false, msg: e.message === "Failed to fetch" ? "No se pudo alcanzar el servidor. ¿Está el túnel (ngrok) encendido?" : e.message });
+    } finally {
+      setConectando(false);
+    }
+  };
+
   const auditLogs = [
     { id: 1, action: "Login Exitoso", ip: "192.168.1.45", location: "Madrid, ES", time: new Date().toISOString() },
     { id: 2, action: "Pipeline Modificado", ip: "192.168.1.45", location: "Madrid, ES", time: new Date(Date.now() - 3600000).toISOString() },
@@ -652,11 +679,20 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
                     <div style={{ fontSize: 13, color: T.whiteDim, marginBottom: 8 }}>Vincula tu número mediante código QR para capturar mensajes entrantes, enviar notificaciones de citas y utilizar plantillas aprobadas.</div>
 
                     {/* Debug Connection info */}
-                    <div style={{ padding: "8px 12px", background: T.bg1, borderRadius: 8, fontSize: 11, color: T.whiteDim, marginBottom: 20, border: `1px solid ${T.borderHi}`, fontFamily: "monospace" }}>
-                      <div style={{ color: T.teal, marginBottom: 4, fontWeight: 700 }}>DIAGNÓSTICO DE CONEXIÓN:</div>
-                      Conectando a: {fWaUrl || db.usuariosApp?.find(u => u.role === 'admin' && u.waServerUrl)?.waServerUrl || `http://${window.location.hostname}:3001`}
+                    <div style={{ padding: "12px", background: T.bg1, borderRadius: 8, fontSize: 11, color: T.whiteDim, marginBottom: 20, border: `1px solid ${T.borderHi}`, fontFamily: "monospace" }}>
+                      <div style={{ color: T.teal, marginBottom: 8, fontWeight: 700, display: "flex", justifyContent: "space-between" }}>
+                        <span>DIAGNÓSTICO DE CONEXIÓN:</span>
+                        <span onClick={() => window.open(fWaUrl || db.usuariosApp?.find(u => u.role === 'admin' && u.waServerUrl)?.waServerUrl, '_blank')} style={{ cursor: "pointer", textDecoration: "underline", color: T.amber }}>🔗 Burlar Seguridad Túnel</span>
+                      </div>
+                      <div style={{ marginBottom: 4 }}>Conectando a: <b style={{ color: T.white }}>{fWaUrl || db.usuariosApp?.find(u => u.role === 'admin' && u.waServerUrl)?.waServerUrl || `http://${window.location.hostname}:3001`}</b></div>
+                      
+                      {testResult && (
+                        <div style={{ marginTop: 8, padding: 6, borderRadius: 4, background: testResult.success ? T.green + "20" : T.red + "20", color: testResult.success ? T.green : T.red, border: `1px solid ${testResult.success ? T.green : T.red}40` }}>
+                          {testResult.success ? "✅ " : "❌ "} {testResult.msg}
+                        </div>
+                      )}
+
                       {!fWaUrl && db.usuario.role === 'admin' && <div style={{ color: T.teal, marginTop: 4 }}>💡 Como Admin, la URL que pongas en 'Infraestructura' será la predeterminada para todos.</div>}
-                      {!fWaUrl && window.location.hostname === "localhost" && <div style={{ color: T.amber, marginTop: 4 }}>⚠️ Estás usando 'localhost'. Si entras desde otro dispositivo, este QR NO cargará. Debes usar la IP de tu PC o un túnel.</div>}
                     </div>
 
                     {/* Renderización del QR si está presente */}
@@ -669,8 +705,8 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
                   </div>
                   <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
                     {!waConnected && (
-                      <Btn variant="primario" onClick={iniciarVinculacionWA} style={{ background: "#25D366", color: "#000", border: "none" }}>
-                        <Ico k="refresh" size={14} /> {waQR ? "Regenerar QR" : "Vincular y Forzar Conexión"}
+                      <Btn variant="primario" onClick={probarConexionHttp} disabled={conectando} style={{ background: "#25D366", color: "#000", border: "none" }}>
+                        <Ico k="refresh" size={14} className={conectando ? "spin" : ""} /> {conectando ? "Probando..." : (waQR ? "Regenerar QR" : "Vincular y Probar Conexión")}
                       </Btn>
                     )}
                     {waConnected && <Btn variant="secundario" style={{ color: T.red, borderColor: T.red }} onClick={() => { if (confirm("¿Seguro que deseas desvincular el dispositivo actual?")) { socketRef.current?.emit('whatsapp_logout'); setWaConnected(false); setWaQR(''); } }}><Ico k="trash" size={14} /> Desconectar Sesión</Btn>}
