@@ -1,19 +1,19 @@
 import { useState, useEffect, useRef } from "react";
 import { T } from "../theme";
-import { Btn, Inp, Tarjeta, Celda, Chip, Ico } from "../components/ui";
+import { Btn, Inp, Tarjeta, Celda, Chip, Ico, Modal } from "../components/ui";
 import { io } from "socket.io-client";
 import { useSupaState } from "../hooks/useSupaState";
 
 export function ChatWhatsApp({ t }) {
-  const { db } = useSupaState();
+  const { db, setDb, guardarEnSupa, eliminarDeSupa } = useSupaState();
   const [waConnected, setWaConnected] = useState(false);
   const [waQR, setWaQR] = useState("");
   const socketRef = useRef(null);
 
   // URL del servidor WhatsApp — se detecta automáticamente según la configuración, el admin o el host del CRM
   const protocol = window.location.protocol === "https:" ? "https:" : "http:";
-  const adminUrl = db.usuariosApp?.find(u => u.role === 'admin' && u.waServerUrl)?.waServerUrl;
-  const WA_SERVER_URL = db.usuario?.waServerUrl || adminUrl || `${protocol}//${window.location.hostname}:3001`;
+  const adminUrl = db?.usuariosApp?.find(u => u.role === 'admin' && u.waServerUrl)?.waServerUrl;
+  const WA_SERVER_URL = db?.usuario?.waServerUrl || adminUrl || `${protocol}//${window.location.hostname}:3001`;
 
   const [chats, setChats] = useState([]);
   const [activeChatId, setActiveChatId] = useState(null);
@@ -152,13 +152,12 @@ export function ChatWhatsApp({ t }) {
     }
   }, [activeChatId]);
 
-  const { setDb } = useSupaState();
 
   useEffect(() => {
-    if (db.whatsapp_automations) {
+    if (db?.whatsapp_automations) {
       setReglas(db.whatsapp_automations);
     }
-  }, [db.whatsapp_automations]);
+  }, [db?.whatsapp_automations]);
 
   const handleSend = () => {
     if (!inputMsg.trim() && !stagedMedia) return;
@@ -413,7 +412,7 @@ export function ChatWhatsApp({ t }) {
                     <div style={{ marginLeft: "auto" }}>
                       {(() => {
                         const phone = activeChatId.split('@')[0];
-                        const cExistente = db.contactos.find(c => c.telefono === phone);
+                        const cExistente = db.contactos?.find(c => c.telefono === phone);
                         if (cExistente) {
                           return <Chip label={`Vínculo: ${cExistente.nombre}`} color={T.teal} bg={T.tealSoft} />;
                         }
@@ -627,7 +626,7 @@ export function ChatWhatsApp({ t }) {
           <Inp placeholder="Buscar por nombre o empresa..." value={searchLink} onChange={e => setSearchLink(e.target.value)} />
         </div>
         <div style={{ maxHeight: 300, overflowY: "auto", display: "flex", flexDirection: "column", gap: 8 }}>
-          {db.contactos.filter(c => c.nombre.toLowerCase().includes(searchLink.toLowerCase()) || c.empresa?.toLowerCase().includes(searchLink.toLowerCase())).map(c => (
+          {db.contactos?.filter(c => c.nombre?.toLowerCase().includes(searchLink.toLowerCase()) || c.empresa?.toLowerCase().includes(searchLink.toLowerCase())).map(c => (
             <div key={c.id} onClick={() => vincularChatAContacto(c.id)} style={{ padding: "12px 16px", background: T.bg2, borderRadius: 8, border: `1px solid ${T.borderHi}`, cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center" }} onMouseEnter={e => e.currentTarget.style.borderColor = T.teal} onMouseLeave={e => e.currentTarget.style.borderColor = T.borderHi}>
               <div>
                 <div style={{ fontWeight: 700, color: T.white }}>{c.nombre}</div>
