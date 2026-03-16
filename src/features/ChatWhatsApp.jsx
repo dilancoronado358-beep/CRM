@@ -23,7 +23,7 @@ export function ChatWhatsApp({ t }) {
   const [syncError, setSyncError] = useState("");
 
   const [reglas, setReglas] = useState([]);
-  const [nuevaRegla, setNuevaRegla] = useState({ keyword: "", reply: "" });
+  const [nuevaRegla, setNuevaRegla] = useState({ keyword: "", reply: "", start_time: "00:00", end_time: "23:59", media_url: "" });
 
   const [avatars, setAvatars] = useState({});
 
@@ -45,21 +45,21 @@ export function ChatWhatsApp({ t }) {
     // Si ya existe un socket, lo desconectamos antes de reconectar
     if (socketRef.current) socketRef.current.disconnect();
 
-    socketRef.current = io(WA_SERVER_URL, { 
+    socketRef.current = io(WA_SERVER_URL, {
       transports: ['websocket'],
-      autoConnect: true 
+      autoConnect: true
     });
     const socket = socketRef.current;
-    
+
     // Proactivamente intentamos pedir el QR por HTTP si ya existe uno (ngrok fallback)
     const fetchQR = async () => {
       try {
         const res = await fetch(`${WA_SERVER_URL}/qr`, { headers: { "ngrok-skip-browser-warning": "true" } });
         if (res.ok) {
-           const data = await res.json();
-           if (data.qr) setWaQR(data.qr);
+          const data = await res.json();
+          if (data.qr) setWaQR(data.qr);
         }
-      } catch(e) { /* ignore */ }
+      } catch (e) { /* ignore */ }
     };
     fetchQR();
 
@@ -143,21 +143,20 @@ export function ChatWhatsApp({ t }) {
     };
   }, [WA_SERVER_URL]);
 
-      useEffect(() => {
-        if (activeChatId) {
-          // Salto inmediato al final cuando abrimos un chat
-          setTimeout(() => dummyRef.current?.scrollIntoView({ behavior: 'auto' }), 50);
-        }
-      }, [activeChatId]);
-    
-      // Sincronizar reglas con el prop db o initial state
   useEffect(() => {
-    // Si tienes db.whatsappRules asúmelo
-    setReglas([
-      { id: 1, keyword: "hola", reply: "¡Hola! Soy el asistente virtual de ENSING CRM 🤖. ¿En qué te puedo ayudar hoy? Escribe 'opciones' para ver más." },
-      { id: 2, keyword: "opciones", reply: "1. Consultar Servicios\n2. Hablar con Asesor\n3. Soporte Integraciones" }
-    ]);
-  }, []);
+    if (activeChatId) {
+      // Salto inmediato al final cuando abrimos un chat
+      setTimeout(() => dummyRef.current?.scrollIntoView({ behavior: 'auto' }), 50);
+    }
+  }, [activeChatId]);
+
+  const { setDb } = useSupaState();
+
+  useEffect(() => {
+    if (db.whatsapp_automations) {
+      setReglas(db.whatsapp_automations);
+    }
+  }, [db.whatsapp_automations]);
 
   const handleSend = () => {
     if (!inputMsg.trim() && !stagedMedia) return;
@@ -265,20 +264,30 @@ export function ChatWhatsApp({ t }) {
     return <Ico k="clock" size={12} style={{ color: T.whiteDim, marginLeft: 6 }} />;
   };
 
-  const handleUpdateReglas = () => {
-    socketRef.current?.emit('whatsapp_update_rules', reglas);
-    alert(t("Reglas de Auto-Respuesta actualizadas en el Bot."));
-  };
-
   const agregarRegla = () => {
-    if (!nuevaRegla.keyword || !nuevaRegla.reply) return;
-    const rules = [...reglas, { id: Date.now(), keyword: nuevaRegla.keyword.toLowerCase(), reply: nuevaRegla.reply }];
-    setReglas(rules);
-    setNuevaRegla({ keyword: "", reply: "" });
+    if (!nuevaRegla.keyword || (!nuevaRegla.reply && !nuevaRegla.media_url)) return;
+    const item = {
+      id: crypto.randomUUID(),
+      keyword: nuevaRegla.keyword.toLowerCase(),
+      reply_text: nuevaRegla.reply,
+      media_url: nuevaRegla.media_url,
+      start_time: nuevaRegla.start_time,
+      end_time: nuevaRegla.end_time,
+      active: true
+    };
+    setDb(prev => ({ ...prev, whatsapp_automations: [...(prev.whatsapp_automations || []), item] }));
+    setNuevaRegla({ keyword: "", reply: "", start_time: "00:00", end_time: "23:59", media_url: "" });
   };
 
   const eliminarRegla = (id) => {
-    setReglas(reglas.filter(r => r.id !== id));
+    setDb(prev => ({ ...prev, whatsapp_automations: prev.whatsapp_automations.filter(r => r.id !== id) }));
+  };
+
+  const handleUpdateReglas = () => {
+    if (socketRef.current) {
+      socketRef.current.emit('whatsapp_update_rules', reglas);
+      alert("✅ Reglas enviadas al bot local correctamente.");
+    }
   };
 
   if (!waConnected && !waQR) {
@@ -512,27 +521,43 @@ export function ChatWhatsApp({ t }) {
               </p>
             </div>
 
-            <div style={{ display: "flex", gap: 16, marginBottom: 32, alignItems: "flex-start" }}>
-              <div style={{ flex: 1 }}>
-                <label style={{ fontSize: 12, fontWeight: 700, color: T.whiteDim, marginBottom: 8, display: "block", textTransform: "uppercase" }}>Si el mensaje contiene:</label>
-                <Inp placeholder="ej. precio, costo, cotizacion..." value={nuevaRegla.keyword} onChange={e => setNuevaRegla({ ...nuevaRegla, keyword: e.target.value })} />
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16, marginBottom: 24 }}>
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 700, color: T.whiteDim, marginBottom: 6, display: "block", textTransform: "uppercase" }}>Si el mensaje contiene:</label>
+                <Inp placeholder="ej. precio, hola..." value={nuevaRegla.keyword} onChange={e => setNuevaRegla({ ...nuevaRegla, keyword: e.target.value })} />
               </div>
-              <div style={{ flex: 2 }}>
-                <label style={{ fontSize: 12, fontWeight: 700, color: T.whiteDim, marginBottom: 8, display: "block", textTransform: "uppercase" }}>El bot responderá:</label>
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 700, color: T.whiteDim, marginBottom: 6, display: "block", textTransform: "uppercase" }}>Horario de Inicio:</label>
+                <input type="time" value={nuevaRegla.start_time} onChange={e => setNuevaRegla({ ...nuevaRegla, start_time: e.target.value })} style={{ width: "100%", height: 44, background: T.bg2, border: `1px solid ${T.borderHi}`, borderRadius: 8, padding: "0 12px", color: T.white, outline: "none" }} />
+              </div>
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 700, color: T.whiteDim, marginBottom: 6, display: "block", textTransform: "uppercase" }}>Horario de Fin:</label>
+                <input type="time" value={nuevaRegla.end_time} onChange={e => setNuevaRegla({ ...nuevaRegla, end_time: e.target.value })} style={{ width: "100%", height: 44, background: T.bg2, border: `1px solid ${T.borderHi}`, borderRadius: 8, padding: "0 12px", color: T.white, outline: "none" }} />
+              </div>
+            </div>
+
+            <div style={{ display: "flex", gap: 16, marginBottom: 32, alignItems: "flex-end" }}>
+              <div style={{ flex: 1 }}>
+                <label style={{ fontSize: 11, fontWeight: 700, color: T.whiteDim, marginBottom: 6, display: "block", textTransform: "uppercase" }}>Respuesta de Texto (opcional):</label>
                 <textarea
                   value={nuevaRegla.reply} onChange={e => setNuevaRegla({ ...nuevaRegla, reply: e.target.value })}
-                  placeholder="¡Nuestros precios empiezan en $100!..."
-                  style={{ width: "100%", height: 44, background: T.bg2, border: `1px solid ${T.borderHi}`, borderRadius: 8, padding: "12px 16px", color: T.white, outline: "none", resize: "vertical", fontFamily: "inherit" }}
+                  placeholder="¡Hola! En qué puedo ayudarte..."
+                  style={{ width: "100%", height: 44, background: T.bg2, border: `1px solid ${T.borderHi}`, borderRadius: 8, padding: "12px 16px", color: T.white, outline: "none", resize: "none", fontFamily: "inherit", fontSize: 13 }}
                 />
               </div>
-              <Btn variant="primario" style={{ marginTop: 24, height: 44 }} onClick={agregarRegla}><Ico k="plus" size={14} /> Agregar Regla</Btn>
+              <div style={{ flex: 1 }}>
+                <label style={{ fontSize: 11, fontWeight: 700, color: T.whiteDim, marginBottom: 6, display: "block", textTransform: "uppercase" }}>URL Imagen/Archivo (opcional):</label>
+                <Inp placeholder="https://ejemplo.com/foto.jpg" value={nuevaRegla.media_url} onChange={e => setNuevaRegla({ ...nuevaRegla, media_url: e.target.value })} />
+              </div>
+              <Btn variant="primario" style={{ height: 44 }} onClick={agregarRegla}><Ico k="plus" size={14} /> Agregar</Btn>
             </div>
 
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
               <thead>
                 <tr style={{ borderBottom: `1px solid ${T.border}` }}>
-                  <th style={{ textAlign: "left", padding: "12px 16px", color: T.whiteDim, fontWeight: 700, width: "30%" }}>Palabra Clave</th>
-                  <th style={{ textAlign: "left", padding: "12px 16px", color: T.whiteDim, fontWeight: 700 }}>Respuesta Automática</th>
+                  <th style={{ textAlign: "left", padding: "12px 16px", color: T.whiteDim, fontWeight: 700 }}>Trigger</th>
+                  <th style={{ textAlign: "left", padding: "12px 16px", color: T.whiteDim, fontWeight: 700 }}>Horario</th>
+                  <th style={{ textAlign: "left", padding: "12px 16px", color: T.whiteDim, fontWeight: 700 }}>Respuesta</th>
                   <th style={{ textAlign: "right", padding: "12px 16px", color: T.whiteDim, fontWeight: 700, width: 80 }}>Acciones</th>
                 </tr>
               </thead>
@@ -540,7 +565,13 @@ export function ChatWhatsApp({ t }) {
                 {reglas.map(r => (
                   <tr key={r.id} style={{ borderBottom: `1px solid ${T.borderHi}` }}>
                     <Celda><Chip label={r.keyword} color={T.teal} bg={T.tealSoft} /></Celda>
-                    <Celda><div style={{ whiteSpace: "pre-wrap", color: T.white }}>{r.reply}</div></Celda>
+                    <Celda><span style={{ color: T.whiteDim }}>{r.start_time?.slice(0, 5)} - {r.end_time?.slice(0, 5)}</span></Celda>
+                    <Celda>
+                      <div style={{ color: T.white, fontSize: 13, maxWidth: 400 }}>
+                        {r.reply_text && <div style={{ marginBottom: 4 }}>{r.reply_text}</div>}
+                        {r.media_url && <div style={{ fontSize: 11, color: T.teal, overflow: "hidden", textOverflow: "ellipsis" }}>📎 {r.media_url}</div>}
+                      </div>
+                    </Celda>
                     <Celda align="right">
                       <Btn variant="fantasma" size="sm" onClick={() => eliminarRegla(r.id)} style={{ color: T.red, padding: 8 }}>
                         <Ico k="trash" size={16} />

@@ -25,11 +25,8 @@ const io = new Server(server, {
 
 let clientReady = false;
 let isFetchingChats = false;
-let autoRules = [
-  { id: 1, keyword: "hola", reply: "¡Hola! Soy el asistente virtual de ENSING CRM 🤖. ¿En qué te puedo ayudar hoy? Escribe 'opciones' para ver más." },
-  { id: 2, keyword: "opciones", reply: "1. Consultar Servicios\n2. Hablar con Asesor\n3. Soporte Integraciones" }
-];
 let latestQRUrl = "";
+let autoRules = [];
 
 // Inicializamos el cliente de WhatsApp
 // Utilizamos LocalAuth para guardar la sesión y no tener que escanear cada vez
@@ -247,24 +244,56 @@ whatsappClient.on('message', async msg => {
 
   const text = msg.body.toLowerCase();
 
-  // Lógica de auto-respuestas dinámica
+  // Lógica de auto-respuestas dinámica con Horario y Media
   for (let rule of autoRules) {
     if (text.includes(rule.keyword)) {
+      // 1. Verificar Horario
+      const now = new Date();
+      const currentTime = now.getHours() * 60 + now.getMinutes();
+      const [startH, startM] = (rule.start_time || "00:00").split(':').map(Number);
+      const [endH, endM] = (rule.end_time || "23:59").split(':').map(Number);
+      const startTime = startH * 60 + startM;
+      const endTime = endH * 60 + endM;
+
+      if (currentTime < startTime || currentTime > endTime) {
+        console.log(`Bot ignoró trigger '${rule.keyword}' por estar fuera de horario (${rule.start_time}-${rule.end_time})`);
+        continue;
+      }
+
       const chat = await msg.getChat();
       await chat.sendStateTyping();
+
       setTimeout(async () => {
-        await msg.reply(rule.reply);
-        // Alert frontend of the reply
-        io.emit('whatsapp_message', {
-          id: `bot_${Date.now()}`,
-          chatId: msg.from,
-          body: rule.reply,
-          fromMe: true,
-          timestamp: Math.floor(Date.now() / 1000),
-          ack: 1
-        });
+        try {
+          if (rule.media_url) {
+            const media = await MessageMedia.fromUrl(rule.media_url).catch(e => {
+              console.error("Error cargando media para auto-respuesta:", e.message);
+              return null;
+            });
+            if (media) {
+              await whatsappClient.sendMessage(msg.from, media, { caption: rule.reply_text || "" });
+            } else if (rule.reply_text) {
+              await msg.reply(rule.reply_text);
+            }
+          } else if (rule.reply_text) {
+            await msg.reply(rule.reply_text);
+          }
+
+          // Notificar al frontend de la respuesta del bot
+          io.emit('whatsapp_message', {
+            id: `bot_${Date.now()}`,
+            chatId: msg.from,
+            body: rule.reply_text || "Archivo enviado",
+            fromMe: true,
+            timestamp: Math.floor(Date.now() / 1000),
+            ack: 1,
+            hasMedia: !!rule.media_url
+          });
+        } catch (e) {
+          console.error("Error en ejecución de auto-respuesta:", e.message);
+        }
       }, 2000);
-      break; // Respondemos solo a la primera coincidencia
+      break;
     }
   }
 });

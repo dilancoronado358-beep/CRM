@@ -25,6 +25,7 @@ const TABLAS_SUPA = [
   "usuariosApp",
   "documentos",
   "chatbotRules",
+  "whatsapp_automations",
 ];
 
 /* ═══════════════════════════════════════════
