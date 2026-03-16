@@ -25,7 +25,15 @@ export function ChatWhatsApp({ t }) {
   const [syncError, setSyncError] = useState("");
 
   const [reglas, setReglas] = useState([]);
-  const [nuevaRegla, setNuevaRegla] = useState({ keyword: "", reply: "", start_time: "00:00", end_time: "23:59", media_url: "" });
+  const [nuevaRegla, setNuevaRegla] = useState({ 
+    keyword: "", 
+    reply: "", 
+    start_time: "00:00", 
+    end_time: "23:59", 
+    media_url: "",
+    delay: 2, // Default 2 seconds
+    ai_prompt: "" 
+  });
 
   const [avatars, setAvatars] = useState({});
 
@@ -274,10 +282,12 @@ export function ChatWhatsApp({ t }) {
       media_url: nuevaRegla.media_url,
       start_time: nuevaRegla.start_time,
       end_time: nuevaRegla.end_time,
+      delay: parseInt(nuevaRegla.delay) || 0,
+      ai_prompt: nuevaRegla.ai_prompt,
       active: true
     };
     setDb(prev => ({ ...prev, whatsapp_automations: [...(prev.whatsapp_automations || []), item] }));
-    setNuevaRegla({ keyword: "", reply: "", start_time: "00:00", end_time: "23:59", media_url: "" });
+    setNuevaRegla({ keyword: "", reply: "", start_time: "00:00", end_time: "23:59", media_url: "", delay: 2, ai_prompt: "" });
   };
 
   const eliminarRegla = (id) => {
@@ -549,7 +559,7 @@ export function ChatWhatsApp({ t }) {
               </p>
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16, marginBottom: 24 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 16, marginBottom: 24 }}>
               <div>
                 <label style={{ fontSize: 11, fontWeight: 700, color: T.whiteDim, marginBottom: 6, display: "block", textTransform: "uppercase" }}>Si el mensaje contiene:</label>
                 <Inp placeholder="ej. precio, hola..." value={nuevaRegla.keyword} onChange={e => setNuevaRegla({ ...nuevaRegla, keyword: e.target.value })} />
@@ -562,42 +572,71 @@ export function ChatWhatsApp({ t }) {
                 <label style={{ fontSize: 11, fontWeight: 700, color: T.whiteDim, marginBottom: 6, display: "block", textTransform: "uppercase" }}>Horario de Fin:</label>
                 <input type="time" value={nuevaRegla.end_time} onChange={e => setNuevaRegla({ ...nuevaRegla, end_time: e.target.value })} style={{ width: "100%", height: 44, background: T.bg2, border: `1px solid ${T.borderHi}`, borderRadius: 8, padding: "0 12px", color: T.white, outline: "none" }} />
               </div>
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 700, color: T.whiteDim, marginBottom: 6, display: "block", textTransform: "uppercase" }}>Delay Respuesta (seg):</label>
+                <Inp type="number" min="0" max="60" value={nuevaRegla.delay} onChange={e => setNuevaRegla({ ...nuevaRegla, delay: e.target.value })} />
+              </div>
             </div>
 
-            <div style={{ display: "flex", gap: 16, marginBottom: 32, alignItems: "flex-end" }}>
+            <div style={{ display: "flex", gap: 16, marginBottom: 24, alignItems: "flex-end" }}>
               <div style={{ flex: 1 }}>
                 <label style={{ fontSize: 11, fontWeight: 700, color: T.whiteDim, marginBottom: 6, display: "block", textTransform: "uppercase" }}>Respuesta de Texto (opcional):</label>
                 <textarea
                   value={nuevaRegla.reply} onChange={e => setNuevaRegla({ ...nuevaRegla, reply: e.target.value })}
                   placeholder="¡Hola! En qué puedo ayudarte..."
-                  style={{ width: "100%", height: 44, background: T.bg2, border: `1px solid ${T.borderHi}`, borderRadius: 8, padding: "12px 16px", color: T.white, outline: "none", resize: "none", fontFamily: "inherit", fontSize: 13 }}
+                  style={{ width: "100%", height: 80, background: T.bg2, border: `1px solid ${T.borderHi}`, borderRadius: 8, padding: "12px 16px", color: T.white, outline: "none", resize: "none", fontFamily: "inherit", fontSize: 13 }}
                 />
               </div>
+              <div style={{ flex: 1 }}>
+                <label style={{ fontSize: 11, fontWeight: 700, color: T.whiteDim, marginBottom: 6, display: "block", textTransform: "uppercase" }}>Prompt de IA Personalizado (opcional):</label>
+                <textarea
+                  value={nuevaRegla.ai_prompt} onChange={e => setNuevaRegla({ ...nuevaRegla, ai_prompt: e.target.value })}
+                  placeholder="ej. Responde como un experto técnico..."
+                  style={{ width: "100%", height: 80, background: T.bg2, border: `1px solid ${T.borderHi}`, borderRadius: 8, padding: "12px 16px", color: T.white, outline: "none", resize: "none", fontFamily: "inherit", fontSize: 13 }}
+                />
+              </div>
+            </div>
+
+            <div style={{ display: "flex", gap: 16, marginBottom: 32, alignItems: "flex-end" }}>
               <div style={{ flex: 1 }}>
                 <label style={{ fontSize: 11, fontWeight: 700, color: T.whiteDim, marginBottom: 6, display: "block", textTransform: "uppercase" }}>URL Imagen/Archivo (opcional):</label>
                 <Inp placeholder="https://ejemplo.com/foto.jpg" value={nuevaRegla.media_url} onChange={e => setNuevaRegla({ ...nuevaRegla, media_url: e.target.value })} />
               </div>
-              <Btn variant="primario" style={{ height: 44 }} onClick={agregarRegla}><Ico k="plus" size={14} /> Agregar</Btn>
+              <Btn variant="primario" style={{ height: 44 }} onClick={agregarRegla}><Ico k="plus" size={14} /> Agregar Regla</Btn>
             </div>
 
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, tableLayout: "fixed" }}>
               <thead>
                 <tr style={{ borderBottom: `1px solid ${T.border}` }}>
-                  <th style={{ textAlign: "left", padding: "12px 16px", color: T.whiteDim, fontWeight: 700, width: "15%" }}>Trigger</th>
-                  <th style={{ textAlign: "left", padding: "12px 16px", color: T.whiteDim, fontWeight: 700, width: "15%" }}>Horario</th>
-                  <th style={{ textAlign: "left", padding: "12px 16px", color: T.whiteDim, fontWeight: 700, width: "60%" }}>Respuesta</th>
+                  <th style={{ textAlign: "left", padding: "12px 16px", color: T.whiteDim, fontWeight: 700, width: "12%" }}>Trigger</th>
+                  <th style={{ textAlign: "left", padding: "12px 16px", color: T.whiteDim, fontWeight: 700, width: "12%" }}>Horario</th>
+                  <th style={{ textAlign: "left", padding: "12px 16px", color: T.whiteDim, fontWeight: 700, width: "8%" }}>Delay</th>
+                  <th style={{ textAlign: "left", padding: "12px 16px", color: T.whiteDim, fontWeight: 700, width: "58%" }}>Respuesta / IA Prompt</th>
                   <th style={{ textAlign: "right", padding: "12px 16px", color: T.whiteDim, fontWeight: 700, width: "10%" }}>Acciones</th>
                 </tr>
               </thead>
               <tbody>
                 {reglas.map(r => (
                   <tr key={r.id} style={{ borderBottom: `1px solid ${T.borderHi}` }}>
-                    <Celda><Chip label={r.keyword} color={T.teal} bg={T.tealSoft} /></Celda>
+                     <Celda><Chip label={r.keyword} color={T.teal} bg={T.tealSoft} /></Celda>
                     <Celda><span style={{ color: T.whiteDim, fontSize: 11 }}>{r.start_time?.slice(0, 5)} - {r.end_time?.slice(0, 5)}</span></Celda>
+                    <Celda><span style={{ color: T.whiteDim, fontSize: 11 }}>{r.delay || 0}s</span></Celda>
                     <Celda>
                       <div style={{ color: T.white, fontSize: 13, wordBreak: "break-word", overflowWrap: "break-word" }}>
-                        {r.reply_text && <div style={{ marginBottom: 4 }}>{r.reply_text}</div>}
-                        {r.media_url && <div style={{ fontSize: 11, color: T.teal, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>📎 {r.media_url}</div>}
+                        {r.ai_prompt ? (
+                          <div style={{ display: "flex", gap: 6, alignItems: "flex-start" }}>
+                            <Ico k="lightning" size={14} style={{ color: T.teal, marginTop: 2 }} />
+                            <div>
+                              <div style={{ fontWeight: 700, color: T.teal, fontSize: 11, textTransform: "uppercase" }}>IA Prompt Activo</div>
+                              <div style={{ fontSize: 12, color: T.whiteOff, opacity: 0.8 }}>{r.ai_prompt}</div>
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            {r.reply_text && <div style={{ marginBottom: 4 }}>{r.reply_text}</div>}
+                            {r.media_url && <div style={{ fontSize: 11, color: T.teal, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>📎 {r.media_url}</div>}
+                          </>
+                        )}
                       </div>
                     </Celda>
                     <Celda align="right">

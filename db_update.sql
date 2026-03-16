@@ -25,5 +25,23 @@ CREATE TABLE IF NOT EXISTS public.whatsapp_messages (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- 4. Habilitar Realtime para estas tablas (opcional pero recomendado)
--- alter publication supabase_realtime add table deals, contactos, whatsapp_messages;
+-- 4. Tabla para automatizaciones de WhatsApp (si no existe) y nuevas columnas
+CREATE TABLE IF NOT EXISTS public.whatsapp_automations (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    keyword TEXT NOT NULL,
+    reply_text TEXT,
+    media_url TEXT,
+    start_time TEXT DEFAULT '00:00',
+    end_time TEXT DEFAULT '23:59',
+    delay INTEGER DEFAULT 0,
+    ai_prompt TEXT,
+    active BOOLEAN DEFAULT true,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- Agregar columnas individualmente si la tabla ya existe
+ALTER TABLE public.whatsapp_automations ADD COLUMN IF NOT EXISTS delay INTEGER DEFAULT 0;
+ALTER TABLE public.whatsapp_automations ADD COLUMN IF NOT EXISTS ai_prompt TEXT;
+
+-- 5. Habilitar Realtime para estas tablas (opcional pero recomendado)
+-- alter publication supabase_realtime add table deals, contactos, whatsapp_messages, whatsapp_automations;

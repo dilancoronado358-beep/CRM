@@ -516,7 +516,7 @@ whatsappClient.on('message', async msg => {
     }
   }
 
-  // 2. AUTO-RESPUESTAS POR PALABRA CLAVE (Dinamismo con Horario y Media)
+  // 2. AUTO-RESPUESTAS POR PALABRA CLAVE (Dinamismo con Horario, Media, IA y Delay)
   for (let rule of autoRules) {
     if (text.includes(rule.keyword)) {
       const now = new Date();
@@ -527,35 +527,47 @@ whatsappClient.on('message', async msg => {
       const endTime = endH * 60 + endM;
 
       if (currentTime >= startTime && currentTime <= endTime) {
+        responded = true;
         const chat = await msg.getChat();
         await chat.sendStateTyping();
 
+        // Calculamos el delay (mínimo 1.5s para que se vea el typing)
+        const userDelay = (parseInt(rule.delay) || 0) * 1000;
+        const finalDelay = Math.max(1500, userDelay);
+
         setTimeout(async () => {
           try {
+            let finalReply = rule.reply_text || "";
+
+            // Si la regla tiene un prompt de IA, generamos la respuesta dinámicamente
+            if (rule.ai_prompt && (GEMINI_API_KEY || OPENAI_API_KEY)) {
+              const fullPrompt = `${rule.ai_prompt}. El cliente dijo: "${msg.body}"`;
+              finalReply = await getUnifiedAIResponse(fullPrompt) || finalReply;
+            }
+
             if (rule.media_url) {
               const media = await MessageMedia.fromUrl(rule.media_url).catch(e => null);
-              if (media) await whatsappClient.sendMessage(msg.from, media, { caption: rule.reply_text || "" });
-              else if (rule.reply_text) await msg.reply(rule.reply_text);
-            } else if (rule.reply_text) {
-              await msg.reply(rule.reply_text);
+              if (media) await whatsappClient.sendMessage(msg.from, media, { caption: finalReply });
+              else if (finalReply) await msg.reply(finalReply);
+            } else if (finalReply) {
+              await msg.reply(finalReply);
             }
 
             const botReply = {
               id: `bot_${Date.now()}`,
               chatId: msg.from,
-              body: rule.reply_text || "Archivo enviado",
+              body: finalReply || "Archivo enviado",
               fromMe: true,
               timestamp: Math.floor(Date.now() / 1000),
               ack: 1,
               hasMedia: !!rule.media_url
             };
             io.emit('whatsapp_message', botReply);
-
-            // PERSISTENCIA
-            supabase.from('whatsapp_messages').insert(botReply).then(() => { });
-          } catch (e) { console.error("Error en regla:", e.message); }
-        }, 1500);
-        responded = true;
+            supabase.from('whatsapp_messages').insert(botReply).then(() => { }); // Persistencia
+          } catch (e) {
+            console.error("Error en ejecución de regla:", e.message);
+          }
+        }, finalDelay);
         break;
       }
     }
