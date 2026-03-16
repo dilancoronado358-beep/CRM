@@ -25,14 +25,14 @@ export function ChatWhatsApp({ t }) {
   const [syncError, setSyncError] = useState("");
 
   const [reglas, setReglas] = useState([]);
-  const [nuevaRegla, setNuevaRegla] = useState({ 
-    keyword: "", 
-    reply: "", 
-    start_time: "00:00", 
-    end_time: "23:59", 
+  const [nuevaRegla, setNuevaRegla] = useState({
+    keyword: "",
+    reply: "",
+    start_time: "00:00",
+    end_time: "23:59",
     media_url: "",
     delay: 2, // Default 2 seconds
-    ai_prompt: "" 
+    ai_prompt: ""
   });
 
   const [avatars, setAvatars] = useState({});
@@ -618,7 +618,7 @@ export function ChatWhatsApp({ t }) {
               <tbody>
                 {reglas.map(r => (
                   <tr key={r.id} style={{ borderBottom: `1px solid ${T.borderHi}` }}>
-                     <Celda><Chip label={r.keyword} color={T.teal} bg={T.tealSoft} /></Celda>
+                    <Celda><Chip label={r.keyword} color={T.teal} bg={T.tealSoft} /></Celda>
                     <Celda><span style={{ color: T.whiteDim, fontSize: 11 }}>{r.start_time?.slice(0, 5)} - {r.end_time?.slice(0, 5)}</span></Celda>
                     <Celda><span style={{ color: T.whiteDim, fontSize: 11 }}>{r.delay || 0}s</span></Celda>
                     <Celda>
@@ -647,7 +647,7 @@ export function ChatWhatsApp({ t }) {
                   </tr>
                 ))}
                 {reglas.length === 0 && (
-                  <tr><td colSpan={3} style={{ padding: 32, textAlign: "center", color: T.whiteDim }}>No hay reglas automáticas creadas.</td></tr>
+                  <tr><td colSpan={5} style={{ padding: 32, textAlign: "center", color: T.whiteDim }}>No hay reglas automáticas creadas.</td></tr>
                 )}
               </tbody>
             </table>

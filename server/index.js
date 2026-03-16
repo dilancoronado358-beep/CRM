@@ -51,6 +51,20 @@ const whatsappClient = new Client({
   }
 });
 
+// Cargar reglas desde Supabase al iniciar
+async function loadAutoRules() {
+  try {
+    const { data, error } = await supabase.from('whatsapp_automations').select('*').eq('active', true);
+    if (error) throw error;
+    autoRules = data || [];
+    console.log(`🤖 Bot listo: ${autoRules.length} reglas cargadas desde Supabase.`);
+  } catch (err) {
+    console.error("Error cargando reglas de Supabase:", err.message);
+  }
+}
+
+loadAutoRules();
+
 io.on('connection', (socket) => {
   console.log('Cliente Web CRM conectado');
 
