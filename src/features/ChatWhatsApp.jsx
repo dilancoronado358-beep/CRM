@@ -111,19 +111,12 @@ export function ChatWhatsApp({ t }) {
 
       // 2. [MEJORA] Actualizar la lista de chats en tiempo real (sidebar)
       setChats(prevChats => {
-        const index = prevChats.findIndex(c => c.id._serialized === msg.chatId);
-        const updatedMsg = { body: msg.body, timestamp: msg.timestamp };
-        
-        if (index !== -1) {
-          // Si el chat ya existe, lo actualizamos y lo movemos al principio
-          const updatedChat = { ...prevChats[index], lastMessage: updatedMsg, timestamp: msg.timestamp };
-          const otherChats = prevChats.filter((_, i) => i !== index);
-          return [updatedChat, ...otherChats];
-        } else {
-          // Si es un chat nuevo que no estaba en la lista, lo agregamos arriba
-          // (Nota: el backend debería proveer el nombre, aquí usamos el ID como fallback)
-          return [{ id: { _serialized: msg.chatId }, lastMessage: updatedMsg, timestamp: msg.timestamp }, ...prevChats];
-        }
+        return prevChats.map(c => {
+          if (c.id._serialized === msg.chatId) {
+            return { ...c, lastMessage: { body: msg.body, timestamp: msg.timestamp }, timestamp: msg.timestamp };
+          }
+          return c;
+        });
       });
 
       // 3. Scroll automático si el chat está activo
@@ -150,7 +143,14 @@ export function ChatWhatsApp({ t }) {
     };
   }, [WA_SERVER_URL]);
 
-  // Sincronizar reglas con el prop db o initial state
+      useEffect(() => {
+        if (activeChatId) {
+          // Salto inmediato al final cuando abrimos un chat
+          setTimeout(() => dummyRef.current?.scrollIntoView({ behavior: 'auto' }), 50);
+        }
+      }, [activeChatId]);
+    
+      // Sincronizar reglas con el prop db o initial state
   useEffect(() => {
     // Si tienes db.whatsappRules asúmelo
     setReglas([
