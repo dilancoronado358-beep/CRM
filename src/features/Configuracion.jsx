@@ -7,11 +7,12 @@ import { sb } from "../hooks/useSupaState";
 // Importamos el cliente de web sockets para comunicarse con el bot local
 import { io } from "socket.io-client";
 
-// Mantenemos la instancia de socket fuera del componente para no re-crearla en rebotes
-const socket = io("http://localhost:3001", { autoConnect: false });
+// El socket se inicializará dinámicamente según la configuración
+// (Se usa una ref dentro del componente)
 
 export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
   const [tab, setTab] = useState("perfil");
+  const socketRef = useRef(null);
   
   const [fPerfil, setFPerfil] = useState({ name: db.usuario?.name || "", email: db.usuario?.email || "", idioma: db.usuario?.idioma || "es" });
   const profilePicRef = useRef(null);
@@ -40,6 +41,7 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
   const [cargandoPass, setCargandoPass] = useState(false);
   const [fEmail, setFEmail] = useState(db.cuentaEmail || {});
   const [fEmpresa, setFEmpresa] = useState(db.empresaConfigs?.nombre || "");
+  const [fWaUrl, setFWaUrl] = useState(db.usuario?.waServerUrl || "");
   const [showUserModal, setShowUserModal] = useState(false);
   const [recordatorios, setRecordatorios] = useState(db.recordatorios || {
     dealSinActividadDias: 7, dealCierraCercanoDias: 3,
@@ -56,6 +58,12 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
 
   // Efecto para escuchar eventos del WebSocket del Backend Local
   useEffect(() => {
+    const protocol = window.location.protocol === "https:" ? "https:" : "http:";
+    const adminUrl = db.usuariosApp?.find(u => u.role === 'admin' && u.waServerUrl)?.waServerUrl;
+    const finalUrl = fWaUrl || adminUrl || `${protocol}//${window.location.hostname}:3001`;
+    socketRef.current = io(finalUrl, { autoConnect: true });
+    const socket = socketRef.current;
+
     socket.on('whatsapp_qr', (qrBase64) => {
       setWaQR(qrBase64);
       setWaConnected(false);
@@ -66,19 +74,21 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
       setWaQR(""); // Eliminamos el QR si ya conectó
     });
 
-    // Pedir estado actual al montar el componente (si ya estaba web server corriendo)
-    socket.connect();
+    // Pedir estado inicial al conectar
     socket.emit('get_whatsapp_status');
 
     return () => {
-      socket.off('whatsapp_qr');
-      socket.off('whatsapp_ready');
+      if (socketRef.current) {
+        socketRef.current.off('whatsapp_qr');
+        socketRef.current.off('whatsapp_ready');
+        socketRef.current.disconnect();
+      }
     };
-  }, []);
+  }, [fWaUrl]);
 
   const iniciarVinculacionWA = () => {
-    socket.connect();
-    alert("Intentando conectar al servidor local de WhatsApp Backend... Espera unos segundos para generar el QR.");
+    if (socketRef.current) socketRef.current.connect();
+    alert("Intentando conectar al servidor de WhatsApp... Espera unos segundos para generar el QR.");
   };
 
   const auditLogs = [
@@ -173,8 +183,16 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
   };
 
   const guardarEmpresa = () => {
-    setDb(d => ({ ...d, empresaConfigs: { ...d.empresaConfigs, nombre: fEmpresa } }));
-    alert("Tenant sincronizado correctamente.");
+    // Guardar URL de WhatsApp en el usuario actual para que auto-sync lo suba a Supabase
+    setDb(d => ({
+      ...d,
+      empresaConfigs: { ...d.empresaConfigs, nombre: fEmpresa },
+      usuario: { ...d.usuario, waServerUrl: fWaUrl },
+      usuariosApp: (d.usuariosApp || []).map(u =>
+        u.email === d.usuario?.email ? { ...u, waServerUrl: fWaUrl } : u
+      )
+    }));
+    alert("Infraestructura sincronizada correctamente. Si cambiaste la URL de WhatsApp, reinicia esta sección.");
   };
 
   const handleCrearUsuario = async () => {
@@ -434,6 +452,22 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
             <div style={{ fontSize: 20, fontWeight: 800, color: T.white, marginBottom: 24, display: "flex", alignItems: "center", gap: 10 }}><Ico k="building" size={24} style={{ color: T.teal }} /> Tenant & Infraestructura</div>
             <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
               <Campo label="Tenant Name (Nombre Legal)"><Inp value={fEmpresa} onChange={e => setFEmpresa(e.target.value)} style={{ fontSize: 16 }} /></Campo>
+              
+              <div style={{ padding: 20, background: T.bg2, border: `1px solid ${T.borderHi}`, borderRadius: 12 }}>
+                <div style={{ fontSize: 15, fontWeight: 700, color: T.white, marginBottom: 8, display: "flex", alignItems: "center", gap: 8 }}>
+                  <Ico k="phone" size={16} style={{ color: T.teal }} /> WhatsApp Server URL (External Tunnel)
+                </div>
+                <div style={{ fontSize: 13, color: T.whiteDim, marginBottom: 14 }}>
+                  Si usas este CRM desde otra red, ingresa aquí la URL pública de tu túnel (ej. ngrok o Cloudflare). Si lo dejas vacío, usará la IP local por defecto.
+                </div>
+                <Inp 
+                  placeholder="Ej: https://9f2e-181-12-32-4.ngrok-free.app" 
+                  value={fWaUrl} 
+                  onChange={e => setFWaUrl(e.target.value)} 
+                  style={{ fontSize: 14, fontFamily: "monospace" }} 
+                />
+              </div>
+
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
                 <Campo label="Fuerza de Moneda (BETA)"><Sel disabled style={{ fontSize: 14 }}><option>USD ($) - Multi-Currency Ready</option><option>MXN ($)</option><option>EUR (€)</option></Sel></Campo>
                 <Campo label="Región de Procesamiento de Datos"><Sel disabled style={{ fontSize: 14 }}><option>us-east-1 (N. Virginia)</option><option>eu-central-1 (Frankfurt)</option></Sel></Campo>
@@ -591,7 +625,15 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
                       <div style={{ fontSize: 16, fontWeight: 800, color: T.white }}>WhatsApp Business API (Local Bot)</div>
                       <Chip label={waConnected ? "Conectado" : "Desconectado"} color={waConnected ? T.green : T.whiteOff} bg={waConnected ? T.green+"20" : T.bg1} />
                     </div>
-                    <div style={{ fontSize: 13, color: T.whiteDim, marginBottom: 20 }}>Vincula tu número mediante código QR para capturar mensajes entrantes, enviar notificaciones de citas y utilizar plantillas aprobadas.</div>
+                    <div style={{ fontSize: 13, color: T.whiteDim, marginBottom: 8 }}>Vincula tu número mediante código QR para capturar mensajes entrantes, enviar notificaciones de citas y utilizar plantillas aprobadas.</div>
+                    
+                    {/* Debug Connection info */}
+                    <div style={{ padding: "8px 12px", background: T.bg1, borderRadius: 8, fontSize: 11, color: T.whiteDim, marginBottom: 20, border: `1px solid ${T.borderHi}`, fontFamily: "monospace" }}>
+                      <div style={{ color: T.teal, marginBottom: 4, fontWeight: 700 }}>DIAGNÓSTICO DE CONEXIÓN:</div>
+                      Conectando a: {fWaUrl || db.usuariosApp?.find(u => u.role === 'admin' && u.waServerUrl)?.waServerUrl || `http://${window.location.hostname}:3001`}
+                      {!fWaUrl && db.usuario.role === 'admin' && <div style={{ color: T.teal, marginTop: 4 }}>💡 Como Admin, la URL que pongas en 'Infraestructura' será la predeterminada para todos.</div>}
+                      {!fWaUrl && window.location.hostname === "localhost" && <div style={{ color: T.amber, marginTop: 4 }}>⚠️ Estás usando 'localhost'. Si entras desde otro dispositivo, este QR NO cargará. Debes usar la IP de tu PC o un túnel.</div>}
+                    </div>
                     
                     {/* Renderización del QR si está presente */}
                     {waQR && !waConnected && (
@@ -603,7 +645,7 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
                   </div>
                   <div style={{ display: "flex", gap: 12 }}>
                     {!waConnected && <Btn variant="primario" onClick={iniciarVinculacionWA} style={{ background: "#25D366", color: "#000", border: "none" }}><Ico k="lock" size={14} /> Solucionar QR y Vincular</Btn>}
-                    {waConnected && <Btn variant="secundario" style={{ color: T.red, borderColor: T.red }} onClick={() => { if(confirm("¿Seguro que deseas desvincular el dispositivo actual?")) { socket.emit('whatsapp_logout'); setWaConnected(false); setWaQR(''); } }}><Ico k="trash" size={14} /> Desconectar Sesión</Btn>}
+                    {waConnected && <Btn variant="secundario" style={{ color: T.red, borderColor: T.red }} onClick={() => { if(confirm("¿Seguro que deseas desvincular el dispositivo actual?")) { socketRef.current?.emit('whatsapp_logout'); setWaConnected(false); setWaQR(''); } }}><Ico k="trash" size={14} /> Desconectar Sesión</Btn>}
                   </div>
                 </div>
               </div>

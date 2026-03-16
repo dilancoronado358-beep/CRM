@@ -24,9 +24,16 @@ dist-ssr
 *.sw?
 
 .env
+
 server/.wwebjs_auth/
 server/.wwebjs_cache/
 server/session/
 server/sessions/
+
+.wwebjs_auth/
+.wwebjs_cache/
+
 **/Cache/
 **/Cache_Data/
+**/Cookies
+**/Network/

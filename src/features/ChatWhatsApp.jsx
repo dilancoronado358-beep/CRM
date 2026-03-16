@@ -2,15 +2,19 @@ import { useState, useEffect, useRef } from "react";
 import { T } from "../theme";
 import { Btn, Inp, Tarjeta, Celda, Chip, Ico } from "../components/ui";
 import { io } from "socket.io-client";
-
-// URL del servidor WhatsApp — se detecta automáticamente según el host del CRM
-// (funciona en localhost Y desde otros dispositivos en la misma red)
-const WA_SERVER_URL = `http://${window.location.hostname}:3001`;
-const socket = io(WA_SERVER_URL, { autoConnect: true });
+import { useSupaState } from "../hooks/useSupaState";
 
 export function ChatWhatsApp({ t }) {
+  const { db } = useSupaState();
   const [waConnected, setWaConnected] = useState(false);
   const [waQR, setWaQR] = useState("");
+  const socketRef = useRef(null);
+
+  // URL del servidor WhatsApp — se detecta automáticamente según la configuración, el admin o el host del CRM
+  const protocol = window.location.protocol === "https:" ? "https:" : "http:";
+  const adminUrl = db.usuariosApp?.find(u => u.role === 'admin' && u.waServerUrl)?.waServerUrl;
+  const WA_SERVER_URL = db.usuario?.waServerUrl || adminUrl || `${protocol}//${window.location.hostname}:3001`;
+
   const [chats, setChats] = useState([]);
   const [activeChatId, setActiveChatId] = useState(null);
   const [messages, setMessages] = useState({});
@@ -18,14 +22,11 @@ export function ChatWhatsApp({ t }) {
   const [tab, setTab] = useState("chats"); // 'chats' o 'automatizacion'
   const [syncError, setSyncError] = useState("");
 
-  // Nuevo: Estados para reglas extraídas globalmente
   const [reglas, setReglas] = useState([]);
   const [nuevaRegla, setNuevaRegla] = useState({ keyword: "", reply: "" });
 
-  // Nuevo: Diccionario de avatares de WhatsApp
   const [avatars, setAvatars] = useState({});
 
-  // Nuevo: Referencias y estados para adjuntar archivos
   const fileInputRef = useRef(null);
   const dummyRef = useRef(null);
   const [showAttachMenu, setShowAttachMenu] = useState(false);
@@ -41,6 +42,12 @@ export function ChatWhatsApp({ t }) {
   };
 
   useEffect(() => {
+    // Si ya existe un socket, lo desconectamos antes de reconectar
+    if (socketRef.current) socketRef.current.disconnect();
+
+    socketRef.current = io(WA_SERVER_URL, { autoConnect: true });
+    const socket = socketRef.current;
+
     // Pedir estado inicial
     socket.emit('get_whatsapp_status');
 
@@ -53,13 +60,12 @@ export function ChatWhatsApp({ t }) {
       setWaConnected(true);
       setWaQR("");
       setSyncError("Sincronizando chats (puede tardar unos minutos en servidores nuevos)...");
-      socket.emit('get_whatsapp_chats'); // Pedir chats si ya está listo
+      socket.emit('get_whatsapp_chats');
     });
 
     socket.on('whatsapp_chats_list', (data) => {
       setSyncError("");
       setChats(data);
-      // Solicitar avatares secuencialmente
       data.forEach(c => {
         socket.emit('whatsapp_get_avatar', c.id._serialized);
       });
@@ -78,7 +84,6 @@ export function ChatWhatsApp({ t }) {
     socket.on('whatsapp_message', (msg) => {
       setMessages(prev => {
         const chatMsgs = prev[msg.chatId] || [];
-        // Buscar el mensaje real o por su identificador optimista (clientId)
         const exists = chatMsgs.findIndex(m => m.id === msg.id || (msg.clientId && m.id === msg.clientId));
         if (exists !== -1) {
           const newMsgs = [...chatMsgs];
@@ -87,7 +92,6 @@ export function ChatWhatsApp({ t }) {
         }
         return { ...prev, [msg.chatId]: [...chatMsgs, msg] };
       });
-      // Scroll to bottom if this is the active chat
       if (msg.chatId === activeChatId) {
         setTimeout(() => dummyRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
       }
@@ -107,14 +111,9 @@ export function ChatWhatsApp({ t }) {
     });
 
     return () => {
-      socket.off('whatsapp_qr');
-      socket.off('whatsapp_ready');
-      socket.off('whatsapp_chats_list');
-      socket.off('whatsapp_chats_error');
-      socket.off('whatsapp_message');
-      socket.off('whatsapp_message_ack');
+      if (socketRef.current) socketRef.current.disconnect();
     };
-  }, [activeChatId]);
+  }, [WA_SERVER_URL]);
 
   // Sincronizar reglas con el prop db o initial state
   useEffect(() => {
@@ -141,7 +140,7 @@ export function ChatWhatsApp({ t }) {
       };
       
       // Emit to server
-      socket.emit('whatsapp_send_media', payload);
+      socketRef.current?.emit('whatsapp_send_media', payload);
 
       // Optimistic UI Feedback
       const fMsg = {
@@ -163,7 +162,7 @@ export function ChatWhatsApp({ t }) {
       });
       setStagedMedia(null);
     } else {
-      socket.emit('whatsapp_send_message', { to: activeChatId, text: inputMsg, clientId });
+      socketRef.current?.emit('whatsapp_send_message', { to: activeChatId, text: inputMsg, clientId });
       
       // Optimistic UI Feedback for text
       const fMsg = {
@@ -231,7 +230,7 @@ export function ChatWhatsApp({ t }) {
   };
 
   const handleUpdateReglas = () => {
-    socket.emit('whatsapp_update_rules', reglas);
+    socketRef.current?.emit('whatsapp_update_rules', reglas);
     alert(t("Reglas de Auto-Respuesta actualizadas en el Bot."));
   };
 
@@ -253,8 +252,19 @@ export function ChatWhatsApp({ t }) {
           <Ico k="phone" size={32} style={{ color: "#000" }} />
         </div>
         <h2 style={{ fontSize: 24, fontWeight: 800, color: T.white }}>Conectando con WhatsApp...</h2>
-        <p style={{ color: T.whiteDim }}>Verificando el estado del servidor local en el puerto 3001.</p>
-        <Btn variant="primario" onClick={() => socket.emit('get_whatsapp_status')}>Forzar Revisión</Btn>
+        <p style={{ color: T.whiteDim }}>Verificando el estado del servidor en: <span style={{ fontFamily: "monospace", color: T.teal }}>{WA_SERVER_URL}</span></p>
+        
+        {adminUrl && !db.usuario?.waServerUrl && (
+          <p style={{ fontSize: 12, color: T.teal, marginTop: -10 }}>ℹ️ Usando configuración global del Administrador.</p>
+        )}
+        
+        {window.location.hostname === "localhost" && !db.usuario?.waServerUrl && (
+          <div style={{ padding: 12, borderRadius: 8, background: T.amber + "20", border: `1px solid ${T.amber}`, color: T.amber, fontSize: 12, maxWidth: 400, textAlign: "center" }}>
+            ⚠️ Estás accediendo vía <b>localhost</b>. Si estás en otro dispositivo, cambia la configuración por la IP de tu PC o un túnel.
+          </div>
+        )}
+
+        <Btn variant="primario" onClick={() => socketRef.current?.emit('get_whatsapp_status')}>Forzar Revisión</Btn>
       </div>
     );
   }
@@ -283,7 +293,7 @@ export function ChatWhatsApp({ t }) {
         <button onClick={() => setTab("automatizacion")} style={{ background: "none", border: "none", color: tab === "automatizacion" ? T.teal : T.whiteDim, fontSize: 16, fontWeight: tab === "automatizacion" ? 700 : 500, cursor: "pointer", pb: 5 }}>Bot & Auto-Respuestas</button>
         <div style={{ marginLeft: "auto", display: "flex", gap: 10, alignItems: "center" }}>
           <Chip label="Conexión Activa" color={T.green} bg={T.green+"20"} />
-          <Btn variant="secundario" size="sm" onClick={() => { setSyncError("Re-sincronizando..."); socket.emit('get_whatsapp_chats'); }}><Ico k="refresh" size={14} /> Sincronizar</Btn>
+          <Btn variant="secundario" size="sm" onClick={() => { setSyncError("Re-sincronizando..."); socketRef.current?.emit('get_whatsapp_chats'); }}><Ico k="refresh" size={14} /> Sincronizar</Btn>
         </div>
       </div>
 
@@ -296,7 +306,7 @@ export function ChatWhatsApp({ t }) {
             </div>
             <div style={{ flex: 1, overflowY: "auto" }}>
               {chats.map(c => (
-                <div key={c.id._serialized} onClick={() => { setActiveChatId(c.id._serialized); socket.emit('whatsapp_get_chat', c.id._serialized); }}
+                <div key={c.id._serialized} onClick={() => { setActiveChatId(c.id._serialized); socketRef.current?.emit('whatsapp_get_chat', c.id._serialized); }}
                   style={{ padding: "16px", borderBottom: `1px solid ${T.border}`, cursor: "pointer", background: activeChatId === c.id._serialized ? T.bg2 : "transparent", transition: "all .2s", display: "flex", gap: 12, alignItems: "center" }}>
                   
                   {avatars[c.id._serialized] ? (

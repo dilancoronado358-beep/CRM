@@ -235,6 +235,7 @@ export function useSupaState() {
                 whatsappAccess: uLocal.whatsappAccess || false,
                 profilePic: uLocal.profilePic || null,
                 temaActivo: uLocal.temaActivo || null,
+                waServerUrl: uLocal.waServerUrl || null,
                 activo: uLocal.activo !== false,
               };
               return { ...d, usuario: { ...d.usuario, ...mapped } };
