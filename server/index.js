@@ -54,19 +54,35 @@ const whatsappClient = new Client({
 // Cargar reglas desde Supabase al iniciar
 async function loadAutoRules() {
   try {
-    console.log("📡 Cargando reglas de automatización...");
+    console.log("📡 Conectando a Supabase para cargar reglas...");
     const { data, error } = await supabase.from('whatsapp_automations').select('*');
+
     if (error) {
-      console.error("❌ Error de Supabase al cargar reglas:", error.message);
+      console.error("❌ Error de Supabase al cargar reglas:", error.message, error.hint);
       return;
     }
 
-    // Filtrar las no activas
-    autoRules = (data || []).filter(r => r.active !== false);
-    console.log(`🤖 Bot inicializado: ${autoRules.length} reglas cargadas.`);
+    console.log(`📊 Consulta exitosa. Filas encontradas: ${data?.length || 0}`);
 
+    if (!data || data.length === 0) {
+      console.log("⚠️ No hay reglas en 'whatsapp_automations'. Intentando 'chatbotRules'...");
+      const { data: altData } = await supabase.from('chatbotRules').select('*');
+      if (altData && altData.length > 0) {
+        autoRules = altData.map(r => ({ ...r, keyword: (r.trigger || r.keyword || "").toLowerCase() }));
+        console.log(`✅ ${autoRules.length} reglas cargadas desde tabla alternativa.`);
+        return;
+      }
+    }
+
+    // Filtrar las no activas y normalizar keywords
+    autoRules = (data || []).filter(r => r.active !== false).map(r => ({
+      ...r,
+      keyword: (r.keyword || "").toLowerCase()
+    }));
+
+    console.log(`🤖 Bot listo: ${autoRules.length} reglas activas cargadas.`);
     if (autoRules.length > 0) {
-      console.log("Lista de keywords activas:", autoRules.map(r => r.keyword).join(", "));
+      console.log("Keywords detectados:", autoRules.map(r => r.keyword).join(", "));
     }
   } catch (err) {
     console.error("Error crítico inicializando reglas:", err.message);
@@ -326,12 +342,17 @@ async function getAIResponse(userText, isRawPrompt = false) {
   if (!GEMINI_API_KEY) return null;
   try {
     const prompt = isRawPrompt ? userText : `Eres un asistente de ventas de ENSING CRM. Responde de forma amable, profesional y concisa. Cliente dice: "${userText}"`;
-    const response = await axios.post(`https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash-lite:generateContent?key=${GEMINI_API_KEY}`, {
+    // Usamos gemini-1.5-flash que es más estable y tiene límites más altos en nivel gratuito
+    const response = await axios.post(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
       contents: [{ parts: [{ text: prompt }] }]
     });
     return response.data?.candidates?.[0]?.content?.parts?.[0]?.text;
   } catch (e) {
-    console.error("Error en Gemini AI:", e.message);
+    if (e.response?.status === 429) {
+      console.error("⚠️ Gemini: Límite de cuota excedido (Rate Limit).");
+    } else {
+      console.error("Error en Gemini AI:", e.message);
+    }
     return null;
   }
 }
@@ -383,7 +404,7 @@ async function transcribeAudio(media) {
     console.log(`🎙️ Transcribiendo audio (${media.mimetype})...`);
 
     // Preparar el cuerpo para Gemini multimodal
-    const response = await axios.post(`https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash-lite:generateContent?key=${GEMINI_API_KEY}`, {
+    const response = await axios.post(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
       contents: [{
         parts: [
           { text: "Eres un transcriptor preciso. Transcribe exactamente lo que se dice en este audio de WhatsApp. Si no hay voz inteligible, responde '[No se detectó voz clara]'." },
@@ -418,7 +439,7 @@ async function suggestCRMTask(chatId, messageText) {
     if (OPENAI_API_KEY) {
       aiText = await getGPTResponse(prompt);
     } else {
-      const response = await axios.post(`https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash-lite:generateContent?key=${GEMINI_API_KEY}`, {
+      const response = await axios.post(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
         contents: [{ parts: [{ text: prompt }] }]
       });
       aiText = response.data?.candidates?.[0]?.content?.parts?.[0]?.text;
