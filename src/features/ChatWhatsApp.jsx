@@ -138,7 +138,7 @@ export function ChatWhatsApp({ t }) {
         caption: inputMsg || "",
         clientId
       };
-      
+
       // Emit to server
       socketRef.current?.emit('whatsapp_send_media', payload);
 
@@ -163,7 +163,7 @@ export function ChatWhatsApp({ t }) {
       setStagedMedia(null);
     } else {
       socketRef.current?.emit('whatsapp_send_message', { to: activeChatId, text: inputMsg, clientId });
-      
+
       // Optimistic UI Feedback for text
       const fMsg = {
         id: clientId,
@@ -196,18 +196,18 @@ export function ChatWhatsApp({ t }) {
   const handleFileUpload = (e) => {
     const file = e.target.files?.[0];
     if (!file || !activeChatId) return;
-    
+
     // Validar el peso (ej. max 16MB)
     if (file.size > 16 * 1024 * 1024) {
       alert("El archivo excede el límite de 16MB.");
       return;
     }
-    
+
     const reader = new FileReader();
     reader.onload = (ev) => {
       const base64Data = ev.target.result;
       const isImage = file.type.startsWith('image/');
-      
+
       setStagedMedia({
         mediaData: base64Data,
         fileName: file.name,
@@ -216,7 +216,7 @@ export function ChatWhatsApp({ t }) {
       });
     };
     reader.readAsDataURL(file);
-    
+
     // Limpiar input
     e.target.value = null;
   };
@@ -253,11 +253,11 @@ export function ChatWhatsApp({ t }) {
         </div>
         <h2 style={{ fontSize: 24, fontWeight: 800, color: T.white }}>Conectando con WhatsApp...</h2>
         <p style={{ color: T.whiteDim }}>Verificando el estado del servidor en: <span style={{ fontFamily: "monospace", color: T.teal }}>{WA_SERVER_URL}</span></p>
-        
+
         {adminUrl && !db.usuario?.waServerUrl && (
           <p style={{ fontSize: 12, color: T.teal, marginTop: -10 }}>ℹ️ Usando configuración global del Administrador.</p>
         )}
-        
+
         {window.location.hostname === "localhost" && !db.usuario?.waServerUrl && (
           <div style={{ padding: 12, borderRadius: 8, background: T.amber + "20", border: `1px solid ${T.amber}`, color: T.amber, fontSize: 12, maxWidth: 400, textAlign: "center" }}>
             ⚠️ Estás accediendo vía <b>localhost</b>. Si estás en otro dispositivo, cambia la configuración por la IP de tu PC o un túnel.
@@ -272,7 +272,7 @@ export function ChatWhatsApp({ t }) {
   if (!waConnected && waQR) {
     return (
       <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", flexDirection: "column", gap: 20 }}>
-         <div style={{ width: 64, height: 64, borderRadius: "50%", background: "#25D366", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 10px 30px rgba(37,211,102,0.3)" }}>
+        <div style={{ width: 64, height: 64, borderRadius: "50%", background: "#25D366", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 10px 30px rgba(37,211,102,0.3)" }}>
           <Ico k="phone" size={32} style={{ color: "#000" }} />
         </div>
         <h2 style={{ fontSize: 24, fontWeight: 800, color: T.white }}>Vincular Servidor WhatsApp</h2>
@@ -286,13 +286,13 @@ export function ChatWhatsApp({ t }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "calc(100vh - 135px)", overflow: "hidden", gap: 20 }}>
       <style>{`@keyframes spin { 100% { transform: rotate(360deg); } }`}</style>
-      
+
       {/* HEADER TABS EN WHATSAPP */}
       <div style={{ display: "flex", gap: 24, borderBottom: `1px solid ${T.borderHi}`, paddingBottom: 16 }}>
         <button onClick={() => setTab("chats")} style={{ background: "none", border: "none", color: tab === "chats" ? T.teal : T.whiteDim, fontSize: 16, fontWeight: tab === "chats" ? 700 : 500, cursor: "pointer", pb: 5 }}>Conversaciones en Vivo</button>
         <button onClick={() => setTab("automatizacion")} style={{ background: "none", border: "none", color: tab === "automatizacion" ? T.teal : T.whiteDim, fontSize: 16, fontWeight: tab === "automatizacion" ? 700 : 500, cursor: "pointer", pb: 5 }}>Bot & Auto-Respuestas</button>
         <div style={{ marginLeft: "auto", display: "flex", gap: 10, alignItems: "center" }}>
-          <Chip label="Conexión Activa" color={T.green} bg={T.green+"20"} />
+          <Chip label="Conexión Activa" color={T.green} bg={T.green + "20"} />
           <Btn variant="secundario" size="sm" onClick={() => { setSyncError("Re-sincronizando..."); socketRef.current?.emit('get_whatsapp_chats'); }}><Ico k="refresh" size={14} /> Sincronizar</Btn>
         </div>
       </div>
@@ -308,7 +308,7 @@ export function ChatWhatsApp({ t }) {
               {chats.map(c => (
                 <div key={c.id._serialized} onClick={() => { setActiveChatId(c.id._serialized); socketRef.current?.emit('whatsapp_get_chat', c.id._serialized); }}
                   style={{ padding: "16px", borderBottom: `1px solid ${T.border}`, cursor: "pointer", background: activeChatId === c.id._serialized ? T.bg2 : "transparent", transition: "all .2s", display: "flex", gap: 12, alignItems: "center" }}>
-                  
+
                   {avatars[c.id._serialized] ? (
                     <img src={avatars[c.id._serialized]} alt="avatar" style={{ width: 44, height: 44, borderRadius: "50%", objectFit: "cover", flexShrink: 0, border: `1px solid ${T.borderHi}` }} />
                   ) : (
@@ -320,7 +320,7 @@ export function ChatWhatsApp({ t }) {
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
                       <div style={{ fontWeight: 700, color: T.white, fontSize: 14, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.name || c.id.user}</div>
-                      <div style={{ fontSize: 11, color: T.whiteDim }}>{new Date(c.timestamp * 1000).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
+                      <div style={{ fontSize: 11, color: T.whiteDim }}>{new Date(c.timestamp * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
                     </div>
                     {c.lastMessage && <div style={{ fontSize: 13, color: T.whiteDim, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.lastMessage.body}</div>}
                   </div>
@@ -348,7 +348,7 @@ export function ChatWhatsApp({ t }) {
                     <div style={{ fontSize: 12, color: T.whiteDim }}>{activeChatId.includes('g.us') ? 'Grupo' : 'Contacto'}</div>
                   </div>
                 </div>
-                
+
                 {/* ÁREA DE CHAT SCROLL */}
                 <div style={{ flex: 1, overflowY: "auto", padding: 24, display: "flex", flexDirection: "column", gap: 16, backgroundImage: `radial-gradient(${T.borderHi} 1px, transparent 1px)`, backgroundSize: "20px 20px" }}>
                   {(messages[activeChatId] || []).map((m, i) => {
@@ -358,7 +358,7 @@ export function ChatWhatsApp({ t }) {
                     return (
                       <div key={i} style={{ display: "flex", justifyContent: isMe ? "flex-end" : "flex-start" }}>
                         <div style={{ maxWidth: "70%", background: isMe ? T.teal : T.bg2, color: isMe ? "#000" : T.white, padding: "12px 16px", borderRadius: isMe ? "16px 16px 4px 16px" : "16px 16px 16px 4px", boxShadow: "0 2px 5px rgba(0,0,0,0.1)", fontSize: 14, lineHeight: 1.5, position: "relative" }}>
-                          
+
                           {/* Renderizado Condicional de Media */}
                           {hasMedia && (
                             <div style={{ marginBottom: m.body ? 8 : 0, position: "relative", overflow: "hidden", borderRadius: 8 }}>
@@ -397,9 +397,9 @@ export function ChatWhatsApp({ t }) {
                           )}
 
                           <div style={{ whiteSpace: "pre-wrap" }}>{m.body}</div>
-                          
+
                           <div style={{ fontSize: 10, color: isMe ? "rgba(0,0,0,0.5)" : T.whiteDim, display: "flex", justifyContent: "flex-end", marginTop: 4, alignItems: "center", gap: 4 }}>
-                            {new Date(m.timestamp * 1000).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                            {new Date(m.timestamp * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                             {isMe && renderAck(m.ack)}
                           </div>
                         </div>
@@ -411,7 +411,7 @@ export function ChatWhatsApp({ t }) {
                 </div>
 
                 <div style={{ borderTop: `1px solid ${T.border}`, background: T.bg1, display: "flex", flexDirection: "column" }}>
-                  
+
                   {/* PREVIEW DEL ARCHIVO ADJUNTO */}
                   {stagedMedia && (
                     <div style={{ padding: "12px 16px", background: "rgba(0,0,0,0.1)", display: "flex", alignItems: "center", gap: 12, borderBottom: `1px solid ${T.borderHi}` }}>
@@ -433,28 +433,28 @@ export function ChatWhatsApp({ t }) {
                   {/* CAJA DE TEXTO */}
                   <div style={{ padding: 16, display: "flex", gap: 12, alignItems: "center" }}>
                     <input type="file" ref={fileInputRef} onChange={handleFileUpload} style={{ display: 'none' }} />
-                    
+
                     <div style={{ position: "relative" }}>
-                    <Btn variant="secundario" onClick={() => setShowAttachMenu(!showAttachMenu)} style={{ width: 44, height: 44, padding: 0, justifyContent: "center", display: "flex", borderRadius: "50%", background: showAttachMenu ? T.bg2 : undefined }}>
-                      <Ico k={showAttachMenu ? "x" : "plus"} size={18} />
-                    </Btn>
-                    
-                    {showAttachMenu && (
-                      <div style={{ position: "absolute", bottom: "100%", left: 0, marginBottom: 16, background: T.bg2, border: `1px solid ${T.borderHi}`, borderRadius: 12, padding: 8, display: "flex", flexDirection: "column", gap: 4, boxShadow: "0 10px 30px rgba(0,0,0,0.5)", zIndex: 100, width: 170 }}>
-                        <button onClick={() => handleAttachMenu('image')} style={{ background: "transparent", border: "none", color: T.white, padding: "10px 12px", display: "flex", alignItems: "center", gap: 12, cursor: "pointer", borderRadius: 8, transition: "background .2s", textAlign: "left", width: "100%", fontSize: 13, fontWeight: 600 }} onMouseEnter={(e) => e.currentTarget.style.background='rgba(255,255,255,0.05)'} onMouseLeave={(e) => e.currentTarget.style.background='transparent'}>
-                           <Ico k="eye" size={18} style={{ color: "#34B7F1", flexShrink: 0 }} /> Imágenes
-                        </button>
-                        <button onClick={() => handleAttachMenu('doc')} style={{ background: "transparent", border: "none", color: T.white, padding: "10px 12px", display: "flex", alignItems: "center", gap: 12, cursor: "pointer", borderRadius: 8, transition: "background .2s", textAlign: "left", width: "100%", fontSize: 13, fontWeight: 600 }} onMouseEnter={(e) => e.currentTarget.style.background='rgba(255,255,255,0.05)'} onMouseLeave={(e) => e.currentTarget.style.background='transparent'}>
-                           <Ico k="note" size={18} style={{ color: "#9060FA", flexShrink: 0 }} /> Documentos
-                        </button>
-                      </div>
-                    )}
+                      <Btn variant="secundario" onClick={() => setShowAttachMenu(!showAttachMenu)} style={{ width: 44, height: 44, padding: 0, justifyContent: "center", display: "flex", borderRadius: "50%", background: showAttachMenu ? T.bg2 : undefined }}>
+                        <Ico k={showAttachMenu ? "x" : "plus"} size={18} />
+                      </Btn>
+
+                      {showAttachMenu && (
+                        <div style={{ position: "absolute", bottom: "100%", left: 0, marginBottom: 16, background: T.bg2, border: `1px solid ${T.borderHi}`, borderRadius: 12, padding: 8, display: "flex", flexDirection: "column", gap: 4, boxShadow: "0 10px 30px rgba(0,0,0,0.5)", zIndex: 100, width: 170 }}>
+                          <button onClick={() => handleAttachMenu('image')} style={{ background: "transparent", border: "none", color: T.white, padding: "10px 12px", display: "flex", alignItems: "center", gap: 12, cursor: "pointer", borderRadius: 8, transition: "background .2s", textAlign: "left", width: "100%", fontSize: 13, fontWeight: 600 }} onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'} onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>
+                            <Ico k="eye" size={18} style={{ color: "#34B7F1", flexShrink: 0 }} /> Imágenes
+                          </button>
+                          <button onClick={() => handleAttachMenu('doc')} style={{ background: "transparent", border: "none", color: T.white, padding: "10px 12px", display: "flex", alignItems: "center", gap: 12, cursor: "pointer", borderRadius: 8, transition: "background .2s", textAlign: "left", width: "100%", fontSize: 13, fontWeight: 600 }} onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'} onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>
+                            <Ico k="note" size={18} style={{ color: "#9060FA", flexShrink: 0 }} /> Documentos
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    <Inp value={inputMsg} onChange={e => setInputMsg(e.target.value)} placeholder="Escribe un mensaje o adjunta un archivo..." style={{ flex: 1 }} onKeyDown={e => { if (e.key === 'Enter') handleSend(); }} />
+                    <Btn variant="primario" onClick={handleSend} style={{ width: 44, height: 44, padding: 0, justifyContent: "center", display: "flex", borderRadius: "50%" }}><Ico k="send" size={16} style={{ marginLeft: -2 }} /></Btn>
                   </div>
-                  
-                  <Inp value={inputMsg} onChange={e => setInputMsg(e.target.value)} placeholder="Escribe un mensaje o adjunta un archivo..." style={{ flex: 1 }} onKeyDown={e => { if(e.key === 'Enter') handleSend(); }} />
-                  <Btn variant="primario" onClick={handleSend} style={{ width: 44, height: 44, padding: 0, justifyContent: "center", display: "flex", borderRadius: "50%" }}><Ico k="send" size={16} style={{ marginLeft: -2 }} /></Btn>
                 </div>
-              </div>
               </>
             ) : (
               <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", color: T.whiteDim, flexDirection: "column", gap: 16 }}>
@@ -479,13 +479,13 @@ export function ChatWhatsApp({ t }) {
             <div style={{ display: "flex", gap: 16, marginBottom: 32, alignItems: "flex-start" }}>
               <div style={{ flex: 1 }}>
                 <label style={{ fontSize: 12, fontWeight: 700, color: T.whiteDim, marginBottom: 8, display: "block", textTransform: "uppercase" }}>Si el mensaje contiene:</label>
-                <Inp placeholder="ej. precio, costo, cotizacion..." value={nuevaRegla.keyword} onChange={e => setNuevaRegla({...nuevaRegla, keyword: e.target.value})} />
+                <Inp placeholder="ej. precio, costo, cotizacion..." value={nuevaRegla.keyword} onChange={e => setNuevaRegla({ ...nuevaRegla, keyword: e.target.value })} />
               </div>
               <div style={{ flex: 2 }}>
                 <label style={{ fontSize: 12, fontWeight: 700, color: T.whiteDim, marginBottom: 8, display: "block", textTransform: "uppercase" }}>El bot responderá:</label>
-                <textarea 
-                  value={nuevaRegla.reply} onChange={e => setNuevaRegla({...nuevaRegla, reply: e.target.value})}
-                  placeholder="¡Nuestros precios empiezan en $100!..." 
+                <textarea
+                  value={nuevaRegla.reply} onChange={e => setNuevaRegla({ ...nuevaRegla, reply: e.target.value })}
+                  placeholder="¡Nuestros precios empiezan en $100!..."
                   style={{ width: "100%", height: 44, background: T.bg2, border: `1px solid ${T.borderHi}`, borderRadius: 8, padding: "12px 16px", color: T.white, outline: "none", resize: "vertical", fontFamily: "inherit" }}
                 />
               </div>
