@@ -20,6 +20,8 @@ export function ChatWhatsApp({ t }) {
   const [messages, setMessages] = useState({});
   const [inputMsg, setInputMsg] = useState("");
   const [tab, setTab] = useState("chats"); // 'chats' o 'automatizacion'
+  const [showVincularModal, setShowVincularModal] = useState(false);
+  const [searchLink, setSearchLink] = useState("");
   const [syncError, setSyncError] = useState("");
 
   const [reglas, setReglas] = useState([]);
@@ -294,6 +296,16 @@ export function ChatWhatsApp({ t }) {
     }
   };
 
+  const vincularChatAContacto = (contactoID) => {
+    const phone = activeChatId.split('@')[0];
+    setDb(prev => ({
+      ...prev,
+      contactos: prev.contactos.map(c => c.id === contactoID ? { ...c, telefono: phone } : c)
+    }));
+    setShowVincularModal(false);
+    alert("✅ Contacto vinculado correctamente.");
+  };
+
   if (!waConnected && !waQR) {
     return (
       <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", flexDirection: "column", gap: 20 }}>
@@ -392,10 +404,23 @@ export function ChatWhatsApp({ t }) {
                       <Ico k="user" size={16} />
                     </div>
                   )}
-                  <div>
+                  <div style={{ flex: 1 }}>
                     <div style={{ fontWeight: 700, color: T.white, fontSize: 15 }}>{chats.find(c => c.id._serialized === activeChatId)?.name || activeChatId.split('@')[0]}</div>
                     <div style={{ fontSize: 12, color: T.whiteDim }}>{activeChatId.includes('g.us') ? 'Grupo' : 'Contacto'}</div>
                   </div>
+
+                  {!activeChatId.includes('g.us') && (
+                    <div style={{ marginLeft: "auto" }}>
+                      {(() => {
+                        const phone = activeChatId.split('@')[0];
+                        const cExistente = db.contactos.find(c => c.telefono === phone);
+                        if (cExistente) {
+                          return <Chip label={`Vínculo: ${cExistente.nombre}`} color={T.teal} bg={T.tealSoft} />;
+                        }
+                        return <Btn variant="fantasma" size="sm" onClick={() => setShowVincularModal(true)} style={{ color: T.teal, border: `1px solid ${T.teal}40`, gap: 8 }}><Ico k="user" size={14} /> Vincular a Lead</Btn>;
+                      })()}
+                    </div>
+                  )}
                 </div>
 
                 {/* ÁREA DE CHAT SCROLL */}
@@ -595,6 +620,25 @@ export function ChatWhatsApp({ t }) {
           </Tarjeta>
         </div>
       )}
+
+      <Modal open={showVincularModal} onClose={() => setShowVincularModal(false)} title="Vincular Chat a Lead">
+        <div style={{ marginBottom: 20 }}>
+          <p style={{ color: T.whiteDim, fontSize: 13, marginBottom: 16 }}>Selecciona un contacto existente en el CRM para asociarle el número {activeChatId?.split('@')[0]}.</p>
+          <Inp placeholder="Buscar por nombre o empresa..." value={searchLink} onChange={e => setSearchLink(e.target.value)} />
+        </div>
+        <div style={{ maxHeight: 300, overflowY: "auto", display: "flex", flexDirection: "column", gap: 8 }}>
+          {db.contactos.filter(c => c.nombre.toLowerCase().includes(searchLink.toLowerCase()) || c.empresa?.toLowerCase().includes(searchLink.toLowerCase())).map(c => (
+            <div key={c.id} onClick={() => vincularChatAContacto(c.id)} style={{ padding: "12px 16px", background: T.bg2, borderRadius: 8, border: `1px solid ${T.borderHi}`, cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center" }} onMouseEnter={e => e.currentTarget.style.borderColor = T.teal} onMouseLeave={e => e.currentTarget.style.borderColor = T.borderHi}>
+              <div>
+                <div style={{ fontWeight: 700, color: T.white }}>{c.nombre}</div>
+                <div style={{ fontSize: 12, color: T.whiteDim }}>{c.empresa || "Sin empresa"} · {c.telefono || "Sin teléfono"}</div>
+              </div>
+              <Ico k="plus" size={16} style={{ color: T.teal }} />
+            </div>
+          ))}
+          {db.contactos.length === 0 && <div style={{ textAlign: "center", color: T.whiteDim, padding: 20 }}>No hay contactos disponibles.</div>}
+        </div>
+      </Modal>
     </div>
   );
 }

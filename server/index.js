@@ -15,7 +15,7 @@ const SUPA_KEY = process.env.SUPA_KEY || "sb_publishable_wKUbf7IFOoH4HIUayIAJdQ_
 const supabase = createClient(SUPA_URL, SUPA_KEY);
 
 // Configuración AI
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY || ""; 
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
 
 const app = express();
 app.use(cors());
@@ -130,15 +130,18 @@ io.on('connection', (socket) => {
   socket.on('whatsapp_send_message', async (data) => {
     try {
       const sentMsg = await whatsappClient.sendMessage(data.to, data.text);
-      socket.emit('whatsapp_message', {
+      const msgOut = {
         id: sentMsg.id._serialized,
-        clientId: data.clientId, // Devuelve el ID local para resolver en el frontend
         chatId: data.to,
         body: sentMsg.body,
         fromMe: true,
         timestamp: sentMsg.timestamp,
         ack: sentMsg.ack
-      });
+      };
+      socket.emit('whatsapp_message', { ...msgOut, clientId: data.clientId });
+
+      // PERSISTENCIA
+      supabase.from('whatsapp_messages').upsert(msgOut, { onConflict: 'id' }).then(() => { });
     } catch (e) { console.error('Error sending message', e); }
   });
 
@@ -165,16 +168,22 @@ io.on('connection', (socket) => {
       console.log(`Adjunto enviado exitosamente a ${data.to}`);
 
       // Enviamos el ack de confirmación al frontend refiriendo el ID local optimista
-      socket.emit('whatsapp_message', {
+      const msgOut = {
         id: sentMsg.id._serialized,
-        clientId: data.clientId,
         chatId: data.to,
         body: sentMsg.body || data.caption,
         fromMe: true,
         timestamp: sentMsg.timestamp,
         ack: sentMsg.ack,
-        hasMedia: sentMsg.hasMedia
-      });
+        hasMedia: sentMsg.hasMedia,
+        fileName: data.fileName,
+        mimeType: mimeType
+      };
+
+      socket.emit('whatsapp_message', { ...msgOut, clientId: data.clientId });
+
+      // PERSISTENCIA
+      supabase.from('whatsapp_messages').upsert(msgOut, { onConflict: 'id' }).then(() => { });
 
     } catch (e) {
       console.error('Error enviando archivo multimedia/adjunto', e);
@@ -301,7 +310,7 @@ async function getAIResponse(userText) {
 // Lógica de Chatbot Inteligente
 whatsappClient.on('message', async msg => {
   console.log(`Mensaje recibido de ${msg.from}: ${msg.body}`);
-  
+
   // Sincronizar mensaje con el frontend
   const msgData = {
     id: msg.id._serialized,
@@ -313,8 +322,8 @@ whatsappClient.on('message', async msg => {
   };
   io.emit('whatsapp_message', msgData);
 
-  // PERSISTENCIA: Guardar en Supabase (opcional, requiere tabla whatsapp_messages)
-  // supabase.from('whatsapp_messages').insert(msgData).then(() => {});
+  // PERSISTENCIA: Guardar en Supabase
+  supabase.from('whatsapp_messages').upsert(msgData, { onConflict: 'id' }).then(() => { });
 
   if (msg.fromMe) return;
 
@@ -337,7 +346,7 @@ whatsappClient.on('message', async msg => {
       if (currentTime >= startTime && currentTime <= endTime) {
         const chat = await msg.getChat();
         await chat.sendStateTyping();
-        
+
         setTimeout(async () => {
           try {
             if (rule.media_url) {
@@ -348,7 +357,7 @@ whatsappClient.on('message', async msg => {
               await msg.reply(rule.reply_text);
             }
 
-            io.emit('whatsapp_message', {
+            const botReply = {
               id: `bot_${Date.now()}`,
               chatId: msg.from,
               body: rule.reply_text || "Archivo enviado",
@@ -356,7 +365,11 @@ whatsappClient.on('message', async msg => {
               timestamp: Math.floor(Date.now() / 1000),
               ack: 1,
               hasMedia: !!rule.media_url
-            });
+            };
+            io.emit('whatsapp_message', botReply);
+
+            // PERSISTENCIA
+            supabase.from('whatsapp_messages').insert(botReply).then(() => { });
           } catch (e) { console.error("Error en regla:", e.message); }
         }, 1500);
         responded = true;
@@ -370,14 +383,18 @@ whatsappClient.on('message', async msg => {
     const aiReply = await getAIResponse(msg.body);
     if (aiReply) {
       await msg.reply(aiReply);
-      io.emit('whatsapp_message', {
+      const aiReplyObj = {
         id: `ai_${Date.now()}`,
         chatId: msg.from,
         body: aiReply,
         fromMe: true,
         timestamp: Math.floor(Date.now() / 1000),
         ack: 1
-      });
+      };
+      io.emit('whatsapp_message', aiReplyObj);
+
+      // PERSISTENCIA
+      supabase.from('whatsapp_messages').insert(aiReplyObj).then(() => { });
     }
   }
 });

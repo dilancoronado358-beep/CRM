@@ -3,6 +3,7 @@ import { T } from "../theme";
 import { uid, money, fdate } from "../utils";
 import { Chip, Btn, Inp, Sel } from "../components/ui";
 import { Campo, Modal, Tarjeta, SelColor, EncabezadoSeccion, ControlSegmentado, Ico, Barra } from "../components/ui";
+import { WhatsAppHistoryLead } from "./WhatsAppHistoryLead";
 
 export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t }) => {
   const [plActivo, setPlActivo] = useState(db.pipelines[0]?.id || "");
@@ -48,7 +49,7 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t }) => {
   const FormDeal = ({ init = {}, onGuardar, onCancelar }) => {
     const [f, setF] = useState({ titulo: "", contactoId: "", empresaId: "", pipelineId: plActivo, etapaId: pipeline?.etapas[0]?.id || "", valor: 0, prob: 50, fechaCierre: "", responsable: db.usuario?.name || "", etiquetas: "", notas: "", archivos: [], customFields: [], ...init, etiquetas: (init.etiquetas || []).join(", ") });
     const [dragActive, setDragActive] = useState(false);
-    
+
     const s = k => e => setF(p => ({ ...p, [k]: e.target.value }));
     const plActual = db.pipelines.find(p => p.id === f.pipelineId);
 
@@ -61,13 +62,13 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t }) => {
         setF(p => ({ ...p, archivos: [...(p.archivos || []), ...nuevos] }));
       }
     };
-    
+
     const quitarArchivo = id => setF(p => ({ ...p, archivos: p.archivos.filter(a => a.id !== id) }));
 
     return (
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
         <Campo label="Título del Deal *" col={2}><Inp value={f.titulo} onChange={s("titulo")} placeholder="ej. Acme — Plan Enterprise" style={{ fontSize: 15, fontWeight: 700 }} /></Campo>
-        
+
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           <Campo label="Pipeline"><Sel value={f.pipelineId} onChange={e => setF(p => ({ ...p, pipelineId: e.target.value, etapaId: db.pipelines.find(pl => pl.id === e.target.value)?.etapas[0]?.id || "" }))}>{db.pipelines.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}</Sel></Campo>
           <Campo label="Etapa"><Sel value={f.etapaId} onChange={s("etapaId")}>{plActual?.etapas.map(e => <option key={e.id} value={e.id}>{e.nombre}</option>)}</Sel></Campo>
@@ -92,11 +93,11 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t }) => {
             <Btn variant="fantasma" size="sm" onClick={() => setF(p => ({ ...p, customFields: [...(p.customFields || []), { nombre: "", valor: "" }] }))}><Ico k="plus" size={14} style={{ color: T.teal }} /> Agregar Campo Extra</Btn>
           </div>
           {f.customFields?.map((cf, i) => (
-             <div key={i} style={{ display: "flex", gap: 12, alignItems: "center", background: T.bg2, padding: "8px 12px", borderRadius: 8, border: `1px solid ${T.borderHi}` }}>
-               <Inp value={cf.nombre} onChange={e => setF(p => ({ ...p, customFields: p.customFields.map((c, idx) => idx === i ? { ...c, nombre: e.target.value } : c) }))} placeholder="Atributo (ej. Region)" style={{ flex: 1, fontWeight: 700 }} />
-               <Inp value={cf.valor} onChange={e => setF(p => ({ ...p, customFields: p.customFields.map((c, idx) => idx === i ? { ...c, valor: e.target.value } : c) }))} placeholder="Valor (ej. LATAM)" style={{ flex: 2 }} />
-               <button onClick={() => setF(p => ({ ...p, customFields: p.customFields.filter((_, idx) => idx !== i) }))} style={{ background: "transparent", border: "none", color: T.red, cursor: "pointer", padding: 4 }}><Ico k="trash" size={14} /></button>
-             </div>
+            <div key={i} style={{ display: "flex", gap: 12, alignItems: "center", background: T.bg2, padding: "8px 12px", borderRadius: 8, border: `1px solid ${T.borderHi}` }}>
+              <Inp value={cf.nombre} onChange={e => setF(p => ({ ...p, customFields: p.customFields.map((c, idx) => idx === i ? { ...c, nombre: e.target.value } : c) }))} placeholder="Atributo (ej. Region)" style={{ flex: 1, fontWeight: 700 }} />
+              <Inp value={cf.valor} onChange={e => setF(p => ({ ...p, customFields: p.customFields.map((c, idx) => idx === i ? { ...c, valor: e.target.value } : c) }))} placeholder="Valor (ej. LATAM)" style={{ flex: 2 }} />
+              <button onClick={() => setF(p => ({ ...p, customFields: p.customFields.filter((_, idx) => idx !== i) }))} style={{ background: "transparent", border: "none", color: T.red, cursor: "pointer", padding: 4 }}><Ico k="trash" size={14} /></button>
+            </div>
           ))}
           {(!f.customFields || f.customFields.length === 0) && <div style={{ fontSize: 12, color: T.whiteDim, fontStyle: "italic" }}>No se han agregado variables dinámicas.</div>}
         </div>
@@ -129,6 +130,12 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t }) => {
             )}
           </div>
         </Campo>
+
+        {f.contactoId && (
+          <div style={{ gridColumn: "span 2", borderTop: `1px solid ${T.border}`, paddingTop: 20 }}>
+            <WhatsAppHistoryLead telefono={db.contactos.find(c => c.id === f.contactoId)?.telefono} />
+          </div>
+        )}
 
         <div style={{ gridColumn: "span 2", display: "flex", gap: 12, justifyContent: "flex-end", paddingTop: 20, borderTop: `1px solid ${T.border}` }}>
           <Btn variant="secundario" onClick={onCancelar}>No Guardar</Btn>
