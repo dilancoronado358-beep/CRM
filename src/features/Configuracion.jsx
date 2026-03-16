@@ -86,15 +86,33 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
     };
   }, [fWaUrl]);
 
+  // Efecto para sincronizar el estado del formulario con la DB cuando carga Supabase
   useEffect(() => {
-    if (db.usuario?.waServerUrl) {
+    // Solo cambiar si el campo local está vacío (primera carga) o si la DB tiene algo nuevo y el usuario no está escribiendo
+    if (db.usuario?.waServerUrl && !fWaUrl) {
       setFWaUrl(db.usuario.waServerUrl);
     }
-  }, [db.usuario?.waServerUrl]);
+  }, [db.usuario?.waServerUrl, fWaUrl]);
 
   const iniciarVinculacionWA = () => {
-    if (socketRef.current) socketRef.current.connect();
-    alert("Intentando conectar al servidor de WhatsApp... Espera unos segundos para generar el QR.");
+    const protocol = window.location.protocol === "https:" ? "https:" : "http:";
+    const adminUrl = db.usuariosApp?.find(u => u.role === 'admin' && u.waServerUrl)?.waServerUrl;
+    const finalUrl = fWaUrl || adminUrl || `${protocol}//${window.location.hostname}:3001`;
+
+    // Si ya existe un socket, desconectarlo antes de crear uno nuevo con la URL actualizada
+    if (socketRef.current) {
+      socketRef.current.disconnect();
+    }
+
+    console.log("Re-conectando socket a:", finalUrl);
+    socketRef.current = io(finalUrl, { autoConnect: true });
+
+    // Re-vincular eventos
+    socketRef.current.on('whatsapp_qr', (qrBase64) => { setWaQR(qrBase64); setWaConnected(false); });
+    socketRef.current.on('whatsapp_ready', () => { setWaConnected(true); setWaQR(""); });
+
+    socketRef.current.emit('get_whatsapp_status');
+    alert(`Intentando conectar a: ${finalUrl}\n\nEspera unos segundos para que aparezca el QR.`);
   };
 
   const auditLogs = [
@@ -649,9 +667,17 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
                       </div>
                     )}
                   </div>
-                  <div style={{ display: "flex", gap: 12 }}>
-                    {!waConnected && <Btn variant="primario" onClick={iniciarVinculacionWA} style={{ background: "#25D366", color: "#000", border: "none" }}><Ico k="lock" size={14} /> Solucionar QR y Vincular</Btn>}
+                  <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+                    {!waConnected && (
+                      <Btn variant="primario" onClick={iniciarVinculacionWA} style={{ background: "#25D366", color: "#000", border: "none" }}>
+                        <Ico k="refresh" size={14} /> {waQR ? "Regenerar QR" : "Vincular y Forzar Conexión"}
+                      </Btn>
+                    )}
                     {waConnected && <Btn variant="secundario" style={{ color: T.red, borderColor: T.red }} onClick={() => { if (confirm("¿Seguro que deseas desvincular el dispositivo actual?")) { socketRef.current?.emit('whatsapp_logout'); setWaConnected(false); setWaQR(''); } }}><Ico k="trash" size={14} /> Desconectar Sesión</Btn>}
+
+                    <Btn variant="secundario" onClick={guardarEmpresa} style={{ border: `1px solid ${T.teal}`, color: T.teal }}>
+                      <Ico k="check" size={14} /> Guardar Cambios en Nube
+                    </Btn>
                   </div>
                 </div>
               </div>
