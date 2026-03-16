@@ -29,7 +29,8 @@ export function LeadTimeline({ deal, contacto, db, setDb, guardarEnSupa, setModu
 
     socketRef.current.on('whatsapp_message', (msg) => {
       // Si el mensaje es para este chat o deal, recargamos
-      if (msg.chatId.includes(telefono) || msg.deal_id === deal.id) {
+      const cleanPhone = telefono ? telefono.replace(/\D/g, '') : "";
+      if ((cleanPhone && msg.chat_id.includes(cleanPhone)) || msg.deal_id === deal.id) {
         cargarTimeline();
       }
     });
@@ -66,9 +67,9 @@ export function LeadTimeline({ deal, contacto, db, setDb, guardarEnSupa, setModu
 
         // Priorizamos anclaje por dealId, pero también buscamos por teléfono limpio
         if (deal?.id) {
-          query = query.or(`deal_id.eq.${deal.id},chatId.ilike.%${cleanPhone}%`);
+          query = query.or(`deal_id.eq.${deal.id},chat_id.ilike.%${cleanPhone}%`);
         } else if (cleanPhone) {
-          query = query.ilike('chatId', `%${cleanPhone}%`);
+          query = query.ilike('chat_id', `%${cleanPhone}%`);
         } else {
           setLoading(false);
           return;
@@ -83,8 +84,8 @@ export function LeadTimeline({ deal, contacto, db, setDb, guardarEnSupa, setModu
               id: m.id,
               body: m.body,
               timestamp: m.timestamp,
-              fromMe: m.fromMe,
-              hasMedia: m.hasMedia,
+              fromMe: m.from_me,
+              hasMedia: m.has_media,
               deal_id: m.deal_id
             });
           });

@@ -14,14 +14,15 @@ ADD COLUMN IF NOT EXISTS etiquetas JSONB DEFAULT '[]'::jsonb;
 -- 3. Tabla para mensajes de WhatsApp (si no existe)
 CREATE TABLE IF NOT EXISTS public.whatsapp_messages (
     id TEXT PRIMARY KEY,
-    chatId TEXT NOT NULL,
+    chat_id TEXT NOT NULL,
     body TEXT,
-    fromMe BOOLEAN NOT NULL DEFAULT false,
+    from_me BOOLEAN NOT NULL DEFAULT false,
     timestamp BIGINT,
     ack INTEGER DEFAULT 0,
-    hasMedia BOOLEAN DEFAULT false,
-    fileName TEXT,
-    mimeType TEXT,
+    has_media BOOLEAN DEFAULT false,
+    file_name TEXT,
+    mime_type TEXT,
+    deal_id TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 

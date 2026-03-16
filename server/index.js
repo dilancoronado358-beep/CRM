@@ -159,9 +159,9 @@ io.on('connection', (socket) => {
       msgs.forEach(msg => {
         socket.emit('whatsapp_message', {
           id: msg.id._serialized,
-          chatId: msg.from === whatsappClient.info.wid._serialized ? msg.to : (msg.fromMe ? msg.to : msg.from),
+          chat_id: msg.from === whatsappClient.info.wid._serialized ? msg.to : (msg.fromMe ? msg.to : msg.from),
           body: msg.body,
-          fromMe: msg.fromMe,
+          from_me: msg.fromMe,
           timestamp: msg.timestamp,
           ack: msg.ack
         });
@@ -175,9 +175,9 @@ io.on('connection', (socket) => {
       const activeDealId = data.dealId || await getActiveDealId(data.to);
       const msgOut = {
         id: sentMsg.id._serialized,
-        chatId: data.to,
+        chat_id: data.to,
         body: sentMsg.body,
-        fromMe: true,
+        from_me: true,
         timestamp: sentMsg.timestamp,
         ack: sentMsg.ack,
         deal_id: activeDealId || null
@@ -185,7 +185,10 @@ io.on('connection', (socket) => {
       socket.emit('whatsapp_message', { ...msgOut, clientId: data.clientId });
 
       // PERSISTENCIA
-      supabase.from('whatsapp_messages').upsert(msgOut, { onConflict: 'id' }).then(() => { });
+      supabase.from('whatsapp_messages').upsert(msgOut, { onConflict: 'id' }).then(({ error }) => {
+        if (error) console.error('❌ Supabase Error (Manual Out):', error.message);
+        else console.log(`✅ Mensaje enviado guardado en Supabase: ${msgOut.id}`);
+      });
     } catch (e) { console.error('Error sending message', e); }
   });
 
@@ -216,21 +219,24 @@ io.on('connection', (socket) => {
       // Enviamos el ack de confirmación al frontend refiriendo el ID local optimista
       const msgOut = {
         id: sentMsg.id._serialized,
-        chatId: data.to,
+        chat_id: data.to,
         body: sentMsg.body || data.caption,
-        fromMe: true,
+        from_me: true,
         timestamp: sentMsg.timestamp,
         ack: sentMsg.ack,
-        hasMedia: sentMsg.hasMedia,
-        fileName: data.fileName,
-        mimeType: mimeType,
+        has_media: sentMsg.hasMedia,
+        file_name: data.fileName,
+        mime_type: mimeType,
         deal_id: activeDealId || null
       };
 
       socket.emit('whatsapp_message', { ...msgOut, clientId: data.clientId });
 
       // PERSISTENCIA
-      supabase.from('whatsapp_messages').upsert(msgOut, { onConflict: 'id' }).then(() => { });
+      supabase.from('whatsapp_messages').upsert(msgOut, { onConflict: 'id' }).then(({ error }) => {
+        if (error) console.error('❌ Supabase Error (Manual Out):', error.message);
+        else console.log(`✅ Mensaje enviado guardado en Supabase: ${msgOut.id}`);
+      });
 
     } catch (e) {
       console.error('Error enviando archivo multimedia/adjunto', e);
@@ -564,9 +570,9 @@ whatsappClient.on('message', async msg => {
   // Sincronizar mensaje con el frontend
   const msgData = {
     id: msg.id._serialized,
-    chatId: msg.from,
+    chat_id: msg.from,
     body: msg.body,
-    fromMe: msg.fromMe,
+    from_me: msg.fromMe,
     timestamp: msg.timestamp,
     ack: msg.ack,
     deal_id: activeDealId || null
@@ -574,7 +580,10 @@ whatsappClient.on('message', async msg => {
   io.emit('whatsapp_message', msgData);
 
   // PERSISTENCIA: Guardar en Supabase (ahora con deal_id si existe)
-  supabase.from('whatsapp_messages').upsert(msgData, { onConflict: 'id' }).then(() => { });
+  supabase.from('whatsapp_messages').upsert(msgData, { onConflict: 'id' }).then(({ error }) => {
+    if (error) console.error('❌ Supabase Error (Inbound):', error.message);
+    else console.log(`✅ Mensaje entrante guardado en Supabase: ${msg.id._serialized} (Deal: ${activeDealId || 'no vinculado'})`);
+  });
 
   if (msg.fromMe) return;
 

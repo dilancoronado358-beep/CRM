@@ -110,20 +110,20 @@ export function ChatWhatsApp({ t }) {
     socket.on('whatsapp_message', (msg) => {
       // 1. Actualizar el historial de mensajes
       setMessages(prev => {
-        const chatMsgs = prev[msg.chatId] || [];
+        const chatMsgs = prev[msg.chat_id] || [];
         const exists = chatMsgs.findIndex(m => m.id === msg.id || (msg.clientId && m.id === msg.clientId));
         if (exists !== -1) {
           const newMsgs = [...chatMsgs];
           newMsgs[exists] = msg;
-          return { ...prev, [msg.chatId]: newMsgs };
+          return { ...prev, [msg.chat_id]: newMsgs };
         }
-        return { ...prev, [msg.chatId]: [...chatMsgs, msg] };
+        return { ...prev, [msg.chat_id]: [...chatMsgs, msg] };
       });
 
       // 2. [MEJORA] Actualizar la lista de chats en tiempo real (sidebar)
       setChats(prevChats => {
         return prevChats.map(c => {
-          if (c.id._serialized === msg.chatId) {
+          if (c.id._serialized === msg.chat_id) {
             return { ...c, lastMessage: { body: msg.body, timestamp: msg.timestamp }, timestamp: msg.timestamp };
           }
           return c;
@@ -131,19 +131,19 @@ export function ChatWhatsApp({ t }) {
       });
 
       // 3. Scroll automático si el chat está activo
-      if (msg.chatId === activeChatId) {
+      if (msg.chat_id === activeChatId) {
         setTimeout(() => dummyRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
       }
     });
 
-    socket.on('whatsapp_message_ack', ({ id, chatId, ack }) => {
+    socket.on('whatsapp_message_ack', ({ id, chat_id, ack }) => {
       setMessages(prev => {
-        const chatMsgs = prev[chatId] || [];
+        const chatMsgs = prev[chat_id] || [];
         const index = chatMsgs.findIndex(m => m.id === id);
         if (index !== -1) {
           const newMsgs = [...chatMsgs];
           newMsgs[index] = { ...newMsgs[index], ack };
-          return { ...prev, [chatId]: newMsgs };
+          return { ...prev, [chat_id]: newMsgs };
         }
         return prev;
       });
