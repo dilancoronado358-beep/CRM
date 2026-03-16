@@ -43,7 +43,15 @@ export const Dashboard = ({ db, t = s => s }) => {
       setAnalisisIA(data.analysis || "No se pudo generar el análisis.");
     } catch (e) {
       console.error("Error al obtener análisis de IA:", e);
-      setAnalisisIA("Error al conectar con el asistente de IA. Asegúrate de que el servidor esté corriendo.");
+      let errorMsg = "Error al conectar con el asistente de IA. ";
+
+      if (protocol === "https:" && host === "localhost") {
+        errorMsg += "⚠️ Estás navegando por HTTPS pero intentando conectar con un servidor local HTTP. Esto suele ser bloqueado por el navegador. Prueba entrar por http://localhost:5173";
+      } else {
+        errorMsg += "Asegúrate de que el servidor (node server/index.js) esté corriendo y sea accesible.";
+      }
+
+      setAnalisisIA(errorMsg);
     } finally {
       setCargandoIA(false);
     }
@@ -293,9 +301,16 @@ export const Dashboard = ({ db, t = s => s }) => {
           </div>
         ) : (
           <div style={{ color: T.whiteOff, lineHeight: 1.6, fontSize: 14 }}>
-            <div style={{ whiteSpace: "pre-wrap", background: T.bg2, padding: 24, borderRadius: 12, border: `1px solid ${T.borderHi}` }}>
+            <div style={{ whiteSpace: "pre-wrap", background: T.bg2, padding: 24, borderRadius: 12, border: `1px solid ${analisisIA.includes("Error") ? T.red + "30" : T.borderHi}` }}>
               {analisisIA}
             </div>
+            {analisisIA.includes("Error") && (
+              <div style={{ marginTop: 16, display: "flex", justifyContent: "end" }}>
+                <Btn onClick={solicitarAnalisis} variant="primario" size="sm">
+                  <Ico k="refresh" size={14} /> Reintentar Conexión
+                </Btn>
+              </div>
+            )}
             <div style={{ marginTop: 24, padding: 16, background: T.teal + "10", borderRadius: 10, border: `1px solid ${T.teal}30`, display: "flex", gap: 12 }}>
               <Ico k="star" size={18} style={{ color: T.teal }} />
               <div style={{ fontSize: 12, color: T.teal }}>

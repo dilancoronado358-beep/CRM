@@ -190,6 +190,7 @@ export function useSupaState() {
       const timeoutFallback = setTimeout(() => {
         if (montado) {
           console.warn("⚠️ Tiempo de carga excedido (2.5s). Forzando isAppReady a true.");
+          setCargando(false);
           setIsAppReady(true);
         }
       }, 2500);
@@ -277,7 +278,7 @@ export function useSupaState() {
       .channel('schema-db-changes')
       .on('postgres_changes', { event: '*', schema: 'public' }, (payload) => {
         const { eventType, table, new: record, old } = payload;
-        
+
         // Solo procesar tablas que estamos siguiendo
         if (!TABLAS_SUPA.includes(table)) return;
 
@@ -285,16 +286,16 @@ export function useSupaState() {
 
         setDbRaw(prev => {
           const lista = Array.isArray(prev[table]) ? prev[table] : [];
-          
+
           if (eventType === 'INSERT' || eventType === 'UPDATE') {
             const idx = lista.findIndex(r => r.id === record.id);
             // Si el registro ya existe e igual, no hacer nada para evitar loops
             if (idx >= 0 && JSON.stringify(lista[idx]) === JSON.stringify(record)) return prev;
 
-            const nuevaLista = idx >= 0 
+            const nuevaLista = idx >= 0
               ? lista.map(r => r.id === record.id ? record : r)
               : [record, ...lista];
-            
+
             return { ...prev, [table]: nuevaLista };
           }
 
