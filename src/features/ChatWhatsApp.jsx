@@ -97,6 +97,7 @@ export function ChatWhatsApp({ t }) {
     });
 
     socket.on('whatsapp_message', (msg) => {
+      // 1. Actualizar el historial de mensajes
       setMessages(prev => {
         const chatMsgs = prev[msg.chatId] || [];
         const exists = chatMsgs.findIndex(m => m.id === msg.id || (msg.clientId && m.id === msg.clientId));
@@ -107,6 +108,25 @@ export function ChatWhatsApp({ t }) {
         }
         return { ...prev, [msg.chatId]: [...chatMsgs, msg] };
       });
+
+      // 2. [MEJORA] Actualizar la lista de chats en tiempo real (sidebar)
+      setChats(prevChats => {
+        const index = prevChats.findIndex(c => c.id._serialized === msg.chatId);
+        const updatedMsg = { body: msg.body, timestamp: msg.timestamp };
+        
+        if (index !== -1) {
+          // Si el chat ya existe, lo actualizamos y lo movemos al principio
+          const updatedChat = { ...prevChats[index], lastMessage: updatedMsg, timestamp: msg.timestamp };
+          const otherChats = prevChats.filter((_, i) => i !== index);
+          return [updatedChat, ...otherChats];
+        } else {
+          // Si es un chat nuevo que no estaba en la lista, lo agregamos arriba
+          // (Nota: el backend debería proveer el nombre, aquí usamos el ID como fallback)
+          return [{ id: { _serialized: msg.chatId }, lastMessage: updatedMsg, timestamp: msg.timestamp }, ...prevChats];
+        }
+      });
+
+      // 3. Scroll automático si el chat está activo
       if (msg.chatId === activeChatId) {
         setTimeout(() => dummyRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
       }
@@ -195,7 +215,8 @@ export function ChatWhatsApp({ t }) {
     }
 
     setInputMsg("");
-    setTimeout(() => dummyRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+    // Forzar scroll al enviar
+    setTimeout(() => dummyRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
   };
 
   const cancelUpload = (clientId) => {
@@ -314,7 +335,7 @@ export function ChatWhatsApp({ t }) {
 
       {tab === "chats" && (
         <div style={{ display: "flex", gap: 24, flex: 1, minHeight: 0 }}>
-          {/* LISTA DE CHATS */}
+          {/* LISTA DE CHATS ORDENADA POR ÚLTIMO MENSAJE */}
           <div style={{ width: 320, background: T.bg1, borderRadius: 16, border: `1px solid ${T.borderHi}`, display: "flex", flexDirection: "column", overflow: "hidden", flexShrink: 0 }}>
             <div style={{ padding: 16, borderBottom: `1px solid ${T.border}` }}>
               <input placeholder="Buscar chat..." style={{ background: T.bg2, border: "none", borderRadius: 8, padding: "10px 14px", color: T.white, width: "100%", outline: "none", fontSize: 13 }} />
