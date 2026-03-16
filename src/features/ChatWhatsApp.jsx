@@ -20,6 +20,7 @@ export function ChatWhatsApp({ t }) {
   const [messages, setMessages] = useState({});
   const [inputMsg, setInputMsg] = useState("");
   const [tab, setTab] = useState("chats"); // 'chats' o 'automatizacion'
+  const [subTab, setSubTab] = useState("simple"); // 'simple' o 'ia'
   const [showVincularModal, setShowVincularModal] = useState(false);
   const [searchLink, setSearchLink] = useState("");
   const [syncError, setSyncError] = useState("");
@@ -552,58 +553,90 @@ export function ChatWhatsApp({ t }) {
       {tab === "automatizacion" && (
         <div style={{ flex: 1, overflowY: "auto" }}>
           <Tarjeta>
-            <div style={{ marginBottom: 24 }}>
-              <h3 style={{ fontSize: 18, fontWeight: 800, color: T.white, marginBottom: 8 }}>Respuestas Automáticas Simples</h3>
-              <p style={{ color: T.whiteDim, fontSize: 13, lineHeight: 1.5 }}>
-                Define palabras clave que tus clientes suelan escribir (ej. "hola", "precio", "horario"). Cuando el bot detecte esas palabras enviará automáticamente la respuesta que configures empujada por el backend en tu dispositivo en tiempo real.
-              </p>
+            <div style={{ display: "flex", gap: 20, marginBottom: 32, borderBottom: `1px solid ${T.borderHi}`, paddingBottom: 16 }}>
+              <button
+                onClick={() => { setSubTab("simple"); setNuevaRegla({ ...nuevaRegla, ai_prompt: "", reply: "" }); }}
+                style={{ background: "none", border: "none", color: subTab === "simple" ? T.teal : T.whiteDim, fontSize: 14, fontWeight: subTab === "simple" ? 700 : 500, cursor: "pointer", display: "flex", alignItems: "center", gap: 8 }}>
+                <Ico k="chat" size={16} /> Respuestas Simples
+              </button>
+              <button
+                onClick={() => { setSubTab("ia"); setNuevaRegla({ ...nuevaRegla, ai_prompt: "", reply: "" }); }}
+                style={{ background: "none", border: "none", color: subTab === "ia" ? T.teal : T.whiteDim, fontSize: 14, fontWeight: subTab === "ia" ? 700 : 500, cursor: "pointer", display: "flex", alignItems: "center", gap: 8 }}>
+                <Ico k="lightning" size={16} /> Respuestas con IA (Gemini/GP4)
+              </button>
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 16, marginBottom: 24 }}>
-              <div>
-                <label style={{ fontSize: 11, fontWeight: 700, color: T.whiteDim, marginBottom: 6, display: "block", textTransform: "uppercase" }}>Si el mensaje contiene:</label>
-                <Inp placeholder="ej. precio, hola..." value={nuevaRegla.keyword} onChange={e => setNuevaRegla({ ...nuevaRegla, keyword: e.target.value })} />
+            {subTab === "simple" ? (
+              <div style={{ marginBottom: 32 }}>
+                <h3 style={{ fontSize: 16, fontWeight: 800, color: T.white, marginBottom: 8 }}>Configurar Respuesta Simple</h3>
+                <p style={{ color: T.whiteDim, fontSize: 13, lineHeight: 1.5, marginBottom: 24 }}>
+                  El bot responderá con un texto fijo cada vez que detecte la palabra clave. Ideal para horarios, precios fijos o saludos.
+                </p>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 16, marginBottom: 24 }}>
+                  <div>
+                    <label style={{ fontSize: 11, fontWeight: 700, color: T.whiteDim, marginBottom: 6, display: "block", textTransform: "uppercase" }}>Si escriben:</label>
+                    <Inp placeholder="ej. hola" value={nuevaRegla.keyword} onChange={e => setNuevaRegla({ ...nuevaRegla, keyword: e.target.value })} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 11, fontWeight: 700, color: T.whiteDim, marginBottom: 6, display: "block", textTransform: "uppercase" }}>Desde las:</label>
+                    <input type="time" value={nuevaRegla.start_time} onChange={e => setNuevaRegla({ ...nuevaRegla, start_time: e.target.value })} style={{ width: "100%", height: 44, background: T.bg2, border: `1px solid ${T.borderHi}`, borderRadius: 8, padding: "0 12px", color: T.white, outline: "none" }} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 11, fontWeight: 700, color: T.whiteDim, marginBottom: 6, display: "block", textTransform: "uppercase" }}>Hasta las:</label>
+                    <input type="time" value={nuevaRegla.end_time} onChange={e => setNuevaRegla({ ...nuevaRegla, end_time: e.target.value })} style={{ width: "100%", height: 44, background: T.bg2, border: `1px solid ${T.borderHi}`, borderRadius: 8, padding: "0 12px", color: T.white, outline: "none" }} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 11, fontWeight: 700, color: T.whiteDim, marginBottom: 6, display: "block", textTransform: "uppercase" }}>Pausa (seg):</label>
+                    <Inp type="number" min="0" max="60" value={nuevaRegla.delay} onChange={e => setNuevaRegla({ ...nuevaRegla, delay: e.target.value })} />
+                  </div>
+                </div>
+                <div style={{ display: "flex", gap: 16, marginBottom: 24, alignItems: "flex-end" }}>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ fontSize: 11, fontWeight: 700, color: T.whiteDim, marginBottom: 6, display: "block", textTransform: "uppercase" }}>Mensaje de Respuesta:</label>
+                    <textarea value={nuevaRegla.reply} onChange={e => setNuevaRegla({ ...nuevaRegla, reply: e.target.value })} placeholder="¡Hola! Bienvenidos a ENSING..." style={{ width: "100%", height: 80, background: T.bg2, border: `1px solid ${T.borderHi}`, borderRadius: 8, padding: "12px 16px", color: T.white, outline: "none", resize: "none", fontFamily: "inherit", fontSize: 13 }} />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ fontSize: 11, fontWeight: 700, color: T.whiteDim, marginBottom: 6, display: "block", textTransform: "uppercase" }}>URL Imagen/PDF (opcional):</label>
+                    <Inp placeholder="https://..." value={nuevaRegla.media_url} onChange={e => setNuevaRegla({ ...nuevaRegla, media_url: e.target.value })} />
+                  </div>
+                </div>
+                <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                  <Btn variant="primario" onClick={agregarRegla}><Ico k="chat" size={14} /> Guardar Respuesta Simple</Btn>
+                </div>
               </div>
-              <div>
-                <label style={{ fontSize: 11, fontWeight: 700, color: T.whiteDim, marginBottom: 6, display: "block", textTransform: "uppercase" }}>Horario de Inicio:</label>
-                <input type="time" value={nuevaRegla.start_time} onChange={e => setNuevaRegla({ ...nuevaRegla, start_time: e.target.value })} style={{ width: "100%", height: 44, background: T.bg2, border: `1px solid ${T.borderHi}`, borderRadius: 8, padding: "0 12px", color: T.white, outline: "none" }} />
+            ) : (
+              <div style={{ marginBottom: 32 }}>
+                <h3 style={{ fontSize: 16, fontWeight: 800, color: T.white, marginBottom: 8 }}>Configurar Respuesta Automática con IA</h3>
+                <p style={{ color: T.whiteDim, fontSize: 13, lineHeight: 1.5, marginBottom: 24 }}>
+                  El bot usará Inteligencia Artificial para generar una respuesta dinámica basada en tus instrucciones. Ideal para ventas complejas o soporte técnico.
+                </p>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 16, marginBottom: 24 }}>
+                  <div>
+                    <label style={{ fontSize: 11, fontWeight: 700, color: T.whiteDim, marginBottom: 6, display: "block", textTransform: "uppercase" }}>Si el cliente dice algo como:</label>
+                    <Inp placeholder="ej. demo, ayuda" value={nuevaRegla.keyword} onChange={e => setNuevaRegla({ ...nuevaRegla, keyword: e.target.value })} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 11, fontWeight: 700, color: T.whiteDim, marginBottom: 6, display: "block", textTransform: "uppercase" }}>Desde las:</label>
+                    <input type="time" value={nuevaRegla.start_time} onChange={e => setNuevaRegla({ ...nuevaRegla, start_time: e.target.value })} style={{ width: "100%", height: 44, background: T.bg2, border: `1px solid ${T.borderHi}`, borderRadius: 8, padding: "0 12px", color: T.white, outline: "none" }} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 11, fontWeight: 700, color: T.whiteDim, marginBottom: 6, display: "block", textTransform: "uppercase" }}>Hasta las:</label>
+                    <input type="time" value={nuevaRegla.end_time} onChange={e => setNuevaRegla({ ...nuevaRegla, end_time: e.target.value })} style={{ width: "100%", height: 44, background: T.bg2, border: `1px solid ${T.borderHi}`, borderRadius: 8, padding: "0 12px", color: T.white, outline: "none" }} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 11, fontWeight: 700, color: T.whiteDim, marginBottom: 6, display: "block", textTransform: "uppercase" }}>Pausa (seg):</label>
+                    <Inp type="number" min="0" max="60" value={nuevaRegla.delay} onChange={e => setNuevaRegla({ ...nuevaRegla, delay: e.target.value })} />
+                  </div>
+                </div>
+                <div style={{ marginBottom: 24 }}>
+                  <label style={{ fontSize: 11, fontWeight: 700, color: T.whiteDim, marginBottom: 6, display: "block", textTransform: "uppercase" }}>Instrucciones para la IA (Prompt):</label>
+                  <textarea value={nuevaRegla.ai_prompt} onChange={e => setNuevaRegla({ ...nuevaRegla, ai_prompt: e.target.value })} placeholder="Responde como un experto en ventas, explica que el CRM es el más rápido del mercado y pide el correo..." style={{ width: "100%", height: 100, background: T.bg2, border: `1px solid ${T.borderHi}`, borderRadius: 8, padding: "12px 16px", color: T.white, outline: "none", resize: "none", fontFamily: "inherit", fontSize: 13 }} />
+                </div>
+                <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                  <Btn variant="primario" onClick={agregarRegla} style={{ background: T.grad, color: "#FFF" }}><Ico k="lightning" size={14} /> Guardar Respuesta con IA</Btn>
+                </div>
               </div>
-              <div>
-                <label style={{ fontSize: 11, fontWeight: 700, color: T.whiteDim, marginBottom: 6, display: "block", textTransform: "uppercase" }}>Horario de Fin:</label>
-                <input type="time" value={nuevaRegla.end_time} onChange={e => setNuevaRegla({ ...nuevaRegla, end_time: e.target.value })} style={{ width: "100%", height: 44, background: T.bg2, border: `1px solid ${T.borderHi}`, borderRadius: 8, padding: "0 12px", color: T.white, outline: "none" }} />
-              </div>
-              <div>
-                <label style={{ fontSize: 11, fontWeight: 700, color: T.whiteDim, marginBottom: 6, display: "block", textTransform: "uppercase" }}>Delay Respuesta (seg):</label>
-                <Inp type="number" min="0" max="60" value={nuevaRegla.delay} onChange={e => setNuevaRegla({ ...nuevaRegla, delay: e.target.value })} />
-              </div>
-            </div>
-
-            <div style={{ display: "flex", gap: 16, marginBottom: 24, alignItems: "flex-end" }}>
-              <div style={{ flex: 1 }}>
-                <label style={{ fontSize: 11, fontWeight: 700, color: T.whiteDim, marginBottom: 6, display: "block", textTransform: "uppercase" }}>Respuesta de Texto (opcional):</label>
-                <textarea
-                  value={nuevaRegla.reply} onChange={e => setNuevaRegla({ ...nuevaRegla, reply: e.target.value })}
-                  placeholder="¡Hola! En qué puedo ayudarte..."
-                  style={{ width: "100%", height: 80, background: T.bg2, border: `1px solid ${T.borderHi}`, borderRadius: 8, padding: "12px 16px", color: T.white, outline: "none", resize: "none", fontFamily: "inherit", fontSize: 13 }}
-                />
-              </div>
-              <div style={{ flex: 1 }}>
-                <label style={{ fontSize: 11, fontWeight: 700, color: T.whiteDim, marginBottom: 6, display: "block", textTransform: "uppercase" }}>Prompt de IA Personalizado (opcional):</label>
-                <textarea
-                  value={nuevaRegla.ai_prompt} onChange={e => setNuevaRegla({ ...nuevaRegla, ai_prompt: e.target.value })}
-                  placeholder="ej. Responde como un experto técnico..."
-                  style={{ width: "100%", height: 80, background: T.bg2, border: `1px solid ${T.borderHi}`, borderRadius: 8, padding: "12px 16px", color: T.white, outline: "none", resize: "none", fontFamily: "inherit", fontSize: 13 }}
-                />
-              </div>
-            </div>
-
-            <div style={{ display: "flex", gap: 16, marginBottom: 32, alignItems: "flex-end" }}>
-              <div style={{ flex: 1 }}>
-                <label style={{ fontSize: 11, fontWeight: 700, color: T.whiteDim, marginBottom: 6, display: "block", textTransform: "uppercase" }}>URL Imagen/Archivo (opcional):</label>
-                <Inp placeholder="https://ejemplo.com/foto.jpg" value={nuevaRegla.media_url} onChange={e => setNuevaRegla({ ...nuevaRegla, media_url: e.target.value })} />
-              </div>
-              <Btn variant="primario" style={{ height: 44 }} onClick={agregarRegla}><Ico k="plus" size={14} /> Agregar Regla</Btn>
-            </div>
+            )}
 
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, tableLayout: "fixed" }}>
               <thead>

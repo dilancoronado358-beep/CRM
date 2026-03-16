@@ -541,15 +541,16 @@ whatsappClient.on('message', async msg => {
       const endTime = endH * 60 + endM;
 
       if (currentTime >= startTime && currentTime <= endTime) {
-        responded = true;
         const chat = await msg.getChat();
-        await chat.sendStateTyping();
 
         // Calculamos el delay (mínimo 1.5s para que se vea el typing)
         const userDelay = (parseInt(rule.delay) || 0) * 1000;
         const finalDelay = Math.max(1500, userDelay);
 
         console.log(`Regla detectada: "${rule.keyword}". Delay: ${finalDelay}ms. AI Prompt: ${rule.ai_prompt ? 'SI' : 'NO'}`);
+        responded = true; // Marcamos como respondido para evitar IA global
+
+        await chat.sendStateTyping();
 
         setTimeout(async () => {
           try {
@@ -562,8 +563,16 @@ whatsappClient.on('message', async msg => {
               finalReply = await getUnifiedAIResponse(fullPrompt) || finalReply;
             }
 
+            if (!finalReply && !rule.media_url) {
+              console.log("Advertencia: La regla no produjo respuesta de texto ni media.");
+              return;
+            }
+
             if (rule.media_url) {
-              const media = await MessageMedia.fromUrl(rule.media_url).catch(e => null);
+              const media = await MessageMedia.fromUrl(rule.media_url).catch(e => {
+                console.error("Error descargando media de la regla:", e.message);
+                return null;
+              });
               if (media) await whatsappClient.sendMessage(msg.from, media, { caption: finalReply });
               else if (finalReply) await msg.reply(finalReply);
             } else if (finalReply) {
@@ -582,7 +591,7 @@ whatsappClient.on('message', async msg => {
             io.emit('whatsapp_message', botReply);
             supabase.from('whatsapp_messages').insert(botReply).then(() => { }); // Persistencia
           } catch (e) {
-            console.error("Error en ejecución de regla:", e.message);
+            console.error("Error fatal en ejecución de regla:", e.message);
           }
         }, finalDelay);
         break;
