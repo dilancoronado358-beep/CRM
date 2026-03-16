@@ -294,6 +294,14 @@ async function handleAutoLead(msg) {
   }
 }
 
+// Función para obtener respuesta de AI
+async function getAIResponse(userText) {
+  if (!GEMINI_API_KEY) return null;
+  try {
+    const prompt = `Eres un asistente de ventas de ENSING CRM. Responde de forma amable, profesional y concisa. Cliente dice: "${userText}"`;
+    const response = await axios.post(`https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash-lite:generateContent?key=${GEMINI_API_KEY}`, {
+      contents: [{ parts: [{ text: prompt }] }]
+    });
     return response.data?.candidates?.[0]?.content?.parts?.[0]?.text;
   } catch (e) {
     console.error("Error en Gemini AI:", e.message);
@@ -325,19 +333,19 @@ async function getGPTResponse(prompt, model = "gpt-4o-mini") {
 // Motor de AI Unificado (Detecta mejor proveedor disponible)
 async function getUnifiedAIResponse(userText) {
   const prompt = `Eres un asistente de ventas de ENSING CRM. Responde de forma amable, profesional y concisa. Cliente dice: "${userText}"`;
-  
+
   // 1. Prioridad: OpenAI
   if (OPENAI_API_KEY) {
     const res = await getGPTResponse(prompt);
     if (res) return res;
   }
-  
+
   // 2. Fallback: Gemini
   if (GEMINI_API_KEY) {
     const res = await getAIResponse(userText);
     if (res) return res;
   }
-  
+
   return null;
 }
 
@@ -348,7 +356,7 @@ async function transcribeAudio(media) {
     console.log(`🎙️ Transcribiendo audio (${media.mimetype})...`);
 
     // Preparar el cuerpo para Gemini multimodal
-    const response = await axios.post(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+    const response = await axios.post(`https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash-lite:generateContent?key=${GEMINI_API_KEY}`, {
       contents: [{
         parts: [
           { text: "Eres un transcriptor preciso. Transcribe exactamente lo que se dice en este audio de WhatsApp. Si no hay voz inteligible, responde '[No se detectó voz clara]'." },
@@ -383,7 +391,7 @@ async function suggestCRMTask(chatId, messageText) {
     if (OPENAI_API_KEY) {
       aiText = await getGPTResponse(prompt);
     } else {
-      const response = await axios.post(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+      const response = await axios.post(`https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash-lite:generateContent?key=${GEMINI_API_KEY}`, {
         contents: [{ parts: [{ text: prompt }] }]
       });
       aiText = response.data?.candidates?.[0]?.content?.parts?.[0]?.text;
@@ -425,10 +433,10 @@ app.post('/ai/analyze', async (req, res) => {
   if (!GEMINI_API_KEY && !OPENAI_API_KEY) {
     return res.status(500).json({ error: "No hay API Key de AI (Gemini u OpenAI) configurada." });
   }
-  
+
   try {
     const { deals, contactos, actividades, tareas } = req.body;
-    
+
     const prompt = `
       Eres un experto analista de ventas y estrategia de negocios para el CRM "ENSING". 
       Analiza los siguientes datos y genera un reporte PROACTIVO y MOTIVADOR para el usuario.
@@ -451,7 +459,7 @@ app.post('/ai/analyze', async (req, res) => {
     if (OPENAI_API_KEY) {
       analysis = await getGPTResponse(prompt, "gpt-4o");
     } else {
-      const response = await axios.post(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+      const response = await axios.post(`https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash-lite:generateContent?key=${GEMINI_API_KEY}`, {
         contents: [{ parts: [{ text: prompt }] }]
       });
       analysis = response.data?.candidates?.[0]?.content?.parts?.[0]?.text;
