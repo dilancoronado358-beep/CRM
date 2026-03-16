@@ -54,12 +54,22 @@ const whatsappClient = new Client({
 // Cargar reglas desde Supabase al iniciar
 async function loadAutoRules() {
   try {
-    const { data, error } = await supabase.from('whatsapp_automations').select('*').eq('active', true);
-    if (error) throw error;
-    autoRules = data || [];
-    console.log(`🤖 Bot listo: ${autoRules.length} reglas cargadas desde Supabase.`);
+    console.log("📡 Cargando reglas de automatización...");
+    const { data, error } = await supabase.from('whatsapp_automations').select('*');
+    if (error) {
+      console.error("❌ Error de Supabase al cargar reglas:", error.message);
+      return;
+    }
+
+    // Filtrar las no activas
+    autoRules = (data || []).filter(r => r.active !== false);
+    console.log(`🤖 Bot inicializado: ${autoRules.length} reglas cargadas.`);
+
+    if (autoRules.length > 0) {
+      console.log("Lista de keywords activas:", autoRules.map(r => r.keyword).join(", "));
+    }
   } catch (err) {
-    console.error("Error cargando reglas de Supabase:", err.message);
+    console.error("Error crítico inicializando reglas:", err.message);
   }
 }
 
@@ -207,8 +217,11 @@ io.on('connection', (socket) => {
   });
 
   socket.on('whatsapp_update_rules', (rules) => {
-    console.log('Nuevas reglas de bot recibidas:', rules);
-    autoRules = rules;
+    console.log(`🔄 Sincronización: Recibidas ${rules?.length || 0} reglas del frontend.`);
+    if (Array.isArray(rules)) {
+      autoRules = rules;
+      console.log("Keywords sincronizados:", autoRules.map(r => r.keyword).join(", "));
+    }
   });
 
   socket.on('whatsapp_logout', async () => {
@@ -308,11 +321,11 @@ async function handleAutoLead(msg) {
   }
 }
 
-// Función para obtener respuesta de AI
-async function getAIResponse(userText) {
+// Función para obtener respuesta de AI (Gemini)
+async function getAIResponse(userText, isRawPrompt = false) {
   if (!GEMINI_API_KEY) return null;
   try {
-    const prompt = `Eres un asistente de ventas de ENSING CRM. Responde de forma amable, profesional y concisa. Cliente dice: "${userText}"`;
+    const prompt = isRawPrompt ? userText : `Eres un asistente de ventas de ENSING CRM. Responde de forma amable, profesional y concisa. Cliente dice: "${userText}"`;
     const response = await axios.post(`https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash-lite:generateContent?key=${GEMINI_API_KEY}`, {
       contents: [{ parts: [{ text: prompt }] }]
     });
@@ -345,8 +358,8 @@ async function getGPTResponse(prompt, model = "gpt-4o-mini") {
 }
 
 // Motor de AI Unificado (Detecta mejor proveedor disponible)
-async function getUnifiedAIResponse(userText) {
-  const prompt = `Eres un asistente de ventas de ENSING CRM. Responde de forma amable, profesional y concisa. Cliente dice: "${userText}"`;
+async function getUnifiedAIResponse(userText, isRawPrompt = false) {
+  const prompt = isRawPrompt ? userText : `Eres un asistente de ventas de ENSING CRM. Responde de forma amable, profesional y concisa. Cliente dice: "${userText}"`;
 
   // 1. Prioridad: OpenAI
   if (OPENAI_API_KEY) {
@@ -356,7 +369,7 @@ async function getUnifiedAIResponse(userText) {
 
   // 2. Fallback: Gemini
   if (GEMINI_API_KEY) {
-    const res = await getAIResponse(userText);
+    const res = await getAIResponse(userText, isRawPrompt);
     if (res) return res;
   }
 
@@ -531,8 +544,10 @@ whatsappClient.on('message', async msg => {
   }
 
   // 2. AUTO-RESPUESTAS POR PALABRA CLAVE (Dinamismo con Horario, Media, IA y Delay)
+  console.log(`🔍 Evaluando ${autoRules.length} reglas para el mensaje: "${text}"`);
   for (let rule of autoRules) {
     if (text.includes(rule.keyword)) {
+      console.log(`🎯 Coincidencia de keyword: "${rule.keyword}"`);
       const now = new Date();
       const currentTime = now.getHours() * 60 + now.getMinutes();
       const [startH, startM] = (rule.start_time || "00:00").split(':').map(Number);
@@ -541,14 +556,17 @@ whatsappClient.on('message', async msg => {
       const endTime = endH * 60 + endM;
 
       if (currentTime >= startTime && currentTime <= endTime) {
+        console.log(`✅ Regla emparejada: "${rule.keyword}"`);
+
         const chat = await msg.getChat();
 
         // Calculamos el delay (mínimo 1.5s para que se vea el typing)
-        const userDelay = (parseInt(rule.delay) || 0) * 1000;
+        const delayInSec = parseFloat(rule.delay);
+        const userDelay = (isNaN(delayInSec) ? 0 : delayInSec) * 1000;
         const finalDelay = Math.max(1500, userDelay);
 
-        console.log(`Regla detectada: "${rule.keyword}". Delay: ${finalDelay}ms. AI Prompt: ${rule.ai_prompt ? 'SI' : 'NO'}`);
-        responded = true; // Marcamos como respondido para evitar IA global
+        console.log(`⏳ Delay configurado: ${delayInSec}s -> Real: ${finalDelay}ms. AI Prompt: ${rule.ai_prompt ? 'SI' : 'NO'}`);
+        responded = true;
 
         await chat.sendStateTyping();
 
@@ -558,17 +576,24 @@ whatsappClient.on('message', async msg => {
 
             // Si la regla tiene un prompt de IA, generamos la respuesta dinámicamente
             if (rule.ai_prompt && (GEMINI_API_KEY || OPENAI_API_KEY)) {
-              console.log(`Generando respuesta con AI Prompt: ${rule.ai_prompt}`);
+              console.log(`🤖 Generando respuesta IA con Prompt: "${rule.ai_prompt}"`);
               const fullPrompt = `${rule.ai_prompt}. El cliente dijo: "${msg.body}"`;
-              finalReply = await getUnifiedAIResponse(fullPrompt) || finalReply;
+              const aiResult = await getUnifiedAIResponse(fullPrompt, true);
+              if (aiResult) {
+                finalReply = aiResult;
+                console.log(`✨ IA respondió: ${finalReply.substring(0, 50)}...`);
+              } else {
+                console.log(`⚠️ IA no devolvió respuesta, usando fallback de texto.`);
+              }
             }
 
             if (!finalReply && !rule.media_url) {
-              console.log("Advertencia: La regla no produjo respuesta de texto ni media.");
+              console.log("❌ Error: La regla no produjo ni texto ni imagen. Abortando envío.");
               return;
             }
 
             if (rule.media_url) {
+              console.log(`📎 Enviando media: ${rule.media_url}`);
               const media = await MessageMedia.fromUrl(rule.media_url).catch(e => {
                 console.error("Error descargando media de la regla:", e.message);
                 return null;
@@ -576,6 +601,7 @@ whatsappClient.on('message', async msg => {
               if (media) await whatsappClient.sendMessage(msg.from, media, { caption: finalReply });
               else if (finalReply) await msg.reply(finalReply);
             } else if (finalReply) {
+              console.log(`📤 Enviando respuesta de texto.`);
               await msg.reply(finalReply);
             }
 
@@ -589,9 +615,9 @@ whatsappClient.on('message', async msg => {
               hasMedia: !!rule.media_url
             };
             io.emit('whatsapp_message', botReply);
-            supabase.from('whatsapp_messages').insert(botReply).then(() => { }); // Persistencia
+            supabase.from('whatsapp_messages').insert(botReply).then(() => { });
           } catch (e) {
-            console.error("Error fatal en ejecución de regla:", e.message);
+            console.error("❌ Error fatal en ejecución de regla:", e.message);
           }
         }, finalDelay);
         break;

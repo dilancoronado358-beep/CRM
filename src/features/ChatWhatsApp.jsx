@@ -275,7 +275,7 @@ export function ChatWhatsApp({ t }) {
   };
 
   const agregarRegla = () => {
-    if (!nuevaRegla.keyword || (!nuevaRegla.reply && !nuevaRegla.media_url)) return;
+    if (!nuevaRegla.keyword || (!nuevaRegla.reply && !nuevaRegla.media_url && !nuevaRegla.ai_prompt)) return;
     const item = {
       id: crypto.randomUUID(),
       keyword: nuevaRegla.keyword.toLowerCase(),
@@ -283,26 +283,26 @@ export function ChatWhatsApp({ t }) {
       media_url: nuevaRegla.media_url,
       start_time: nuevaRegla.start_time,
       end_time: nuevaRegla.end_time,
-      delay: parseInt(nuevaRegla.delay) || 0,
+      delay: parseFloat(nuevaRegla.delay) || 0,
       ai_prompt: nuevaRegla.ai_prompt,
       active: true
     };
-    setDb(prev => ({ ...prev, whatsapp_automations: [...(prev.whatsapp_automations || []), item] }));
+    guardarEnSupa("whatsapp_automations", item);
     setNuevaRegla({ keyword: "", reply: "", start_time: "00:00", end_time: "23:59", media_url: "", delay: 2, ai_prompt: "" });
   };
 
   const eliminarRegla = (id) => {
     if (!window.confirm("¿Estás seguro de que quieres eliminar esta regla?")) return;
-    setDb(prev => {
-      const filtered = (prev.whatsapp_automations || []).filter(r => r.id !== id);
-      return { ...prev, whatsapp_automations: filtered };
-    });
+    eliminarDeSupa("whatsapp_automations", id);
   };
 
   const handleUpdateReglas = () => {
     if (socketRef.current) {
+      console.log("📤 Enviando reglas al servidor:", reglas);
       socketRef.current.emit('whatsapp_update_rules', reglas);
-      alert("✅ Reglas enviadas al bot local correctamente.");
+      alert("¡Configuración enviada! El bot se ha actualizado con " + reglas.length + " reglas.");
+    } else {
+      alert("❌ No hay conexión con el servidor de WhatsApp.");
     }
   };
 
