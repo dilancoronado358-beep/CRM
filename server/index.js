@@ -7,9 +7,10 @@ const qrcode = require('qrcode');
 const cors = require('cors');
 
 const app = express();
+app.use(cors());
+
 app.get('/', (req, res) => res.send('ENSING WhatsApp Server is Running! 🚀'));
 app.get('/health', (req, res) => res.json({ status: 'ok', clientReady, latestQR: !!latestQRUrl }));
-app.use(cors());
 
 const server = http.createServer(app);
 const io = new Server(server, {

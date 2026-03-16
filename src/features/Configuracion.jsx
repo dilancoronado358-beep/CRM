@@ -140,7 +140,7 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
         throw new Error("Respuesta inválida del servidor.");
       }
     } catch (e) {
-      setTestResult({ success: false, msg: e.message === "Failed to fetch" ? "No se pudo alcanzar el servidor. ¿Está el túnel (ngrok) encendido?" : e.message });
+      setTestResult({ success: false, msg: e.message === "Failed to fetch" ? "Error de Red/CORS: El servidor no permitió la conexión o el túnel está caído." : `Error: ${e.message}` });
     } finally {
       setConectando(false);
     }
