@@ -16,6 +16,7 @@ const supabase = createClient(SUPA_URL, SUPA_KEY);
 
 // Configuración AI
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY || "";
 
 const app = express();
 app.use(cors());
@@ -293,19 +294,51 @@ async function handleAutoLead(msg) {
   }
 }
 
-// Función para obtener respuesta de AI
-async function getAIResponse(userText) {
-  if (!GEMINI_API_KEY) return null;
-  try {
-    const prompt = `Eres un asistente de ventas de ENSING CRM. Responde de forma amable, profesional y concisa. Cliente dice: "${userText}"`;
-    const response = await axios.post(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
-      contents: [{ parts: [{ text: prompt }] }]
-    });
     return response.data?.candidates?.[0]?.content?.parts?.[0]?.text;
   } catch (e) {
     console.error("Error en Gemini AI:", e.message);
     return null;
   }
+}
+
+// Función para obtener respuesta de OpenAI (ChatGPT)
+async function getGPTResponse(prompt, model = "gpt-4o-mini") {
+  if (!OPENAI_API_KEY) return null;
+  try {
+    const response = await axios.post('https://api.openai.com/v1/chat/completions', {
+      model: model,
+      messages: [{ role: "user", content: prompt }],
+      temperature: 0.7
+    }, {
+      headers: {
+        'Authorization': `Bearer ${OPENAI_API_KEY}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    return response.data?.choices?.[0]?.message?.content;
+  } catch (e) {
+    console.error("Error en OpenAI AI:", e.response?.data?.error?.message || e.message);
+    return null;
+  }
+}
+
+// Motor de AI Unificado (Detecta mejor proveedor disponible)
+async function getUnifiedAIResponse(userText) {
+  const prompt = `Eres un asistente de ventas de ENSING CRM. Responde de forma amable, profesional y concisa. Cliente dice: "${userText}"`;
+  
+  // 1. Prioridad: OpenAI
+  if (OPENAI_API_KEY) {
+    const res = await getGPTResponse(prompt);
+    if (res) return res;
+  }
+  
+  // 2. Fallback: Gemini
+  if (GEMINI_API_KEY) {
+    const res = await getAIResponse(userText);
+    if (res) return res;
+  }
+  
+  return null;
 }
 
 // Función para transcribir audios con Gemini
@@ -335,7 +368,7 @@ async function transcribeAudio(media) {
 
 // Función para sugerir tareas automáticamente basado en el chat
 async function suggestCRMTask(chatId, messageText) {
-  if (!GEMINI_API_KEY) return;
+  if (!GEMINI_API_KEY && !OPENAI_API_KEY) return;
   try {
     const prompt = `
       Analiza este mensaje de un chat de ventas y determina si implica una TAREA o COMPROMISO a futuro (ej: llamar, enviar info, revisar presupuesto).
@@ -346,11 +379,15 @@ async function suggestCRMTask(chatId, messageText) {
       Si NO hay compromiso claro, responde: null
     `;
 
-    const response = await axios.post(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
-      contents: [{ parts: [{ text: prompt }] }]
-    });
-
-    const aiText = response.data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    let aiText = "";
+    if (OPENAI_API_KEY) {
+      aiText = await getGPTResponse(prompt);
+    } else {
+      const response = await axios.post(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+        contents: [{ parts: [{ text: prompt }] }]
+      });
+      aiText = response.data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    }
     if (!aiText || aiText.trim() === 'null') return;
 
     const data = JSON.parse(aiText.match(/\{.*\}/s)?.[0] || 'null');
@@ -385,14 +422,16 @@ async function suggestCRMTask(chatId, messageText) {
 
 // ENDPOINT: Análisis de Negocio Proactivo
 app.post('/ai/analyze', async (req, res) => {
-  if (!GEMINI_API_KEY) return res.status(500).json({ error: "Gemini API Key no configurada en el servidor." });
-
+  if (!GEMINI_API_KEY && !OPENAI_API_KEY) {
+    return res.status(500).json({ error: "No hay API Key de AI (Gemini u OpenAI) configurada." });
+  }
+  
   try {
-    const { deals, contactos, actividades, tareas, userContext } = req.body;
-
+    const { deals, contactos, actividades, tareas } = req.body;
+    
     const prompt = `
       Eres un experto analista de ventas y estrategia de negocios para el CRM "ENSING". 
-      Analiza los siguientes datos y genera un reporte PPROACTIVO y MOTIVADOR para el usuario.
+      Analiza los siguientes datos y genera un reporte PROACTIVO y MOTIVADOR para el usuario.
       
       DATOS:
       - Oportunidades: ${JSON.stringify(deals?.slice(0, 15))}
@@ -408,11 +447,16 @@ app.post('/ai/analyze', async (req, res) => {
       FORMATO: Responde en Markdown elegante, usa emojis, negritas y listas. Sé breve pero impactante.
     `;
 
-    const response = await axios.post(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
-      contents: [{ parts: [{ text: prompt }] }]
-    });
+    let analysis = "";
+    if (OPENAI_API_KEY) {
+      analysis = await getGPTResponse(prompt, "gpt-4o");
+    } else {
+      const response = await axios.post(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+        contents: [{ parts: [{ text: prompt }] }]
+      });
+      analysis = response.data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    }
 
-    const analysis = response.data?.candidates?.[0]?.content?.parts?.[0]?.text;
     res.json({ analysis });
   } catch (e) {
     console.error("Error en /ai/analyze:", e.message);
@@ -510,8 +554,8 @@ whatsappClient.on('message', async msg => {
   }
 
   // 3. INTELIGENCIA ARTIFICIAL (Si no hubo match de palabra clave)
-  if (!responded && GEMINI_API_KEY) {
-    const aiReply = await getAIResponse(msg.body);
+  if (!responded && (GEMINI_API_KEY || OPENAI_API_KEY)) {
+    const aiReply = await getUnifiedAIResponse(msg.body);
     if (aiReply) {
       await msg.reply(aiReply);
       const aiReplyObj = {
