@@ -178,7 +178,8 @@ io.on('connection', (socket) => {
         body: sentMsg.body,
         fromMe: true,
         timestamp: sentMsg.timestamp,
-        ack: sentMsg.ack
+        ack: sentMsg.ack,
+        deal_id: data.dealId || null
       };
       socket.emit('whatsapp_message', { ...msgOut, clientId: data.clientId });
 
@@ -219,7 +220,8 @@ io.on('connection', (socket) => {
         ack: sentMsg.ack,
         hasMedia: sentMsg.hasMedia,
         fileName: data.fileName,
-        mimeType: mimeType
+        mimeType: mimeType,
+        deal_id: data.dealId || null
       };
 
       socket.emit('whatsapp_message', { ...msgOut, clientId: data.clientId });
@@ -294,6 +296,32 @@ whatsappClient.on('authenticated', () => {
 whatsappClient.on('auth_failure', msg => {
   console.error('Fallo en la autenticacion', msg);
 });
+
+// Función para obtener el Deal ID activo de un contacto
+async function getActiveDealId(chatId) {
+  try {
+    const phone = chatId.split('@')[0];
+
+    // 1. Buscar contacto
+    const { data: contacto } = await supabase.from('contactos').select('id').eq('telefono', phone).maybeSingle();
+    if (!contacto) return null;
+
+    // 2. Buscar Deal más reciente que NO sea Ganado ni Perdido
+    // Para simplificar, buscamos deals asociados al contacto
+    const { data: deal } = await supabase
+      .from('deals')
+      .select('id, etapaId')
+      .eq('contactoId', contacto.id)
+      .order('creado', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    return deal?.id || null;
+  } catch (e) {
+    console.error("Error obteniendo Deal ID activo:", e.message);
+    return null;
+  }
+}
 
 // Función para crear Lead Automático
 async function handleAutoLead(msg) {
@@ -546,6 +574,12 @@ whatsappClient.on('message', async msg => {
   // 1. LEAD AUTOMÁTICO: Asegurar que el contacto existe en CRM
   await handleAutoLead(msg);
 
+  // 1.2 ANCLAJE A LEAD: Buscar si hay un negocio activo para este chat
+  const activeDealId = await getActiveDealId(msg.from);
+  if (activeDealId) {
+    msgData.deal_id = activeDealId;
+  }
+
   // 1.5 TRANSCRIPCIÓN DE AUDIOS
   if (msg.hasMedia && msg.type === 'audio' || msg.type === 'voice') {
     try {
@@ -633,7 +667,8 @@ whatsappClient.on('message', async msg => {
               fromMe: true,
               timestamp: Math.floor(Date.now() / 1000),
               ack: 1,
-              hasMedia: !!rule.media_url
+              hasMedia: !!rule.media_url,
+              deal_id: activeDealId || null
             };
             io.emit('whatsapp_message', botReply);
             supabase.from('whatsapp_messages').insert(botReply).then(() => { });
@@ -657,7 +692,8 @@ whatsappClient.on('message', async msg => {
         body: aiReply,
         fromMe: true,
         timestamp: Math.floor(Date.now() / 1000),
-        ack: 1
+        ack: 1,
+        deal_id: activeDealId || null
       };
       io.emit('whatsapp_message', aiReplyObj);
 

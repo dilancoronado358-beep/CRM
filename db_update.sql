@@ -43,5 +43,8 @@ CREATE TABLE IF NOT EXISTS public.whatsapp_automations (
 ALTER TABLE public.whatsapp_automations ADD COLUMN IF NOT EXISTS delay INTEGER DEFAULT 0;
 ALTER TABLE public.whatsapp_automations ADD COLUMN IF NOT EXISTS ai_prompt TEXT;
 
+-- 6. Nuevas columnas para anclaje a Leads
+ALTER TABLE public.whatsapp_messages ADD COLUMN IF NOT EXISTS deal_id TEXT;
+
 -- 5. Habilitar Realtime para estas tablas (opcional pero recomendado)
 -- alter publication supabase_realtime add table deals, contactos, whatsapp_messages, whatsapp_automations;

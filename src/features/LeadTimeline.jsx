@@ -1,8 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { T } from "../theme";
 import { Ico, Btn, Inp, Chip } from "../components/ui";
 import { createClient } from "@supabase/supabase-js";
 import { fdate } from "../utils";
+import { io } from "socket.io-client";
 
 const SUPA_URL = "https://eoylgxwlhsmwqgadahvk.supabase.co";
 const SUPA_KEY = "sb_publishable_wKUbf7IFOoH4HIUayIAJdQ_Boj1jgZa";
@@ -13,8 +14,30 @@ export function LeadTimeline({ deal, contacto, db, setDb, guardarEnSupa }) {
   const [loading, setLoading] = useState(false);
   const [filtro, setFiltro] = useState("all"); // all, whatsapp, notes
   const [comentario, setComentario] = useState("");
+  const [waMsg, setWaMsg] = useState("");
+  const [composerTab, setComposerTab] = useState("Comentario");
+  const socketRef = useRef(null);
+  const dummyRef = useRef(null);
 
   const telefono = contacto?.telefono;
+  const adminUrl = db?.usuariosApp?.find(u => u.role === 'admin' && u.waServerUrl)?.waServerUrl;
+  const WA_SERVER_URL = db?.usuario?.waServerUrl || adminUrl || `${window.location.protocol}//${window.location.hostname}:3001`;
+
+  useEffect(() => {
+    // Inicializar Socket para envío en vivo
+    socketRef.current = io(WA_SERVER_URL, { transports: ['websocket'] });
+
+    socketRef.current.on('whatsapp_message', (msg) => {
+      // Si el mensaje es para este chat o deal, recargamos
+      if (msg.chatId.includes(telefono) || msg.deal_id === deal.id) {
+        cargarTimeline();
+      }
+    });
+
+    return () => {
+      if (socketRef.current) socketRef.current.disconnect();
+    };
+  }, [telefono, deal?.id]);
 
   useEffect(() => {
     cargarTimeline();
@@ -35,14 +58,20 @@ export function LeadTimeline({ deal, contacto, db, setDb, guardarEnSupa }) {
       });
     }
 
-    // 2. Traer WhatsApp de Supabase
-    if (telefono) {
+    // 2. Traer WhatsApp de Supabase (Anclados a este Deal o filtrados por Teléfono)
+    if (telefono || deal?.id) {
       try {
-        const { data, error } = await sb
-          .from('whatsapp_messages')
-          .select('*')
-          .ilike('chatId', `%${telefono}%`)
-          .order('timestamp', { ascending: false });
+        let query = sb.from('whatsapp_messages').select('*');
+
+        // Priorizamos anclaje por dealId
+        if (deal?.id) {
+          query = query.or(`deal_id.eq.${deal.id},chatId.ilike.%${telefono}%`);
+        } else {
+          query = query.ilike('chatId', `%${telefono}%`);
+        }
+
+        const { data, error } = await query.order('timestamp', { ascending: false });
+
         if (data) {
           data.forEach(m => {
             timelineEntries.push({
@@ -51,7 +80,8 @@ export function LeadTimeline({ deal, contacto, db, setDb, guardarEnSupa }) {
               body: m.body,
               timestamp: m.timestamp,
               fromMe: m.fromMe,
-              hasMedia: m.hasMedia
+              hasMedia: m.hasMedia,
+              deal_id: m.deal_id
             });
           });
         }
@@ -76,6 +106,22 @@ export function LeadTimeline({ deal, contacto, db, setDb, guardarEnSupa }) {
     }));
     await guardarEnSupa("deals", dealActualizado);
     setComentario("");
+    cargarTimeline();
+  };
+
+  const handleSendWA = () => {
+    if (!waMsg.trim() || !telefono) return;
+    if (!socketRef.current) return alert("WhatsApp no conectado");
+
+    const payload = {
+      to: telefono + "@c.us",
+      text: waMsg,
+      dealId: deal.id
+    };
+
+    socketRef.current.emit("whatsapp_send_message", payload);
+    setWaMsg("");
+    // El timeline se refrescará vía socket event
   };
 
   const filteredItems = items.filter(it => {
@@ -91,20 +137,53 @@ export function LeadTimeline({ deal, contacto, db, setDb, guardarEnSupa }) {
       <div style={{ padding: 20, borderBottom: `1px solid ${T.border}`, background: T.bg1 }}>
         <div style={{ display: "flex", gap: 16, marginBottom: 16 }}>
           {["Comentario", "WhatsApp", "Tarea", "Llamada"].map(t => (
-            <button key={t} style={{ background: "none", border: "none", color: t === "Comentario" ? T.teal : T.whiteDim, fontWeight: 700, fontSize: 13, cursor: "pointer", borderBottom: t === "Comentario" ? `2px solid ${T.teal}` : "none", paddingBottom: 6 }}>{t}</button>
+            <button key={t}
+              onClick={() => setComposerTab(t)}
+              style={{ background: "none", border: "none", color: t === composerTab ? T.teal : T.whiteDim, fontWeight: 700, fontSize: 13, cursor: "pointer", borderBottom: t === composerTab ? `2px solid ${T.teal}` : "none", paddingBottom: 6 }}>
+              {t}
+            </button>
           ))}
         </div>
-        <div style={{ position: "relative" }}>
-          <textarea
-            value={comentario}
-            onChange={e => setComentario(e.target.value)}
-            placeholder="Escribe un comentario o nota para este lead..."
-            style={{ width: "100%", background: T.bg2, border: `1px solid ${T.borderHi}`, borderRadius: 12, padding: 16, color: T.white, fontSize: 13, minHeight: 80, outline: "none", fontFamily: "inherit" }}
-          />
-          <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 10 }}>
-            <Btn onClick={handleAddComment} disabled={!comentario.trim()} size="sm" style={{ background: T.teal, color: "#000" }}>Enviar</Btn>
+
+        {composerTab === "Comentario" && (
+          <div style={{ position: "relative" }}>
+            <textarea
+              value={comentario}
+              onChange={e => setComentario(e.target.value)}
+              placeholder="Escribe un comentario o nota para este lead..."
+              style={{ width: "100%", background: T.bg2, border: `1px solid ${T.borderHi}`, borderRadius: 12, padding: 16, color: T.white, fontSize: 13, minHeight: 80, outline: "none", fontFamily: "inherit" }}
+            />
+            <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 10 }}>
+              <Btn onClick={handleAddComment} disabled={!comentario.trim()} size="sm" style={{ background: T.teal, color: "#000" }}>Guardar Nota</Btn>
+            </div>
           </div>
-        </div>
+        )}
+
+        {composerTab === "WhatsApp" && (
+          <div style={{ position: "relative" }}>
+            {!telefono ? (
+              <div style={{ padding: 16, textAlign: "center", color: T.red, fontSize: 12 }}>Este contacto no tiene teléfono vinculado.</div>
+            ) : (
+              <>
+                <textarea
+                  value={waMsg}
+                  onChange={e => setWaMsg(e.target.value)}
+                  placeholder={`Enviar WhatsApp a ${telefono}...`}
+                  style={{ width: "100%", background: T.bg2, border: `3px solid ${T.teal}40`, borderRadius: 12, padding: 16, color: T.white, fontSize: 13, minHeight: 80, outline: "none", fontFamily: "inherit" }}
+                />
+                <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 10 }}>
+                  <Btn onClick={handleSendWA} disabled={!waMsg.trim()} size="sm" style={{ background: "#25D366", color: "#000" }}>
+                    <Ico k="phone" size={12} /> Enviar Mensaje
+                  </Btn>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
+        {(composerTab === "Tarea" || composerTab === "Llamada") && (
+          <div style={{ padding: 20, textAlign: "center", color: T.whiteDim, fontSize: 13 }}>Sube de nivel tu CRM. Módulo de {composerTab} próximamente...</div>
+        )}
       </div>
 
       {/* TIMELINE SEARCH & FILTER */}
@@ -139,7 +218,12 @@ export function LeadTimeline({ deal, contacto, db, setDb, guardarEnSupa }) {
             <div style={{ flex: 1, background: T.bg1, border: `1px solid ${T.borderHi}`, borderRadius: 12, padding: 16, boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8, alignItems: "center" }}>
                 <div style={{ fontWeight: 800, fontSize: 12, color: T.white, textTransform: "uppercase", letterSpacing: ".02em" }}>
-                  {it.type === "whatsapp" ? (it.fromMe ? "WhatsApp (Enviado)" : "WhatsApp (Recibido)") : "Nota / Comentario"}
+                  {it.type === "whatsapp" ? (
+                    <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      {it.fromMe ? "WhatsApp (Enviado)" : "WhatsApp (Recibido)"}
+                      {it.deal_id === deal.id && <Chip label="Este Lead" size="xs" color={T.teal} />}
+                    </span>
+                  ) : "Nota / Comentario"}
                 </div>
                 <div style={{ fontSize: 11, color: T.whiteDim }}>{new Date(it.timestamp * 1000).toLocaleString()}</div>
               </div>
