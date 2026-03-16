@@ -172,6 +172,7 @@ io.on('connection', (socket) => {
   socket.on('whatsapp_send_message', async (data) => {
     try {
       const sentMsg = await whatsappClient.sendMessage(data.to, data.text);
+      const activeDealId = data.dealId || await getActiveDealId(data.to);
       const msgOut = {
         id: sentMsg.id._serialized,
         chatId: data.to,
@@ -179,7 +180,7 @@ io.on('connection', (socket) => {
         fromMe: true,
         timestamp: sentMsg.timestamp,
         ack: sentMsg.ack,
-        deal_id: data.dealId || null
+        deal_id: activeDealId || null
       };
       socket.emit('whatsapp_message', { ...msgOut, clientId: data.clientId });
 
@@ -210,6 +211,8 @@ io.on('connection', (socket) => {
 
       console.log(`Adjunto enviado exitosamente a ${data.to}`);
 
+      const activeDealId = data.dealId || await getActiveDealId(data.to);
+
       // Enviamos el ack de confirmación al frontend refiriendo el ID local optimista
       const msgOut = {
         id: sentMsg.id._serialized,
@@ -221,7 +224,7 @@ io.on('connection', (socket) => {
         hasMedia: sentMsg.hasMedia,
         fileName: data.fileName,
         mimeType: mimeType,
-        deal_id: data.dealId || null
+        deal_id: activeDealId || null
       };
 
       socket.emit('whatsapp_message', { ...msgOut, clientId: data.clientId });
@@ -552,6 +555,12 @@ app.post('/ai/analyze', async (req, res) => {
 whatsappClient.on('message', async msg => {
   console.log(`Mensaje recibido de ${msg.from}: ${msg.body}`);
 
+  // 1. LEAD AUTOMÁTICO: Asegurar que el contacto existe en CRM
+  await handleAutoLead(msg);
+
+  // 1.2 ANCLAJE A LEAD: Buscar si hay un negocio activo para este chat
+  const activeDealId = await getActiveDealId(msg.from);
+
   // Sincronizar mensaje con el frontend
   const msgData = {
     id: msg.id._serialized,
@@ -559,11 +568,12 @@ whatsappClient.on('message', async msg => {
     body: msg.body,
     fromMe: msg.fromMe,
     timestamp: msg.timestamp,
-    ack: msg.ack
+    ack: msg.ack,
+    deal_id: activeDealId || null
   };
   io.emit('whatsapp_message', msgData);
 
-  // PERSISTENCIA: Guardar en Supabase
+  // PERSISTENCIA: Guardar en Supabase (ahora con deal_id si existe)
   supabase.from('whatsapp_messages').upsert(msgData, { onConflict: 'id' }).then(() => { });
 
   if (msg.fromMe) return;
@@ -571,20 +581,11 @@ whatsappClient.on('message', async msg => {
   const text = msg.body.toLowerCase();
   let responded = false;
 
-  // 1. LEAD AUTOMÁTICO: Asegurar que el contacto existe en CRM
-  await handleAutoLead(msg);
-
-  // 1.2 ANCLAJE A LEAD: Buscar si hay un negocio activo para este chat
-  const activeDealId = await getActiveDealId(msg.from);
-  if (activeDealId) {
-    msgData.deal_id = activeDealId;
-  }
-
   // 1.5 TRANSCRIPCIÓN DE AUDIOS
-  if (msg.hasMedia && msg.type === 'audio' || msg.type === 'voice') {
+  if (msg.hasMedia && (msg.type === 'audio' || msg.type === 'voice')) {
     try {
       const media = await msg.downloadMedia();
-      if (media && media.mimetype.startsWith('audio/')) {
+      if (media && media.mimetype && media.mimetype.startsWith('audio/')) {
         const transcript = await transcribeAudio(media);
         if (transcript) {
           msgData.body = `🎤 [Audio Transcrito]: ${transcript}`;

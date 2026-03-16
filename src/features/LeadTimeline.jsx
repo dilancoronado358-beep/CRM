@@ -61,13 +61,17 @@ export function LeadTimeline({ deal, contacto, db, setDb, guardarEnSupa, setModu
     // 2. Traer WhatsApp de Supabase (Anclados a este Deal o filtrados por Teléfono)
     if (telefono || deal?.id) {
       try {
+        const cleanPhone = telefono ? telefono.replace(/\D/g, '') : "";
         let query = sb.from('whatsapp_messages').select('*');
 
-        // Priorizamos anclaje por dealId
+        // Priorizamos anclaje por dealId, pero también buscamos por teléfono limpio
         if (deal?.id) {
-          query = query.or(`deal_id.eq.${deal.id},chatId.ilike.%${telefono}%`);
+          query = query.or(`deal_id.eq.${deal.id},chatId.ilike.%${cleanPhone}%`);
+        } else if (cleanPhone) {
+          query = query.ilike('chatId', `%${cleanPhone}%`);
         } else {
-          query = query.ilike('chatId', `%${telefono}%`);
+          setLoading(false);
+          return;
         }
 
         const { data, error } = await query.order('timestamp', { ascending: false });
