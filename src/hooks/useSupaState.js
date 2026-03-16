@@ -43,7 +43,7 @@ export function useSupaState() {
         const usuario = JSON.parse(raw);
         return { ...SEMILLA, usuario };
       }
-    } catch (e) {}
+    } catch (e) { }
     return SEMILLA;
   });
 
@@ -64,7 +64,7 @@ export function useSupaState() {
           if (v.usuario.temaActivo) {
             localStorage.setItem("crm_theme", v.usuario.temaActivo);
           }
-        } catch (e) {}
+        } catch (e) { }
       }
 
       // ── Auto-sync: detectar cambios en tablas de Supabase ─────────────────
