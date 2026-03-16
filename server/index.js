@@ -535,12 +535,15 @@ whatsappClient.on('message', async msg => {
         const userDelay = (parseInt(rule.delay) || 0) * 1000;
         const finalDelay = Math.max(1500, userDelay);
 
+        console.log(`Regla detectada: "${rule.keyword}". Delay: ${finalDelay}ms. AI Prompt: ${rule.ai_prompt ? 'SI' : 'NO'}`);
+
         setTimeout(async () => {
           try {
             let finalReply = rule.reply_text || "";
 
             // Si la regla tiene un prompt de IA, generamos la respuesta dinámicamente
             if (rule.ai_prompt && (GEMINI_API_KEY || OPENAI_API_KEY)) {
+              console.log(`Generando respuesta con AI Prompt: ${rule.ai_prompt}`);
               const fullPrompt = `${rule.ai_prompt}. El cliente dijo: "${msg.body}"`;
               finalReply = await getUnifiedAIResponse(fullPrompt) || finalReply;
             }
