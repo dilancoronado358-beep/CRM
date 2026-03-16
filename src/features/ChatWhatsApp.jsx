@@ -161,6 +161,19 @@ export function ChatWhatsApp({ t }) {
     }
   }, [activeChatId]);
 
+  // Manejar selección automática desde LeadTimeline
+  useEffect(() => {
+    const pending = localStorage.getItem('wa_pending_chat');
+    if (pending && waConnected && chats.length > 0) {
+      const exists = chats.find(c => c.id._serialized === pending);
+      if (exists) {
+        setActiveChatId(pending);
+        socketRef.current?.emit('whatsapp_get_chat', pending);
+        localStorage.removeItem('wa_pending_chat');
+      }
+    }
+  }, [waConnected, chats]);
+
 
   useEffect(() => {
     if (db?.whatsapp_automations) {

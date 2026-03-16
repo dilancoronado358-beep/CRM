@@ -5,7 +5,7 @@ import { Chip, Btn, Inp, Sel } from "../components/ui";
 import { Campo, Modal, Tarjeta, SelColor, EncabezadoSeccion, ControlSegmentado, Ico, Barra } from "../components/ui";
 import { LeadTimeline } from "./LeadTimeline";
 
-export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t }) => {
+export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModulo }) => {
   const [plActivo, setPlActivo] = useState(db.pipelines[0]?.id || "");
   const [tab, setTab] = useState("kanban");
   const [showNuevoPL, setShowNuevoPL] = useState(false);
@@ -118,6 +118,7 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t }) => {
             db={db}
             setDb={setDb}
             guardarEnSupa={guardarEnSupa}
+            setModulo={setModulo}
           />
         </div>
       </div>

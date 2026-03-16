@@ -366,7 +366,7 @@ export default function App() {
   const grp = MODULOS.reduce((acc, m) => { (acc[m.role] = acc[m.role] || []).push(m); return acc; }, {});
   const ModuloActivo = MODULOS.find(m => m.id === modulo)?.comp || Dashboard;
 
-  const propsModulo = { db, setDb, guardarEnSupa, eliminarDeSupa, t };
+  const propsModulo = { db, setDb, guardarEnSupa, eliminarDeSupa, t, setModulo };
 
   return (
     <div style={{ display: "flex", height: "100vh", background: T.bg0, color: T.white }}>

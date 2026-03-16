@@ -9,7 +9,7 @@ const SUPA_URL = "https://eoylgxwlhsmwqgadahvk.supabase.co";
 const SUPA_KEY = "sb_publishable_wKUbf7IFOoH4HIUayIAJdQ_Boj1jgZa";
 const sb = createClient(SUPA_URL, SUPA_KEY);
 
-export function LeadTimeline({ deal, contacto, db, setDb, guardarEnSupa }) {
+export function LeadTimeline({ deal, contacto, db, setDb, guardarEnSupa, setModulo }) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
   const [filtro, setFiltro] = useState("all"); // all, whatsapp, notes
@@ -113,6 +113,20 @@ export function LeadTimeline({ deal, contacto, db, setDb, guardarEnSupa }) {
     if (!waMsg.trim() || !telefono) return;
     if (!socketRef.current) return alert("WhatsApp no conectado");
 
+    // Actualización optimista para que aparezca "al momento"
+    const optimisticMsg = {
+      type: "whatsapp",
+      id: "temp_" + Date.now(),
+      body: waMsg,
+      timestamp: Math.floor(Date.now() / 1000),
+      fromMe: true,
+      hasMedia: false,
+      deal_id: deal.id,
+      sending: true
+    };
+
+    setItems(prev => [optimisticMsg, ...prev]);
+
     const payload = {
       to: telefono + "@c.us",
       text: waMsg,
@@ -121,7 +135,13 @@ export function LeadTimeline({ deal, contacto, db, setDb, guardarEnSupa }) {
 
     socketRef.current.emit("whatsapp_send_message", payload);
     setWaMsg("");
-    // El timeline se refrescará vía socket event
+  };
+
+  const handleGoToChat = () => {
+    if (!telefono) return;
+    const chatId = telefono + "@c.us";
+    localStorage.setItem('wa_pending_chat', chatId);
+    if (setModulo) setModulo('whatsapp');
   };
 
   const filteredItems = items.filter(it => {
@@ -171,7 +191,10 @@ export function LeadTimeline({ deal, contacto, db, setDb, guardarEnSupa }) {
                   placeholder={`Enviar WhatsApp a ${telefono}...`}
                   style={{ width: "100%", background: T.bg2, border: `3px solid ${T.teal}40`, borderRadius: 12, padding: 16, color: T.white, fontSize: 13, minHeight: 80, outline: "none", fontFamily: "inherit" }}
                 />
-                <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 10 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", marginTop: 10, alignItems: "center" }}>
+                  <button onClick={handleGoToChat} style={{ background: "none", border: "none", color: T.teal, fontSize: 11, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
+                    <Ico k="eye" size={12} /> Abrir chat completo
+                  </button>
                   <Btn onClick={handleSendWA} disabled={!waMsg.trim()} size="sm" style={{ background: "#25D366", color: "#000" }}>
                     <Ico k="phone" size={12} /> Enviar Mensaje
                   </Btn>
@@ -228,7 +251,7 @@ export function LeadTimeline({ deal, contacto, db, setDb, guardarEnSupa }) {
                 <div style={{ fontSize: 11, color: T.whiteDim }}>{new Date(it.timestamp * 1000).toLocaleString()}</div>
               </div>
               <div style={{ fontSize: 13, color: T.whiteOff, lineHeight: 1.6, whiteSpace: "pre-wrap" }}>
-                {it.body}
+                {it.body} {it.sending && <span style={{ fontSize: 10, color: T.whiteDim }}>(Enviando...)</span>}
               </div>
               {it.hasMedia && <div style={{ marginTop: 10, padding: 8, background: T.bg2, borderRadius: 8, display: "inline-flex", alignItems: "center", gap: 8, fontSize: 11, color: T.teal }}>
                 <Ico k="document" size={14} /> Archivo adjuntado en WhatsApp
