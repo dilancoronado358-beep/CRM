@@ -19,6 +19,7 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
 
 const app = express();
 app.use(cors());
+app.use(express.json({ limit: '50mb' }));
 
 app.get('/', (req, res) => res.send('ENSING WhatsApp Server is Running! 🚀'));
 app.get('/health', (req, res) => res.json({ status: 'ok', clientReady, latestQR: !!latestQRUrl }));
@@ -307,6 +308,118 @@ async function getAIResponse(userText) {
   }
 }
 
+// Función para transcribir audios con Gemini
+async function transcribeAudio(media) {
+  if (!GEMINI_API_KEY || !media) return null;
+  try {
+    console.log(`🎙️ Transcribiendo audio (${media.mimetype})...`);
+
+    // Preparar el cuerpo para Gemini multimodal
+    const response = await axios.post(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+      contents: [{
+        parts: [
+          { text: "Eres un transcriptor preciso. Transcribe exactamente lo que se dice en este audio de WhatsApp. Si no hay voz inteligible, responde '[No se detectó voz clara]'." },
+          { inline_data: { mime_type: media.mimetype, data: media.data } }
+        ]
+      }]
+    });
+
+    const transcription = response.data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    console.log(`✅ Transcripción: ${transcription}`);
+    return transcription;
+  } catch (e) {
+    console.error("Error transcribiendo con Gemini:", e.message);
+    return "[Error en transcripción automática]";
+  }
+}
+
+// Función para sugerir tareas automáticamente basado en el chat
+async function suggestCRMTask(chatId, messageText) {
+  if (!GEMINI_API_KEY) return;
+  try {
+    const prompt = `
+      Analiza este mensaje de un chat de ventas y determina si implica una TAREA o COMPROMISO a futuro (ej: llamar, enviar info, revisar presupuesto).
+      Mensaje: "${messageText}"
+      
+      Si hay un compromiso, responde ÚNICAMENTE un objeto JSON con este formato:
+      {"tarea": "Título breve de la tarea", "dias": número_de_dias_en_el_futuro}
+      Si NO hay compromiso claro, responde: null
+    `;
+
+    const response = await axios.post(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+      contents: [{ parts: [{ text: prompt }] }]
+    });
+
+    const aiText = response.data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!aiText || aiText.trim() === 'null') return;
+
+    const data = JSON.parse(aiText.match(/\{.*\}/s)?.[0] || 'null');
+    if (data && data.tarea) {
+      // 1. Buscar contacto vinculado
+      const phone = chatId.split('@')[0];
+      const { data: contacto } = await supabase.from('contactos').select('id, nombre').eq('telefono', phone).maybeSingle();
+
+      if (contacto) {
+        const deadline = new Date();
+        deadline.setDate(deadline.getDate() + (data.dias || 1));
+
+        const nuevaTarea = {
+          id: `task_ai_${Date.now()}`,
+          titulo: data.tarea,
+          contactoId: contacto.id,
+          prioridad: 'media',
+          estado: 'pendiente',
+          asignado: 'Sistema (AI)',
+          vencimiento: deadline.toISOString().split('T')[0],
+          descripcion: `Sugerida automáticamente por IA basado en el chat con ${contacto.nombre}`
+        };
+
+        await supabase.from('tareas').insert(nuevaTarea);
+        console.log(`📌 Tarea AI creada: ${data.tarea} para el ${nuevaTarea.vencimiento}`);
+      }
+    }
+  } catch (e) {
+    console.error("Error sugiriendo tarea con AI:", e.message);
+  }
+}
+
+// ENDPOINT: Análisis de Negocio Proactivo
+app.post('/ai/analyze', async (req, res) => {
+  if (!GEMINI_API_KEY) return res.status(500).json({ error: "Gemini API Key no configurada en el servidor." });
+
+  try {
+    const { deals, contactos, actividades, tareas, userContext } = req.body;
+
+    const prompt = `
+      Eres un experto analista de ventas y estrategia de negocios para el CRM "ENSING". 
+      Analiza los siguientes datos y genera un reporte PPROACTIVO y MOTIVADOR para el usuario.
+      
+      DATOS:
+      - Oportunidades: ${JSON.stringify(deals?.slice(0, 15))}
+      - Contactos Recientes: ${JSON.stringify(contactos?.slice(0, 5))}
+      - Actividades/Tareas: ${JSON.stringify(tareas?.slice(0, 10))}
+      
+      INSTRUCCIONES:
+      1. Identifica los 3 deals más importantes que se deben cerrar esta semana.
+      2. Detecta si hay clientes "atascados" (sin actividad reciente).
+      3. Da un consejo estratégico para mejorar la conversión.
+      4. Estima el revenue potencial para el periodo.
+      
+      FORMATO: Responde en Markdown elegante, usa emojis, negritas y listas. Sé breve pero impactante.
+    `;
+
+    const response = await axios.post(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+      contents: [{ parts: [{ text: prompt }] }]
+    });
+
+    const analysis = response.data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    res.json({ analysis });
+  } catch (e) {
+    console.error("Error en /ai/analyze:", e.message);
+    res.status(500).json({ error: "Error procesando el análisis de AI." });
+  }
+});
+
 // Lógica de Chatbot Inteligente
 whatsappClient.on('message', async msg => {
   console.log(`Mensaje recibido de ${msg.from}: ${msg.body}`);
@@ -332,6 +445,24 @@ whatsappClient.on('message', async msg => {
 
   // 1. LEAD AUTOMÁTICO: Asegurar que el contacto existe en CRM
   await handleAutoLead(msg);
+
+  // 1.5 TRANSCRIPCIÓN DE AUDIOS
+  if (msg.hasMedia && msg.type === 'audio' || msg.type === 'voice') {
+    try {
+      const media = await msg.downloadMedia();
+      if (media && media.mimetype.startsWith('audio/')) {
+        const transcript = await transcribeAudio(media);
+        if (transcript) {
+          msgData.body = `🎤 [Audio Transcrito]: ${transcript}`;
+          // Actualizar en realtime y persistencia
+          io.emit('whatsapp_message', msgData);
+          supabase.from('whatsapp_messages').upsert(msgData, { onConflict: 'id' }).then(() => { });
+        }
+      }
+    } catch (err) {
+      console.error("Error procesando audio:", err.message);
+    }
+  }
 
   // 2. AUTO-RESPUESTAS POR PALABRA CLAVE (Dinamismo con Horario y Media)
   for (let rule of autoRules) {
@@ -397,6 +528,9 @@ whatsappClient.on('message', async msg => {
       supabase.from('whatsapp_messages').insert(aiReplyObj).then(() => { });
     }
   }
+
+  // 4. SUGERENCIA DE TAREAS (Proactivo)
+  suggestCRMTask(msg.from, msg.body);
 });
 
 whatsappClient.on('message_ack', (msg, ack) => {

@@ -272,9 +272,46 @@ export function useSupaState() {
       }
     });
 
+    // ── SUPABASE REALTIME SINC (Escuchar cambios en vivo) ──────────────────
+    const canalRealtime = sb
+      .channel('schema-db-changes')
+      .on('postgres_changes', { event: '*', schema: 'public' }, (payload) => {
+        const { eventType, table, new: record, old } = payload;
+        
+        // Solo procesar tablas que estamos siguiendo
+        if (!TABLAS_SUPA.includes(table)) return;
+
+        console.log(`⚡ Realtime [${table}]: ${eventType}`, record || old);
+
+        setDbRaw(prev => {
+          const lista = Array.isArray(prev[table]) ? prev[table] : [];
+          
+          if (eventType === 'INSERT' || eventType === 'UPDATE') {
+            const idx = lista.findIndex(r => r.id === record.id);
+            // Si el registro ya existe e igual, no hacer nada para evitar loops
+            if (idx >= 0 && JSON.stringify(lista[idx]) === JSON.stringify(record)) return prev;
+
+            const nuevaLista = idx >= 0 
+              ? lista.map(r => r.id === record.id ? record : r)
+              : [record, ...lista];
+            
+            return { ...prev, [table]: nuevaLista };
+          }
+
+          if (eventType === 'DELETE') {
+            if (!lista.find(r => r.id === old.id)) return prev;
+            return { ...prev, [table]: lista.filter(r => r.id !== old.id) };
+          }
+
+          return prev;
+        });
+      })
+      .subscribe();
+
     return () => {
       montado = false;
       subscription.unsubscribe();
+      sb.removeChannel(canalRealtime);
     };
   }, [cargarDeSupa, setDb]);
 

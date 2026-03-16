@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { useSupaState, sb } from "./hooks/useSupaState";
 import { T, applyTheme } from "./theme";
 
-import { Av, Btn, ControlSegmentado, IndSupa, Ico, SpotlightSearch } from "./components/ui";
+import { Av, Btn, ControlSegmentado, IndSupa, Ico, SpotlightSearch, Toasts } from "./components/ui";
+import { io } from "socket.io-client";
 
 // Features
 import { Dashboard } from "./features/Dashboard";
@@ -227,6 +228,33 @@ export default function App() {
   const [spotlightOpen, setSpotlightOpen] = useState(false);
   const [hashURL, setHashURL] = useState(window.location.hash);
 
+  // NOTIFICACIONES TOAST
+  const [notis, setNotis] = useState([]);
+  const addNoti = (n) => {
+    const id = Date.now();
+    setNotis(prev => [...prev, { ...n, id }]);
+    setTimeout(() => setNotis(prev => prev.filter(x => x.id !== id)), 5000);
+  };
+
+  // SOCKET GLOBAL PARA NOTIFICACIONES
+  useEffect(() => {
+    const protocol = window.location.protocol === "https:" ? "https:" : "http:";
+    const host = window.location.hostname;
+    const socket = io(`${protocol}//${host}:3001`);
+
+    socket.on("whatsapp_message", (msg) => {
+      if (!msg.fromMe) {
+        addNoti({
+          title: "Nuevo WhatsApp",
+          body: msg.body.length > 50 ? msg.body.slice(0, 50) + "..." : msg.body,
+          color: "#25D366"
+        });
+      }
+    });
+
+    return () => socket.disconnect();
+  }, []);
+
   useEffect(() => {
     // Apply theme on mount and whenever user changes it
     const themeId = db.usuario?.temaActivo || "dark";
@@ -252,7 +280,7 @@ export default function App() {
 
   // 1. Mostrar pantalla de carga global SOLO acaba de hacer login explícitamente
   const isJustLoggedIn = sessionStorage.getItem("just_logged_in") === "true";
-  
+
   // Limpiar la bandera cuando ya terminó de cargar
   if (isJustLoggedIn && !cargando) {
     sessionStorage.removeItem("just_logged_in");
@@ -421,7 +449,7 @@ export default function App() {
               <input placeholder="Búsqueda rápida..." style={{ background: T.bg2, border: `1px solid ${T.borderHi}`, borderRadius: 20, padding: "8px 16px 8px 34px", fontSize: 13, color: T.white, width: 220, outline: "none", transition: "all .2s", fontFamily: "inherit" }} onFocus={e => e.target.style.background = T.bg1} onBlur={e => e.target.style.background = T.bg2} />
             </div>
             <Btn variant="secundario" style={{ padding: 8, borderRadius: "50%" }}><Ico k="refresh" size={16} /></Btn>
-            <Btn variant="secundario" style={{ padding: 8, borderRadius: "50%", color: T.red, borderColor: T.red }} onClick={async () => { if(confirm(t("¿Cerrar sesión?"))) { await sb.auth.signOut(); localStorage.removeItem("crm_usuario_activo"); localStorage.removeItem("crm_theme"); sessionStorage.clear(); window.location.reload(); } }} title={t("Cerrar sesión")}>
+            <Btn variant="secundario" style={{ padding: 8, borderRadius: "50%", color: T.red, borderColor: T.red }} onClick={async () => { if (confirm(t("¿Cerrar sesión?"))) { await sb.auth.signOut(); localStorage.removeItem("crm_usuario_activo"); localStorage.removeItem("crm_theme"); sessionStorage.clear(); window.location.reload(); } }} title={t("Cerrar sesión")}>
               <Ico k="lock" size={16} />
             </Btn>
           </div>
@@ -437,6 +465,9 @@ export default function App() {
 
       {/* GLOBAL OMNIBAR */}
       <SpotlightSearch db={db} open={spotlightOpen} onClose={() => setSpotlightOpen(false)} onNavigate={(m) => setModulo(m)} />
+
+      {/* NOTIFICACIONES */}
+      <Toasts items={notis} onRemove={id => setNotis(prev => prev.filter(x => x.id !== id))} />
     </div>
   );
 }

@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react";
 import { T } from "../theme";
 import { money, fdate, fdtm, ACT_CFG } from "../utils";
-import { Tarjeta, KPI, Chip, Ico, Btn } from "../components/ui";
+import { Tarjeta, KPI, Chip, Ico, Btn, Modal, Vacio } from "../components/ui";
+import axios from "axios";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, LineChart, Line, CartesianGrid, Area, AreaChart, RadialBarChart, RadialBar, PieChart, Pie } from "recharts";
 
 // Custom funnel label
@@ -16,10 +17,31 @@ const CustomLabel = ({ x, y, width, height, value, deals, color, name }) => {
   );
 };
 
-const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 export const Dashboard = ({ db, t = s => s }) => {
   const [plFiltro, setPlFiltro] = useState(db.pipelines[0]?.id || "");
+  const [analisisIA, setAnalisisIA] = useState("");
+  const [cargandoIA, setCargandoIA] = useState(false);
+  const [verModalIA, setVerModalIA] = useState(false);
+
+  const solicitarAnalisis = async () => {
+    setCargandoIA(true);
+    setVerModalIA(true);
+    try {
+      const { data } = await axios.post("http://localhost:3001/ai/analyze", {
+        deals: db.deals,
+        contactos: db.contactos,
+        tareas: db.tareas,
+      });
+      setAnalisisIA(data.analysis || "No se pudo generar el análisis.");
+    } catch (e) {
+      console.error("Error al obtener análisis de IA:", e);
+      setAnalisisIA("Error al conectar con el asistente de IA. Asegúrate de que el servidor esté corriendo.");
+    } finally {
+      setCargandoIA(false);
+    }
+  };
 
   const esGanado = d => db.pipelines.find(p => p.id === d.pipelineId)?.etapas.find(e => e.id === d.etapaId)?.esGanado;
   const esPerdido = d => db.pipelines.find(p => p.id === d.pipelineId)?.etapas.find(e => e.id === d.etapaId)?.esPerdido;
@@ -70,6 +92,20 @@ export const Dashboard = ({ db, t = s => s }) => {
         <KPI label={t("Contactos")} value={db.contactos.length} sub={`${db.contactos.filter(c => c.estado === "lead").length} leads activos`} color={T.teal} icon="users" />
         <KPI label={t("Actividades Pend.")} value={actPend} sub={`${vencidas} tareas vencidas`} color={vencidas > 0 ? T.red : T.teal} icon="lightning" />
         <KPI label={t("Emails Sin Leer")} value={sinLeer} sub="en bandeja de entrada" color={sinLeer > 0 ? T.amber : T.teal} icon="mail" />
+
+        {/* PREMIUM AI INSIGHTS TRIGGER */}
+        <Tarjeta brillo style={{ flex: "1 0 300px", padding: 18, background: `linear-gradient(135deg, ${T.bg1}, ${T.bg2})`, border: `1px solid ${T.teal}40`, display: "flex", alignItems: "center", gap: 16 }}>
+          <div style={{ width: 44, height: 44, borderRadius: 12, background: `linear-gradient(45deg, ${T.teal}, #60A5FA)`, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: `0 4px 15px ${T.teal}40` }}>
+            <Ico k="lightning" size={24} style={{ color: "#FFF" }} />
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: T.white }}>IA Sales Assistant</div>
+            <div style={{ fontSize: 11, color: T.whiteDim, marginTop: 2 }}>Análisis proactivo de tu pipeline</div>
+          </div>
+          <Btn variant="primario" size="sm" onClick={solicitarAnalisis} disabled={cargandoIA}>
+            {cargandoIA ? "Analizando..." : "Ver Insights"}
+          </Btn>
+        </Tarjeta>
       </div>
 
       {/* Charts Row 1: Funnel + Trend */}
@@ -223,6 +259,46 @@ export const Dashboard = ({ db, t = s => s }) => {
           {db.actividades.length === 0 && <div style={{ color: T.whiteDim, fontSize: 13, textAlign: "center", padding: 20 }}>Sin actividades recientes</div>}
         </Tarjeta>
       </div>
+
+      <Modal
+        open={verModalIA}
+        onClose={() => setVerModalIA(false)}
+        title="🤖 Sales Intelligence Insights"
+        width={700}
+      >
+        {cargandoIA ? (
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 20, padding: "40px 0" }}>
+            <div className="ia-loader" />
+            <div style={{ color: T.teal, fontWeight: 700, fontSize: 16 }}>Generando análisis estratégico...</div>
+            <div style={{ color: T.whiteDim, fontSize: 12, textAlign: "center", maxWidth: 400 }}>
+              Gemini está revisando tus deals, actividades y contactos para darte los mejores consejos.
+            </div>
+            <style>{`
+              .ia-loader {
+                width: 50px;
+                height: 50px;
+                border: 4px solid ${T.teal}20;
+                border-top-color: ${T.teal};
+                border-radius: 50%;
+                animation: spin 1s linear infinite;
+              }
+              @keyframes spin { to { transform: rotate(360deg); } }
+            `}</style>
+          </div>
+        ) : (
+          <div style={{ color: T.whiteOff, lineHeight: 1.6, fontSize: 14 }}>
+            <div style={{ whiteSpace: "pre-wrap", background: T.bg2, padding: 24, borderRadius: 12, border: `1px solid ${T.borderHi}` }}>
+              {analisisIA}
+            </div>
+            <div style={{ marginTop: 24, padding: 16, background: T.teal + "10", borderRadius: 10, border: `1px solid ${T.teal}30`, display: "flex", gap: 12 }}>
+              <Ico k="star" size={18} style={{ color: T.teal }} />
+              <div style={{ fontSize: 12, color: T.teal }}>
+                Este análisis se basa en tus datos actuales y es generado dinámicamente para ayudarte a vender más.
+              </div>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 };
