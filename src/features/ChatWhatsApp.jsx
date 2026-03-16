@@ -45,8 +45,23 @@ export function ChatWhatsApp({ t }) {
     // Si ya existe un socket, lo desconectamos antes de reconectar
     if (socketRef.current) socketRef.current.disconnect();
 
-    socketRef.current = io(WA_SERVER_URL, { autoConnect: true });
+    socketRef.current = io(WA_SERVER_URL, { 
+      transports: ['websocket'],
+      autoConnect: true 
+    });
     const socket = socketRef.current;
+    
+    // Proactivamente intentamos pedir el QR por HTTP si ya existe uno (ngrok fallback)
+    const fetchQR = async () => {
+      try {
+        const res = await fetch(`${WA_SERVER_URL}/qr`, { headers: { "ngrok-skip-browser-warning": "true" } });
+        if (res.ok) {
+           const data = await res.json();
+           if (data.qr) setWaQR(data.qr);
+        }
+      } catch(e) { /* ignore */ }
+    };
+    fetchQR();
 
     // Pedir estado inicial
     socket.emit('get_whatsapp_status');

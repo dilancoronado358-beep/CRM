@@ -61,7 +61,10 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
     const protocol = window.location.protocol === "https:" ? "https:" : "http:";
     const adminUrl = db.usuariosApp?.find(u => u.role === 'admin' && u.waServerUrl)?.waServerUrl;
     const finalUrl = fWaUrl || adminUrl || `${protocol}//${window.location.hostname}:3001`;
-    socketRef.current = io(finalUrl, { autoConnect: true });
+    socketRef.current = io(finalUrl, { 
+      transports: ['websocket'],
+      autoConnect: true 
+    });
     const socket = socketRef.current;
 
     socket.on('whatsapp_qr', (qrBase64) => {
@@ -105,7 +108,10 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
     }
 
     console.log("Re-conectando socket a:", finalUrl);
-    socketRef.current = io(finalUrl, { autoConnect: true });
+    socketRef.current = io(finalUrl, { 
+      transports: ['websocket'],
+      autoConnect: true 
+    });
 
     // Re-vincular eventos
     socketRef.current.on('whatsapp_qr', (qrBase64) => { setWaQR(qrBase64); setWaConnected(false); });
@@ -134,6 +140,16 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
       const data = await res.json();
       if (data.status === 'ok') {
         setTestResult({ success: true, msg: "¡Conexión exitosa! El servidor está respondiendo." });
+        
+        // Proactivamente intentamos pedir el QR por HTTP si ya existe uno
+        try {
+          const qrRes = await fetch(`${url}/qr`, { headers: { "ngrok-skip-browser-warning": "true" } });
+          if (qrRes.ok) {
+            const qrData = await qrRes.json();
+            if (qrData.qr) setWaQR(qrData.qr);
+          }
+        } catch (qrE) { console.log('QR no disponible por HTTP todavía'); }
+
         // Si el test funciona, forzamos conexión de socket
         iniciarVinculacionWA();
       } else {

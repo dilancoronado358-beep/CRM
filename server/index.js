@@ -11,6 +11,10 @@ app.use(cors());
 
 app.get('/', (req, res) => res.send('ENSING WhatsApp Server is Running! 🚀'));
 app.get('/health', (req, res) => res.json({ status: 'ok', clientReady, latestQR: !!latestQRUrl }));
+app.get('/qr', (req, res) => {
+  if (latestQRUrl) res.json({ qr: latestQRUrl });
+  else res.status(404).json({ error: "No hay QR generado aún." });
+});
 
 const server = http.createServer(app);
 const io = new Server(server, {
