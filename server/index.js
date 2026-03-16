@@ -5,6 +5,17 @@ const { Server } = require('socket.io');
 const { Client, LocalAuth, MessageMedia } = require('whatsapp-web.js');
 const qrcode = require('qrcode');
 const cors = require('cors');
+const { createClient } = require('@supabase/supabase-js');
+const axios = require('axios');
+require('dotenv').config();
+
+// Configuración Supabase (Copiada del frontend para conveniencia)
+const SUPA_URL = process.env.SUPA_URL || "https://eoylgxwlhsmwqgadahvk.supabase.co";
+const SUPA_KEY = process.env.SUPA_KEY || "sb_publishable_wKUbf7IFOoH4HIUayIAJdQ_Boj1jgZa";
+const supabase = createClient(SUPA_URL, SUPA_KEY);
+
+// Configuración AI
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || ""; 
 
 const app = express();
 app.use(cors());
@@ -230,24 +241,92 @@ whatsappClient.on('auth_failure', msg => {
   console.error('Fallo en la autenticacion', msg);
 });
 
-// Lógica de Chatbot Simple
+// Función para crear Lead Automático
+async function handleAutoLead(msg) {
+  try {
+    const contactId = msg.from;
+    const phone = contactId.split('@')[0];
+
+    // 1. Verificar si el contacto ya existe
+    const { data: existente } = await supabase.from('contactos').select('id').eq('telefono', phone).maybeSingle();
+    if (existente) return existente.id;
+
+    console.log(`✨ Creando Lead Automático para: ${phone}`);
+
+    // 2. Crear Contacto
+    const newContact = {
+      id: crypto?.randomUUID?.() || `c_${Date.now()}`,
+      nombre: `WhatsApp ${phone}`,
+      telefono: phone,
+      estado: 'lead',
+      fuente: 'WhatsApp Bot',
+      creado: new Date().toISOString().split('T')[0]
+    };
+
+    const { error: errC } = await supabase.from('contactos').insert(newContact);
+    if (errC) throw errC;
+
+    // 3. Crear Deal (Oportunidad)
+    const newDeal = {
+      id: crypto?.randomUUID?.() || `d_${Date.now()}`,
+      titulo: `Oportunidad WhatsApp - ${phone}`,
+      contactoId: newContact.id,
+      etapaId: 'et1', // Nuevo Lead
+      valor: 0,
+      creado: new Date().toISOString().split('T')[0]
+    };
+    await supabase.from('deals').insert(newDeal);
+
+    return newContact.id;
+  } catch (e) {
+    console.error("Error en handleAutoLead:", e.message);
+  }
+}
+
+// Función para obtener respuesta de AI
+async function getAIResponse(userText) {
+  if (!GEMINI_API_KEY) return null;
+  try {
+    const prompt = `Eres un asistente de ventas de ENSING CRM. Responde de forma amable, profesional y concisa. Cliente dice: "${userText}"`;
+    const response = await axios.post(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+      contents: [{ parts: [{ text: prompt }] }]
+    });
+    return response.data?.candidates?.[0]?.content?.parts?.[0]?.text;
+  } catch (e) {
+    console.error("Error en Gemini AI:", e.message);
+    return null;
+  }
+}
+
+// Lógica de Chatbot Inteligente
 whatsappClient.on('message', async msg => {
   console.log(`Mensaje recibido de ${msg.from}: ${msg.body}`);
-  io.emit('whatsapp_message', {
+  
+  // Sincronizar mensaje con el frontend
+  const msgData = {
     id: msg.id._serialized,
     chatId: msg.from,
     body: msg.body,
     fromMe: msg.fromMe,
     timestamp: msg.timestamp,
     ack: msg.ack
-  });
+  };
+  io.emit('whatsapp_message', msgData);
+
+  // PERSISTENCIA: Guardar en Supabase (opcional, requiere tabla whatsapp_messages)
+  // supabase.from('whatsapp_messages').insert(msgData).then(() => {});
+
+  if (msg.fromMe) return;
 
   const text = msg.body.toLowerCase();
+  let responded = false;
 
-  // Lógica de auto-respuestas dinámica con Horario y Media
+  // 1. LEAD AUTOMÁTICO: Asegurar que el contacto existe en CRM
+  await handleAutoLead(msg);
+
+  // 2. AUTO-RESPUESTAS POR PALABRA CLAVE (Dinamismo con Horario y Media)
   for (let rule of autoRules) {
     if (text.includes(rule.keyword)) {
-      // 1. Verificar Horario
       const now = new Date();
       const currentTime = now.getHours() * 60 + now.getMinutes();
       const [startH, startM] = (rule.start_time || "00:00").split(':').map(Number);
@@ -255,45 +334,50 @@ whatsappClient.on('message', async msg => {
       const startTime = startH * 60 + startM;
       const endTime = endH * 60 + endM;
 
-      if (currentTime < startTime || currentTime > endTime) {
-        console.log(`Bot ignoró trigger '${rule.keyword}' por estar fuera de horario (${rule.start_time}-${rule.end_time})`);
-        continue;
-      }
-
-      const chat = await msg.getChat();
-      await chat.sendStateTyping();
-
-      setTimeout(async () => {
-        try {
-          if (rule.media_url) {
-            const media = await MessageMedia.fromUrl(rule.media_url).catch(e => {
-              console.error("Error cargando media para auto-respuesta:", e.message);
-              return null;
-            });
-            if (media) {
-              await whatsappClient.sendMessage(msg.from, media, { caption: rule.reply_text || "" });
+      if (currentTime >= startTime && currentTime <= endTime) {
+        const chat = await msg.getChat();
+        await chat.sendStateTyping();
+        
+        setTimeout(async () => {
+          try {
+            if (rule.media_url) {
+              const media = await MessageMedia.fromUrl(rule.media_url).catch(e => null);
+              if (media) await whatsappClient.sendMessage(msg.from, media, { caption: rule.reply_text || "" });
+              else if (rule.reply_text) await msg.reply(rule.reply_text);
             } else if (rule.reply_text) {
               await msg.reply(rule.reply_text);
             }
-          } else if (rule.reply_text) {
-            await msg.reply(rule.reply_text);
-          }
 
-          // Notificar al frontend de la respuesta del bot
-          io.emit('whatsapp_message', {
-            id: `bot_${Date.now()}`,
-            chatId: msg.from,
-            body: rule.reply_text || "Archivo enviado",
-            fromMe: true,
-            timestamp: Math.floor(Date.now() / 1000),
-            ack: 1,
-            hasMedia: !!rule.media_url
-          });
-        } catch (e) {
-          console.error("Error en ejecución de auto-respuesta:", e.message);
-        }
-      }, 2000);
-      break;
+            io.emit('whatsapp_message', {
+              id: `bot_${Date.now()}`,
+              chatId: msg.from,
+              body: rule.reply_text || "Archivo enviado",
+              fromMe: true,
+              timestamp: Math.floor(Date.now() / 1000),
+              ack: 1,
+              hasMedia: !!rule.media_url
+            });
+          } catch (e) { console.error("Error en regla:", e.message); }
+        }, 1500);
+        responded = true;
+        break;
+      }
+    }
+  }
+
+  // 3. INTELIGENCIA ARTIFICIAL (Si no hubo match de palabra clave)
+  if (!responded && GEMINI_API_KEY) {
+    const aiReply = await getAIResponse(msg.body);
+    if (aiReply) {
+      await msg.reply(aiReply);
+      io.emit('whatsapp_message', {
+        id: `ai_${Date.now()}`,
+        chatId: msg.from,
+        body: aiReply,
+        fromMe: true,
+        timestamp: Math.floor(Date.now() / 1000),
+        ack: 1
+      });
     }
   }
 });

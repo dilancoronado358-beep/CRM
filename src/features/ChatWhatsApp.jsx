@@ -280,7 +280,11 @@ export function ChatWhatsApp({ t }) {
   };
 
   const eliminarRegla = (id) => {
-    setDb(prev => ({ ...prev, whatsapp_automations: prev.whatsapp_automations.filter(r => r.id !== id) }));
+    if (!window.confirm("¿Estás seguro de que quieres eliminar esta regla?")) return;
+    setDb(prev => {
+      const filtered = (prev.whatsapp_automations || []).filter(r => r.id !== id);
+      return { ...prev, whatsapp_automations: filtered };
+    });
   };
 
   const handleUpdateReglas = () => {
@@ -552,24 +556,24 @@ export function ChatWhatsApp({ t }) {
               <Btn variant="primario" style={{ height: 44 }} onClick={agregarRegla}><Ico k="plus" size={14} /> Agregar</Btn>
             </div>
 
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, tableLayout: "fixed" }}>
               <thead>
                 <tr style={{ borderBottom: `1px solid ${T.border}` }}>
-                  <th style={{ textAlign: "left", padding: "12px 16px", color: T.whiteDim, fontWeight: 700 }}>Trigger</th>
-                  <th style={{ textAlign: "left", padding: "12px 16px", color: T.whiteDim, fontWeight: 700 }}>Horario</th>
-                  <th style={{ textAlign: "left", padding: "12px 16px", color: T.whiteDim, fontWeight: 700 }}>Respuesta</th>
-                  <th style={{ textAlign: "right", padding: "12px 16px", color: T.whiteDim, fontWeight: 700, width: 80 }}>Acciones</th>
+                  <th style={{ textAlign: "left", padding: "12px 16px", color: T.whiteDim, fontWeight: 700, width: "15%" }}>Trigger</th>
+                  <th style={{ textAlign: "left", padding: "12px 16px", color: T.whiteDim, fontWeight: 700, width: "15%" }}>Horario</th>
+                  <th style={{ textAlign: "left", padding: "12px 16px", color: T.whiteDim, fontWeight: 700, width: "60%" }}>Respuesta</th>
+                  <th style={{ textAlign: "right", padding: "12px 16px", color: T.whiteDim, fontWeight: 700, width: "10%" }}>Acciones</th>
                 </tr>
               </thead>
               <tbody>
                 {reglas.map(r => (
                   <tr key={r.id} style={{ borderBottom: `1px solid ${T.borderHi}` }}>
                     <Celda><Chip label={r.keyword} color={T.teal} bg={T.tealSoft} /></Celda>
-                    <Celda><span style={{ color: T.whiteDim }}>{r.start_time?.slice(0, 5)} - {r.end_time?.slice(0, 5)}</span></Celda>
+                    <Celda><span style={{ color: T.whiteDim, fontSize: 11 }}>{r.start_time?.slice(0, 5)} - {r.end_time?.slice(0, 5)}</span></Celda>
                     <Celda>
-                      <div style={{ color: T.white, fontSize: 13, maxWidth: 400 }}>
+                      <div style={{ color: T.white, fontSize: 13, wordBreak: "break-word", overflowWrap: "break-word" }}>
                         {r.reply_text && <div style={{ marginBottom: 4 }}>{r.reply_text}</div>}
-                        {r.media_url && <div style={{ fontSize: 11, color: T.teal, overflow: "hidden", textOverflow: "ellipsis" }}>📎 {r.media_url}</div>}
+                        {r.media_url && <div style={{ fontSize: 11, color: T.teal, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>📎 {r.media_url}</div>}
                       </div>
                     </Celda>
                     <Celda align="right">
