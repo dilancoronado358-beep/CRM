@@ -3,7 +3,7 @@ import { T } from "../theme";
 import { uid, money, fdate } from "../utils";
 import { Chip, Btn, Inp, Sel } from "../components/ui";
 import { Campo, Modal, Tarjeta, SelColor, EncabezadoSeccion, ControlSegmentado, Ico, Barra } from "../components/ui";
-import { WhatsAppHistoryLead } from "./WhatsAppHistoryLead";
+import { LeadTimeline } from "./LeadTimeline";
 
 export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t }) => {
   const [plActivo, setPlActivo] = useState(db.pipelines[0]?.id || "");
@@ -66,80 +66,59 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t }) => {
     const quitarArchivo = id => setF(p => ({ ...p, archivos: p.archivos.filter(a => a.id !== id) }));
 
     return (
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
-        <Campo label="Título del Deal *" col={2}><Inp value={f.titulo} onChange={s("titulo")} placeholder="ej. Acme — Plan Enterprise" style={{ fontSize: 15, fontWeight: 700 }} /></Campo>
+      <div style={{ display: "flex", gap: 32, minHeight: 600 }}>
+        {/* COLUMNA IZQUIERDA: INFORMACIÓN Y CAMPOS */}
+        <div style={{ width: 440, display: "flex", flexDirection: "column", gap: 20, flexShrink: 0 }}>
+          <div style={{ background: T.bg1, border: `1px solid ${T.border}`, borderRadius: 16, padding: 24 }}>
+            <Campo label="Título del Deal *" style={{ marginBottom: 20 }}><Inp value={f.titulo} onChange={s("titulo")} placeholder="ej. Acme — Plan Enterprise" style={{ fontSize: 16, fontWeight: 800 }} /></Campo>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          <Campo label="Pipeline"><Sel value={f.pipelineId} onChange={e => setF(p => ({ ...p, pipelineId: e.target.value, etapaId: db.pipelines.find(pl => pl.id === e.target.value)?.etapas[0]?.id || "" }))}>{db.pipelines.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}</Sel></Campo>
-          <Campo label="Etapa"><Sel value={f.etapaId} onChange={s("etapaId")}>{plActual?.etapas.map(e => <option key={e.id} value={e.id}>{e.nombre}</option>)}</Sel></Campo>
-          <Campo label="Contacto Asociado"><Sel value={f.contactoId} onChange={s("contactoId")}><option value="">— Ninguno —</option>{db.contactos.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}</Sel></Campo>
-          <Campo label="Empresa (B2B)"><Sel value={f.empresaId} onChange={s("empresaId")}><option value="">— Ninguna —</option>{db.empresas.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}</Sel></Campo>
-          <Campo label="Responsable"><Inp value={f.responsable} onChange={s("responsable")} placeholder="Propietario del deal" /></Campo>
-        </div>
-
-        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-            <Campo label="Monto Estimado ($)"><Inp type="number" value={f.valor} onChange={s("valor")} style={{ fontWeight: 800, color: T.green }} /></Campo>
-            <Campo label="Probabilidad (%)"><Inp type="number" value={f.prob} onChange={s("prob")} style={{ fontWeight: 800 }} /></Campo>
-          </div>
-          <Campo label="Fecha de Cierre"><Inp type="date" value={f.fechaCierre} onChange={s("fechaCierre")} /></Campo>
-          <Campo label="Etiquetas (separadas por coma)"><Inp value={f.etiquetas} onChange={s("etiquetas")} placeholder="urgente, demo, renovar" /></Campo>
-          <Campo label="Contexto / Notas del Deal"><Inp value={f.notas} onChange={s("notas")} rows={3} placeholder="Detalles de la oportunidad..." /></Campo>
-        </div>
-
-        <div style={{ gridColumn: "span 2", display: "flex", flexDirection: "column", gap: 12 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: `1px solid ${T.borderHi}`, paddingBottom: 8, marginTop: 10 }}>
-            <span style={{ fontSize: 13, fontWeight: 700, color: T.whiteDim, textTransform: "uppercase", letterSpacing: ".05em" }}>Campos Personalizados / Info Form</span>
-            <Btn variant="fantasma" size="sm" onClick={() => setF(p => ({ ...p, customFields: [...(p.customFields || []), { nombre: "", valor: "" }] }))}><Ico k="plus" size={14} style={{ color: T.teal }} /> Agregar Campo Extra</Btn>
-          </div>
-          {f.customFields?.map((cf, i) => (
-            <div key={i} style={{ display: "flex", gap: 12, alignItems: "center", background: T.bg2, padding: "8px 12px", borderRadius: 8, border: `1px solid ${T.borderHi}` }}>
-              <Inp value={cf.nombre} onChange={e => setF(p => ({ ...p, customFields: p.customFields.map((c, idx) => idx === i ? { ...c, nombre: e.target.value } : c) }))} placeholder="Atributo (ej. Region)" style={{ flex: 1, fontWeight: 700 }} />
-              <Inp value={cf.valor} onChange={e => setF(p => ({ ...p, customFields: p.customFields.map((c, idx) => idx === i ? { ...c, valor: e.target.value } : c) }))} placeholder="Valor (ej. LATAM)" style={{ flex: 2 }} />
-              <button onClick={() => setF(p => ({ ...p, customFields: p.customFields.filter((_, idx) => idx !== i) }))} style={{ background: "transparent", border: "none", color: T.red, cursor: "pointer", padding: 4 }}><Ico k="trash" size={14} /></button>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 20 }}>
+              <Campo label="Monto ($)"><Inp type="number" value={f.valor} onChange={s("valor")} style={{ fontWeight: 800, color: T.green }} /></Campo>
+              <Campo label="Probabilidad (%)"><Inp type="number" value={f.prob} onChange={s("prob")} style={{ fontWeight: 800 }} /></Campo>
             </div>
-          ))}
-          {(!f.customFields || f.customFields.length === 0) && <div style={{ fontSize: 12, color: T.whiteDim, fontStyle: "italic" }}>No se han agregado variables dinámicas.</div>}
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              <Campo label="Pipeline"><Sel value={f.pipelineId} onChange={e => setF(p => ({ ...p, pipelineId: e.target.value, etapaId: db.pipelines.find(pl => pl.id === e.target.value)?.etapas[0]?.id || "" }))}>{db.pipelines.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}</Sel></Campo>
+              <Campo label="Etapa"><Sel value={f.etapaId} onChange={s("etapaId")}>{plActual?.etapas.map(e => <option key={e.id} value={e.id}>{e.nombre}</option>)}</Sel></Campo>
+              <Campo label="Contacto Asociado"><Sel value={f.contactoId} onChange={s("contactoId")}><option value="">— Ninguno —</option>{db.contactos.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}</Sel></Campo>
+              <Campo label="Empresa (B2B)"><Sel value={f.empresaId} onChange={s("empresaId")}><option value="">— Ninguna —</option>{db.empresas.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}</Sel></Campo>
+              <Campo label="Fecha de Cierre"><Inp type="date" value={f.fechaCierre} onChange={s("fechaCierre")} /></Campo>
+              <Campo label="Responsable"><Inp value={f.responsable} onChange={s("responsable")} /></Campo>
+            </div>
+          </div>
+
+          <div style={{ background: T.bg1, border: `1px solid ${T.border}`, borderRadius: 16, padding: 24 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+              <span style={{ fontSize: 11, fontWeight: 700, color: T.whiteDim, textTransform: "uppercase" }}>Campos Extras</span>
+              <Btn variant="fantasma" size="sm" onClick={() => setF(p => ({ ...p, customFields: [...(p.customFields || []), { nombre: "", valor: "" }] }))}><Ico k="plus" size={12} /></Btn>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {f.customFields?.map((cf, i) => (
+                <div key={i} style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                  <Inp value={cf.nombre} onChange={e => setF(p => ({ ...p, customFields: p.customFields.map((c, idx) => idx === i ? { ...c, nombre: e.target.value } : c) }))} placeholder="Eje: Región" style={{ flex: 1, fontSize: 11 }} />
+                  <Inp value={cf.valor} onChange={e => setF(p => ({ ...p, customFields: p.customFields.map((c, idx) => idx === i ? { ...c, valor: e.target.value } : c) }))} placeholder="Valor" style={{ flex: 1.5, fontSize: 11 }} />
+                  <button onClick={() => setF(p => ({ ...p, customFields: p.customFields.filter((_, idx) => idx !== i) }))} style={{ color: T.red, background: "none", border: "none" }}><Ico k="trash" size={12} /></button>
+                </div>
+              ))}
+              {f.archivos?.length > 0 && <div style={{ fontSize: 11, color: T.whiteDim, marginTop: 10 }}>📎 {f.archivos.length} archivos adjuntos.</div>}
+            </div>
+          </div>
+
+          <div style={{ display: "flex", gap: 12 }}>
+            <Btn variant="secundario" onClick={onCancelar} full>Cerrar</Btn>
+            <Btn onClick={() => { if (!f.titulo.trim()) return; onGuardar({ ...f, valor: +f.valor, prob: +f.prob, etiquetas: f.etiquetas.split(",").map(t => t.trim()).filter(Boolean) }); }} full style={{ background: T.teal, color: "#000" }}>Guardar Deal</Btn>
+          </div>
         </div>
 
-        <Campo label="Archivos y Documentos Adjuntos (Contratos, Imágenes)" col={2}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            <div onDragEnter={e => { e.preventDefault(); setDragActive(true); }} onDragLeave={e => { e.preventDefault(); setDragActive(false); }} onDragOver={e => e.preventDefault()} onDrop={handleDrop}
-              style={{ border: `2px dashed ${dragActive ? T.teal : T.borderHi}`, borderRadius: 12, padding: "30px 20px", textAlign: "center", background: dragActive ? T.teal + "10" : T.bg2, transition: "all .2s", cursor: "pointer" }}>
-              <Ico k="document" size={24} style={{ color: dragActive ? T.teal : T.whiteDim, marginBottom: 8 }} />
-              <div style={{ fontSize: 13, fontWeight: 700, color: dragActive ? T.teal : T.whiteOff }}>{dragActive ? "Suelta los archivos aquí..." : "Arrastra y suelta imágenes o documentos aquí"}</div>
-              <div style={{ fontSize: 11, color: T.whiteDim, marginTop: 4 }}>Soporta JPG, PNG, PDF, DOCX (Máx 20MB)</div>
-            </div>
-            {f.archivos?.length > 0 && (
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 12, marginTop: 8 }}>
-                {f.archivos.map(a => (
-                  <div key={a.id} style={{ border: `1px solid ${T.borderHi}`, borderRadius: 8, padding: 8, display: "flex", gap: 10, alignItems: "center", background: T.bg1, position: "relative", overflow: "hidden" }}>
-                    {a.tipo === "img" && a.url ? (
-                      <div style={{ width: 40, height: 40, borderRadius: 6, backgroundImage: `url(${a.url})`, backgroundSize: "cover", backgroundPosition: "center", flexShrink: 0 }} />
-                    ) : (
-                      <div style={{ width: 40, height: 40, borderRadius: 6, background: T.teal + "15", color: T.teal, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Ico k="document" size={18} /></div>
-                    )}
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 12, fontWeight: 700, color: T.white, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.nombre}</div>
-                      <div style={{ fontSize: 10, color: T.whiteDim }}>{a.size}</div>
-                    </div>
-                    <button onClick={() => quitarArchivo(a.id)} style={{ background: "transparent", border: "none", color: T.red, cursor: "pointer", padding: 4 }} title="Eliminar archivo"><Ico k="x" size={14} /></button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </Campo>
-
-        {f.contactoId && (
-          <div style={{ gridColumn: "span 2", borderTop: `1px solid ${T.border}`, paddingTop: 20 }}>
-            <WhatsAppHistoryLead telefono={db.contactos.find(c => c.id === f.contactoId)?.telefono} />
-          </div>
-        )}
-
-        <div style={{ gridColumn: "span 2", display: "flex", gap: 12, justifyContent: "flex-end", paddingTop: 20, borderTop: `1px solid ${T.border}` }}>
-          <Btn variant="secundario" onClick={onCancelar}>No Guardar</Btn>
-          <Btn onClick={() => { if (!f.titulo.trim()) return; onGuardar({ ...f, valor: +f.valor, prob: +f.prob, etiquetas: f.etiquetas.split(",").map(t => t.trim()).filter(Boolean) }); }} style={{ padding: "10px 24px" }}><Ico k="check" size={16} /> Guardar Deal</Btn>
+        {/* COLUMNA DERECHA: TIMELINE (BITRIX STYLE) */}
+        <div style={{ flex: 1, minWidth: 400 }}>
+          <LeadTimeline
+            deal={f}
+            contacto={db.contactos.find(c => c.id === f.contactoId)}
+            db={db}
+            setDb={setDb}
+            guardarEnSupa={guardarEnSupa}
+          />
         </div>
       </div>
     );
@@ -315,7 +294,7 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t }) => {
         </div>
       </Modal>
 
-      <Modal open={showDealForm} onClose={() => { setShowDealForm(false); setEditDeal(null); }} title={editDeal ? "Editar Deal" : "Nuevo Deal"} width={720}>
+      <Modal open={showDealForm} onClose={() => { setShowDealForm(false); setEditDeal(null); }} title={editDeal ? "Editar Deal" : "Nuevo Deal"} width={editDeal ? 1300 : 720}>
         <FormDeal init={editDeal || (preEtapa ? { pipelineId: plActivo, etapaId: preEtapa } : { pipelineId: plActivo, etapaId: pipeline?.etapas[0]?.id })} onGuardar={guardarDeal} onCancelar={() => { setShowDealForm(false); setEditDeal(null); }} />
       </Modal>
     </div>

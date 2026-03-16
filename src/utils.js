@@ -1,19 +1,19 @@
 import { T } from "./theme";
 
-export let _uid = 3000;
-export const uid = () => String(++_uid);
+// Generador de ID aleatorio persistente (no dependiente de recargas de página)
+export const uid = () => Math.random().toString(36).substr(2, 9);
 
 export const money = v => new Intl.NumberFormat("es-MX", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(v || 0);
 
-export const fdate = d => { 
-  if (!d) return "—"; 
-  return new Date(d).toLocaleDateString("es-MX", { day: "2-digit", month: "short", year: "numeric" }); 
+export const fdate = d => {
+  if (!d) return "—";
+  return new Date(d).toLocaleDateString("es-MX", { day: "2-digit", month: "short", year: "numeric" });
 };
 
-export const fdtm = d => { 
-  if (!d) return "—"; 
-  const dt = new Date(d); 
-  return dt.toLocaleDateString("es-MX", { month: "short", day: "2-digit" }) + " " + dt.toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" }); 
+export const fdtm = d => {
+  if (!d) return "—";
+  const dt = new Date(d);
+  return dt.toLocaleDateString("es-MX", { month: "short", day: "2-digit" }) + " " + dt.toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" });
 };
 
 export const ESTADO_CFG = {
