@@ -185,12 +185,26 @@ io.on('connection', (socket) => {
       };
       socket.emit('whatsapp_message', { ...msgOut, clientId: data.clientId });
 
-      // PERSISTENCIA
-      supabase.from('whatsapp_messages').upsert(msgOut, { onConflict: 'id' }).then(({ error }) => {
-        if (error) console.error('❌ Supabase Error (Manual Out):', error.message);
-        else console.log(`✅ Mensaje enviado guardado en Supabase: ${msgOut.id}`);
-      });
-    } catch (e) { console.error('Error sending message', e); }
+      // PERSISTENCIA: Intentar guardar con chat_id (estándar nuevo)
+      const { error: err1 } = await supabase.from('whatsapp_messages').upsert(msgOut, { onConflict: 'id' });
+      if (err1) {
+        if (err1.message.includes("column \"chat_id\" does not exist")) {
+          // Fallback a chatid si falla por nombre de columna
+          const fallback = { ...msgOut };
+          fallback.chatid = fallback.chat_id;
+          delete fallback.chat_id;
+          const { error: err2 } = await supabase.from('whatsapp_messages').upsert(fallback, { onConflict: 'id' });
+          if (err2) console.error('❌ Supabase Fallback Error:', err2.message);
+          else console.log(`✅ Mensaje enviado guardado (Fallback chatid): ${msgOut.id}`);
+        } else {
+          console.error('❌ Supabase Error (Manual Out):', err1.message);
+        }
+      } else {
+        console.log(`✅ Mensaje enviado guardado (chat_id): ${msgOut.id}`);
+      }
+    } catch (e) {
+      console.error('Error sending message', e);
+    }
   });
 
   socket.on('whatsapp_send_media', async (data) => {
@@ -233,11 +247,20 @@ io.on('connection', (socket) => {
 
       socket.emit('whatsapp_message', { ...msgOut, clientId: data.clientId });
 
-      // PERSISTENCIA
-      supabase.from('whatsapp_messages').upsert(msgOut, { onConflict: 'id' }).then(({ error }) => {
-        if (error) console.error('❌ Supabase Error (Manual Out):', error.message);
-        else console.log(`✅ Mensaje enviado guardado en Supabase: ${msgOut.id}`);
-      });
+      // PERSISTENCIA: Tolerancia a nombres de columnas
+      const { error: errMedia } = await supabase.from('whatsapp_messages').upsert(msgOut, { onConflict: 'id' });
+      if (errMedia) {
+        if (errMedia.message.includes("column")) {
+          const fallback = { ...msgOut };
+          if (errMedia.message.includes("chat_id")) { fallback.chatid = fallback.chat_id; delete fallback.chat_id; }
+          if (errMedia.message.includes("deal_id")) { fallback.dealid = fallback.deal_id; delete fallback.deal_id; }
+          if (errMedia.message.includes("from_me")) { fallback.fromme = fallback.from_me; delete fallback.from_me; }
+          const { error: errMedia2 } = await supabase.from('whatsapp_messages').upsert(fallback, { onConflict: 'id' });
+          if (errMedia2) console.error('❌ Supabase Media Fallback Error:', errMedia2.message);
+        } else {
+          console.error('❌ Supabase Media Error:', errMedia.message);
+        }
+      }
 
     } catch (e) {
       console.error('Error enviando archivo multimedia/adjunto', e);
@@ -320,8 +343,8 @@ async function getActiveDealId(chatId) {
     // Para simplificar, buscamos deals asociados al contacto
     const { data: deal } = await supabase
       .from('deals')
-      .select('id, etapaId')
-      .eq('contactoId', contacto.id)
+      .select('id, etapa_id')
+      .eq('contacto_id', contacto.id)
       .order('creado', { ascending: false })
       .limit(1)
       .maybeSingle();
@@ -362,8 +385,8 @@ async function handleAutoLead(msg) {
     const newDeal = {
       id: crypto?.randomUUID?.() || `d_${Date.now()}`,
       titulo: `Oportunidad WhatsApp - ${phone}`,
-      contactoId: newContact.id,
-      etapaId: 'et1', // Nuevo Lead
+      contacto_id: newContact.id,
+      etapa_id: 'et1', // Nuevo Lead
       valor: 0,
       creado: new Date().toISOString().split('T')[0]
     };
@@ -586,11 +609,20 @@ whatsappClient.on('message', async msg => {
   };
   io.emit('whatsapp_message', msgData);
 
-  // PERSISTENCIA: Guardar en Supabase (ahora con deal_id si existe)
-  supabase.from('whatsapp_messages').upsert(msgData, { onConflict: 'id' }).then(({ error }) => {
-    if (error) console.error('❌ Supabase Error (Inbound):', error.message);
-    else console.log(`✅ Mensaje entrante guardado en Supabase: ${msg.id._serialized} (Deal: ${activeDealId || 'no vinculado'})`);
-  });
+  // PERSISTENCIA: Tolerancia a nombres de columnas (Inbound)
+  const { error: upsertErr } = await supabase.from('whatsapp_messages').upsert(msgData, { onConflict: 'id' });
+  if (upsertErr) {
+    if (upsertErr.message.includes("column")) {
+      const fallback = { ...msgData };
+      if (upsertErr.message.includes("chat_id")) { fallback.chatid = fallback.chat_id; delete fallback.chat_id; }
+      if (upsertErr.message.includes("deal_id")) { fallback.dealid = fallback.deal_id; delete fallback.deal_id; }
+      if (upsertErr.message.includes("from_me")) { fallback.fromme = fallback.from_me; delete fallback.from_me; }
+      const { error: upsertErr2 } = await supabase.from('whatsapp_messages').upsert(fallback, { onConflict: 'id' });
+      if (upsertErr2) console.error('❌ Supabase Inbound Fallback Error:', upsertErr2.message);
+    } else {
+      console.error('❌ Supabase Inbound Error:', upsertErr.message);
+    }
+  }
 
   if (msg.fromMe) return;
 
