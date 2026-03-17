@@ -344,8 +344,9 @@ export default function App() {
     return <LandingPagePublica siteSlug={siteSlug} />;
   }
 
-  // 2. Si ya cargó y no hay sesión de Supabase, ir a login
-  if (hashURL.includes("recovery-confirm")) {
+  // 2. Si es una redirección de recuperación de contraseña de Supabase
+  const isRecovering = hashURL.includes("type=recovery") || hashURL.includes("recovery-confirm");
+  if (isRecovering) {
     return <Login forceView="new-password" />;
   }
 

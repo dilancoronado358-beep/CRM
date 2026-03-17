@@ -14,6 +14,11 @@ export function Login({ forceView }) {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
+  // Sincronizar vista si cambia la prop (ej: al detectar hash de recuperación)
+  React.useEffect(() => {
+    if (forceView) setView(forceView);
+  }, [forceView]);
+
   const handleLogin = async (e) => {
     if (e) e.preventDefault();
     setCargando(true);
@@ -55,7 +60,7 @@ export function Login({ forceView }) {
     setSuccess('');
 
     const { error } = await sb.auth.resetPasswordForEmail(email, {
-      redirectTo: window.location.origin + window.location.pathname + '#/recovery-confirm',
+      redirectTo: `${window.location.origin}${window.location.pathname}#/recovery-confirm`,
     });
 
     if (error) {
