@@ -755,12 +755,21 @@ whatsappClient.on('message', async msg => {
   suggestCRMTask(msg.from, msg.body);
 });
 
-whatsappClient.on('message_ack', (msg, ack) => {
+whatsappClient.on('message_ack', async (msg, ack) => {
+  const msgId = msg.id._serialized;
   io.emit('whatsapp_message_ack', {
-    id: msg.id._serialized,
+    id: msgId,
     chatId: msg.from === whatsappClient.info.wid._serialized ? msg.to : (msg.fromMe ? msg.to : msg.from),
     ack: ack
   });
+
+  // PERSISTENCIA DEL ACK: Actualizar en Supabase para que los vistos sean permanentes
+  try {
+    const { error } = await supabase.from('whatsapp_messages').update({ ack }).eq('id', msgId);
+    if (error) console.error(`❌ Error actualizando ACK para ${msgId}:`, error.message);
+  } catch (e) {
+    console.error(`❌ Error fatal actualizando ACK:`, e.message);
+  }
 });
 
 console.log('Iniciando Cliente WhatsApp...');

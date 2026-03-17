@@ -305,7 +305,7 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
               <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                 {customFieldsDef.map(cf => {
                   const val = f.custom_fields?.[cf.id] || "";
-                  
+
                   // Actualiza solo el estado local para fluidez total al escribir
                   const handleChange = (v) => {
                     setF(prev => ({ ...prev, custom_fields: { ...(prev.custom_fields || {}), [cf.id]: v } }));
@@ -356,17 +356,17 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
             </div>
           </div>
 
-            {/* SECCIÓN DERECHA: TIMELINE */}
-            <div style={{ flex: 1.2, borderLeft: `1px solid ${T.borderHi}`, minHeight: "65vh" }}>
-              <LeadTimeline 
-                deal={editDeal} 
-                contacto={db.contactos.find(c => c.id === f.contacto_id) || {}} 
-                db={db} 
-                setDb={setDb} 
-                guardarEnSupa={guardarEnSupa} 
-                setModulo={setModulo}
-              />
-            </div>
+          {/* SECCIÓN DERECHA: TIMELINE */}
+          <div style={{ flex: 1.2, borderLeft: `1px solid ${T.borderHi}`, minHeight: "65vh" }}>
+            <LeadTimeline
+              deal={editDeal}
+              contacto={db.contactos.find(c => c.id === f.contacto_id) || {}}
+              db={db}
+              setDb={setDb}
+              guardarEnSupa={guardarEnSupa}
+              setModulo={setModulo}
+            />
+          </div>
         </div>
       </div>
     );
@@ -487,15 +487,14 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
                     const colAvatar = etapa.color;
 
                     return (
-                      <div key={deal.id} draggable onDragStart={() => setDragDeal(deal)}
-                        style={{ background: T.bg1, border: `1px solid ${T.borderHi}`, borderLeft: `3px solid ${etapa.color}`, borderRadius: 8, padding: "11px 12px", cursor: "grab", userSelect: "none", transition: "box-shadow .15s, transform .15s", position: "relative" }}
+                      <div key={deal.id} draggable onDragStart={() => setDragDeal(deal)} onClick={() => { setEditDeal(deal); setShowDealForm(true); }}
+                        style={{ background: T.bg1, border: `1px solid ${T.borderHi}`, borderLeft: `3px solid ${etapa.color}`, borderRadius: 8, padding: "11px 12px", cursor: "pointer", userSelect: "none", transition: "box-shadow .15s, transform .15s", position: "relative" }}
                         onMouseEnter={e => { e.currentTarget.style.boxShadow = `0 4px 18px rgba(0,0,0,0.18)`; e.currentTarget.style.transform = "translateY(-1px)"; }}
                         onMouseLeave={e => { e.currentTarget.style.boxShadow = "none"; e.currentTarget.style.transform = ""; }}>
 
                         {/* Título + botones acción */}
                         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 8 }}>
-                          <div style={{ fontSize: 13, fontWeight: 700, color: T.white, lineHeight: 1.35, flex: 1, cursor: "pointer" }}
-                            onClick={() => { setEditDeal(deal); setShowDealForm(true); }}>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: T.white, lineHeight: 1.35, flex: 1 }}>
                             {deal.titulo}
                           </div>
                           <div style={{ display: "flex", gap: 3, marginLeft: 6, flexShrink: 0 }}>

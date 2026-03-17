@@ -15,11 +15,13 @@ export function LeadTimeline({ deal = {}, contacto = {}, db = {}, setDb, guardar
   const [comentario, setComentario] = useState("");
   const [waMsg, setWaMsg] = useState("");
   const [composerTab, setComposerTab] = useState("Comentario");
+  const [previewFile, setPreviewFile] = useState(null); // { data, name, type }
 
   const [taskForm, setTaskForm] = useState({ titulo: "", prioridad: "media", vencimiento: "", asignado: db?.usuario?.name || "", descripcion: "" });
   const socketRef = useRef(null);
   const scrollRef = useRef(null); // Ref para autoscroll del chat
   const chatBottomRef = useRef(null);
+  const fileInputRef = useRef(null);
 
   const telefono = contacto?.telefono;
   const cleanPhone = useMemo(() => {
@@ -47,6 +49,9 @@ export function LeadTimeline({ deal = {}, contacto = {}, db = {}, setDb, guardar
       if ((cleanPhone && msg.chat_id?.includes(cleanPhone)) || (cleanPhone && msg.chatid?.includes(cleanPhone)) || msg.deal_id === deal?.id) {
         setTimeout(cargarTimeline, 1500);
       }
+    });
+    socketRef.current.on('whatsapp_message_ack', ({ id, ack }) => {
+      setItems(prev => prev.map(it => it.id === id ? { ...it, ack } : it));
     });
     return () => { if (socketRef.current) socketRef.current.disconnect(); };
   }, [telefono, deal?.id]);
@@ -121,7 +126,8 @@ export function LeadTimeline({ deal = {}, contacto = {}, db = {}, setDb, guardar
               timestamp: m.timestamp || (Date.now() / 1000),
               fromMe: m.from_me ?? m.fromme,
               hasMedia: m.has_media ?? m.hasmedia,
-              file_name: m.file_name ?? m.filename
+              file_name: m.file_name ?? m.filename,
+              ack: m.ack
             });
           });
         }
@@ -185,6 +191,59 @@ export function LeadTimeline({ deal = {}, contacto = {}, db = {}, setDb, guardar
     setTimeout(() => chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
   };
 
+  const handleFileChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file || !telefono) return;
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      setPreviewFile({
+        data: event.target.result,
+        name: file.name,
+        type: file.type
+      });
+      e.target.value = ""; // Reset input
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const confirmSendMedia = () => {
+    if (!previewFile || !socketRef.current) return;
+
+    const nuevoMsg = {
+      type: "whatsapp",
+      id: "local_" + Date.now(),
+      body: waMsg, // Usar waMsg como caption
+      timestamp: Date.now() / 1000,
+      fromMe: true,
+      hasMedia: true,
+      file_name: previewFile.name
+    };
+
+    setItems(prev => [nuevoMsg, ...prev]);
+
+    socketRef.current.emit("whatsapp_send_media", {
+      to: cleanPhone + "@c.us",
+      mediaData: previewFile.data,
+      fileName: previewFile.name,
+      caption: waMsg,
+      dealId: deal?.id,
+      clientId: nuevoMsg.id
+    });
+
+    setPreviewFile(null);
+    setWaMsg("");
+    setTimeout(() => chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
+  };
+
+  const renderAck = (ack) => {
+    if (!ack || ack === 0) return <Ico k="clock" size={12} style={{ color: "#999" }} />;
+    if (ack === 1) return <Ico k="check_plain" size={12} style={{ color: "#999" }} />;
+    if (ack === 2) return <Ico k="checks" size={12} style={{ color: "#999" }} />;
+    if (ack === 3) return <Ico k="checks" size={12} style={{ color: "#34B7F1" }} />;
+    return null;
+  };
+
   const handleAddTask = async () => {
     if (!taskForm.titulo.trim()) return;
     const uid = () => Math.random().toString(36).substr(2, 9);
@@ -221,7 +280,50 @@ export function LeadTimeline({ deal = {}, contacto = {}, db = {}, setDb, guardar
   }, [filteredItems]);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100%", background: "#f0f3f5", borderRadius: 12, overflow: "hidden" }}>
+    <div style={{ display: "flex", flexDirection: "column", height: "100%", background: "#f0f3f5", borderRadius: 12, overflow: "hidden", position: "relative" }}>
+
+      {/* PREVIEW MODAL OVERLAY */}
+      {previewFile && (
+        <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+          <div style={{ background: "#fff", borderRadius: 16, width: "100%", maxWidth: 400, boxShadow: "0 12px 24px rgba(0,0,0,0.2)", overflow: "hidden", display: "flex", flexDirection: "column" }}>
+            <div style={{ padding: "16px 20px", borderBottom: "1px solid #f0f0f0", display: "flex", justifyContent: "space-between", alignItems: "center", background: "#f8f9fa" }}>
+              <span style={{ fontWeight: 700, fontSize: 14, color: "#333" }}>Vista Previa de Adjunto</span>
+              <button onClick={() => setPreviewFile(null)} style={{ background: "#eee", border: "none", borderRadius: "50%", width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#666" }}>
+                <Ico k="x" size={16} />
+              </button>
+            </div>
+
+            <div style={{ padding: 20, display: "flex", flexDirection: "column", alignItems: "center", gap: 15 }}>
+              {previewFile.type.startsWith("image/") ? (
+                <div style={{ width: "100%", borderRadius: 8, overflow: "hidden", border: "1px solid #eee" }}>
+                  <img src={previewFile.data} alt="preview" style={{ width: "100%", display: "block" }} />
+                </div>
+              ) : (
+                <div style={{ width: "100%", padding: "40px 20px", background: "#f1f3f4", borderRadius: 12, textAlign: "center", border: "2px dashed #dadce0" }}>
+                  <Ico k="paperclip" size={48} style={{ color: "#25D366", marginBottom: 12 }} />
+                  <div style={{ fontSize: 15, fontWeight: 700, color: "#3c4043" }}>{previewFile.name}</div>
+                  <div style={{ fontSize: 12, color: "#70757a", marginTop: 4 }}>{previewFile.type}</div>
+                </div>
+              )}
+
+              <div style={{ width: "100%" }}>
+                <textarea
+                  value={waMsg}
+                  onChange={e => setWaMsg(e.target.value)}
+                  placeholder="Añadir comentario..."
+                  style={{ width: "100%", border: "1px solid #ddd", borderRadius: 8, padding: 12, fontSize: 14, minHeight: 80, outline: "none", resize: "none" }}
+                />
+              </div>
+            </div>
+
+            <div style={{ padding: "12px 20px", background: "#f8f9fa", display: "flex", gap: 12 }}>
+              <button onClick={() => setPreviewFile(null)} style={{ flex: 1, padding: "10px", borderRadius: 8, border: "1px solid #ddd", background: "#fff", fontWeight: 600, cursor: "pointer" }}>CANCELAR</button>
+              <button onClick={confirmSendMedia} style={{ flex: 1, padding: "10px", borderRadius: 8, border: "none", background: "#25D366", color: "#fff", fontWeight: 700, cursor: "pointer" }}>ENVIAR AHORA</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* HEADER COMPOSER */}
       <div style={{ padding: "0 20px", borderBottom: `1px solid #d4dde1`, background: "#fff", flexShrink: 0 }}>
         <div style={{ display: "flex", gap: 24 }}>
@@ -346,7 +448,7 @@ export function LeadTimeline({ deal = {}, contacto = {}, db = {}, setDb, guardar
                           <div style={{ fontSize: 13, color: "#333", whiteSpace: "pre-wrap", lineHeight: 1.4 }}>{it.body || (it.hasMedia ? "📎 Archivo adjunto" : "")}</div>
                           <div style={{ fontSize: 10, color: "#999", display: "flex", justifyContent: "flex-end", marginTop: 4, alignItems: "center", gap: 4 }}>
                             {d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                            {isMe && <Ico k="check" size={12} style={{ color: "#999" }} />}
+                            {isMe && renderAck(it.ack)}
                           </div>
                         </div>
                       </div>
@@ -363,16 +465,21 @@ export function LeadTimeline({ deal = {}, contacto = {}, db = {}, setDb, guardar
 
       {/* COMPOSER BOTTOM SOLO PARA WHATSAPP (Como chat real) */}
       {composerTab === "WhatsApp" && (
-        <div style={{ padding: "16px", background: "#f0f3f5", borderTop: `1px solid #d4dde1`, flexShrink: 0 }}>
+        <div style={{ padding: "16px", background: "#f0f3f5", borderTop: `1px solid #d4dde1`, flexShrink: 0, position: "relative" }}>
+
           <div style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
+            <input type="file" ref={fileInputRef} onChange={handleFileChange} style={{ display: "none" }} />
+            <Btn onClick={() => fileInputRef.current?.click()} style={{ width: 44, height: 44, borderRadius: "50%", background: "#fff", border: "1px solid #c6d2d6", color: "#666", padding: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <Ico k="paperclip" size={18} />
+            </Btn>
             <textarea
               value={waMsg}
               onChange={e => setWaMsg(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendWA(); } }}
-              placeholder="Escribe un mensaje..."
+              onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); previewFile ? confirmSendMedia() : handleSendWA(); } }}
+              placeholder={previewFile ? "Añadir comentario..." : "Escribe un mensaje..."}
               style={{ flex: 1, background: "#fff", border: `1px solid #c6d2d6`, borderRadius: 8, padding: "10px 16px", fontSize: 14, minHeight: 44, maxHeight: 120, outline: "none", resize: "none" }}
             />
-            <Btn onClick={handleSendWA} disabled={!waMsg.trim() || !cleanPhone} style={{ width: 44, height: 44, borderRadius: "50%", background: "#25D366", color: "#fff", padding: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <Btn onClick={previewFile ? confirmSendMedia() : handleSendWA} disabled={(!waMsg.trim() && !previewFile) || !cleanPhone} style={{ width: 44, height: 44, borderRadius: "50%", background: "#25D366", color: "#fff", padding: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
               <Ico k="paper-plane" size={18} style={{ marginLeft: -2 }} />
             </Btn>
           </div>
