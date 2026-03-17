@@ -61,6 +61,7 @@ const DEFAULT_PAGE = (id, titulo, slug) => ({
     { icon: "📊", title: "Reportes Reales", desc: "Métricas de ventas actualizadas al instante." },
     { icon: "📱", title: "WhatsApp Integrado", desc: "Chatbot automático conectado al CRM." },
   ],
+  customFormId: null,
 });
 
 export const Websites = ({ db, setDb }) => {
@@ -71,7 +72,6 @@ export const Websites = ({ db, setDb }) => {
   const [fNew, setFNew] = useState({ titulo: "", slug: "" });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [formas, setFormas] = useState([]);
   const [expandedBlock, setExpandedBlock] = useState(null);
   const [dragBlock, setDragBlock] = useState(null);
   const [dragOverBlock, setDragOverBlock] = useState(null);
@@ -88,8 +88,6 @@ export const Websites = ({ db, setDb }) => {
     const load = async () => {
       setLoading(true);
       const { data, error } = await sb.from("landing_pages").select("*").order("created_at", { ascending: true });
-      const { data: fData } = await sb.from("formularios_publicos").select("id, nombre");
-      if (fData) setFormas(fData);
 
       if (data && data.length > 0) {
         const parsed = data.map((p) => ({
@@ -116,7 +114,7 @@ export const Websites = ({ db, setDb }) => {
           customText: p.custom_text || p.customText || "Escribe aquí tu contenido libre...",
           imageUrl: p.image_url || p.imageUrl || "",
           floatingElements: Array.isArray(p.floating_elements) ? p.floating_elements : (p.floatingElements || []),
-          customFormId: p.custom_form_id || null,
+          customFormId: p.custom_form_id || p.customFormId || null,
         }));
         setPages(parsed);
         setActivoId(parsed[0].id);
@@ -167,6 +165,7 @@ export const Websites = ({ db, setDb }) => {
       faq_items: pg.faqItems || [],
       stats_items: pg.statsItems || [],
       features: pg.features || [],
+      custom_form_id: pg.customFormId || null,
     };
     const { error } = await sb.from("landing_pages").upsert(payload);
     setSaving(false);
@@ -388,15 +387,24 @@ export const Websites = ({ db, setDb }) => {
           <button onClick={() => addArr("features", { icon: "⭐", title: "Nueva función", desc: "Describir beneficio." })} style={addBtn}>+ Añadir característica</button>
         </div>
       );
-      case "form": return (
-        <div style={base}>
-          <div style={{ fontSize: 10, color: T.whiteDim, marginBottom: 4 }}>Selecciona el formulario a mostrar:</div>
-          <select value={activo.customFormId || ""} onChange={(e) => upd("customFormId", e.target.value)} style={{ padding: "8px 10px", background: T.bg1, border: `1px solid ${T.borderHi}`, borderRadius: 6, color: T.white, width: "100%", fontSize: 12, outline: "none" }}>
-            <option value="">-- Por defecto (Formulario de Lead Simple) --</option>
-            {formas.map(f => <option key={f.id} value={f.id}>{f.nombre}</option>)}
-          </select>
-        </div>
-      );
+      case "form":
+        const availableForms = db.formularios_publicos || [];
+        return (
+          <div style={base}>
+            <div style={{ fontSize: 10, color: T.whiteDim, marginBottom: 4 }}>Selecciona el formulario a mostrar:</div>
+            <select
+              value={activo.customFormId || ""}
+              onChange={(e) => upd("customFormId", e.target.value)}
+              style={{ padding: "8px 10px", background: T.bg1, border: `1px solid ${T.borderHi}`, borderRadius: 6, color: T.white, width: "100%", fontSize: 12, outline: "none" }}
+            >
+              <option value="">-- Por defecto (Formulario de Lead Simple) --</option>
+              {availableForms.map(f => <option key={f.id} value={f.id}>{f.nombre}</option>)}
+            </select>
+            {availableForms.length === 0 && (
+              <div style={{ fontSize: 10, color: T.red, marginTop: 4 }}>No se encontraron formularios guardados. Ve a la pestaña "Formularios" y asegúrate de guardar uno.</div>
+            )}
+          </div>
+        );
       default: return null;
     }
   };
@@ -764,7 +772,7 @@ export const Websites = ({ db, setDb }) => {
                       <div style={{ maxWidth: 400, margin: "0 auto", background: "#fff", borderRadius: 18, padding: 30, boxShadow: "0 10px 40px rgba(0,0,0,0.08)", border: "1px solid #E5E7EB", display: "flex", flexDirection: "column", gap: 12 }}>
                         {activo.customFormId ? (
                            <div style={{ color: "#6B7280", fontSize: 13, padding: 20 }}>
-                             📋 Formulario vinculado:<br/><b>{formas.find(x => x.id === activo.customFormId)?.nombre || "Cargando..."}</b>
+                             📋 Formulario vinculado:<br/><b>{(db.formularios_publicos || []).find(x => x.id === activo.customFormId)?.nombre || "Cargando..."}</b>
                            </div>
                          ) : (
                            <>

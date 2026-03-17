@@ -86,6 +86,7 @@ export const LandingPagePublica = ({ siteSlug }) => {
           buttons: Array.isArray(data.buttons) ? data.buttons : [],
           floatingElements: Array.isArray(data.floating_elements) ? data.floating_elements : (data.floatingElements || []),
           blocks: Array.isArray(data.blocks) ? data.blocks : ["hero", "features", "cta"],
+          customFormId: data.custom_form_id || data.customFormId || null,
         });
       } else {
         // Also try without activo filter (for preview)
@@ -113,6 +114,7 @@ export const LandingPagePublica = ({ siteSlug }) => {
             buttons: Array.isArray(preview.buttons) ? preview.buttons : [],
             floatingElements: Array.isArray(preview.floating_elements) ? preview.floating_elements : (preview.floatingElements || []),
             blocks: Array.isArray(preview.blocks) ? preview.blocks : ["hero", "features", "cta"],
+            customFormId: preview.custom_form_id || preview.customFormId || null,
           });
         } else {
           setError("Página no encontrada o no publicada.");
