@@ -495,11 +495,11 @@ export const Websites = ({ db, setDb }) => {
 
                       {f.type === "text" && (
                         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                          <textarea value={f.content} onChange={(e) => updateActivo({ floatingElements: activo.floatingElements.map(x => x.id === f.id ? { ...x, content: e.target.value } : x) })} rows={2} style={{ width: "100%", padding: "6px", background: T.bg1, border: "none", color: "#fff", borderRadius: 4, outline: "none", fontSize: 12, resize: "vertical" }} />
+                          <textarea value={f.content} onChange={(e) => updateActivo({ floatingElements: activo.floatingElements.map(x => x.id === f.id ? { ...x, content: e.target.value } : x) })} rows={2} style={{ width: "100%", padding: "6px", background: T.bg1, border: `1px solid ${T.borderHi}`, color: T.white, borderRadius: 4, outline: "none", fontSize: 12, resize: "vertical" }} />
                           <div style={{ display: "flex", gap: 6 }}>
-                            <input type="number" value={f.fontSize || 16} onChange={(e) => updateActivo({ floatingElements: activo.floatingElements.map(x => x.id === f.id ? { ...x, fontSize: Number(e.target.value) } : x) })} placeholder="Tam." style={{ width: 50, padding: 4, background: T.bg1, border: "none", color: "#fff", borderRadius: 4, fontSize: 11 }} />
-                            <input type="color" value={f.color || "#111827"} onChange={(e) => updateActivo({ floatingElements: activo.floatingElements.map(x => x.id === f.id ? { ...x, color: e.target.value } : x) })} style={{ width: 30, height: 26, border: "none" }} />
-                            <select value={f.fontWeight} onChange={(e) => updateActivo({ floatingElements: activo.floatingElements.map(x => x.id === f.id ? { ...x, fontWeight: e.target.value } : x) })} style={{ flex: 1, padding: 4, background: T.bg1, border: "none", color: "#fff", borderRadius: 4, fontSize: 11 }}>
+                            <input type="number" value={f.fontSize || 16} onChange={(e) => updateActivo({ floatingElements: activo.floatingElements.map(x => x.id === f.id ? { ...x, fontSize: Number(e.target.value) } : x) })} placeholder="Tam." style={{ width: 50, padding: 4, background: T.bg1, border: `1px solid ${T.borderHi}`, color: T.white, borderRadius: 4, fontSize: 11 }} />
+                            <input type="color" value={f.color || "#111827"} onChange={(e) => updateActivo({ floatingElements: activo.floatingElements.map(x => x.id === f.id ? { ...x, color: e.target.value } : x) })} style={{ width: 30, height: 26, border: "none", cursor: "pointer" }} />
+                            <select value={f.fontWeight} onChange={(e) => updateActivo({ floatingElements: activo.floatingElements.map(x => x.id === f.id ? { ...x, fontWeight: e.target.value } : x) })} style={{ flex: 1, padding: 4, background: T.bg1, border: `1px solid ${T.borderHi}`, color: T.white, borderRadius: 4, fontSize: 11 }}>
                               <option value="normal">Normal</option>
                               <option value="bold">Bold</option>
                               <option value="900">Heavy</option>
@@ -509,18 +509,18 @@ export const Websites = ({ db, setDb }) => {
                       )}
                       {f.type === "image" && (
                         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                          <input type="text" value={f.content} onChange={(e) => updateActivo({ floatingElements: activo.floatingElements.map(x => x.id === f.id ? { ...x, content: e.target.value } : x) })} placeholder="URL de la imagen" style={{ width: "100%", padding: "6px", background: T.bg1, border: "none", color: "#fff", borderRadius: 4, outline: "none", fontSize: 12 }} />
+                          <input type="text" value={f.content} onChange={(e) => updateActivo({ floatingElements: activo.floatingElements.map(x => x.id === f.id ? { ...x, content: e.target.value } : x) })} placeholder="URL de la imagen" style={{ width: "100%", padding: "6px", background: T.bg1, border: `1px solid ${T.borderHi}`, color: T.white, borderRadius: 4, outline: "none", fontSize: 12 }} />
                           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                             <span style={{ fontSize: 10, color: T.whiteDim }}>Ancho:</span>
-                            <input type="number" value={f.width || 150} onChange={(e) => updateActivo({ floatingElements: activo.floatingElements.map(x => x.id === f.id ? { ...x, width: Number(e.target.value) } : x) })} placeholder="Ancho (px)" style={{ width: 60, padding: 4, background: T.bg1, border: "none", color: "#fff", borderRadius: 4, fontSize: 11 }} />
+                            <input type="number" value={f.width || 150} onChange={(e) => updateActivo({ floatingElements: activo.floatingElements.map(x => x.id === f.id ? { ...x, width: Number(e.target.value) } : x) })} placeholder="Ancho (px)" style={{ width: 60, padding: 4, background: T.bg1, border: `1px solid ${T.borderHi}`, color: T.white, borderRadius: 4, fontSize: 11 }} />
                           </div>
                         </div>
                       )}
                       {f.type === "button" && (
                         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                          <input type="text" value={f.content} onChange={(e) => updateActivo({ floatingElements: activo.floatingElements.map(x => x.id === f.id ? { ...x, content: e.target.value } : x) })} placeholder="Texto" style={{ width: "100%", padding: "6px", background: T.bg1, border: "none", color: "#fff", borderRadius: 4, outline: "none", fontSize: 12 }} />
-                          <input type="text" value={f.url} onChange={(e) => updateActivo({ floatingElements: activo.floatingElements.map(x => x.id === f.id ? { ...x, url: e.target.value } : x) })} placeholder="URL destino" style={{ width: "100%", padding: "6px", background: T.bg1, border: "none", color: "#fff", borderRadius: 4, outline: "none", fontSize: 12 }} />
-                          <input type="color" value={f.bg || activo.accentColor || "#06B6D4"} onChange={(e) => updateActivo({ floatingElements: activo.floatingElements.map(x => x.id === f.id ? { ...x, bg: e.target.value } : x) })} style={{ width: 30, height: 26, border: "none" }} />
+                          <input type="text" value={f.content} onChange={(e) => updateActivo({ floatingElements: activo.floatingElements.map(x => x.id === f.id ? { ...x, content: e.target.value } : x) })} placeholder="Texto" style={{ width: "100%", padding: "6px", background: T.bg1, border: `1px solid ${T.borderHi}`, color: T.white, borderRadius: 4, outline: "none", fontSize: 12 }} />
+                          <input type="text" value={f.url} onChange={(e) => updateActivo({ floatingElements: activo.floatingElements.map(x => x.id === f.id ? { ...x, url: e.target.value } : x) })} placeholder="URL destino" style={{ width: "100%", padding: "6px", background: T.bg1, border: `1px solid ${T.borderHi}`, color: T.white, borderRadius: 4, outline: "none", fontSize: 12 }} />
+                          <input type="color" value={f.bg || activo.accentColor || "#06B6D4"} onChange={(e) => updateActivo({ floatingElements: activo.floatingElements.map(x => x.id === f.id ? { ...x, bg: e.target.value } : x) })} style={{ width: 30, height: 26, border: "none", cursor: "pointer" }} />
                         </div>
                       )}
                     </div>

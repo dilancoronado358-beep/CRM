@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { createClient } from "@supabase/supabase-js";
 
 const SUPA_URL = "https://eoylgxwlhsmwqgadahvk.supabase.co";
@@ -48,7 +48,7 @@ export const FormularioPublico = ({ formId }) => {
     loadForm();
   }, [formId]);
 
-  const { paginas, indexPaso } = React.useMemo(() => {
+  const { paginas, indexPaso } = useMemo(() => {
     if (!form || !form.campos) return { paginas: [], indexPaso: 0 };
     const p = [];
     let cur = [];
