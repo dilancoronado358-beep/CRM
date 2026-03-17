@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { T } from "../../theme";
 import { Ico } from "./Ico";
 import { SpotlightSearch } from "./Spotlight";
@@ -66,6 +67,50 @@ export const Inp = ({ value, onChange, placeholder, type = "text", style = {}, r
   const sharedProps = { value, onChange, placeholder, readOnly, defaultValue, ...props };
   if (rows) return <textarea {...sharedProps} rows={rows} style={{ ...base, padding: "9px 11px", resize: "vertical", ...style }} />;
   return <input type={type} {...sharedProps} style={{ ...base, padding: "9px 11px", ...style }} />;
+};
+
+// 🛡️ COMPONENTE ANTI-RERENDER: El arma definitiva contra la pérdida de texto.
+// Mantiene su propio estado y oculta las actualizaciones externas mientras el usuario escribe.
+export const LocalInput = ({ value, onChange, onCommit, type = "text", ...props }) => {
+  const [internalVal, setInternalVal] = useState(value || "");
+  const [isFocused, setIsFocused] = useState(false);
+
+  // Solo actualizar el estado interno si el prop value cambia
+  // Y el usuario NO está escribiendo actualmente
+  useEffect(() => {
+    if (!isFocused && value !== undefined) {
+      setInternalVal(value);
+    }
+  }, [value, isFocused]);
+
+  const handleChange = (e) => {
+    setInternalVal(e.target.value);
+    if (onChange) onChange(e);
+  };
+
+  const handleBlur = (e) => {
+    setIsFocused(false);
+    if (onCommit && internalVal !== value) onCommit(internalVal);
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter" && onCommit && internalVal !== value) {
+      e.target.blur(); // Trigger blur to save
+    }
+    if (props.onKeyDown) props.onKeyDown(e);
+  };
+
+  return (
+    <Inp 
+      type={type} 
+      value={internalVal} 
+      onChange={handleChange} 
+      onFocus={() => setIsFocused(true)} 
+      onBlur={handleBlur} 
+      onKeyDown={handleKeyDown}
+      {...props} 
+    />
+  );
 };
 
 export const Sel = ({ value, onChange, children, style = {}, defaultValue, ...props }) => (

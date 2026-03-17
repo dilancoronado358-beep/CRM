@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { T } from "../theme";
 import { uid, money, fdate } from "../utils";
-import { Chip, Btn, Inp, Sel } from "../components/ui";
+import { Chip, Btn, Inp, Sel, LocalInput } from "../components/ui";
 import { Campo, Modal, Tarjeta, SelColor, EncabezadoSeccion, ControlSegmentado, Ico, Barra, Vacio } from "../components/ui";
 import { LeadTimeline } from "./LeadTimeline";
 
@@ -95,6 +95,20 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
       valor: 0, prob: 50, fecha_cierre: "", responsable: db.usuario?.name || "", etiquetas: "", notas: "",
       archivos: [], custom_fields: init.custom_fields || {}, ...init, etiquetas: (init.etiquetas || []).join(", ")
     });
+
+    // ESCUDO: Solo inicializar una vez cuando cambia el ID o se abre el modal.
+    // Esto evita que actualizaciones de fondo (db) pisen lo que el usuario escribe.
+    useEffect(() => {
+      if (init && init.id) {
+        setF({
+          ...f,
+          ...init,
+          etiquetas: (init.etiquetas || []).join(", "),
+          custom_fields: init.custom_fields || {}
+        });
+      }
+    }, [init.id]);
+
     const [dragActive, setDragActive] = useState(false);
 
     const s = k => e => {
@@ -193,15 +207,15 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
           <div style={{ width: 440, display: "flex", flexDirection: "column", gap: 20, flexShrink: 0 }}>
             <div style={{ background: T.bg1, border: `1px solid ${T.border}`, borderRadius: 16, padding: 24 }}>
               <Campo label="Título del Deal *" style={{ marginBottom: 20 }}>
-                <Inp value={f.titulo} onChange={s("titulo")} onBlur={guardarCambios} placeholder="ej. Acme — Plan Enterprise" style={{ fontSize: 16, fontWeight: 800 }} />
+                <LocalInput value={f.titulo} onCommit={(v) => { s("titulo")({ target: { value: v } }); guardarCambios(); }} placeholder="ej. Acme — Plan Enterprise" style={{ fontSize: 16, fontWeight: 800 }} />
               </Campo>
 
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 20 }}>
                 <Campo label="Monto ($)">
-                  <Inp type="number" value={f.valor} onChange={s("valor")} onBlur={guardarCambios} style={{ fontWeight: 800, color: T.green }} />
+                  <LocalInput type="number" value={f.valor} onCommit={(v) => { s("valor")({ target: { value: v } }); guardarCambios(); }} style={{ fontWeight: 800, color: T.green }} />
                 </Campo>
                 <Campo label="Probabilidad (%)">
-                  <Inp type="number" value={f.prob} onChange={s("prob")} onBlur={guardarCambios} style={{ fontWeight: 800 }} />
+                  <LocalInput type="number" value={f.prob} onCommit={(v) => { s("prob")({ target: { value: v } }); guardarCambios(); }} style={{ fontWeight: 800 }} />
                 </Campo>
               </div>
 
@@ -239,7 +253,7 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
                   setF(nextF);
                   if (editDeal) await guardarEnSupa("deals", { ...editDeal, ...nextF });
                 }}><option value="">— Ninguna —</option>{db.empresas.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}</Sel></Campo>
-                <Campo label="Fecha de Cierre"><Inp type="date" value={f.fecha_cierre} onChange={s("fecha_cierre")} onBlur={guardarCambios} /></Campo>
+                <Campo label="Fecha de Cierre"><LocalInput type="date" value={f.fecha_cierre} onCommit={(v) => { s("fecha_cierre")({ target: { value: v } }); guardarCambios(); }} /></Campo>
                 <Campo label="Responsable">
                   <Sel value={f.responsable} onChange={async e => {
                     const val = e.target.value;
@@ -282,14 +296,22 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
                           {cf.opciones?.map(opt => <option key={opt} value={opt}>{opt}</option>)}
                         </Sel>
                       ) : cf.tipo === "fecha" ? (
-                        <Inp type="date" value={val} onChange={e => handleChange(e.target.value)} onBlur={handleBlur} />
+                        <LocalInput type="date" value={val} onCommit={v => { handleChange(v); handleBlur(); }} />
                       ) : cf.tipo === "dinero" ? (
                         <div style={{ position: "relative" }}>
                           <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: T.green, fontWeight: 800 }}>$</span>
-                          <Inp type="number" value={val} onChange={e => handleChange(e.target.value)} onBlur={handleBlur} style={{ paddingLeft: 24 }} />
+                          <LocalInput type="number" value={val} onCommit={v => { handleChange(v); handleBlur(); }} style={{ paddingLeft: 24, color: T.green, fontWeight: 700 }} />
                         </div>
+                      ) : cf.tipo === "numero" ? (
+                        <LocalInput type="number" value={val} onCommit={v => { handleChange(v); handleBlur(); }} />
+                      ) : cf.tipo === "si_no" ? (
+                        <Sel value={val} onChange={e => handleChange(e.target.value)} onBlur={handleBlur}>
+                          <option value="">— Seleccionar —</option>
+                          <option value="Si">Sí</option>
+                          <option value="No">No</option>
+                        </Sel>
                       ) : (
-                        <Inp value={val} onChange={e => handleChange(e.target.value)} onBlur={handleBlur} placeholder={`Ingresar ${cf.nombre.toLowerCase()}...`} />
+                        <LocalInput value={val} onCommit={v => { handleChange(v); handleBlur(); }} placeholder={`Ingresar ${cf.nombre.toLowerCase()}...`} />
                       )}
                     </Campo>
                   );
