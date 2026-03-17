@@ -30,18 +30,18 @@ export function Login() {
     if (error) {
       // Intentamos fallback local (Directorio IAM de la semilla/estado guardado)
       const locUser = db.usuariosApp?.find(u => u.email === email && (u.password === password || (!u.password && password === "admin123")));
-      
+
       if (locUser) {
         if (!locUser.activo) {
           setError('Tu cuenta local ha sido suspendida/revocada.');
         } else {
           // Simulamos una sesión local al estilo jwt
           const fallbackSession = {
-             user: { id: locUser.id || 'local-root', email: locUser.email, user_metadata: { role: locUser.role, name: locUser.name } },
-             access_token: "LOC_" + Date.now()
+            user: { id: locUser.id || 'local-root', email: locUser.email, user_metadata: { role: locUser.role, name: locUser.name } },
+            access_token: "LOC_" + Date.now()
           };
           // Forzamos la asignacion local sin supabase
-          setDb(d => ({ ...d, usuario: { name: locUser.name, email: locUser.email, role: locUser.role, avatar: locUser.name.charAt(0) }}));
+          setDb(d => ({ ...d, usuario: { name: locUser.name, email: locUser.email, role: locUser.role, avatar: locUser.name.charAt(0) } }));
           // Refresh instantáneo para forzar App.jsx a detectar cambio
           setTimeout(() => window.location.reload(), 100);
           return;
@@ -98,8 +98,8 @@ export function Login() {
         <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div>
             <label style={{ display: 'block', marginBottom: 6, fontSize: 13, fontWeight: 600, color: T.whiteDim }}>Correo Electrónico</label>
-            <input 
-              type="email" 
+            <input
+              type="email"
               required
               value={email}
               onChange={e => setEmail(e.target.value)}
@@ -118,11 +118,11 @@ export function Login() {
               onBlur={e => e.target.style.borderColor = T.borderHi}
             />
           </div>
-          
+
           <div>
             <label style={{ display: 'block', marginBottom: 6, fontSize: 13, fontWeight: 600, color: T.whiteDim }}>Contraseña</label>
-            <input 
-              type="password" 
+            <input
+              type="password"
               required
               value={password}
               onChange={e => setPassword(e.target.value)}
@@ -142,9 +142,9 @@ export function Login() {
             />
           </div>
 
-          <Btn 
-            type="submit" 
-            variant="primario" 
+          <Btn
+            type="submit"
+            variant="primario"
             style={{ width: '100%', marginTop: 8, padding: '12px', fontSize: 14, fontWeight: 700 }}
             disabled={cargando}
           >

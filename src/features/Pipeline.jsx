@@ -53,7 +53,7 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
     const [f, setF] = useState({
       titulo: "", contacto_id: "", empresa_id: "", pipeline_id: plActivo, etapa_id: pipeline?.etapas[0]?.id || "",
       valor: 0, prob: 50, fecha_cierre: "", responsable: db.usuario?.name || "", etiquetas: "", notas: "",
-      archivos: [], custom_fields: {}, ...init, etiquetas: (init.etiquetas || []).join(", ")
+      archivos: [], custom_fields: init.custom_fields || {}, ...init, etiquetas: (init.etiquetas || []).join(", ")
     });
     const [dragActive, setDragActive] = useState(false);
 
@@ -182,7 +182,7 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
                 {customFieldsDef.map(cf => {
                   const val = f.custom_fields?.[cf.id] || "";
                   const setVal = async (v) => {
-                    const nextF = { ...f, custom_fields: { ...f.custom_fields, [cf.id]: v } };
+                    const nextF = { ...f, custom_fields: { ...(f.custom_fields || {}), [cf.id]: v } };
                     setF(nextF);
                     // AUTO-SAVE: Si es un deal existente, guardar al momento
                     if (editDeal) {
@@ -264,6 +264,7 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
     await guardarEnSupa("campos_personalizados", campo);
 
     setNuevoCampo({ nombre: "", tipo: "cadena", opciones: "" });
+    setShowConfigCampos(false); // Cerrar para feedback visual claro
   };
 
   const eliminarCampo = async (id) => {

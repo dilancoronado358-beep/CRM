@@ -320,22 +320,36 @@ export function useSupaState() {
   // ── CRUD helper: guardar en Supabase y actualizar estado local ────────────
   const guardarEnSupa = async (tabla, registro) => {
     try {
-      const { error } = await sb.from(tabla).upsert(registro);
+      // DEBUG: Log exact data being sent
+      console.log(`[SUPA] Intentando guardar en ${tabla}:`, registro);
+
+      // Limpieza defensiva y preparación de metadatos
+      const payload = { ...registro };
+      
+      // Asegurar que las tareas tengan un timestamp si son nuevas
+      if (tabla === "tareas" && !payload.creado) {
+        payload.creado = new Date().toISOString();
+      }
+
+      const { data, error } = await sb.from(tabla).upsert(payload).select();
+      
       if (error) {
-        console.warn(`Error guardando en ${tabla}:`, error.message);
+        console.error(`🔴 Error CRÍTICO en ${tabla}:`, error.message, error.details);
       } else {
-        // Actualizar el estado local con el nuevo registro
+        console.log(`🟢 Éxito en ${tabla}:`, data?.[0]?.id || "Registro actualizado");
+        // Actualizar el estado local con el nuevo registro confirmado por Supabase
+        const confirmado = data?.[0] || payload;
         setDb((d) => {
           const lista = Array.isArray(d[tabla]) ? d[tabla] : [];
-          const idx = lista.findIndex((r) => r.id === registro.id);
+          const idx = lista.findIndex((r) => r.id === confirmado.id);
           const nueva = idx >= 0
-            ? lista.map((r) => (r.id === registro.id ? { ...r, ...registro } : r))
-            : [...lista, registro];
+            ? lista.map((r) => (r.id === confirmado.id ? { ...r, ...confirmado } : r))
+            : [confirmado, ...lista];
           return { ...d, [tabla]: nueva };
         });
       }
     } catch (e) {
-      console.warn("Supabase no disponible:", e.message);
+      console.error(`❌ Fallo total en guardarEnSupa (${tabla}):`, e);
     }
   };
 

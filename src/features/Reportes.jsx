@@ -8,12 +8,12 @@ const COLORS = [T.teal, T.green, T.amber, "#A78BFA", "#F472B6", "#60A5FA"];
 
 export const Reportes = ({ db }) => {
   const [filtros, setFiltros] = useState({
-    pipeline_id: db.pipelines[0]?.id || "",
+    pipeline_id: (db.pipelines || [])[0]?.id || "",
     responsable: "todos"
   });
 
   const pipelines = db.pipelines || [];
-  const responsables = ["todos", ...new Set(db.deals.map(d => d.responsable).filter(Boolean))];
+  const responsables = ["todos", ...new Set((db.deals || []).map(d => d.responsable).filter(Boolean))];
 
   const s = k => e => setFiltros(p => ({ ...p, [k]: e.target.value }));
 
