@@ -1,71 +1,261 @@
-import React, { useEffect, useState } from 'react';
-import { useSupaState } from '../hooks/useSupaState';
-import { T } from '../theme';
+import { useState, useEffect } from "react";
+import { createClient } from "@supabase/supabase-js";
+
+const SUPA_URL = "https://eoylgxwlhsmwqgadahvk.supabase.co";
+const SUPA_KEY = "sb_publishable_wKUbf7IFOoH4HIUayIAJdQ_Boj1jgZa";
+const supa = createClient(SUPA_URL, SUPA_KEY);
+
+// Default built-in forms (same as FormBuilder)
+const DEFAULT_FORMS = [
+  {
+    id: "f1",
+    nombre: "Contacto Web Principal",
+    color: "#06B6D4",
+    campos: [
+      { id: "c1", tipo: "text", etiqueta: "Nombre Completo", req: true },
+      { id: "c2", tipo: "email", etiqueta: "Correo Electrónico", req: true },
+      { id: "c3", tipo: "textarea", etiqueta: "Mensaje", req: false },
+    ],
+  },
+];
 
 export const FormularioPublico = ({ formId }) => {
-  const { db, guardarEnSupa } = useSupaState();
   const [form, setForm] = useState(null);
-  const [data, setData] = useState({});
+  const [values, setValues] = useState({});
   const [enviado, setEnviado] = useState(false);
+  const [enviando, setEnviando] = useState(false);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (db.formularios) {
-      const formEncontrado = db.formularios.find(f => f.id === formId);
-      if (formEncontrado) setForm(formEncontrado);
-    }
-  }, [db.formularios, formId]);
+    // First try to load from Supabase (saved forms)
+    const loadForm = async () => {
+      const { data } = await supa
+        .from("formularios_publicos")
+        .select("*")
+        .eq("id", formId)
+        .single();
 
-  if (!db.formularios) return <div style={{height: "100vh", display: "flex", justifyContent: "center", alignItems: "center", background: T.bg0, color: T.white}}>Cargando...</div>;
-  if (!form) return <div style={{height: "100vh", display: "flex", justifyContent: "center", alignItems: "center", background: T.bg0, color: T.white}}>404 - Formulario No Encontrado</div>;
+      if (data) {
+        setForm(data);
+      } else {
+        // Fallback to built-in forms
+        const found = DEFAULT_FORMS.find((f) => f.id === formId);
+        if (found) setForm(found);
+        else setError("Formulario no encontrado.");
+      }
+    };
+    loadForm();
+  }, [formId]);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const dealStr = Object.entries(data).map(([k,v]) => `${k}: ${v}`).join(", ");
-    guardarEnSupa("deals", { titulo: `Lead (${form.titulo}): ${data.nombre?data.nombre:'Nuevo Prospecto'}`, pipelineId: "pl_1", etapaId: "et_1", valor: 0, prob: 20, notas: dealStr, custom_fields: Object.entries(data).map(([k,v]) => ({nombre: k, valor: v})) });
-    setEnviado(true);
+    setEnviando(true);
+
+    // Validate required fields
+    for (const campo of form.campos || []) {
+      if (campo.req && !values[campo.id]?.trim()) {
+        alert(`El campo "${campo.etiqueta}" es obligatorio.`);
+        setEnviando(false);
+        return;
+      }
+    }
+
+    const nombreCampo = form.campos?.find(
+      (c) => c.tipo === "text" && c.etiqueta.toLowerCase().includes("nombre")
+    );
+    const emailCampo = form.campos?.find((c) => c.tipo === "email");
+    const telCampo = form.campos?.find(
+      (c) => c.tipo === "tel" || c.etiqueta.toLowerCase().includes("tel")
+    );
+
+    const nombre = (nombreCampo && values[nombreCampo.id]) || "Prospecto Web";
+    const email = (emailCampo && values[emailCampo.id]) || "";
+    const telefono = (telCampo && values[telCampo.id]) || "";
+
+    try {
+      // 1. Create/find contact
+      const contactoId = "c_web_" + Date.now();
+      await supa.from("contactos").insert({
+        id: contactoId,
+        nombre,
+        email,
+        telefono,
+        estado: "lead",
+        fuente: `Formulario: ${form.nombre}`,
+        creado: new Date().toISOString().slice(0, 10),
+      });
+
+      // 2. Get first pipeline and stage
+      const { data: pipelines } = await supa
+        .from("pipelines")
+        .select("id, etapas")
+        .limit(1);
+      const pl = pipelines?.[0];
+      const etapas = pl?.etapas || [];
+
+      // 3. Create deal
+      const dealId = "d_web_" + Date.now();
+      await supa.from("deals").insert({
+        id: dealId,
+        titulo: `Lead Web: ${nombre}`,
+        contacto_id: contactoId,
+        pipeline_id: pl?.id || "",
+        etapa_id: etapas[0]?.id || "",
+        valor: 0,
+        prob: 10,
+        fecha_cierre: new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10),
+        etiquetas: ["lead_web", "formulario"],
+        creado: new Date().toISOString().slice(0, 10),
+        notas: `Recibido por formulario "${form.nombre}". Campos:\n` +
+          form.campos
+            .map((c) => `- ${c.etiqueta}: ${values[c.id] || "(vacío)"}`)
+            .join("\n"),
+      });
+
+      setEnviado(true);
+    } catch (err) {
+      console.error("Error al enviar formulario:", err);
+      setError("Hubo un error al enviar. Por favor intenta de nuevo.");
+    }
+    setEnviando(false);
   };
+
+  const accent = form?.color || "#06B6D4";
+
+  if (error) {
+    return (
+      <div style={styles.page}>
+        <div style={styles.card}>
+          <div style={{ fontSize: 48, marginBottom: 16 }}>⚠️</div>
+          <h2 style={{ color: "#111827" }}>Formulario no disponible</h2>
+          <p style={{ color: "#6B7280" }}>{error}</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!form) {
+    return (
+      <div style={styles.page}>
+        <div style={styles.card}>
+          <div style={{ width: 40, height: 40, border: "3px solid #E5E7EB", borderTopColor: "#06B6D4", borderRadius: "50%", animation: "spin 1s linear infinite" }} />
+          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        </div>
+      </div>
+    );
+  }
 
   if (enviado) {
     return (
-      <div style={{ height: "100vh", display: "flex", justifyContent: "center", alignItems: "center", background: T.bg1, color: T.white, padding: 20 }}>
-        <div style={{ background: T.bg2, padding: 40, borderRadius: 12, border: `1px solid ${T.borderHi}`, textAlign: "center", maxWidth: 400 }}>
-          <div style={{ fontSize: 40, marginBottom: 10 }}>🎉</div>
-          <h2 style={{ margin: "0 0 10px 0", color: T.teal }}>¡Gracias!</h2>
-          <p style={{ margin: 0, color: T.whiteDim, lineHeight: 1.5 }}>Hemos recibido tus datos correctamente. Nuestro equipo te contactará en breve.</p>
+      <div style={styles.page}>
+        <div style={{ ...styles.card, textAlign: "center" }}>
+          <div style={{ width: 64, height: 64, borderRadius: "50%", background: accent + "22", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px", fontSize: 32 }}>✅</div>
+          <h2 style={{ color: "#111827", margin: "0 0 12px", fontSize: 24, fontWeight: 800 }}>¡Mensaje recibido!</h2>
+          <p style={{ color: "#6B7280", fontSize: 15, lineHeight: 1.7, margin: 0 }}>
+            Gracias por contactarnos. Un asesor se comunicará contigo en breve.
+          </p>
         </div>
       </div>
     );
   }
 
   return (
-    <div style={{ minHeight: "100vh", display: "flex", justifyContent: "center", padding: "50px 20px", background: T.bg0 }}>
-      <div style={{ maxWidth: 600, width: "100%" }}>
-        <div style={{ background: T.bg1, borderRadius: 16, padding: 40, border: `1px solid ${T.borderHi}`, boxShadow: "0 20px 40px rgba(0,0,0,0.2)" }}>
-           <h1 style={{ fontSize: 28, margin: "0 0 8px 0", color: T.white, fontWeight: 800 }}>{form.titulo}</h1>
-           {form.desc && <p style={{ fontSize: 15, color: T.whiteDim, margin: "0 0 32px 0" }}>{form.desc}</p>}
-
-           <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-              {form.campos.map(c => (
-                <div key={c.id} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                  <label style={{ fontSize: 13, fontWeight: 700, color: T.whiteOff }}>{c.label} {c.req && <span style={{color: T.red}}>*</span>}</label>
-                  {c.tipo === "textarea" ? (
-                     <textarea required={c.req} value={data[c.label] || ""} onChange={e => setData({...data, [c.label]: e.target.value})} rows={4} style={{ background: T.bg2, border: `1px solid ${T.border}`, borderRadius: 8, padding: 12, color: T.white, fontSize: 14, outline: "none", resize: "vertical", fontFamily: "inherit" }} onFocus={e => e.target.style.borderColor = T.teal} onBlur={e => e.target.style.borderColor = T.border} />
-                  ) : (
-                     <input type={c.tipo} required={c.req} value={data[c.label] || ""} onChange={e => setData({...data, [c.label]: e.target.value})} style={{ background: T.bg2, border: `1px solid ${T.border}`, borderRadius: 8, padding: "12px 16px", color: T.white, fontSize: 14, outline: "none", transition: "border-color .2s", width: "100%", boxSizing: "border-box" }} onFocus={e => e.target.style.borderColor = T.teal} onBlur={e => e.target.style.borderColor = T.border} />
-                  )}
-                </div>
-              ))}
-              <div style={{ marginTop: 12 }}>
-                 <button type="submit" style={{ background: T.grad, color: "#fff", border: "none", borderRadius: 8, padding: "14px 24px", fontSize: 15, fontWeight: 700, cursor: "pointer", width: "100%", transition: "opacity .2s" }} onMouseEnter={e => e.target.style.opacity=0.9} onMouseLeave={e => e.target.style.opacity=1}>
-                   Enviar Datos
-                 </button>
-              </div>
-           </form>
-           <div style={{ textAlign: "center", marginTop: 40, fontSize: 12, color: T.whiteDim }}>
-             Impulsado por <span style={{fontWeight: 700, color: T.white}}>NexusCRM</span>
-           </div>
+    <div style={styles.page}>
+      <div style={styles.card}>
+        <div style={{ textAlign: "center", marginBottom: 28 }}>
+          <div style={{ width: 48, height: 48, borderRadius: 14, background: accent + "22", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px", fontSize: 24 }}>📋</div>
+          <h1 style={{ margin: 0, fontSize: 24, fontWeight: 800, color: "#111827" }}>{form.nombre}</h1>
+          <p style={{ margin: "8px 0 0", color: "#6B7280", fontSize: 14 }}>Completa el formulario y te contactaremos pronto.</p>
         </div>
+
+        <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          {(form.campos || []).map((campo) => (
+            <div key={campo.id}>
+              <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 6 }}>
+                {campo.etiqueta}
+                {campo.req && <span style={{ color: "#EF4444", marginLeft: 4 }}>*</span>}
+              </label>
+              {campo.tipo === "textarea" ? (
+                <textarea
+                  rows={4}
+                  value={values[campo.id] || ""}
+                  onChange={(e) => setValues((v) => ({ ...v, [campo.id]: e.target.value }))}
+                  placeholder={`Ingresa ${campo.etiqueta.toLowerCase()}`}
+                  style={styles.input}
+                />
+              ) : (
+                <input
+                  type={campo.tipo}
+                  value={values[campo.id] || ""}
+                  onChange={(e) => setValues((v) => ({ ...v, [campo.id]: e.target.value }))}
+                  placeholder={`Ingresa ${campo.etiqueta.toLowerCase()}`}
+                  style={styles.input}
+                  required={campo.req}
+                />
+              )}
+            </div>
+          ))}
+
+          <button
+            type="submit"
+            disabled={enviando}
+            style={{
+              width: "100%",
+              padding: "14px",
+              marginTop: 8,
+              background: enviando ? "#9CA3AF" : accent,
+              color: "#fff",
+              border: "none",
+              borderRadius: 10,
+              fontSize: 15,
+              fontWeight: 700,
+              cursor: enviando ? "default" : "pointer",
+              boxShadow: `0 4px 20px ${accent}44`,
+              transition: "all .2s",
+            }}
+          >
+            {enviando ? "Enviando..." : "Enviar →"}
+          </button>
+        </form>
+
+        <p style={{ textAlign: "center", marginTop: 16, fontSize: 12, color: "#9CA3AF" }}>
+          🔒 Tus datos están seguros con nosotros. Nunca los compartiremos.
+        </p>
       </div>
     </div>
   );
+};
+
+const styles = {
+  page: {
+    minHeight: "100vh",
+    background: "linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 50%, #f0fdf4 100%)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 24,
+    fontFamily: "Inter, system-ui, sans-serif",
+  },
+  card: {
+    background: "#fff",
+    borderRadius: 20,
+    padding: 40,
+    width: "100%",
+    maxWidth: 480,
+    boxShadow: "0 25px 60px -12px rgba(0,0,0,0.12)",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+  },
+  input: {
+    width: "100%",
+    padding: "11px 14px",
+    border: "1.5px solid #E5E7EB",
+    borderRadius: 8,
+    fontSize: 14,
+    fontFamily: "inherit",
+    outline: "none",
+    boxSizing: "border-box",
+    transition: "border-color .2s",
+  },
 };

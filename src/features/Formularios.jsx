@@ -2,6 +2,7 @@ import { useState } from "react";
 import { T } from "../theme";
 import { uid } from "../utils";
 import { Btn, Inp, Tarjeta, EncabezadoSeccion, Ico, Sel } from "../components/ui";
+import { sb } from "../hooks/useSupaState";
 
 export const Formularios = ({ db, setDb }) => {
   const [forms, setForms] = useState([
@@ -24,37 +25,29 @@ export const Formularios = ({ db, setDb }) => {
     setForms(p => p.map(x => x.id === activo.id ? nv : x)); setActivo(nv);
   };
 
+  const BASE_URL = "https://crm.ensing.lat";
+
   const copiarLink = () => {
-    navigator.clipboard.writeText(`https://nexus.crm/f/${activo.id}`);
-    alert("¡Enlace público copiado al portapapeles! Compártelo con tus prospectos.");
+    const url = `${BASE_URL}/#/f/${activo.id}`;
+    navigator.clipboard.writeText(url);
+    alert(`¡Enlace público copiado!\n\n${url}\n\nCompartilo con tus prospectos.`);
   };
 
-  const enviarForm = () => {
-    if(!db.pipelines?.length) return alert("Error: Crea un Pipeline primero.");
-    const pl = db.pipelines[0];
-    const et = pl.etapas[0]; // Etapa inicial (Nuevo Lead)
-    const nv = {
-      id: "d" + uid(),
-      titulo: `Lead Web: ${previewName || "Sin Nombre"}`,
-      contactoId: "", empresaId: "", pipelineId: pl.id, etapaId: et?.id || "",
-      valor: 0, prob: 10, fechaCierre: new Date().toISOString().slice(0, 10),
-      responsable: db.usuario?.name || "Sistema",
-      etiquetas: ["lead_web", "formulario"],
-      creado: new Date().toISOString().slice(0, 10),
-      notas: `Lead generado automáticamente desde formulario ${activo.nombre}. Email de contacto: ${previewEmail}`,
-      custom_fields: activo.campos.map(c => ({ nombre: c.etiqueta, valor: c.tipo === "email" ? previewEmail : c.tipo === "text" && c.etiqueta.includes("Nombre") ? previewName : "(Capturado en Web)" }))
-    };
-    setDb(d => ({ ...d, deals: [nv, ...(d.deals || [])] }));
-    alert("¡Simulación exitosa! Los datos se han enrutado y se ha creado un nuevo Deal en tu Pipeline en la primera etapa.");
-    setPreviewName(""); setPreviewEmail("");
-  };
-
-  const formID = activo.id; // Assuming 'activo.id' is the current form ID
-  const urlPublica = `${window.location.origin}${window.location.pathname}#/f/${formID}`;
-
-  const guardarFormulario = () => {
-    // Implement your save logic here
-    alert("Formulario guardado (simulado)");
+  const guardarFormulario = async () => {
+    // Save to Supabase for persistence
+    const { error } = await sb.from("formularios_publicos").upsert({
+      id: activo.id,
+      nombre: activo.nombre,
+      color: T.teal,
+      campos: activo.campos,
+      created_at: new Date().toISOString(),
+    });
+    if (error) {
+      console.error("Error saving form:", error);
+      alert("Formulario guardado localmente.");
+    } else {
+      alert(`✅ Formulario guardado. Link público:\n${BASE_URL}/#/f/${activo.id}`);
+    }
   };
 
   return (

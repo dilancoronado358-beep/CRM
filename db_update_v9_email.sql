@@ -24,7 +24,7 @@ CREATE TABLE IF NOT EXISTS public.emails (
     de TEXT NOT NULL,
     para TEXT NOT NULL,
     cc TEXT,
-    bcc TEXT,
+    bcc TEXT,   
     asunto TEXT,
     cuerpo TEXT,
     html TEXT,

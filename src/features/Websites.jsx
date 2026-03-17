@@ -132,7 +132,7 @@ export const Websites = ({ db, setDb }) => {
               {activoId === p.id && (
                 <div style={{ display: "flex", gap: 6, marginTop: 10 }}>
                   <Btn variant="fantasma" size="sm" onClick={e => { e.stopPropagation(); setEditando(!editando); }}><Ico k="edit" size={12} /> Editar</Btn>
-                  <Btn variant="fantasma" size="sm" onClick={e => { e.stopPropagation(); const url = `${window.location.origin}${window.location.pathname}#/sites/${p.id}`; navigator.clipboard?.writeText(url); window.open(url, "_blank"); }}><Ico k="link" size={12} /> Link</Btn>
+                  <Btn variant="fantasma" size="sm" onClick={e => { e.stopPropagation(); const url = `https://crm.ensing.lat/#/sites/${p.id}`; navigator.clipboard?.writeText(url); alert(`✅ Link copiado!\n\n${url}\n\nQualquier persona puede abrir este enlace y ver tu landing page.`); }}><Ico k="link" size={12} /> Link</Btn>
                   <Btn variant="fantasma" size="sm" onClick={e => { e.stopPropagation(); updateActivo({ activo: !p.activo }); }}><Ico k={p.activo ? "eye" : "eye"} size={12} />{p.activo ? " Pausar" : " Publicar"}</Btn>
                   <Btn variant="fantasma" size="sm" onClick={e => { e.stopPropagation(); eliminarPagina(p.id); }}><Ico k="trash" size={12} style={{ color: T.red }} /></Btn>
                 </div>
