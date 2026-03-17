@@ -40,8 +40,11 @@ const DEFAULT_PAGE = (id, titulo, slug) => ({
   ctaBtn: "Comenzar Ahora",
   ctaBtnUrl: "#form-section",
   customText: "Escribe aquí tu contenido libre o mensaje personalizado...",
+  ctaBtnUrl: "#form-section",
+  customText: "Escribe aquí tu contenido libre o mensaje personalizado...",
   imageUrl: "",
   buttons: [],
+  floatingElements: [],
   faqItems: [
     { q: "¿Cuánto cuesta?", a: "Planes desde $29/mes con 14 días de prueba gratuita." },
     { q: "¿Es fácil de configurar?", a: "En menos de 2 horas puedes tener tu CRM listo." },
@@ -73,6 +76,12 @@ export const Websites = ({ db, setDb }) => {
   const [dragOverBlock, setDragOverBlock] = useState(null);
   const dragRef = useRef(null);
 
+  // Drag floating
+  const [activeFl, setActiveFl] = useState(null);
+  const [dragFl, setDragFl] = useState(null);
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const canvasRef = useRef(null);
+
   // ── Load from Supabase ────────────────────────────────────────────────────
   useEffect(() => {
     const load = async () => {
@@ -102,6 +111,7 @@ export const Websites = ({ db, setDb }) => {
           ctaBtnUrl: p.cta_btn_url || p.ctaBtnUrl || "#form-section",
           customText: p.custom_text || p.customText || "Escribe aquí tu contenido libre...",
           imageUrl: p.image_url || p.imageUrl || "",
+          floatingElements: Array.isArray(p.floating_elements) ? p.floating_elements : (p.floatingElements || []),
         }));
         setPages(parsed);
         setActivoId(parsed[0].id);
@@ -147,6 +157,7 @@ export const Websites = ({ db, setDb }) => {
       cta_btn_url: pg.ctaBtnUrl || null,
       custom_text: pg.customText || null,
       image_url: pg.imageUrl || null,
+      floating_elements: pg.floatingElements || [],
       buttons: pg.buttons || [],
       faq_items: pg.faqItems || [],
       stats_items: pg.statsItems || [],
@@ -171,6 +182,7 @@ export const Websites = ({ db, setDb }) => {
       hero_cta_url: np.heroCTAUrl, hero_cta2: np.heroCTA2, hero_cta2_url: np.heroCTA2Url,
       cta_title: np.ctaTitle, cta_sub: np.ctaSub, cta_btn: np.ctaBtn, cta_btn_url: np.ctaBtnUrl,
       custom_text: np.customText, image_url: np.imageUrl,
+      floating_elements: np.floatingElements,
       buttons: np.buttons,
       faq_items: np.faqItems, stats_items: np.statsItems, features: np.features,
     });
@@ -217,6 +229,24 @@ export const Websites = ({ db, setDb }) => {
     [arr[idx], arr[t]] = [arr[t], arr[idx]];
     updateActivo({ blocks: arr });
   };
+
+  const onFlDown = (e, id) => {
+    e.stopPropagation();
+    setActiveFl(id);
+    setDragFl(id);
+    const rect = e.currentTarget.getBoundingClientRect();
+    setDragOffset({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+  };
+  const handleCanvasMove = (e) => {
+    if (!dragFl || !canvasRef.current) return;
+    const rect = canvasRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left - dragOffset.x + canvasRef.current.scrollLeft;
+    const y = e.clientY - rect.top - dragOffset.y + canvasRef.current.scrollTop;
+    updateActivo({
+      floatingElements: activo.floatingElements.map((f) => f.id === dragFl ? { ...f, x, y } : f)
+    });
+  };
+  const handleCanvasUp = () => setDragFl(null);
 
   const copyLink = (pg) => {
     const url = `${BASE_URL}/#/sites/${pg.id}`;
@@ -396,9 +426,9 @@ export const Websites = ({ db, setDb }) => {
 
         {activo && (<>
           {/* Tabs */}
-          <div style={{ display: "flex", borderBottom: `1px solid ${T.borderHi}`, flexShrink: 0 }}>
-            {[["sections", "Secciones"], ["edit", "Editar"], ["design", "Diseño"]].map(([k, lbl]) => (
-              <button key={k} onClick={() => setPanel(k)} style={{ flex: 1, padding: "8px 0", background: "transparent", border: "none", color: panel === k ? T.teal : T.whiteDim, fontWeight: panel === k ? 700 : 400, fontSize: 11, cursor: "pointer", borderBottom: `2px solid ${panel === k ? T.teal : "transparent"}` }}>
+          <div style={{ display: "flex", borderBottom: `1px solid ${T.borderHi}`, flexShrink: 0, flexWrap: "wrap" }}>
+            {[["sections", "Secciones"], ["free", "Libre"], ["edit", "Hero+CTA"], ["design", "Diseño"]].map(([k, lbl]) => (
+              <button key={k} onClick={() => setPanel(k)} style={{ flex: "1 1 auto", padding: "8px 0", background: "transparent", border: "none", color: panel === k ? T.teal : T.whiteDim, fontWeight: panel === k ? 700 : 400, fontSize: 11, cursor: "pointer", borderBottom: `2px solid ${panel === k ? T.teal : "transparent"}` }}>
                 {lbl}
               </button>
             ))}
@@ -443,6 +473,59 @@ export const Websites = ({ db, setDb }) => {
                     <span style={{ color: T.teal, fontSize: 16, fontWeight: 300 }}>+</span>
                   </div>
                 ))}
+              </div>
+            )}
+
+            {/* LIBRE (Elementos flotantes) */}
+            {panel === "free" && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6 }}>
+                  <Btn size="sm" variant="secundario" onClick={() => updateActivo({ floatingElements: [...(activo.floatingElements || []), { id: uid(), type: "text", content: "Texto Libre", x: 100, y: 100, fontSize: 16, color: "#111827", fontWeight: "normal" }] })}>+ Texto</Btn>
+                  <Btn size="sm" variant="secundario" onClick={() => updateActivo({ floatingElements: [...(activo.floatingElements || []), { id: uid(), type: "image", content: "https://via.placeholder.com/150", width: 150, x: 150, y: 150 }] })}>+ Imagen</Btn>
+                  <Btn size="sm" variant="secundario" onClick={() => updateActivo({ floatingElements: [...(activo.floatingElements || []), { id: uid(), type: "button", content: "Botón", url: "#", x: 200, y: 200, bg: activo.accentColor || "#06B6D4" }] })}>+ Botón</Btn>
+                </div>
+                {(activo.floatingElements || []).length > 0 && <div style={{ fontSize: 10, color: T.whiteDim }}>Arrastra los elementos directamente en la vista derecha ➡️</div>}
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {(activo.floatingElements || []).map((f) => (
+                    <div key={f.id} onClick={() => setActiveFl(f.id)} style={{ padding: 10, background: activeFl === f.id ? T.tealSoft : T.bg2, border: `1px solid ${activeFl === f.id ? T.teal : T.borderHi}`, borderRadius: 8 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: T.white }}>{f.type === "text" ? "✍️ Texto" : f.type === "image" ? "🖼️ Imagen" : "🔗 Botón"}</div>
+                        <button onClick={(e) => { e.stopPropagation(); updateActivo({ floatingElements: activo.floatingElements.filter(x => x.id !== f.id) }) }} style={delBtn}>Eliminar</button>
+                      </div>
+
+                      {f.type === "text" && (
+                        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                          <textarea value={f.content} onChange={(e) => updateActivo({ floatingElements: activo.floatingElements.map(x => x.id === f.id ? { ...x, content: e.target.value } : x) })} rows={2} style={{ width: "100%", padding: "6px", background: T.bg1, border: "none", color: "#fff", borderRadius: 4, outline: "none", fontSize: 12, resize: "vertical" }} />
+                          <div style={{ display: "flex", gap: 6 }}>
+                            <input type="number" value={f.fontSize || 16} onChange={(e) => updateActivo({ floatingElements: activo.floatingElements.map(x => x.id === f.id ? { ...x, fontSize: Number(e.target.value) } : x) })} placeholder="Tam." style={{ width: 50, padding: 4, background: T.bg1, border: "none", color: "#fff", borderRadius: 4, fontSize: 11 }} />
+                            <input type="color" value={f.color || "#111827"} onChange={(e) => updateActivo({ floatingElements: activo.floatingElements.map(x => x.id === f.id ? { ...x, color: e.target.value } : x) })} style={{ width: 30, height: 26, border: "none" }} />
+                            <select value={f.fontWeight} onChange={(e) => updateActivo({ floatingElements: activo.floatingElements.map(x => x.id === f.id ? { ...x, fontWeight: e.target.value } : x) })} style={{ flex: 1, padding: 4, background: T.bg1, border: "none", color: "#fff", borderRadius: 4, fontSize: 11 }}>
+                              <option value="normal">Normal</option>
+                              <option value="bold">Bold</option>
+                              <option value="900">Heavy</option>
+                            </select>
+                          </div>
+                        </div>
+                      )}
+                      {f.type === "image" && (
+                        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                          <input type="text" value={f.content} onChange={(e) => updateActivo({ floatingElements: activo.floatingElements.map(x => x.id === f.id ? { ...x, content: e.target.value } : x) })} placeholder="URL de la imagen" style={{ width: "100%", padding: "6px", background: T.bg1, border: "none", color: "#fff", borderRadius: 4, outline: "none", fontSize: 12 }} />
+                          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                            <span style={{ fontSize: 10, color: T.whiteDim }}>Ancho:</span>
+                            <input type="number" value={f.width || 150} onChange={(e) => updateActivo({ floatingElements: activo.floatingElements.map(x => x.id === f.id ? { ...x, width: Number(e.target.value) } : x) })} placeholder="Ancho (px)" style={{ width: 60, padding: 4, background: T.bg1, border: "none", color: "#fff", borderRadius: 4, fontSize: 11 }} />
+                          </div>
+                        </div>
+                      )}
+                      {f.type === "button" && (
+                        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                          <input type="text" value={f.content} onChange={(e) => updateActivo({ floatingElements: activo.floatingElements.map(x => x.id === f.id ? { ...x, content: e.target.value } : x) })} placeholder="Texto" style={{ width: "100%", padding: "6px", background: T.bg1, border: "none", color: "#fff", borderRadius: 4, outline: "none", fontSize: 12 }} />
+                          <input type="text" value={f.url} onChange={(e) => updateActivo({ floatingElements: activo.floatingElements.map(x => x.id === f.id ? { ...x, url: e.target.value } : x) })} placeholder="URL destino" style={{ width: "100%", padding: "6px", background: T.bg1, border: "none", color: "#fff", borderRadius: 4, outline: "none", fontSize: 12 }} />
+                          <input type="color" value={f.bg || activo.accentColor || "#06B6D4"} onChange={(e) => updateActivo({ floatingElements: activo.floatingElements.map(x => x.id === f.id ? { ...x, bg: e.target.value } : x) })} style={{ width: 30, height: 26, border: "none" }} />
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
 
@@ -543,7 +626,7 @@ export const Websites = ({ db, setDb }) => {
           </div>
 
           {/* Scrollable canvas */}
-          <div style={{ flex: 1, overflowY: "auto", background: "#fff" }}>
+          <div ref={canvasRef} onMouseMove={handleCanvasMove} onMouseUp={handleCanvasUp} onMouseLeave={handleCanvasUp} style={{ flex: 1, overflowY: "auto", background: "#fff", position: "relative" }}>
             {(!activo.blocks || activo.blocks.length === 0) && (
               <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 12, color: "#9CA3AF" }}>
                 <div style={{ fontSize: 40 }}>📄</div>
@@ -595,9 +678,9 @@ export const Websites = ({ db, setDb }) => {
                     <div key="pricing" style={{ padding: "70px 24px", textAlign: "center" }}>
                       <h2 style={{ fontSize: 28, fontWeight: 800, color: "#111827", margin: "0 0 40px" }}>Planes simples y transparentes</h2>
                       <div style={{ display: "flex", gap: 20, justifyContent: "center", flexWrap: "wrap" }}>
-                        {[{ p: "Starter", price: "$29", f: ["5 usuarios","1 pipeline","Email básico"], h: false },
-                          { p: "Pro", price: "$79", f: ["25 usuarios","Pipelines ilimitados","IA & Automations","API Access"], h: true },
-                          { p: "Enterprise", price: "Custom", f: ["Usuarios ilimitados","SSO","SLA 99.9%"], h: false }].map((pl, i) => (
+                        {[{ p: "Starter", price: "$29", f: ["5 usuarios", "1 pipeline", "Email básico"], h: false },
+                        { p: "Pro", price: "$79", f: ["25 usuarios", "Pipelines ilimitados", "IA & Automations", "API Access"], h: true },
+                        { p: "Enterprise", price: "Custom", f: ["Usuarios ilimitados", "SSO", "SLA 99.9%"], h: false }].map((pl, i) => (
                           <div key={i} style={{ background: pl.h ? accent : "#fff", padding: 28, borderRadius: 16, border: `2px solid ${pl.h ? "transparent" : "#E5E7EB"}`, width: 200, boxShadow: pl.h ? `0 10px 30px ${accent}40` : "none" }}>
                             <div style={{ fontSize: 12, fontWeight: 700, color: pl.h ? "rgba(255,255,255,.8)" : "#6B7280", marginBottom: 8 }}>{pl.p}</div>
                             <div style={{ fontSize: 32, fontWeight: 900, color: pl.h ? "#fff" : "#111827", marginBottom: 14 }}>{pl.price}</div>
@@ -612,7 +695,7 @@ export const Websites = ({ db, setDb }) => {
                     <div key="testimonials" style={{ padding: "70px 24px", background: "#F9FAFB" }}>
                       <h2 style={{ fontSize: 28, fontWeight: 800, color: "#111827", textAlign: "center", margin: "0 0 40px" }}>Lo que dicen nuestros clientes</h2>
                       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 20, maxWidth: 900, margin: "0 auto" }}>
-                        {[{ n: "María G.", c: "TechCorp", t: "Incrementamos las ventas en 40%." },{ n: "Carlos R.", c: "Startup SL", t: "Ahorramos 10h semanales con la IA." },{ n: "Ana P.", c: "AgenciaX", t: "El mejor CRM en 5 años de trabajo." }].map((t, i) => (
+                        {[{ n: "María G.", c: "TechCorp", t: "Incrementamos las ventas en 40%." }, { n: "Carlos R.", c: "Startup SL", t: "Ahorramos 10h semanales con la IA." }, { n: "Ana P.", c: "AgenciaX", t: "El mejor CRM en 5 años de trabajo." }].map((t, i) => (
                           <div key={i} style={{ background: "#fff", padding: 22, borderRadius: 14, border: "1px solid #E5E7EB" }}>
                             <div style={{ fontSize: 16, marginBottom: 10 }}>⭐⭐⭐⭐⭐</div>
                             <p style={{ fontSize: 13, color: "#374151", lineHeight: 1.7, margin: "0 0 14px", fontStyle: "italic" }}>"{t.t}"</p>
@@ -724,6 +807,40 @@ export const Websites = ({ db, setDb }) => {
                 © {new Date().getFullYear()} · Potenciado por <span style={{ color: accent, fontWeight: 700 }}>ENSING CRM</span>
               </footer>
             )}
+
+            {/* Rendering Floating Elements on Canvas */}
+            {(activo.floatingElements || []).map(f => {
+              const isActive = activeFl === f.id;
+              const isDragging = dragFl === f.id;
+
+              let contentNode = null;
+              if (f.type === "text") {
+                contentNode = <div style={{ fontSize: f.fontSize || 16, color: f.color || "#111827", fontWeight: f.fontWeight || "normal", whiteSpace: "pre-wrap" }}>{f.content}</div>;
+              } else if (f.type === "image") {
+                contentNode = <img src={f.content} alt="Libre" style={{ width: f.width || 150, height: "auto", borderRadius: 8, pointerEvents: "none" }} />;
+              } else if (f.type === "button") {
+                contentNode = <div style={{ background: f.bg || accent, color: "#fff", padding: "12px 24px", borderRadius: 10, fontSize: 14, fontWeight: 700, pointerEvents: "none", boxShadow: `0 8px 24px ${(f.bg || accent)}44` }}>{f.content}</div>;
+              }
+
+              return (
+                <div
+                  key={f.id}
+                  onMouseDown={(e) => onFlDown(e, f.id)}
+                  style={{
+                    position: "absolute",
+                    left: f.x,
+                    top: f.y,
+                    cursor: isDragging ? "grabbing" : "grab",
+                    boxShadow: isActive ? `0 0 0 2px ${T.teal}` : "none",
+                    opacity: isDragging ? 0.8 : 1,
+                    zIndex: isActive ? 50 : 10,
+                    userSelect: "none"
+                  }}
+                >
+                  {contentNode}
+                </div>
+              );
+            })}
           </div>
         </>) : (
           <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16 }}>

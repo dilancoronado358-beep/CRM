@@ -25,6 +25,7 @@ export const FormularioPublico = ({ formId }) => {
   const [enviado, setEnviado] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState(null);
+  const [paso, setPaso] = useState(0);
 
   useEffect(() => {
     // First try to load from Supabase (saved forms)
@@ -47,18 +48,41 @@ export const FormularioPublico = ({ formId }) => {
     loadForm();
   }, [formId]);
 
+  const { paginas, indexPaso } = React.useMemo(() => {
+    if (!form || !form.campos) return { paginas: [], indexPaso: 0 };
+    const p = [];
+    let cur = [];
+    form.campos.forEach((campo, i) => {
+      if (campo.tipo === "section" && i > 0) {
+        p.push(cur);
+        cur = [campo];
+      } else {
+        cur.push(campo);
+      }
+    });
+    if (cur.length > 0) p.push(cur);
+    return { paginas: p.length ? p : [form.campos], indexPaso: paso };
+  }, [form, paso]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setEnviando(true);
 
-    // Validate required fields
-    for (const campo of form.campos || []) {
+    // Validate *current page* required fields
+    const currentFields = paginas[paso] || [];
+    for (const campo of currentFields) {
       if (campo.req && !values[campo.id]?.trim()) {
         alert(`El campo "${campo.etiqueta}" es obligatorio.`);
-        setEnviando(false);
         return;
       }
     }
+
+    // Go to next step if not last
+    if (paso < paginas.length - 1) {
+      setPaso(p => p + 1);
+      return;
+    }
+
+    setEnviando(true);
 
     const nombreCampo = form.campos?.find(
       (c) => c.tipo === "text" && c.etiqueta.toLowerCase().includes("nombre")
@@ -108,6 +132,7 @@ export const FormularioPublico = ({ formId }) => {
         creado: new Date().toISOString().slice(0, 10),
         notas: `Recibido por formulario "${form.nombre}". Campos:\n` +
           form.campos
+            .filter(c => c.tipo !== 'section')
             .map((c) => `- ${c.etiqueta}: ${values[c.id] || "(vacío)"}`)
             .join("\n"),
       });
@@ -169,11 +194,12 @@ export const FormularioPublico = ({ formId }) => {
         </div>
 
         <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          {(form.campos || []).map((campo) => (
+          {(paginas[paso] || []).map((campo) => (
             <div key={campo.id}>
               {campo.tipo === "section" ? (
-                <div style={{ marginTop: 12, paddingBottom: 6, borderBottom: `1px solid ${accent}40` }}>
-                  <span style={{ fontSize: 16, fontWeight: 800, color: "#111827" }}>{campo.etiqueta}</span>
+                <div style={{ marginTop: 12, paddingBottom: 6, borderBottom: `1px solid ${accent}40`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span style={{ fontSize: 18, fontWeight: 800, color: "#111827" }}>{campo.etiqueta}</span>
+                  {paginas.length > 1 && <span style={{ fontSize: 13, fontWeight: 600, color: "#9CA3AF" }}>Paso {paso + 1} de {paginas.length}</span>}
                 </div>
               ) : (
                 <>
@@ -189,6 +215,23 @@ export const FormularioPublico = ({ formId }) => {
                       placeholder={`Ingresa ${campo.etiqueta.toLowerCase()}`}
                       style={styles.input}
                     />
+                  ) : campo.tipo === "checkbox" ? (
+                    <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, cursor: "pointer", color: "#374151", userSelect: "none" }}>
+                      <input type="checkbox" checked={values[campo.id] === "Sí"} onChange={(e) => setValues((v) => ({ ...v, [campo.id]: e.target.checked ? "Sí" : "No" }))} style={{ width: 18, height: 18, accentColor: accent }} />
+                      Sí, acepto
+                    </label>
+                  ) : campo.tipo === "select" ? (
+                    <select
+                      value={values[campo.id] || ""}
+                      onChange={(e) => setValues((v) => ({ ...v, [campo.id]: e.target.value }))}
+                      style={styles.input}
+                      required={campo.req}
+                    >
+                      <option value="">Selecciona una opción</option>
+                      {(campo.opciones || "").split(",").filter(Boolean).map((o, i) => (
+                        <option key={i} value={o.trim()}>{o.trim()}</option>
+                      ))}
+                    </select>
                   ) : (
                     <input
                       type={campo.tipo}
@@ -204,26 +247,38 @@ export const FormularioPublico = ({ formId }) => {
             </div>
           ))}
 
-          <button
-            type="submit"
-            disabled={enviando}
-            style={{
-              width: "100%",
-              padding: "14px",
-              marginTop: 8,
-              background: enviando ? "#9CA3AF" : accent,
-              color: "#fff",
-              border: "none",
-              borderRadius: form.apariencia?.borderRadius ?? 10,
-              fontSize: 15,
-              fontWeight: 700,
-              cursor: enviando ? "default" : "pointer",
-              boxShadow: `0 4px 20px ${accent}44`,
-              transition: "all .2s",
-            }}
-          >
-            {enviando ? "Enviando..." : (form.apariencia?.buttonText || "Enviar →")}
-          </button>
+          <div style={{ display: "flex", gap: 12, marginTop: 8 }}>
+            {paso > 0 && (
+              <button
+                type="button"
+                onClick={() => setPaso(p => p - 1)}
+                disabled={enviando}
+                style={{
+                  ...styles.btn,
+                  flex: "0 0 auto",
+                  background: "#F3F4F6",
+                  color: "#374151",
+                  width: "auto",
+                  padding: "14px 24px",
+                }}
+              >
+                ← Anterior
+              </button>
+            )}
+            <button
+              type="submit"
+              disabled={enviando}
+              style={{
+                ...styles.btn,
+                background: enviando ? "#9CA3AF" : accent,
+                color: "#fff",
+                borderRadius: form.apariencia?.borderRadius ?? 10,
+                boxShadow: `0 4px 20px ${accent}44`,
+              }}
+            >
+              {enviando ? "Enviando..." : (paso < paginas.length - 1 ? "Siguiente →" : (form.apariencia?.buttonText || "Enviar →"))}
+            </button>
+          </div>
         </form>
 
         {(form.apariencia?.footerText ?? "🔒 Tus datos están seguros con nosotros. Nunca los compartiremos.") && (
@@ -259,13 +314,24 @@ const styles = {
   },
   input: {
     width: "100%",
-    padding: "11px 14px",
+    padding: "12px 14px",
     border: "1.5px solid #E5E7EB",
     borderRadius: 8,
-    fontSize: 14,
+    fontSize: 15,
     fontFamily: "inherit",
     outline: "none",
     boxSizing: "border-box",
     transition: "border-color .2s",
+    color: "#111827",
   },
+  btn: {
+    width: "100%",
+    padding: "14px",
+    border: "none",
+    borderRadius: 10,
+    fontSize: 15,
+    fontWeight: 700,
+    cursor: "pointer",
+    transition: "all .2s",
+  }
 };

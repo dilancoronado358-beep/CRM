@@ -83,6 +83,7 @@ export const LandingPagePublica = ({ siteSlug }) => {
           statsItems: Array.isArray(data.stats_items) ? data.stats_items : (data.statsItems || []),
           features: Array.isArray(data.features) ? data.features : [],
           buttons: Array.isArray(data.buttons) ? data.buttons : [],
+          floatingElements: Array.isArray(data.floating_elements) ? data.floating_elements : (data.floatingElements || []),
           blocks: Array.isArray(data.blocks) ? data.blocks : ["hero", "features", "cta"],
         });
       } else {
@@ -109,6 +110,7 @@ export const LandingPagePublica = ({ siteSlug }) => {
             statsItems: preview.stats_items || [],
             features: preview.features || [],
             buttons: Array.isArray(preview.buttons) ? preview.buttons : [],
+            floatingElements: Array.isArray(preview.floating_elements) ? preview.floating_elements : (preview.floatingElements || []),
             blocks: Array.isArray(preview.blocks) ? preview.blocks : ["hero", "features", "cta"],
           });
         } else {
@@ -288,7 +290,7 @@ export const LandingPagePublica = ({ siteSlug }) => {
   };
 
   return (
-    <div style={{ fontFamily: "Inter, system-ui, sans-serif", minHeight: "100vh", background: "#fff" }}>
+    <div style={{ fontFamily: "Inter, system-ui, sans-serif", minHeight: "100vh", background: "#fff", position: "relative" }}>
       {/* Navbar */}
       <nav style={{ position: "sticky", top: 0, zIndex: 100, background: "rgba(255,255,255,0.92)", backdropFilter: "blur(12px)", borderBottom: "1px solid #F3F4F6", padding: "0 24px", height: 64, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div style={{ fontWeight: 900, fontSize: 18, color: "#111827", letterSpacing: "-.03em" }}>
@@ -306,6 +308,18 @@ export const LandingPagePublica = ({ siteSlug }) => {
       <footer style={{ padding: "24px", background: "#111827", textAlign: "center", color: "#6B7280", fontSize: 12 }}>
         © {new Date().getFullYear()} · Potenciado por <span style={{ color: accent, fontWeight: 700 }}>ENSING CRM</span> · Todos los derechos reservados
       </footer>
+
+      {/* Floating Elements Layer */}
+      {(page.floatingElements || []).map(f => {
+        if (f.type === "text") {
+          return <div key={f.id} style={{ position: "absolute", left: f.x, top: f.y, fontSize: f.fontSize || 16, color: f.color || "#111827", fontWeight: f.fontWeight || "normal", whiteSpace: "pre-wrap", zIndex: 40 }}>{f.content}</div>;
+        } else if (f.type === "image") {
+          return <img key={f.id} src={f.content} alt="Libre" style={{ position: "absolute", left: f.x, top: f.y, width: f.width || 150, height: "auto", borderRadius: 8, zIndex: 40 }} />;
+        } else if (f.type === "button") {
+          return <a key={f.id} href={f.url || "#"} target={f.url?.startsWith("http") ? "_blank" : undefined} rel="noopener noreferrer" style={{ position: "absolute", left: f.x, top: f.y, background: f.bg || accent, color: "#fff", padding: "12px 24px", borderRadius: 10, fontSize: 14, fontWeight: 700, textDecoration: "none", boxShadow: `0 8px 24px ${(f.bg || accent)}44`, zIndex: 40 }}>{f.content}</a>;
+        }
+        return null;
+      })}
     </div>
   );
 };
