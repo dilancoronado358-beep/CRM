@@ -165,11 +165,20 @@ export const Formularios = ({ db }) => {
   };
 
   const eliminarFormulario = async (id) => {
-    if (!confirm("¿Eliminar este formulario?")) return;
-    await sb.from("formularios_publicos").delete().eq("id", id);
-    const remaining = forms.filter((f) => f.id !== id);
-    setForms(remaining);
-    setActivoId(remaining[0]?.id || null);
+    toast("¿Eliminar este formulario?", {
+      description: "Esta acción no se puede deshacer.",
+      action: {
+        label: "Eliminar",
+        onClick: async () => {
+          await sb.from("formularios_publicos").delete().eq("id", id);
+          const remaining = forms.filter((f) => f.id !== id);
+          setForms(remaining);
+          setActivoId(remaining[0]?.id || null);
+          toast.success("Formulario eliminado");
+        }
+      },
+      cancel: { label: "Cancelar", onClick: () => {} }
+    });
   };
 
   const copiarLink = () => {

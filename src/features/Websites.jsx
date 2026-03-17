@@ -209,11 +209,20 @@ export const Websites = ({ db, setDb }) => {
   };
 
   const eliminarPagina = async (id) => {
-    if (!confirm("¿Eliminar esta landing page?")) return;
-    await sb.from("landing_pages").delete().eq("id", id);
-    const rem = pages.filter((p) => p.id !== id);
-    setPages(rem);
-    setActivoId(rem[0]?.id || null);
+    toast("¿Eliminar esta landing page?", {
+      description: "Esta acción no se puede deshacer.",
+      action: {
+        label: "Eliminar",
+        onClick: async () => {
+          await sb.from("landing_pages").delete().eq("id", id);
+          const rem = pages.filter((p) => p.id !== id);
+          setPages(rem);
+          setActivoId(rem[0]?.id || null);
+          toast.success("Landing page eliminada");
+        }
+      },
+      cancel: { label: "Cancelar", onClick: () => {} }
+    });
   };
 
   const toggleBloque = (blockId) => {

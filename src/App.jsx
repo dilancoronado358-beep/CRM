@@ -481,7 +481,24 @@ export default function App() {
               <input placeholder="Búsqueda rápida..." style={{ background: T.bg2, border: `1px solid ${T.borderHi}`, borderRadius: 20, padding: "8px 16px 8px 34px", fontSize: 13, color: T.white, width: 220, outline: "none", transition: "all .2s", fontFamily: "inherit" }} onFocus={e => e.target.style.background = T.bg1} onBlur={e => e.target.style.background = T.bg2} />
             </div>
             <Btn variant="secundario" style={{ padding: 8, borderRadius: "50%" }}><Ico k="refresh" size={16} /></Btn>
-            <Btn variant="secundario" style={{ padding: 8, borderRadius: "50%", color: T.red, borderColor: T.red }} onClick={async () => { if (confirm(t("¿Cerrar sesión?"))) { await sb.auth.signOut(); localStorage.removeItem("crm_usuario_activo"); localStorage.removeItem("crm_theme"); sessionStorage.clear(); window.location.reload(); } }} title={t("Cerrar sesión")}>
+            <Btn variant="secundario" style={{ padding: 8, borderRadius: "50%", color: T.red, borderColor: T.red }} 
+              onClick={() => {
+                toast("¿Cerrar sesión?", {
+                  description: "Perderás el acceso hasta que vuelvas a ingresar.",
+                  action: {
+                    label: "Cerrar Sesión",
+                    onClick: async () => {
+                      await sb.auth.signOut();
+                      localStorage.removeItem("crm_usuario_activo");
+                      localStorage.removeItem("crm_theme");
+                      sessionStorage.clear();
+                      window.location.reload();
+                    }
+                  },
+                  cancel: { label: "Cancelar", onClick: () => {} }
+                });
+              }} 
+              title={t("Cerrar sesión")}>
               <Ico k="lock" size={16} />
             </Btn>
           </div>
@@ -498,8 +515,23 @@ export default function App() {
       {/* GLOBAL OMNIBAR */}
       <SpotlightSearch db={db} open={spotlightOpen} onClose={() => setSpotlightOpen(false)} onNavigate={(m) => setModulo(m)} />
 
-      {/* NOTIFICACIONES MODERNAS (SONNER) */}
-      <Toaster richColors position="top-right" />
+      {/* NOTIFICACIONES MODERNAS (SONNER) - PREMIUM STYLE */}
+      <Toaster 
+        richColors 
+        position="top-right" 
+        toastOptions={{
+          style: { 
+            background: T.bg1, 
+            border: `1px solid ${T.borderHi}`, 
+            color: T.white, 
+            borderRadius: '12px',
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2)',
+            fontSize: '14px',
+            padding: '16px'
+          },
+          className: 'premium-toast',
+        }}
+      />
     </div>
   );
 }
