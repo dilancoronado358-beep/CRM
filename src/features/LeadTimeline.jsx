@@ -16,7 +16,7 @@ export function LeadTimeline({ deal, contacto, db, setDb, guardarEnSupa, setModu
   const [waMsg, setWaMsg] = useState("");
   const [composerTab, setComposerTab] = useState("Comentario");
   const [tasks, setTasks] = useState([]);
-  
+
   // States for New Task
   const [taskForm, setTaskForm] = useState({ titulo: "", prioridad: "media", vencimiento: "", asignado: db.usuario?.name || "", descripcion: "" });
   const socketRef = useRef(null);
@@ -162,6 +162,41 @@ export function LeadTimeline({ deal, contacto, db, setDb, guardarEnSupa, setModu
     setWaMsg("");
   };
 
+  const handleAddTask = async () => {
+    if (!taskForm.titulo.trim()) return;
+    const uid = () => Math.random().toString(36).substr(2, 9);
+    const nueva = {
+      ...taskForm,
+      id: "t" + uid(),
+      contactoId: contacto?.id || null,
+      dealId: deal?.id || null,
+      estado: "pendiente",
+      creado: new Date().toISOString()
+    };
+
+    const { error } = await guardarEnSupa("tareas", nueva);
+    if (!error) {
+      // Actualizar estado global
+      setDb(prev => ({ ...prev, tareas: [nueva, ...prev.tareas] }));
+
+      // Actualizar vista local
+      setTasks(prev => [nueva, ...prev]);
+      setItems(prev => [{
+        type: "task",
+        id: nueva.id,
+        body: nueva.titulo,
+        timestamp: Date.now() / 1000,
+        deadline: nueva.vencimiento,
+        status: nueva.estado,
+        priority: nueva.prioridad
+      }, ...prev]);
+
+      setTaskForm({ titulo: "", prioridad: "media", vencimiento: "", asignado: db.usuario?.name || "", descripcion: "" });
+    } else {
+      console.error("Error al crear tarea:", error);
+    }
+  };
+
   const handleGoToChat = () => {
     setFiltro("whatsapp");
     setComposerTab("WhatsApp");
@@ -243,17 +278,17 @@ export function LeadTimeline({ deal, contacto, db, setDb, guardarEnSupa, setModu
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
               <div style={{ gridColumn: "span 2" }}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: "#666", marginBottom: 4, textTransform: "uppercase" }}>Título de la tarea *</div>
-                <input 
-                  value={taskForm.titulo} 
+                <input
+                  value={taskForm.titulo}
                   onChange={e => setTaskForm(p => ({ ...p, titulo: e.target.value }))}
-                  placeholder="¿Qué hay que hacer?" 
+                  placeholder="¿Qué hay que hacer?"
                   style={{ width: "100%", padding: "8px 12px", border: "1px solid #d4dde1", borderRadius: 4, fontSize: 14, outline: "none" }}
                 />
               </div>
               <div>
                 <div style={{ fontSize: 11, fontWeight: 700, color: "#666", marginBottom: 4, textTransform: "uppercase" }}>Prioridad</div>
-                <select 
-                  value={taskForm.prioridad} 
+                <select
+                  value={taskForm.prioridad}
                   onChange={e => setTaskForm(p => ({ ...p, prioridad: e.target.value }))}
                   style={{ width: "100%", padding: "8px 12px", border: "1px solid #d4dde1", borderRadius: 4, fontSize: 14, background: "#fff" }}
                 >
@@ -264,8 +299,8 @@ export function LeadTimeline({ deal, contacto, db, setDb, guardarEnSupa, setModu
               </div>
               <div>
                 <div style={{ fontSize: 11, fontWeight: 700, color: "#666", marginBottom: 4, textTransform: "uppercase" }}>Responsable</div>
-                <select 
-                  value={taskForm.asignado} 
+                <select
+                  value={taskForm.asignado}
                   onChange={e => setTaskForm(p => ({ ...p, asignado: e.target.value }))}
                   style={{ width: "100%", padding: "8px 12px", border: "1px solid #d4dde1", borderRadius: 4, fontSize: 14, background: "#fff" }}
                 >
@@ -274,17 +309,17 @@ export function LeadTimeline({ deal, contacto, db, setDb, guardarEnSupa, setModu
               </div>
               <div>
                 <div style={{ fontSize: 11, fontWeight: 700, color: "#666", marginBottom: 4, textTransform: "uppercase" }}>Fecha límite</div>
-                <input 
-                  type="date" 
-                  value={taskForm.vencimiento} 
+                <input
+                  type="date"
+                  value={taskForm.vencimiento}
                   onChange={e => setTaskForm(p => ({ ...p, vencimiento: e.target.value }))}
                   style={{ width: "100%", padding: "8px 12px", border: "1px solid #d4dde1", borderRadius: 4, fontSize: 14, outline: "none" }}
                 />
               </div>
               <div style={{ gridColumn: "span 2" }}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: "#666", marginBottom: 4, textTransform: "uppercase" }}>Descripción</div>
-                <textarea 
-                  value={taskForm.descripcion} 
+                <textarea
+                  value={taskForm.descripcion}
                   onChange={e => setTaskForm(p => ({ ...p, descripcion: e.target.value }))}
                   placeholder="Detalles adicionales..."
                   style={{ width: "100%", padding: "8px 12px", border: "1px solid #d4dde1", borderRadius: 4, fontSize: 14, outline: "none", minHeight: 60, resize: "none" }}
