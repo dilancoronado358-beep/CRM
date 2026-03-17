@@ -220,17 +220,17 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
             </div>
           </div>
 
-          {/* COLUMNA DERECHA: TIMELINE (BITRIX STYLE) */}
-          <div style={{ flex: 1, minWidth: 400 }}>
-            <LeadTimeline
-              deal={f}
-              contacto={db.contactos.find(c => c.id === f.contacto_id)}
-              db={db}
-              setDb={setDb}
-              guardarEnSupa={guardarEnSupa}
-              setModulo={setModulo}
-            />
-          </div>
+            {/* SECCIÓN DERECHA: TIMELINE */}
+            <div style={{ flex: 1.2, borderLeft: `1px solid ${T.borderHi}`, minHeight: "65vh" }}>
+              <LeadTimeline 
+                deal={editDeal} 
+                contacto={db.contactos.find(c => c.id === f.contacto_id) || {}} 
+                db={db} 
+                setDb={setDb} 
+                guardarEnSupa={guardarEnSupa} 
+                setModulo={setModulo}
+              />
+            </div>
         </div>
       </div>
     );

@@ -19,8 +19,8 @@ export const Reportes = ({ db }) => {
 
   // Filtrado de Datos
   const pl = pipelines.find(p => p.id === filtros.pipeline_id);
-  const deals = db.deals.filter(d => 
-    d.pipeline_id === filtros.pipeline_id && 
+  const deals = db.deals.filter(d =>
+    d.pipeline_id === filtros.pipeline_id &&
     (filtros.responsable === "todos" || d.responsable === filtros.responsable)
   );
 
@@ -55,7 +55,7 @@ export const Reportes = ({ db }) => {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.setAttribute("href", url);
-    link.setAttribute("download", `reporte_crm_${new Date().toISOString().slice(0,10)}.csv`);
+    link.setAttribute("download", `reporte_crm_${new Date().toISOString().slice(0, 10)}.csv`);
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
@@ -64,9 +64,9 @@ export const Reportes = ({ db }) => {
 
   return (
     <div>
-      <EncabezadoSeccion 
-        title="Reportes Analíticos Profesionales" 
-        sub="Métricas en tiempo real de tu CRM" 
+      <EncabezadoSeccion
+        title="Reportes Analíticos Profesionales"
+        sub="Métricas en tiempo real de tu CRM"
         actions={
           <div style={{ display: "flex", gap: 12 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>

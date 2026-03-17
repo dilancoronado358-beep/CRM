@@ -320,13 +320,9 @@ export function useSupaState() {
   // ── CRUD helper: guardar en Supabase y actualizar estado local ────────────
   const guardarEnSupa = async (tabla, registro) => {
     try {
-      // DEBUG: Log exact data being sent
       console.log(`[SUPA] Intentando guardar en ${tabla}:`, registro);
 
-      // Limpieza defensiva y preparación de metadatos
       const payload = { ...registro };
-      
-      // Asegurar que las tareas tengan un timestamp si son nuevas
       if (tabla === "tareas" && !payload.creado) {
         payload.creado = new Date().toISOString();
       }
@@ -334,11 +330,13 @@ export function useSupaState() {
       const { data, error } = await sb.from(tabla).upsert(payload).select();
       
       if (error) {
-        console.error(`🔴 Error CRÍTICO en ${tabla}:`, error.message, error.details);
+        console.error(`🔴 Error en ${tabla}:`, error.message);
+        // Alerta visual para el usuario en caso de error crítico
+        window.alert(`No se pudo guardar en ${tabla}: ${error.message}`);
       } else {
-        console.log(`🟢 Éxito en ${tabla}:`, data?.[0]?.id || "Registro actualizado");
-        // Actualizar el estado local con el nuevo registro confirmado por Supabase
+        console.log(`🟢 Éxito en ${tabla}`);
         const confirmado = data?.[0] || payload;
+        
         setDb((d) => {
           const lista = Array.isArray(d[tabla]) ? d[tabla] : [];
           const idx = lista.findIndex((r) => r.id === confirmado.id);
@@ -349,7 +347,8 @@ export function useSupaState() {
         });
       }
     } catch (e) {
-      console.error(`❌ Fallo total en guardarEnSupa (${tabla}):`, e);
+      console.error(`❌ Fallo crítico guardarEnSupa (${tabla}):`, e);
+      window.alert("Error de conexión con el servidor. Por favor, revisa tu internet.");
     }
   };
 
