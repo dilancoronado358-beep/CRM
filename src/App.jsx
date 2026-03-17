@@ -217,7 +217,7 @@ const DICT = {
   "Notas": { en: "Notes", ru: "Заметки", fr: "Notes" },
   "Fecha": { en: "Date", ru: "Дата", fr: "Date" },
   "Hora": { en: "Time", ru: "Время", fr: "Heure" },
-  "Tipo": { en: "Type", ru: "Тип", fr: "Type" },
+  "Tipo": { en: "Type", ru: "Тип", fr: "Тип" },
   "Total": { en: "Total", ru: "Итого", fr: "Total" },
   "Cantidad": { en: "Amount", ru: "Количество", fr: "Montant" },
   "Precio": { en: "Price", ru: "Цена", fr: "Prix" },
@@ -269,7 +269,7 @@ export default function App() {
     if (!db.usuario || !db.tareas) return;
     const hoy = new Date().toISOString().slice(0, 10);
     const tareasHoy = db.tareas.filter(t => t.vencimiento === hoy && t.estado !== "completada" && t.asignado === db.usuario.name);
-    
+
     if (tareasHoy.length > 0) {
       const yaNotificado = sessionStorage.getItem(`noti_tareas_${hoy}`);
       if (!yaNotificado) {
@@ -345,6 +345,10 @@ export default function App() {
   }
 
   // 2. Si ya cargó y no hay sesión de Supabase, ir a login
+  if (hashURL.includes("recovery-confirm")) {
+    return <Login forceView="new-password" />;
+  }
+
   if (!session && !db.usuario) {
     return <Login />;
   }
@@ -482,8 +486,8 @@ export default function App() {
               <input placeholder="Búsqueda rápida..." style={{ background: T.bg2, border: `1px solid ${T.borderHi}`, borderRadius: 20, padding: "8px 16px 8px 34px", fontSize: 13, color: T.white, width: 220, outline: "none", transition: "all .2s", fontFamily: "inherit" }} onFocus={e => e.target.style.background = T.bg1} onBlur={e => e.target.style.background = T.bg2} />
             </div>
             <Btn variant="secundario" style={{ padding: 8, borderRadius: "50%" }}><Ico k="refresh" size={16} /></Btn>
-            <Btn variant="secundario" style={{ padding: 8, borderRadius: "50%", color: T.red, borderColor: T.red }} 
-              onClick={() => setShowLogoutConfirm(true)} 
+            <Btn variant="secundario" style={{ padding: 8, borderRadius: "50%", color: T.red, borderColor: T.red }}
+              onClick={() => setShowLogoutConfirm(true)}
               title={t("Cerrar sesión")}>
               <Ico k="lock" size={16} />
             </Btn>
@@ -502,15 +506,15 @@ export default function App() {
       <SpotlightSearch db={db} open={spotlightOpen} onClose={() => setSpotlightOpen(false)} onNavigate={(m) => setModulo(m)} />
 
       {/* NOTIFICACIONES MODERNAS (SONNER) - ULTRA MODERN GLASSMOPHISM */}
-      <Toaster 
-        richColors 
-        position="top-right" 
+      <Toaster
+        richColors
+        position="top-right"
         toastOptions={{
-          style: { 
-            background: 'rgba(15, 23, 42, 0.7)', 
+          style: {
+            background: 'rgba(15, 23, 42, 0.7)',
             backdropFilter: 'blur(12px) saturate(180%)',
-            border: '1px solid rgba(255, 255, 255, 0.12)', 
-            color: '#fff', 
+            border: '1px solid rgba(255, 255, 255, 0.12)',
+            color: '#fff',
             borderRadius: '16px',
             boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
             fontSize: '14px',
@@ -520,8 +524,8 @@ export default function App() {
         }}
       />
 
-      <ConfirmModal 
-        open={showLogoutConfirm} 
+      <ConfirmModal
+        open={showLogoutConfirm}
         onClose={() => setShowLogoutConfirm(false)}
         onConfirm={async () => {
           await sb.auth.signOut();

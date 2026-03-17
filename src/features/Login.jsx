@@ -3,11 +3,12 @@ import { T } from '../theme';
 import { sb, useSupaState } from '../hooks/useSupaState';
 import { Btn, Ico } from '../components/ui';
 
-export function Login() {
+export function Login({ forceView }) {
   const { db, setDb } = useSupaState();
-  const [view, setView] = useState('login'); // 'login' | 'recovery'
+  const [view, setView] = useState(forceView || 'login'); // 'login' | 'recovery' | 'new-password'
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState('');
@@ -54,13 +55,30 @@ export function Login() {
     setSuccess('');
 
     const { error } = await sb.auth.resetPasswordForEmail(email, {
-      redirectTo: window.location.origin + '/#/recovery-confirm',
+      redirectTo: window.location.origin + window.location.pathname + '#/recovery-confirm',
     });
 
     if (error) {
       setError('Error al enviar el correo: ' + error.message);
     } else {
       setSuccess('¡Correo enviado! Revisa tu bandeja de entrada para restablecer tu contraseña.');
+    }
+    setCargando(false);
+  };
+
+  const handleUpdatePassword = async (e) => {
+    e.preventDefault();
+    setCargando(true);
+    setError('');
+    setSuccess('');
+
+    const { error } = await sb.auth.updateUser({ password: newPassword });
+
+    if (error) {
+      setError('No se pudo actualizar: ' + error.message);
+    } else {
+      setSuccess('¡Contraseña actualizada con éxito! Ya puedes entrar.');
+      setTimeout(() => setView('login'), 2000);
     }
     setCargando(false);
   };
@@ -296,7 +314,7 @@ export function Login() {
               <div style={{ position: 'absolute', top: 0, height: '100%', width: '50%', background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)', animation: 'shine 3s infinite' }} />
             </button>
           </form>
-        ) : (
+        ) : view === 'recovery' ? (
           <form onSubmit={handleRecovery} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
             <div>
               <label style={{ display: 'block', marginBottom: 8, fontSize: 12, fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Correo Electrónico</label>
@@ -369,6 +387,73 @@ export function Login() {
                 Volver al inicio
               </button>
             </div>
+          </form>
+        ) : (
+          <form onSubmit={handleUpdatePassword} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+            <div>
+              <label style={{ display: 'block', marginBottom: 8, fontSize: 12, fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Nueva Contraseña</label>
+              <div className="premium-input" style={{ position: 'relative', background: '#F1F5F9', border: '1px solid #E2E8F0', borderRadius: 12, transition: 'all 0.2s' }}>
+                <div style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#94A3B8' }}>
+                  <Ico k="lock" size={18} />
+                </div>
+                <input
+                  type={showPassword ? "text" : "password"}
+                  required
+                  value={newPassword}
+                  onChange={e => setNewPassword(e.target.value)}
+                  placeholder="Mínimo 6 caracteres"
+                  style={{
+                    width: '100%',
+                    padding: '14px 44px 14px 44px',
+                    background: 'transparent',
+                    border: 'none',
+                    color: '#1E293B',
+                    outline: 'none',
+                    fontSize: 15,
+                    fontFamily: 'inherit'
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  style={{
+                    position: 'absolute',
+                    right: 12,
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'none',
+                    border: 'none',
+                    color: '#94A3B8',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    padding: 4
+                  }}
+                >
+                  <Ico k={showPassword ? "eyeOff" : "eye"} size={18} />
+                </button>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={cargando}
+              style={{
+                width: '100%',
+                padding: '14px',
+                fontSize: 16,
+                fontWeight: 800,
+                color: '#FFF',
+                background: 'linear-gradient(135deg, #06B6D4 0%, #3B82F6 100%)',
+                border: 'none',
+                borderRadius: 12,
+                cursor: cargando ? 'not-allowed' : 'pointer',
+                boxShadow: '0 4px 15px rgba(6, 182, 212, 0.3)',
+                transition: 'all 0.2s'
+              }}
+            >
+              {cargando ? 'Actualizando...' : 'Guardar Nueva Contraseña'}
+            </button>
           </form>
         )}
 
