@@ -5,16 +5,19 @@ import { Btn, Ico } from '../components/ui';
 
 export function Login() {
   const { db, setDb } = useSupaState();
+  const [view, setView] = useState('login'); // 'login' | 'recovery'
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
   const handleLogin = async (e) => {
     if (e) e.preventDefault();
     setCargando(true);
     setError('');
+    setSuccess('');
 
     const { error } = await sb.auth.signInWithPassword({
       email,
@@ -40,6 +43,24 @@ export function Login() {
       } else {
         setError('Credenciales incorrectas o problema de conexión.');
       }
+    }
+    setCargando(false);
+  };
+
+  const handleRecovery = async (e) => {
+    e.preventDefault();
+    setCargando(true);
+    setError('');
+    setSuccess('');
+
+    const { error } = await sb.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin + '/#/recovery-confirm',
+    });
+
+    if (error) {
+      setError('Error al enviar el correo: ' + error.message);
+    } else {
+      setSuccess('¡Correo enviado! Revisa tu bandeja de entrada para restablecer tu contraseña.');
     }
     setCargando(false);
   };
@@ -121,7 +142,7 @@ export function Login() {
             CRM
           </h1>
           <p style={{ margin: '10px 0 0', color: '#64748B', fontSize: 15, fontWeight: 500 }}>
-            Inicia sesión para continuar
+            {view === 'login' ? 'Inicia sesión para continuar' : 'Recuperar contraseña'}
           </p>
         </div>
 
@@ -145,106 +166,211 @@ export function Login() {
           </div>
         )}
 
-        <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-          <div>
-            <label style={{ display: 'block', marginBottom: 8, fontSize: 12, fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Correo Electrónico</label>
-            <div className="premium-input" style={{ position: 'relative', background: '#F1F5F9', border: '1px solid #E2E8F0', borderRadius: 12, transition: 'all 0.2s' }}>
-              <div style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#94A3B8' }}>
-                <Ico k="user" size={18} />
-              </div>
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                placeholder="nombre@ejemplo.com"
-                style={{
-                  width: '100%',
-                  padding: '14px 16px 14px 44px',
-                  background: 'transparent',
-                  border: 'none',
-                  color: '#1E293B',
-                  outline: 'none',
-                  fontSize: 15,
-                  fontFamily: 'inherit'
-                }}
-              />
-            </div>
+        {success && (
+          <div style={{
+            background: '#F0FDF4',
+            border: '1px solid #DCFCE7',
+            color: '#16A34A',
+            padding: '14px',
+            borderRadius: 12,
+            marginBottom: 24,
+            fontSize: 13,
+            fontWeight: 600,
+            textAlign: 'center',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            justifyContent: 'center'
+          }}>
+            <Ico k="check" size={16} /> {success}
           </div>
+        )}
 
-          <div>
-            <label style={{ display: 'block', marginBottom: 8, fontSize: 12, fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Contraseña</label>
-            <div className="premium-input" style={{ position: 'relative', background: '#F1F5F9', border: '1px solid #E2E8F0', borderRadius: 12, transition: 'all 0.2s' }}>
-              <div style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#94A3B8' }}>
-                <Ico k="lock" size={18} />
+        {view === 'login' ? (
+          <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+            <div>
+              <label style={{ display: 'block', marginBottom: 8, fontSize: 12, fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Correo Electrónico</label>
+              <div className="premium-input" style={{ position: 'relative', background: '#F1F5F9', border: '1px solid #E2E8F0', borderRadius: 12, transition: 'all 0.2s' }}>
+                <div style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#94A3B8' }}>
+                  <Ico k="user" size={18} />
+                </div>
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  placeholder="nombre@ejemplo.com"
+                  style={{
+                    width: '100%',
+                    padding: '14px 16px 14px 44px',
+                    background: 'transparent',
+                    border: 'none',
+                    color: '#1E293B',
+                    outline: 'none',
+                    fontSize: 15,
+                    fontFamily: 'inherit'
+                  }}
+                />
               </div>
-              <input
-                type={showPassword ? "text" : "password"}
-                required
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                placeholder="••••••••"
+            </div>
+
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                <label style={{ fontSize: 12, fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Contraseña</label>
+                <button
+                  type="button"
+                  onClick={() => setView('recovery')}
+                  style={{ border: 'none', background: 'none', color: '#06B6D4', fontSize: 12, fontWeight: 600, cursor: 'pointer', padding: 0 }}
+                >
+                  ¿Olvidaste tu contraseña?
+                </button>
+              </div>
+              <div className="premium-input" style={{ position: 'relative', background: '#F1F5F9', border: '1px solid #E2E8F0', borderRadius: 12, transition: 'all 0.2s' }}>
+                <div style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#94A3B8' }}>
+                  <Ico k="lock" size={18} />
+                </div>
+                <input
+                  type={showPassword ? "text" : "password"}
+                  required
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  style={{
+                    width: '100%',
+                    padding: '14px 44px 14px 44px',
+                    background: 'transparent',
+                    border: 'none',
+                    color: '#1E293B',
+                    outline: 'none',
+                    fontSize: 15,
+                    fontFamily: 'inherit'
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  style={{
+                    position: 'absolute',
+                    right: 12,
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'none',
+                    border: 'none',
+                    color: '#94A3B8',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    padding: 4
+                  }}
+                >
+                  <Ico k={showPassword ? "eyeOff" : "eye"} size={18} />
+                </button>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={cargando}
+              style={{
+                width: '100%',
+                marginTop: 12,
+                padding: '14px',
+                fontSize: 16,
+                fontWeight: 800,
+                color: '#FFF',
+                background: 'linear-gradient(135deg, #06B6D4 0%, #3B82F6 100%)',
+                border: 'none',
+                borderRadius: 12,
+                cursor: cargando ? 'not-allowed' : 'pointer',
+                boxShadow: '0 4px 15px rgba(6, 182, 212, 0.3)',
+                transition: 'all 0.2s',
+                position: 'relative',
+                overflow: 'hidden'
+              }}
+              onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(6, 182, 212, 0.4)'; }}
+              onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 15px rgba(6, 182, 212, 0.3)'; }}
+              onMouseDown={e => e.currentTarget.style.transform = 'scale(0.98)'}
+              onMouseUp={e => e.currentTarget.style.transform = 'scale(1)'}
+            >
+              {cargando ? 'Accediendo...' : 'Entrar al CRM'}
+              <div style={{ position: 'absolute', top: 0, height: '100%', width: '50%', background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)', animation: 'shine 3s infinite' }} />
+            </button>
+          </form>
+        ) : (
+          <form onSubmit={handleRecovery} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+            <div>
+              <label style={{ display: 'block', marginBottom: 8, fontSize: 12, fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Correo Electrónico</label>
+              <div className="premium-input" style={{ position: 'relative', background: '#F1F5F9', border: '1px solid #E2E8F0', borderRadius: 12, transition: 'all 0.2s' }}>
+                <div style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#94A3B8' }}>
+                  <Ico k="mail" size={18} />
+                </div>
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  placeholder="nombre@ejemplo.com"
+                  style={{
+                    width: '100%',
+                    padding: '14px 16px 14px 44px',
+                    background: 'transparent',
+                    border: 'none',
+                    color: '#1E293B',
+                    outline: 'none',
+                    fontSize: 15,
+                    fontFamily: 'inherit'
+                  }}
+                />
+              </div>
+              <p style={{ marginTop: 8, fontSize: 12, color: '#64748B', lineHeight: 1.5 }}>
+                Te enviaremos un correo con las instrucciones para restablecer tu cuenta.
+              </p>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <button
+                type="submit"
+                disabled={cargando}
                 style={{
                   width: '100%',
-                  padding: '14px 44px 14px 44px',
-                  background: 'transparent',
+                  padding: '14px',
+                  fontSize: 16,
+                  fontWeight: 800,
+                  color: '#FFF',
+                  background: 'linear-gradient(135deg, #06B6D4 0%, #3B82F6 100%)',
                   border: 'none',
-                  color: '#1E293B',
-                  outline: 'none',
-                  fontSize: 15,
-                  fontFamily: 'inherit'
-                }}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                style={{
-                  position: 'absolute',
-                  right: 12,
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  background: 'none',
-                  border: 'none',
-                  color: '#94A3B8',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  padding: 4
+                  borderRadius: 12,
+                  cursor: cargando ? 'not-allowed' : 'pointer',
+                  boxShadow: '0 4px 15px rgba(6, 182, 212, 0.3)',
+                  transition: 'all 0.2s'
                 }}
               >
-                <Ico k={showPassword ? "eyeOff" : "eye"} size={18} />
+                {cargando ? 'Enviando...' : 'Enviar Instrucciones'}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => { setView('login'); setError(''); setSuccess(''); }}
+                style={{
+                  width: '100%',
+                  padding: '12px',
+                  fontSize: 14,
+                  fontWeight: 600,
+                  color: '#64748B',
+                  background: 'transparent',
+                  border: '1px solid #E2E8F0',
+                  borderRadius: 12,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = '#F8FAFC'}
+                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+              >
+                Volver al inicio
               </button>
             </div>
-          </div>
-
-          <button
-            type="submit"
-            disabled={cargando}
-            style={{
-              width: '100%',
-              marginTop: 12,
-              padding: '14px',
-              fontSize: 16,
-              fontWeight: 800,
-              color: '#FFF',
-              background: 'linear-gradient(135deg, #06B6D4 0%, #3B82F6 100%)',
-              border: 'none',
-              borderRadius: 12,
-              cursor: cargando ? 'not-allowed' : 'pointer',
-              boxShadow: '0 4px 15px rgba(6, 182, 212, 0.3)',
-              transition: 'all 0.2s',
-              position: 'relative',
-              overflow: 'hidden'
-            }}
-            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(6, 182, 212, 0.4)'; }}
-            onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 15px rgba(6, 182, 212, 0.3)'; }}
-            onMouseDown={e => e.currentTarget.style.transform = 'scale(0.98)'}
-            onMouseUp={e => e.currentTarget.style.transform = 'scale(1)'}
-          >
-            {cargando ? 'Accediendo...' : 'Entrar al CRM'}
-            <div style={{ position: 'absolute', top: 0, height: '100%', width: '50%', background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)', animation: 'shine 3s infinite' }} />
-          </button>
-        </form>
+          </form>
+        )}
 
         <div style={{ marginTop: 32, textAlign: 'center', fontSize: 13, color: '#94A3B8' }}>
           Platform Built for Growth &bull; CRM v2.0
