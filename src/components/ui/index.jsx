@@ -61,15 +61,15 @@ export const Btn = ({ children, variant = "primario", size = "md", onClick, disa
   );
 };
 
-export const Inp = ({ value, onChange, placeholder, type = "text", style = {}, rows, readOnly, defaultValue }) => {
+export const Inp = ({ value, onChange, placeholder, type = "text", style = {}, rows, readOnly, defaultValue, ...props }) => {
   const base = { background: T.bg1, border: `1px solid ${T.borderHi}`, borderRadius: 7, color: T.white, fontSize: 13, outline: "none", width: "100%", boxSizing: "border-box", fontFamily: "inherit", transition: "border .2s, box-shadow .2s" };
-  const sharedProps = { value, onChange, placeholder, readOnly, defaultValue };
+  const sharedProps = { value, onChange, placeholder, readOnly, defaultValue, ...props };
   if (rows) return <textarea {...sharedProps} rows={rows} style={{ ...base, padding: "9px 11px", resize: "vertical", ...style }} />;
   return <input type={type} {...sharedProps} style={{ ...base, padding: "9px 11px", ...style }} />;
 };
 
-export const Sel = ({ value, onChange, children, style = {}, defaultValue }) => (
-  <select value={value} defaultValue={defaultValue} onChange={onChange} style={{ background: T.bg1, border: `1px solid ${T.borderHi}`, borderRadius: 7, color: T.white, fontSize: 13, padding: "9px 11px", outline: "none", width: "100%", boxSizing: "border-box", fontFamily: "inherit", ...style }}>
+export const Sel = ({ value, onChange, children, style = {}, defaultValue, ...props }) => (
+  <select value={value} defaultValue={defaultValue} onChange={onChange} {...props} style={{ background: T.bg1, border: `1px solid ${T.borderHi}`, borderRadius: 7, color: T.white, fontSize: 13, padding: "9px 11px", outline: "none", width: "100%", boxSizing: "border-box", fontFamily: "inherit", ...style }}>
     {children}
   </select>
 );

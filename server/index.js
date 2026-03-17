@@ -7,7 +7,8 @@ const qrcode = require('qrcode');
 const cors = require('cors');
 const { createClient } = require('@supabase/supabase-js');
 const axios = require('axios');
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '.env') });
 
 // Configuración Supabase (Copiada del frontend para conveniencia)
 const SUPA_URL = process.env.SUPA_URL || "https://eoylgxwlhsmwqgadahvk.supabase.co";
@@ -380,7 +381,7 @@ async function getAIResponse(userText, isRawPrompt = false) {
   try {
     const prompt = isRawPrompt ? userText : `Eres un asistente de ventas de ENSING CRM. Responde de forma amable, profesional y concisa. Cliente dice: "${userText}"`;
     // Usamos gemini-1.5-flash que es más estable y tiene límites más altos en nivel gratuito
-    const response = await axios.post(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+    const response = await axios.post(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
       contents: [{ parts: [{ text: prompt }] }]
     });
     return response.data?.candidates?.[0]?.content?.parts?.[0]?.text;
@@ -441,7 +442,7 @@ async function transcribeAudio(media) {
     console.log(`🎙️ Transcribiendo audio (${media.mimetype})...`);
 
     // Preparar el cuerpo para Gemini multimodal
-    const response = await axios.post(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+    const response = await axios.post(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
       contents: [{
         parts: [
           { text: "Eres un transcriptor preciso. Transcribe exactamente lo que se dice en este audio de WhatsApp. Si no hay voz inteligible, responde '[No se detectó voz clara]'." },
@@ -476,7 +477,7 @@ async function suggestCRMTask(chatId, messageText) {
     if (OPENAI_API_KEY) {
       aiText = await getGPTResponse(prompt);
     } else {
-      const response = await axios.post(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+      const response = await axios.post(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
         contents: [{ parts: [{ text: prompt }] }]
       });
       aiText = response.data?.candidates?.[0]?.content?.parts?.[0]?.text;
@@ -544,7 +545,7 @@ app.post('/ai/analyze', async (req, res) => {
     if (OPENAI_API_KEY) {
       analysis = await getGPTResponse(prompt, "gpt-4o");
     } else {
-      const response = await axios.post(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+      const response = await axios.post(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
         contents: [{ parts: [{ text: prompt }] }]
       });
       analysis = response.data?.candidates?.[0]?.content?.parts?.[0]?.text;
@@ -552,8 +553,9 @@ app.post('/ai/analyze', async (req, res) => {
 
     res.json({ analysis });
   } catch (e) {
-    console.error("Error en /ai/analyze:", e.message);
-    res.status(500).json({ error: "Error procesando el análisis de AI." });
+    const errorMsg = e.response?.data?.error?.message || e.message || "Error desconocido en el servidor AI";
+    console.error("❌ Error en /ai/analyze:", errorMsg);
+    res.status(500).json({ error: `Error procesando el análisis: ${errorMsg}` });
   }
 });
 

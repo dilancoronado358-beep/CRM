@@ -97,12 +97,15 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
     });
     const [dragActive, setDragActive] = useState(false);
 
-    const s = k => async e => {
+    const s = k => e => {
       const val = e.target.value;
-      const nextF = { ...f, [k]: val };
-      setF(nextF);
-      // AUTO-SAVE: Si es un deal existente, guardar al momento
-      if (editDeal) await guardarEnSupa("deals", { ...editDeal, ...nextF });
+      setF(prev => ({ ...prev, [k]: val }));
+    };
+
+    const guardarCambios = async () => {
+      if (editDeal) {
+        await guardarEnSupa("deals", { ...editDeal, ...f });
+      }
     };
 
     const plActual = db.pipelines.find(p => p.id === f.pipeline_id);
@@ -189,11 +192,17 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
           {/* COLUMNA IZQUIERDA: INFORMACIÓN Y CAMPOS */}
           <div style={{ width: 440, display: "flex", flexDirection: "column", gap: 20, flexShrink: 0 }}>
             <div style={{ background: T.bg1, border: `1px solid ${T.border}`, borderRadius: 16, padding: 24 }}>
-              <Campo label="Título del Deal *" style={{ marginBottom: 20 }}><Inp value={f.titulo} onChange={s("titulo")} placeholder="ej. Acme — Plan Enterprise" style={{ fontSize: 16, fontWeight: 800 }} /></Campo>
+              <Campo label="Título del Deal *" style={{ marginBottom: 20 }}>
+                <Inp value={f.titulo} onChange={s("titulo")} onBlur={guardarCambios} placeholder="ej. Acme — Plan Enterprise" style={{ fontSize: 16, fontWeight: 800 }} />
+              </Campo>
 
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 20 }}>
-                <Campo label="Monto ($)"><Inp type="number" value={f.valor} onChange={s("valor")} style={{ fontWeight: 800, color: T.green }} /></Campo>
-                <Campo label="Probabilidad (%)"><Inp type="number" value={f.prob} onChange={s("prob")} style={{ fontWeight: 800 }} /></Campo>
+                <Campo label="Monto ($)">
+                  <Inp type="number" value={f.valor} onChange={s("valor")} onBlur={guardarCambios} style={{ fontWeight: 800, color: T.green }} />
+                </Campo>
+                <Campo label="Probabilidad (%)">
+                  <Inp type="number" value={f.prob} onChange={s("prob")} onBlur={guardarCambios} style={{ fontWeight: 800 }} />
+                </Campo>
               </div>
 
               <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
@@ -204,19 +213,40 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
                   setF(nextF);
                   if (editDeal) {
                     await guardarEnSupa("deals", { ...editDeal, ...nextF });
-                    // If the pipeline changes, the stage also implicitly changes to the first stage of the new pipeline.
-                    // We should trigger automations if the stage actually changed from the previous one.
                     if (editDeal.etapa_id !== (pl?.etapas[0]?.id || "")) {
                       await ejecutarAutomaciones(editDeal, pl?.etapas[0]?.id || "");
                     }
                   }
                 }}>{db.pipelines.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}</Sel></Campo>
-                <Campo label="Etapa"><Sel value={f.etapa_id} onChange={s("etapa_id")}>{plActual?.etapas.map(e => <option key={e.id} value={e.id}>{e.nombre}</option>)}</Sel></Campo>
-                <Campo label="Contacto Asociado"><Sel value={f.contacto_id} onChange={s("contacto_id")}><option value="">— Ninguno —</option>{db.contactos.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}</Sel></Campo>
-                <Campo label="Empresa (B2B)"><Sel value={f.empresa_id} onChange={s("empresa_id")}><option value="">— Ninguna —</option>{db.empresas.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}</Sel></Campo>
-                <Campo label="Fecha de Cierre"><Inp type="date" value={f.fecha_cierre} onChange={s("fecha_cierre")} /></Campo>
+                <Campo label="Etapa"><Sel value={f.etapa_id} onChange={async e => {
+                  const val = e.target.value;
+                  const nextF = { ...f, etapa_id: val };
+                  setF(nextF);
+                  if (editDeal) {
+                    await guardarEnSupa("deals", { ...editDeal, ...nextF });
+                    if (val !== f.etapa_id) await ejecutarAutomaciones(editDeal, val);
+                  }
+                }}>{plActual?.etapas.map(e => <option key={e.id} value={e.id}>{e.nombre}</option>)}</Sel></Campo>
+                <Campo label="Contacto Asociado"><Sel value={f.contacto_id} onChange={async e => {
+                  const val = e.target.value;
+                  const nextF = { ...f, contacto_id: val };
+                  setF(nextF);
+                  if (editDeal) await guardarEnSupa("deals", { ...editDeal, ...nextF });
+                }}><option value="">— Ninguno —</option>{db.contactos.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}</Sel></Campo>
+                <Campo label="Empresa (B2B)"><Sel value={f.empresa_id} onChange={async e => {
+                  const val = e.target.value;
+                  const nextF = { ...f, empresa_id: val };
+                  setF(nextF);
+                  if (editDeal) await guardarEnSupa("deals", { ...editDeal, ...nextF });
+                }}><option value="">— Ninguna —</option>{db.empresas.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}</Sel></Campo>
+                <Campo label="Fecha de Cierre"><Inp type="date" value={f.fecha_cierre} onChange={s("fecha_cierre")} onBlur={guardarCambios} /></Campo>
                 <Campo label="Responsable">
-                  <Sel value={f.responsable} onChange={s("responsable")}>
+                  <Sel value={f.responsable} onChange={async e => {
+                    const val = e.target.value;
+                    const nextF = { ...f, responsable: val };
+                    setF(nextF);
+                    if (editDeal) await guardarEnSupa("deals", { ...editDeal, ...nextF });
+                  }}>
                     {db.usuariosApp?.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
                   </Sel>
                 </Campo>
