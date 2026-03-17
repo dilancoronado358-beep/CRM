@@ -28,6 +28,7 @@ export const Dashboard = ({ db, t = s => s }) => {
   const solicitarAnalisis = async () => {
     setCargandoIA(true);
     setVerModalIA(true);
+    setAnalisisIA(""); // Reset para nuevo intento
 
     // Detectar URL dinámica del servidor (evita fallos si no es localhost)
     const protocol = window.location.protocol === "https:" ? "https:" : "http:";
@@ -39,16 +40,24 @@ export const Dashboard = ({ db, t = s => s }) => {
         deals: db.deals,
         contactos: db.contactos,
         tareas: db.tareas,
-      });
+      }, { timeout: 25000 }); // Timeout para dar tiempo a la IA
       setAnalisisIA(data.analysis || "No se pudo generar el análisis.");
     } catch (e) {
       console.error("Error al obtener análisis de IA:", e);
-      let errorMsg = "Error al conectar con el asistente de IA. ";
+      let errorMsg = "";
 
-      if (protocol === "https:" && host === "localhost") {
-        errorMsg += "⚠️ Estás navegando por HTTPS pero intentando conectar con un servidor local HTTP. Esto suele ser bloqueado por el navegador. Prueba entrar por http://localhost:5173";
+      if (e.code === 'ECONNABORTED') {
+        errorMsg = "⏳ El análisis está tomando más tiempo de lo esperado (timeout). Por favor, intenta de nuevo.";
+      } else if (!e.response) {
+        errorMsg = "🔌 Error de conexión con el servidor de IA (puerto 3001). Asegúrate de que 'node server/index.js' esté corriendo.";
+        if (protocol === "https:") {
+          errorMsg += "\n\n⚠️ Tip: Estás usando HTTPS pero el servidor local es HTTP. Prueba entrando por http://localhost:5173";
+        }
       } else {
-        errorMsg += "Asegúrate de que el servidor (node server/index.js) esté corriendo y sea accesible.";
+        errorMsg = `🚨 Error del Servidor (Status ${e.response.status}): ${e.response.data?.error || "Error de procesamiento"}.`;
+        if (e.response.status === 500) {
+          errorMsg += "\n\nTip: Verifica que tu GEMINI_API_KEY en 'server/.env' sea válida y tenga cuota disponible.";
+        }
       }
 
       setAnalisisIA(errorMsg);

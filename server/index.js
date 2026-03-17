@@ -544,7 +544,7 @@ app.post('/ai/analyze', async (req, res) => {
     if (OPENAI_API_KEY) {
       analysis = await getGPTResponse(prompt, "gpt-4o");
     } else {
-      const response = await axios.post(`https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash-lite:generateContent?key=${GEMINI_API_KEY}`, {
+      const response = await axios.post(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
         contents: [{ parts: [{ text: prompt }] }]
       });
       analysis = response.data?.candidates?.[0]?.content?.parts?.[0]?.text;
