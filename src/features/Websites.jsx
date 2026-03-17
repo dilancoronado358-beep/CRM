@@ -3,6 +3,7 @@ import { T } from "../theme";
 import { uid } from "../utils";
 import { Btn, Inp, Modal, Ico, Campo } from "../components/ui";
 import { sb } from "../hooks/useSupaState";
+import { FormularioPublico } from "./FormularioPublico";
 
 const BASE_URL = "https://crm.ensing.lat";
 
@@ -769,18 +770,16 @@ export const Websites = ({ db, setDb }) => {
                     <div key="form" style={{ padding: "70px 24px", background: "#F9FAFB", textAlign: "center" }}>
                       <h2 style={{ fontSize: 28, fontWeight: 800, color: "#111827", margin: "0 0 10px" }}>¿Listo para empezar?</h2>
                       <p style={{ color: "#6B7280", marginBottom: 36, fontSize: 14 }}>Un asesor te contactará en menos de 24 horas.</p>
-                      <div style={{ maxWidth: 400, margin: "0 auto", background: "#fff", borderRadius: 18, padding: 30, boxShadow: "0 10px 40px rgba(0,0,0,0.08)", border: "1px solid #E5E7EB", display: "flex", flexDirection: "column", gap: 12 }}>
+                      <div style={{ maxWidth: 400, margin: "0 auto", background: "#fff", borderRadius: 18, padding: 30, boxShadow: "0 10px 40px rgba(0,0,0,0.08)", border: "1px solid #E5E7EB" }}>
                         {activo.customFormId ? (
-                           <div style={{ color: "#6B7280", fontSize: 13, padding: 20 }}>
-                             📋 Formulario vinculado:<br/><b>{(db.formularios_publicos || []).find(x => x.id === activo.customFormId)?.nombre || "Cargando..."}</b>
-                           </div>
+                           <FormularioPublico formId={activo.customFormId} embed={true} />
                          ) : (
-                           <>
+                           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                               {["Nombre completo *", "Email empresarial *", "Empresa / Cargo"].map((pl, i) => (
                                 <input key={i} readOnly placeholder={pl} style={{ padding: "11px 14px", border: "1.5px solid #E5E7EB", borderRadius: 8, fontSize: 13, fontFamily: "inherit", boxSizing: "border-box", color: "#9CA3AF", width: "100%" }} />
                               ))}
                               <button style={{ padding: "14px", background: accent, color: "#fff", border: "none", borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: "pointer", boxShadow: `0 8px 20px ${accent}44` }}>Solicitar Demo →</button>
-                           </>
+                           </div>
                          )}
                       </div>
                     </div>
