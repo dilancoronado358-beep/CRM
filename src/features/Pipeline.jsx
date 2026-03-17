@@ -21,8 +21,38 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
   const [showConfigCampos, setShowConfigCampos] = useState(false);
   const [nuevoCampo, setNuevoCampo] = useState({ nombre: "", tipo: "cadena", opciones: "" });
 
+  // Estado del formulario de Deal elevado al nivel de Pipeline para sobrevivir re-renders de Supabase Realtime.
+  const defaultF = () => ({
+    titulo: "", contacto_id: "", empresa_id: "",
+    pipeline_id: db.pipelines[0]?.id || "",
+    etapa_id: db.pipelines[0]?.etapas?.[0]?.id || "",
+    valor: 0, prob: 50, fecha_cierre: "",
+    responsable: db.usuario?.name || "",
+    etiquetas: "", notas: "", archivos: [], custom_fields: {}
+  });
+  const [f, setF] = useState(defaultF);
+  const [dragActive, setDragActive] = useState(false);
+
+
   const pipeline = db.pipelines.find(p => p.id === plActivo);
   const plDeals = db.deals.filter(d => d.pipeline_id === plActivo);
+
+  // Inicializar el formulario cuando se abre el modal (editDeal cambia o showDealForm se activa)
+  useEffect(() => {
+    if (showDealForm) {
+      const init = editDeal || {};
+      setF({
+        ...defaultF(),
+        pipeline_id: plActivo,
+        etapa_id: pipeline?.etapas?.[0]?.id || "",
+        ...init,
+        etiquetas: Array.isArray(init.etiquetas)
+          ? init.etiquetas.join(", ")
+          : (init.etiquetas || "")
+      });
+    }
+  }, [editDeal?.id, showDealForm]);
+
 
   const actPipeline = up => setDb(d => ({ ...d, pipelines: d.pipelines.map(p => p.id === up.id ? up : p) }));
 
@@ -90,26 +120,9 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
 
   const FormDeal = ({ init = {}, onGuardar, onCancelar }) => {
     const customFieldsDef = db.campos_personalizados || [];
-    const [f, setF] = useState({
-      titulo: "", contacto_id: "", empresa_id: "", pipeline_id: plActivo, etapa_id: pipeline?.etapas[0]?.id || "",
-      valor: 0, prob: 50, fecha_cierre: "", responsable: db.usuario?.name || "", etiquetas: "", notas: "",
-      archivos: [], custom_fields: init.custom_fields || {}, ...init, etiquetas: (init.etiquetas || []).join(", ")
-    });
 
-    // ESCUDO: Solo inicializar una vez cuando cambia el ID o se abre el modal.
-    // Esto evita que actualizaciones de fondo (db) pisen lo que el usuario escribe.
-    useEffect(() => {
-      if (init && init.id) {
-        setF({
-          ...f,
-          ...init,
-          etiquetas: (init.etiquetas || []).join(", "),
-          custom_fields: init.custom_fields || {}
-        });
-      }
-    }, [init.id]);
-
-    const [dragActive, setDragActive] = useState(false);
+    // El estado f y setF y el useEffect ya viven en Pipeline (ver arriba).
+    // FormDeal accede a ellos desde el closure.
 
     const s = k => e => {
       const val = e.target.value;
@@ -207,15 +220,27 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
           <div style={{ width: 440, display: "flex", flexDirection: "column", gap: 20, flexShrink: 0 }}>
             <div style={{ background: T.bg1, border: `1px solid ${T.border}`, borderRadius: 16, padding: 24 }}>
               <Campo label="Título del Deal *" style={{ marginBottom: 20 }}>
-                <LocalInput value={f.titulo} onCommit={(v) => { s("titulo")({ target: { value: v } }); guardarCambios(); }} placeholder="ej. Acme — Plan Enterprise" style={{ fontSize: 16, fontWeight: 800 }} />
+                <LocalInput value={f.titulo} onCommit={v => {
+                  const nf = { ...f, titulo: v };
+                  setF(nf);
+                  if (editDeal) guardarEnSupa("deals", { ...editDeal, ...nf });
+                }} placeholder="ej. Acme — Plan Enterprise" style={{ fontSize: 16, fontWeight: 800 }} />
               </Campo>
 
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 20 }}>
                 <Campo label="Monto ($)">
-                  <LocalInput type="number" value={f.valor} onCommit={(v) => { s("valor")({ target: { value: v } }); guardarCambios(); }} style={{ fontWeight: 800, color: T.green }} />
+                  <LocalInput type="number" value={f.valor} onCommit={v => {
+                    const nf = { ...f, valor: v };
+                    setF(nf);
+                    if (editDeal) guardarEnSupa("deals", { ...editDeal, ...nf });
+                  }} style={{ fontWeight: 800, color: T.green }} />
                 </Campo>
                 <Campo label="Probabilidad (%)">
-                  <LocalInput type="number" value={f.prob} onCommit={(v) => { s("prob")({ target: { value: v } }); guardarCambios(); }} style={{ fontWeight: 800 }} />
+                  <LocalInput type="number" value={f.prob} onCommit={v => {
+                    const nf = { ...f, prob: v };
+                    setF(nf);
+                    if (editDeal) guardarEnSupa("deals", { ...editDeal, ...nf });
+                  }} style={{ fontWeight: 800 }} />
                 </Campo>
               </div>
 
@@ -253,7 +278,11 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
                   setF(nextF);
                   if (editDeal) await guardarEnSupa("deals", { ...editDeal, ...nextF });
                 }}><option value="">— Ninguna —</option>{db.empresas.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}</Sel></Campo>
-                <Campo label="Fecha de Cierre"><LocalInput type="date" value={f.fecha_cierre} onCommit={(v) => { s("fecha_cierre")({ target: { value: v } }); guardarCambios(); }} /></Campo>
+                <Campo label="Fecha de Cierre"><LocalInput type="date" value={f.fecha_cierre} onCommit={v => {
+                  const nf = { ...f, fecha_cierre: v };
+                  setF(nf);
+                  if (editDeal) guardarEnSupa("deals", { ...editDeal, ...nf });
+                }} /></Campo>
                 <Campo label="Responsable">
                   <Sel value={f.responsable} onChange={async e => {
                     const val = e.target.value;
