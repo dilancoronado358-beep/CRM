@@ -44,8 +44,8 @@ export const Reportes = ({ db }) => {
               <BarChart data={dataPipeline} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={T.borderHi} />
                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 13, fontWeight: 700, fill: T.whiteDim }} dy={10} />
-                <YAxis axisLine={false} tickLine={false} tickFormatter={v => `$${v/1000}k`} tick={{ fontSize: 11, fill: T.whiteDim }} dx={-10} />
-                <Tooltip 
+                <YAxis axisLine={false} tickLine={false} tickFormatter={v => `$${v / 1000}k`} tick={{ fontSize: 11, fill: T.whiteDim }} dx={-10} />
+                <Tooltip
                   cursor={{ fill: T.bg2 }}
                   contentStyle={{ background: T.bg1, border: `1px solid ${T.borderHi}`, borderRadius: 8, boxShadow: "0 4px 15px rgba(0,0,0,0.05)" }}
                   formatter={(val) => [money(val), "Valor Total"]}
@@ -57,20 +57,20 @@ export const Reportes = ({ db }) => {
             </ResponsiveContainer>
           </div>
         </Tarjeta>
-        
+
         <Tarjeta style={{ padding: 24, display: "flex", flexDirection: "column", minHeight: 350 }}>
           <div style={{ fontSize: 16, fontWeight: 800, color: T.white, marginBottom: 8 }}>Distribución por Fuente</div>
           <div style={{ fontSize: 13, color: T.whiteDim, marginBottom: 20 }}>Origen de tus leads y contactos.</div>
           <div style={{ flex: 1, minHeight: 250, display: "flex", justifyContent: "center", alignItems: "center" }}>
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
-                <Pie 
-                  data={dataFuentes} 
-                  cx="50%" 
-                  cy="50%" 
-                  innerRadius={60} 
-                  outerRadius={90} 
-                  paddingAngle={5} 
+                <Pie
+                  data={dataFuentes}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={60}
+                  outerRadius={90}
+                  paddingAngle={5}
                   dataKey="value"
                   stroke="none"
                 >
@@ -78,7 +78,7 @@ export const Reportes = ({ db }) => {
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
-                <Tooltip 
+                <Tooltip
                   contentStyle={{ background: T.bg1, border: `1px solid ${T.borderHi}`, borderRadius: 8, boxShadow: "0 4px 15px rgba(0,0,0,0.05)", fontWeight: 700 }}
                   formatter={(val, name) => [`${val} leads`, name]}
                 />

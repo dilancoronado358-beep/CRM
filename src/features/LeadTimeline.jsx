@@ -1,8 +1,7 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { T } from "../theme";
-import { Ico, Btn, Inp, Chip } from "../components/ui";
+import { Ico, Btn, Chip } from "../components/ui";
 import { createClient } from "@supabase/supabase-js";
-import { fdate } from "../utils";
 import { io } from "socket.io-client";
 
 const SUPA_URL = "https://eoylgxwlhsmwqgadahvk.supabase.co";
@@ -12,10 +11,11 @@ const sb = createClient(SUPA_URL, SUPA_KEY);
 export function LeadTimeline({ deal, contacto, db, setDb, guardarEnSupa, setModulo }) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [filtro, setFiltro] = useState("all"); // all, whatsapp, notes
+  const [filtro, setFiltro] = useState("all");
   const [comentario, setComentario] = useState("");
   const [waMsg, setWaMsg] = useState("");
   const [composerTab, setComposerTab] = useState("Comentario");
+  const [tasks, setTasks] = useState([]);
   const socketRef = useRef(null);
   const dummyRef = useRef(null);
 
@@ -59,26 +59,25 @@ export function LeadTimeline({ deal, contacto, db, setDb, guardarEnSupa, setModu
       });
     }
 
-    // 2. Traer WhatsApp de Supabase (Anclados a este Deal o filtrados por Teléfono)
+    // traer WhatsApp de Supabase
     if (telefono || deal?.id) {
       try {
         const cleanPhone = telefono ? telefono.replace(/\D/g, '') : "";
-        let query = sb.from('whatsapp_messages').select('*');
+        let queryMsg = sb.from('whatsapp_messages').select('*');
 
-        // Priorizamos anclaje por dealId, pero también buscamos por teléfono limpio
         if (deal?.id) {
-          query = query.or(`deal_id.eq.${deal.id},chat_id.ilike.%${cleanPhone}%`);
+          queryMsg = queryMsg.or(`deal_id.eq.${deal.id},chat_id.ilike.%${cleanPhone}%`);
         } else if (cleanPhone) {
-          query = query.ilike('chat_id', `%${cleanPhone}%`);
+          queryMsg = queryMsg.ilike('chat_id', `%${cleanPhone}%`);
         } else {
           setLoading(false);
           return;
         }
 
-        const { data, error } = await query.order('timestamp', { ascending: false });
+        const { data: waData } = await queryMsg.order('timestamp', { ascending: false });
 
-        if (data) {
-          data.forEach(m => {
+        if (waData) {
+          waData.forEach(m => {
             timelineEntries.push({
               type: "whatsapp",
               id: m.id,
@@ -86,14 +85,32 @@ export function LeadTimeline({ deal, contacto, db, setDb, guardarEnSupa, setModu
               timestamp: m.timestamp,
               fromMe: m.from_me,
               hasMedia: m.has_media,
-              deal_id: m.deal_id
+              deal_id: m.deal_id,
+              file_name: m.file_name
             });
           });
         }
+
+        // 3. Traer Tareas (para sección Cosas para Hacer)
+        const { data: tasksData } = await sb.from('tareas').select('*').eq('contactoId', contacto?.id).order('vencimiento', { ascending: true });
+        if (tasksData) {
+          setTasks(tasksData.filter(t => t.estado !== 'completada'));
+          tasksData.forEach(t => {
+            timelineEntries.push({
+              type: "task",
+              id: t.id,
+              body: t.titulo,
+              timestamp: new Date(t.creado || Date.now()).getTime() / 1000,
+              deadline: t.vencimiento,
+              status: t.estado,
+              priority: t.prioridad
+            });
+          });
+        }
+
       } catch (e) { console.error(e); }
     }
 
-    // Ordenar cronológicamente descendente
     timelineEntries.sort((a, b) => b.timestamp - a.timestamp);
     setItems(timelineEntries);
     setLoading(false);
@@ -150,162 +167,176 @@ export function LeadTimeline({ deal, contacto, db, setDb, guardarEnSupa, setModu
   const filteredItems = items.filter(it => {
     if (filtro === "all") return true;
     if (filtro === "whatsapp") return it.type === "whatsapp";
-    if (filtro === "notes") return it.type === "note";
+    if (filtro === "notes") return it.type === "note" || it.type === "task";
     return true;
   });
 
+  const groupedItems = useMemo(() => {
+    const groups = {};
+    filteredItems.forEach(it => {
+      const date = new Date(it.timestamp * 1000);
+      const day = date.toLocaleDateString("es-ES", { day: "numeric", month: "long" });
+      if (!groups[day]) groups[day] = [];
+      groups[day].push(it);
+    });
+    return groups;
+  }, [filteredItems]);
+
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100%", background: T.bg2, borderRadius: 16, border: `1px solid ${T.borderHi}`, overflow: "hidden" }}>
-      {/* HEADER COMPOSER */}
-      <div style={{ padding: 20, borderBottom: `1px solid ${T.border}`, background: T.bg1 }}>
-        <div style={{ display: "flex", gap: 16, marginBottom: 16 }}>
+    <div style={{ display: "flex", flexDirection: "column", height: "100%", background: "#f0f3f5", borderRadius: 12, border: "none", overflow: "hidden" }}>
+      {/* HEADER COMPOSER (Bitrix Style) */}
+      <div style={{ padding: "0 20px", borderBottom: `1px solid #d4dde1`, background: "#fff" }}>
+        <div style={{ display: "flex", gap: 24 }}>
           {["Comentario", "WhatsApp", "Tarea", "Llamada"].map(t => (
             <button key={t}
               onClick={() => {
                 setComposerTab(t);
                 if (t === "WhatsApp") setFiltro("whatsapp");
-                if (t === "Comentario") setFiltro("notes");
+                else setFiltro("all");
               }}
-              style={{ background: "none", border: "none", color: t === composerTab ? T.teal : T.whiteDim, fontWeight: 700, fontSize: 13, cursor: "pointer", borderBottom: t === composerTab ? `2px solid ${T.teal}` : "none", paddingBottom: 6 }}>
+              style={{
+                background: "none", border: "none", color: t === composerTab ? "#333" : "#666",
+                fontWeight: 600, fontSize: 13, cursor: "pointer",
+                borderBottom: `3px solid ${t === composerTab ? "#00bbd3" : "transparent"}`,
+                padding: "16px 4px", position: "relative", top: 1
+              }}>
               {t}
             </button>
           ))}
         </div>
+      </div>
 
+      <div style={{ padding: "16px 20px", background: "#f9fafb" }}>
         {composerTab === "Comentario" && (
           <div style={{ position: "relative" }}>
             <textarea
               value={comentario}
               onChange={e => setComentario(e.target.value)}
-              placeholder="Escribe un comentario o nota para este lead..."
-              style={{ width: "100%", background: T.bg2, border: `1px solid ${T.borderHi}`, borderRadius: 12, padding: 16, color: T.white, fontSize: 13, minHeight: 80, outline: "none", fontFamily: "inherit" }}
+              placeholder="Deja un comentario..."
+              style={{ width: "100%", background: "#fff", border: `1px solid #c6d2d6`, borderRadius: 4, padding: "12px 16px", color: "#333", fontSize: 14, minHeight: 60, outline: "none", resize: "none" }}
             />
-            <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 10 }}>
-              <Btn onClick={handleAddComment} disabled={!comentario.trim()} size="sm" style={{ background: T.teal, color: "#000" }}>Guardar Nota</Btn>
+            <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 8 }}>
+              <Btn onClick={handleAddComment} disabled={!comentario.trim()} size="sm" style={{ background: "#7fb700", color: "#fff", borderRadius: 2, fontWeight: 700 }}>ENVIAR</Btn>
             </div>
           </div>
         )}
 
         {composerTab === "WhatsApp" && (
           <div style={{ position: "relative" }}>
-            {!telefono ? (
-              <div style={{ padding: 16, textAlign: "center", color: T.red, fontSize: 12 }}>Este contacto no tiene teléfono vinculado.</div>
-            ) : (
-              <>
-                <textarea
-                  value={waMsg}
-                  onChange={e => setWaMsg(e.target.value)}
-                  placeholder={`Enviar WhatsApp a ${telefono}...`}
-                  style={{ width: "100%", background: T.bg2, border: `3px solid ${T.teal}40`, borderRadius: 12, padding: 16, color: T.white, fontSize: 13, minHeight: 80, outline: "none", fontFamily: "inherit" }}
-                />
-                <div style={{ display: "flex", justifyContent: "space-between", marginTop: 10, alignItems: "center" }}>
-                  <button onClick={() => setFiltro("all")} style={{ background: "none", border: "none", color: T.teal, fontSize: 11, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
-                    <Ico k="list" size={12} /> Ver historial completo (Notas)
-                  </button>
-                  <Btn onClick={handleSendWA} disabled={!waMsg.trim()} size="sm" style={{ background: "#25D366", color: "#000" }}>
-                    <Ico k="phone" size={12} /> Enviar Mensaje
-                  </Btn>
+            <textarea
+              value={waMsg}
+              onChange={e => setWaMsg(e.target.value)}
+              placeholder={`Mensaje de WhatsApp...`}
+              style={{ width: "100%", background: "#fff", border: `1px solid #25D366`, borderRadius: 4, padding: "12px 16px", color: "#333", fontSize: 14, minHeight: 60, outline: "none" }}
+            />
+            <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 8 }}>
+              <Btn onClick={handleSendWA} disabled={!waMsg.trim()} size="sm" style={{ background: "#25D366", color: "#fff" }}>ENVIAR WHATSAPP</Btn>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* FEED (Full Scrollable Area) */}
+      <div style={{ flex: 1, overflowY: "auto", position: "relative", padding: "0 20px 40px" }}>
+
+        {/* Vertical Line */}
+        {filtro !== "whatsapp" && <div style={{ position: "absolute", left: 35, top: 0, bottom: 0, width: 2, background: "#d4dde1", zIndex: 0 }} />}
+
+        {/* COSAS POR HACER SECTION */}
+        {filtro === "all" && tasks.length > 0 && (
+          <div style={{ position: "relative", zIndex: 1, marginBottom: 30 }}>
+            <div style={{ textAlign: "center", marginBottom: 16, marginTop: 20 }}>
+              <span style={{ background: "#7fb700", color: "#fff", padding: "4px 12px", borderRadius: 20, fontSize: 11, fontWeight: 800, textTransform: "uppercase" }}>Cosas para hacer</span>
+            </div>
+            {tasks.map(task => (
+              <div key={task.id} style={{ display: "flex", gap: 16, marginBottom: 12 }}>
+                <div style={{ width: 32, height: 32, borderRadius: "50%", background: "#00bbd3", display: "flex", alignItems: "center", justifyContent: "center", border: "4px solid #f0f3f5", flexShrink: 0 }}>
+                  <Ico k="check" size={14} style={{ color: "#fff" }} />
                 </div>
-              </>
-            )}
+                <div style={{ flex: 1, background: "#fff", borderRadius: 8, padding: 16, border: "1px solid #c6d2d6", position: "relative", boxShadow: "0 2px 4px rgba(0,0,0,0.02)" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12 }}>
+                    <div style={{ color: "#00bbd3", fontWeight: 700 }}>TAREA: {task.titulo}</div>
+                    <div style={{ color: "#999" }}>Límite: {task.vencimiento}</div>
+                  </div>
+                  <div style={{ marginTop: 8, fontSize: 13, color: "#333" }}>{task.descripcion || "Sin descripción"}</div>
+                  <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+                    <button style={{ background: "#00bbd3", color: "#fff", border: "none", padding: "4px 12px", borderRadius: 2, fontSize: 11, fontWeight: 700 }}>ABRIR</button>
+                    <button style={{ background: "#fff", color: "#666", border: "1px solid #c6d2d6", padding: "4px 12px", borderRadius: 2, fontSize: 11 }}>PING</button>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         )}
 
-        {(composerTab === "Tarea" || composerTab === "Llamada") && (
-          <div style={{ padding: 20, textAlign: "center", color: T.whiteDim, fontSize: 13 }}>Sube de nivel tu CRM. Módulo de {composerTab} próximamente...</div>
-        )}
-      </div>
-
-      {/* TIMELINE SEARCH & FILTER */}
-      <div style={{ padding: "12px 20px", background: T.bg1, borderBottom: `1px solid ${T.borderHi}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <div style={{ display: "flex", gap: 8 }}>
-          <Chip label="Todos" color={filtro === "all" ? T.teal : T.whiteDim} bg={filtro === "all" ? T.tealSoft : "transparent"} onClick={() => setFiltro("all")} style={{ cursor: "pointer" }} />
-          <Chip label="WhatsApp" color={filtro === "whatsapp" ? T.teal : T.whiteDim} bg={filtro === "whatsapp" ? T.tealSoft : "transparent"} onClick={() => setFiltro("whatsapp")} style={{ cursor: "pointer" }} />
-          <Chip label="Notas" color={filtro === "notes" ? T.teal : T.whiteDim} bg={filtro === "notes" ? T.tealSoft : "transparent"} onClick={() => setFiltro("notes")} style={{ cursor: "pointer" }} />
-        </div>
-        <Btn variant="fantasma" size="sm" onClick={cargarTimeline}><Ico k="refresh" size={14} /></Btn>
-      </div>
-
-      {/* FEED */}
-      <div style={{
-        flex: 1, overflowY: "auto", padding: 24, display: "flex",
-        flexDirection: filtro === "whatsapp" ? "column-reverse" : "column",
-        gap: 24, position: "relative"
-      }}>
-        {/* Línea vertical solo si no es exclusivamente WhatsApp */}
-        {filtro !== "whatsapp" && <div style={{ position: "absolute", left: 35, top: 0, bottom: 0, width: 2, background: T.borderHi, zIndex: 0 }} />}
-
-        {loading && <div style={{ textAlign: "center", color: T.teal }}>Sincronizando...</div>}
-
-        {filteredItems.map((it, idx) => {
-          const isMe = it.fromMe;
-          const isWhatsApp = it.type === "whatsapp";
-
-          if (isWhatsApp && filtro === "whatsapp") {
-            // DISEÑO DE BURBUJA DE CHAT
-            return (
-              <div key={it.id + idx} style={{ display: "flex", justifyContent: isMe ? "flex-end" : "flex-start", width: "100%" }}>
-                <div style={{
-                  maxWidth: "85%",
-                  background: isMe ? T.teal : T.bg1,
-                  color: isMe ? "#000" : T.white,
-                  padding: "12px 16px",
-                  borderRadius: isMe ? "16px 16px 4px 16px" : "16px 16px 16px 4px",
-                  boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-                  border: isMe ? "none" : `1px solid ${T.borderHi}`
-                }}>
-                  <div style={{ fontSize: 13, lineHeight: 1.5, whiteSpace: "pre-wrap" }}>
-                    {it.body} {it.sending && <span style={{ fontSize: 10, opacity: 0.7 }}>(enviando...)</span>}
-                  </div>
-                  <div style={{ fontSize: 10, marginTop: 4, textAlign: "right", opacity: 0.6 }}>
-                    {new Date(it.timestamp * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </div>
-                </div>
+        {/* DATED GROUPS */}
+        {Object.entries(groupedItems).map(([day, dayItems]) => (
+          <div key={day} style={{ position: "relative", zIndex: 1 }}>
+            {filtro !== "whatsapp" && (
+              <div style={{ textAlign: "center", margin: "30px 0" }}>
+                <span style={{ background: "#fff", padding: "4px 16px", borderRadius: 20, fontSize: 12, color: "#99b2b9", border: "1px solid #d4dde1", fontWeight: 600 }}>{day}</span>
               </div>
-            );
-          }
+            )}
 
-          // DISEÑO DE LÍNEA DE TIEMPO (Bitrix Style)
-          return (
-            <div key={it.id + idx} style={{ display: "flex", gap: 16, position: "relative", zIndex: 1 }}>
-              {/* ICON BUBBLE */}
-              <div style={{
-                width: 24, height: 24, borderRadius: "50%",
-                background: it.type === "whatsapp" ? "#25D366" : T.teal,
-                display: "flex", alignItems: "center", justifyContent: "center",
-                boxShadow: "0 0 0 4px " + T.bg2, flexShrink: 0, marginTop: 4
-              }}>
-                <Ico k={it.type === "whatsapp" ? "phone" : "note"} size={12} style={{ color: "#000" }} />
-              </div>
+            <div style={{ display: "flex", flexDirection: filtro === "whatsapp" ? "column-reverse" : "column", gap: 16 }}>
+              {dayItems.map((it, idx) => {
+                const isMe = it.fromMe;
+                const isWhatsApp = it.type === "whatsapp";
 
-              {/* CONTENT CARD */}
-              <div style={{ flex: 1, background: T.bg1, border: `1px solid ${T.borderHi}`, borderRadius: 12, padding: 16, boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8, alignItems: "center" }}>
-                  <div style={{ fontWeight: 800, fontSize: 12, color: T.white, textTransform: "uppercase", letterSpacing: ".02em" }}>
-                    {it.type === "whatsapp" ? (
-                      <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                        {it.fromMe ? "WhatsApp (Enviado)" : "WhatsApp (Recibido)"}
-                        {it.deal_id === deal.id && <Chip label="Este Lead" size="xs" color={T.teal} />}
-                      </span>
-                    ) : "Nota / Comentario"}
+                if (isWhatsApp && filtro === "whatsapp") {
+                  return (
+                    <div key={it.id + idx} style={{ display: "flex", justifyContent: isMe ? "flex-end" : "flex-start", width: "100%", padding: "4px 0" }}>
+                      <div style={{
+                        maxWidth: "80%", background: isMe ? "#e1ffc7" : "#fff", color: "#333", padding: "10px 14px",
+                        borderRadius: 8, boxShadow: "0 1px 2px rgba(0,0,0,0.1)", border: "1px solid rgba(0,0,0,0.05)"
+                      }}>
+                        <div style={{ fontSize: 14, lineHeight: 1.4, whiteSpace: "pre-wrap" }}>{it.body}</div>
+                        <div style={{ fontSize: 10, marginTop: 4, textAlign: "right", color: "#999" }}>
+                          {new Date(it.timestamp * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div key={it.id + idx} style={{ display: "flex", gap: 16 }}>
+                    {/* ICON BUBBLE (Bitrix Style) */}
+                    <div style={{
+                      width: 32, height: 32, borderRadius: "50%",
+                      background: it.type === "whatsapp" ? "#25D366" : it.type === "note" ? "#00bbd3" : "#f4c63d",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      border: "4px solid #f0f3f5", flexShrink: 0, zIndex: 2
+                    }}>
+                      <Ico k={it.type === "whatsapp" ? "phone" : it.type === "note" ? "comment" : "star"} size={14} style={{ color: "#fff" }} />
+                    </div>
+
+                    {/* CARD (White style) */}
+                    <div style={{ flex: 1, background: "#fff", border: "1px solid #c6d2d6", borderRadius: 8, padding: 16, boxShadow: "0 2px 4px rgba(0,0,0,0.02)" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+                        <div style={{ fontWeight: 700, fontSize: 12, color: "#666", textTransform: "capitalize" }}>
+                          {it.type === "whatsapp" ? (isMe ? "WhatsApp enviado" : "WhatsApp recibido") : "Comentario"}
+                          {it.deal_id === deal.id && filtro === "all" && <span style={{ marginLeft: 8, color: "#00bbd3", fontSize: 10 }}>[Este Lead]</span>}
+                        </div>
+                        <div style={{ fontSize: 11, color: "#999" }}>{new Date(it.timestamp * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                      </div>
+                      <div style={{ fontSize: 13, color: "#333", lineHeight: 1.5, whiteSpace: "pre-wrap" }}>
+                        {it.body}
+                        {it.sending && <span style={{ marginLeft: 8, color: "#00bbd3", fontSize: 10 }}>[Enviando...]</span>}
+                      </div>
+                      {it.hasMedia && <div style={{ marginTop: 10, padding: 8, background: "#f9fafb", borderRadius: 4, display: "flex", alignItems: "center", gap: 8, fontSize: 11, color: "#00bbd3", border: "1px solid #eef2f4" }}>
+                        <Ico k="document" size={14} /> Archivo: {it.file_name || "Adjunto de WhatsApp"}
+                      </div>}
+                    </div>
                   </div>
-                  <div style={{ fontSize: 11, color: T.whiteDim }}>{new Date(it.timestamp * 1000).toLocaleString()}</div>
-                </div>
-                <div style={{ fontSize: 13, color: T.whiteOff, lineHeight: 1.6, whiteSpace: "pre-wrap" }}>
-                  {it.body} {it.sending && <span style={{ fontSize: 10, color: T.whiteDim }}>(Enviando...)</span>}
-                </div>
-                {it.hasMedia && <div style={{ marginTop: 10, padding: 8, background: T.bg2, borderRadius: 8, display: "inline-flex", alignItems: "center", gap: 8, fontSize: 11, color: T.teal }}>
-                  <Ico k="document" size={14} /> Archivo adjuntado en WhatsApp
-                </div>}
-              </div>
+                );
+              })}
             </div>
-          );
-        })}
+          </div>
+        ))}
 
         {!loading && filteredItems.length === 0 && (
-          <div style={{ textAlign: "center", color: T.whiteDim, padding: 40, background: T.bg1, borderRadius: 12, border: `1px dashed ${T.borderHi}`, zIndex: 1 }}>
-            No hay actividad registrada aún.
-          </div>
+          <div style={{ textAlign: "center", color: "#999", padding: 60 }}>Sin actividad.</div>
         )}
       </div>
     </div>
