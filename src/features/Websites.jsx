@@ -13,6 +13,8 @@ const ALL_BLOCKS = [
   { id: "features", title: "Grid de Beneficios", icon: "grid", desc: "Características en columnas" },
   { id: "pricing", title: "Tabla de Precios", icon: "dollar", desc: "Planes con CTA" },
   { id: "testimonials", title: "Testimonios", icon: "user", desc: "Opiniones de clientes" },
+  { id: "text", title: "Texto Libre", icon: "file-text", desc: "Agrega párrafos personalizados" },
+  { id: "image", title: "Imagen", icon: "image", desc: "Sube o enlaza una imagen" },
   { id: "faq", title: "Preguntas Frecuentes", icon: "help-circle", desc: "FAQ interactivo" },
   { id: "video", title: "Video Embed", icon: "video", desc: "YouTube o Vimeo" },
   { id: "form", title: "Formulario Captura", icon: "template", desc: "Lead capture en vivo" },
@@ -37,6 +39,8 @@ const DEFAULT_PAGE = (id, titulo, slug) => ({
   ctaSub: "Sin tarjeta de crédito · Configuración en 2 minutos",
   ctaBtn: "Comenzar Ahora",
   ctaBtnUrl: "#form-section",
+  customText: "Escribe aquí tu contenido libre o mensaje personalizado...",
+  imageUrl: "",
   buttons: [],
   faqItems: [
     { q: "¿Cuánto cuesta?", a: "Planes desde $29/mes con 14 días de prueba gratuita." },
@@ -96,6 +100,8 @@ export const Websites = ({ db, setDb }) => {
           ctaSub: p.cta_sub || p.ctaSub || "Sin tarjeta de crédito · Configuración en 2 minutos",
           ctaBtn: p.cta_btn || p.ctaBtn || "Comenzar Ahora",
           ctaBtnUrl: p.cta_btn_url || p.ctaBtnUrl || "#form-section",
+          customText: p.custom_text || p.customText || "Escribe aquí tu contenido libre...",
+          imageUrl: p.image_url || p.imageUrl || "",
         }));
         setPages(parsed);
         setActivoId(parsed[0].id);
@@ -139,6 +145,8 @@ export const Websites = ({ db, setDb }) => {
       cta_sub: pg.ctaSub || null,
       cta_btn: pg.ctaBtn || null,
       cta_btn_url: pg.ctaBtnUrl || null,
+      custom_text: pg.customText || null,
+      image_url: pg.imageUrl || null,
       buttons: pg.buttons || [],
       faq_items: pg.faqItems || [],
       stats_items: pg.statsItems || [],
@@ -162,6 +170,7 @@ export const Websites = ({ db, setDb }) => {
       hero_title: np.heroTitle, hero_sub: np.heroSub, hero_cta: np.heroCTA, accent_color: np.accentColor,
       hero_cta_url: np.heroCTAUrl, hero_cta2: np.heroCTA2, hero_cta2_url: np.heroCTA2Url,
       cta_title: np.ctaTitle, cta_sub: np.ctaSub, cta_btn: np.ctaBtn, cta_btn_url: np.ctaBtnUrl,
+      custom_text: np.customText, image_url: np.imageUrl,
       buttons: np.buttons,
       faq_items: np.faqItems, stats_items: np.statsItems, features: np.features,
     });
@@ -258,6 +267,17 @@ export const Websites = ({ db, setDb }) => {
             <IE label="Texto del Botón" value={activo.ctaBtn || ""} onChange={(v) => upd("ctaBtn", v)} />
             <IE label="URL del Botón" value={activo.ctaBtnUrl || ""} onChange={(v) => upd("ctaBtnUrl", v)} placeholder="https://... o #seccion" />
           </div>
+        </div>
+      );
+      case "text": return (
+        <div style={base}>
+          <div style={{ fontSize: 10, color: T.whiteDim, marginBottom: 4 }}>Contenido de texto (puedes usar salto de línea)</div>
+          <textarea value={activo.customText || ""} onChange={(e) => upd("customText", e.target.value)} rows={6} style={{ padding: "8px 10px", background: T.bg2, border: `1px solid ${T.borderHi}`, borderRadius: 6, color: T.white, fontSize: 12, fontFamily: "inherit", resize: "vertical", outline: "none" }} placeholder="Escribe tu texto..." />
+        </div>
+      );
+      case "image": return (
+        <div style={base}>
+          <IE label="URL de la Imagen" value={activo.imageUrl || ""} onChange={(v) => upd("imageUrl", v)} placeholder="https://ejemplo.com/imagen.jpg" />
         </div>
       );
       case "buttons": return (
@@ -640,6 +660,24 @@ export const Websites = ({ db, setDb }) => {
                         ))}
                         <button style={{ padding: "14px", background: accent, color: "#fff", border: "none", borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: "pointer", boxShadow: `0 8px 20px ${accent}44` }}>Solicitar Demo →</button>
                       </div>
+                    </div>
+                  );
+                case "text":
+                  return (
+                    <div key="text" style={{ padding: "60px 24px", background: "#fff", textAlign: "left", fontSize: 16, color: "#374151", lineHeight: 1.8, maxWidth: 800, margin: "0 auto" }}>
+                      {(activo.customText || "Agrega texto desde el editor...").split("\n").map((par, i) => (
+                        <p key={i} style={{ margin: "0 0 16px", minHeight: par ? "auto" : 28 }}>{par}</p>
+                      ))}
+                    </div>
+                  );
+                case "image":
+                  return activo.imageUrl ? (
+                    <div key="image" style={{ padding: "40px 24px", background: "#F9FAFB", textAlign: "center" }}>
+                      <img src={activo.imageUrl} alt="Contenido" style={{ maxWidth: "100%", height: "auto", borderRadius: 16, boxShadow: "0 10px 30px rgba(0,0,0,0.1)", display: "block", margin: "0 auto" }} />
+                    </div>
+                  ) : (
+                    <div key="image" style={{ padding: "40px 24px", background: "#F9FAFB", textAlign: "center", color: "#9CA3AF", fontSize: 14 }}>
+                      🖼️ Aquí aparecerá la imagen (Agrega la URL en el editor)
                     </div>
                   );
                 case "buttons":

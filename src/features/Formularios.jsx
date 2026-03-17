@@ -12,8 +12,8 @@ const FIELD_TYPES = [
   { value: "textarea", label: "Área de Texto" },
   { value: "select", label: "Desplegable" },
   { value: "checkbox", label: "Casilla" },
-  { value: "date", label: "Fecha" },
   { value: "url", label: "Sitio Web" },
+  { value: "section", label: "Sección (Título/Separación)" },
 ];
 
 const DEFAULT_FORM = () => ({
@@ -28,6 +28,7 @@ const DEFAULT_FORM = () => ({
     borderRadius: 8,
     buttonText: "Enviar →",
     subtitulo: "",
+    footerText: "🔒 Tus datos están seguros con nosotros",
   },
   campos: [
     { id: "c1x", tipo: "text", etiqueta: "Nombre Completo", req: true, opciones: "" },
@@ -246,11 +247,13 @@ export const Formularios = ({ db }) => {
                         <Inp value={c.opciones || ""} onChange={(e) => upCampo(c.id, "opciones", e.target.value)} placeholder="Sí, No, Tal vez" style={{ fontSize: 12 }} />
                       </div>
                     )}
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <label style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: T.whiteDim, cursor: "pointer" }}>
-                        <input type="checkbox" checked={!!c.req} onChange={(e) => upCampo(c.id, "req", e.target.checked)} style={{ accentColor: T.teal }} />
-                        {c.req ? "Obligatorio" : "Opcional"}
-                      </label>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 4 }}>
+                      <div style={{ visibility: c.tipo === "section" ? "hidden" : "visible" }}>
+                        <label style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: T.whiteDim, cursor: "pointer" }}>
+                          <input type="checkbox" checked={!!c.req} onChange={(e) => upCampo(c.id, "req", e.target.checked)} style={{ accentColor: T.teal }} />
+                          {c.req ? "Obligatorio" : "Opcional"}
+                        </label>
+                      </div>
                       <div style={{ display: "flex", gap: 3 }}>
                         <button onClick={() => moveField(idx, -1)} disabled={idx === 0} style={btnSm}>↑</button>
                         <button onClick={() => moveField(idx, 1)} disabled={idx === activo.campos.length - 1} style={btnSm}>↓</button>
@@ -272,6 +275,7 @@ export const Formularios = ({ db }) => {
                   <Row label="Nombre del formulario"><Inp value={activo.nombre} onChange={(e) => updateActivo({ nombre: e.target.value })} style={{ fontWeight: 700 }} /></Row>
                   <Row label="Subtítulo"><Inp value={A.subtitulo || ""} onChange={(e) => updateApariencia({ subtitulo: e.target.value })} placeholder="Texto debajo del título" /></Row>
                   <Row label="Texto del botón"><Inp value={A.buttonText || "Enviar →"} onChange={(e) => updateApariencia({ buttonText: e.target.value })} /></Row>
+                  <Row label="Texto Inferior (Seguridad)"><Inp value={A.footerText ?? "🔒 Tus datos están seguros con nosotros"} onChange={(e) => updateApariencia({ footerText: e.target.value })} placeholder="Dejar en blanco para ocultar" /></Row>
                 </Section>
                 <Section label="Colores">
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
@@ -359,22 +363,30 @@ export const Formularios = ({ db }) => {
               <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                 {activo.campos.map((c) => (
                   <div key={c.id}>
-                    <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: A.textColor || "#374151", marginBottom: 5 }}>
-                      {c.etiqueta} {c.req && <span style={{ color: "#EF4444" }}>*</span>}
-                    </label>
-                    {c.tipo === "textarea" ? (
-                      <textarea rows={3} readOnly placeholder={`Ingresa ${c.etiqueta.toLowerCase()}`} style={{ ...previewInput, borderRadius: A.borderRadius ?? 8 }} />
-                    ) : c.tipo === "select" ? (
-                      <select disabled style={{ ...previewInput, borderRadius: A.borderRadius ?? 8 }}>
-                        <option>Selecciona una opción</option>
-                        {(c.opciones || "").split(",").filter(Boolean).map((o, i) => <option key={i}>{o.trim()}</option>)}
-                      </select>
-                    ) : c.tipo === "checkbox" ? (
-                      <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, cursor: "pointer" }}>
-                        <input type="checkbox" style={{ accentColor: A.accentColor, width: 15, height: 15 }} /> Sí, acepto
-                      </label>
+                    {c.tipo === "section" ? (
+                      <div style={{ marginTop: 12, paddingBottom: 6, borderBottom: `1px solid ${A.accentColor || "#06B6D4"}40` }}>
+                        <span style={{ fontSize: 16, fontWeight: 800, color: A.textColor || "#111827" }}>{c.etiqueta}</span>
+                      </div>
                     ) : (
-                      <input type={c.tipo} readOnly placeholder={`Ingresa ${c.etiqueta.toLowerCase()}`} style={{ ...previewInput, borderRadius: A.borderRadius ?? 8 }} />
+                      <>
+                        <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: A.textColor || "#374151", marginBottom: 5, marginTop: 4 }}>
+                          {c.etiqueta} {c.req && <span style={{ color: "#EF4444" }}>*</span>}
+                        </label>
+                        {c.tipo === "textarea" ? (
+                          <textarea rows={3} readOnly placeholder={`Ingresa ${c.etiqueta.toLowerCase()}`} style={{ ...previewInput, borderRadius: A.borderRadius ?? 8 }} />
+                        ) : c.tipo === "select" ? (
+                          <select disabled style={{ ...previewInput, borderRadius: A.borderRadius ?? 8 }}>
+                            <option>Selecciona una opción</option>
+                            {(c.opciones || "").split(",").filter(Boolean).map((o, i) => <option key={i}>{o.trim()}</option>)}
+                          </select>
+                        ) : c.tipo === "checkbox" ? (
+                          <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, cursor: "pointer" }}>
+                            <input type="checkbox" style={{ accentColor: A.accentColor, width: 15, height: 15 }} /> Sí, acepto
+                          </label>
+                        ) : (
+                          <input type={c.tipo} readOnly placeholder={`Ingresa ${c.etiqueta.toLowerCase()}`} style={{ ...previewInput, borderRadius: A.borderRadius ?? 8 }} />
+                        )}
+                      </>
                     )}
                   </div>
                 ))}
@@ -382,7 +394,9 @@ export const Formularios = ({ db }) => {
                   {A.buttonText || "Enviar →"}
                 </button>
               </div>
-              <p style={{ textAlign: "center", marginTop: 14, fontSize: 11, color: "#9CA3AF" }}>🔒 Tus datos están seguros con nosotros</p>
+              {(A.footerText ?? "🔒 Tus datos están seguros con nosotros") && (
+                <p style={{ textAlign: "center", marginTop: 14, fontSize: 11, color: "#9CA3AF" }}>{A.footerText ?? "🔒 Tus datos están seguros con nosotros"}</p>
+              )}
             </div>
           )}
         </div>

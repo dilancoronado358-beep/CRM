@@ -171,27 +171,35 @@ export const FormularioPublico = ({ formId }) => {
         <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           {(form.campos || []).map((campo) => (
             <div key={campo.id}>
-              <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 6 }}>
-                {campo.etiqueta}
-                {campo.req && <span style={{ color: "#EF4444", marginLeft: 4 }}>*</span>}
-              </label>
-              {campo.tipo === "textarea" ? (
-                <textarea
-                  rows={4}
-                  value={values[campo.id] || ""}
-                  onChange={(e) => setValues((v) => ({ ...v, [campo.id]: e.target.value }))}
-                  placeholder={`Ingresa ${campo.etiqueta.toLowerCase()}`}
-                  style={styles.input}
-                />
+              {campo.tipo === "section" ? (
+                <div style={{ marginTop: 12, paddingBottom: 6, borderBottom: `1px solid ${accent}40` }}>
+                  <span style={{ fontSize: 16, fontWeight: 800, color: "#111827" }}>{campo.etiqueta}</span>
+                </div>
               ) : (
-                <input
-                  type={campo.tipo}
-                  value={values[campo.id] || ""}
-                  onChange={(e) => setValues((v) => ({ ...v, [campo.id]: e.target.value }))}
-                  placeholder={`Ingresa ${campo.etiqueta.toLowerCase()}`}
-                  style={styles.input}
-                  required={campo.req}
-                />
+                <>
+                  <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 6, marginTop: 4 }}>
+                    {campo.etiqueta}
+                    {campo.req && <span style={{ color: "#EF4444", marginLeft: 4 }}>*</span>}
+                  </label>
+                  {campo.tipo === "textarea" ? (
+                    <textarea
+                      rows={4}
+                      value={values[campo.id] || ""}
+                      onChange={(e) => setValues((v) => ({ ...v, [campo.id]: e.target.value }))}
+                      placeholder={`Ingresa ${campo.etiqueta.toLowerCase()}`}
+                      style={styles.input}
+                    />
+                  ) : (
+                    <input
+                      type={campo.tipo}
+                      value={values[campo.id] || ""}
+                      onChange={(e) => setValues((v) => ({ ...v, [campo.id]: e.target.value }))}
+                      placeholder={`Ingresa ${campo.etiqueta.toLowerCase()}`}
+                      style={styles.input}
+                      required={campo.req}
+                    />
+                  )}
+                </>
               )}
             </div>
           ))}
@@ -206,7 +214,7 @@ export const FormularioPublico = ({ formId }) => {
               background: enviando ? "#9CA3AF" : accent,
               color: "#fff",
               border: "none",
-              borderRadius: 10,
+              borderRadius: form.apariencia?.borderRadius ?? 10,
               fontSize: 15,
               fontWeight: 700,
               cursor: enviando ? "default" : "pointer",
@@ -214,13 +222,15 @@ export const FormularioPublico = ({ formId }) => {
               transition: "all .2s",
             }}
           >
-            {enviando ? "Enviando..." : "Enviar →"}
+            {enviando ? "Enviando..." : (form.apariencia?.buttonText || "Enviar →")}
           </button>
         </form>
 
-        <p style={{ textAlign: "center", marginTop: 16, fontSize: 12, color: "#9CA3AF" }}>
-          🔒 Tus datos están seguros con nosotros. Nunca los compartiremos.
-        </p>
+        {(form.apariencia?.footerText ?? "🔒 Tus datos están seguros con nosotros. Nunca los compartiremos.") && (
+          <p style={{ textAlign: "center", marginTop: 16, fontSize: 12, color: "#9CA3AF" }}>
+            {form.apariencia?.footerText ?? "🔒 Tus datos están seguros con nosotros. Nunca los compartiremos."}
+          </p>
+        )}
       </div>
     </div>
   );

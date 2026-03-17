@@ -77,6 +77,8 @@ export const LandingPagePublica = ({ siteSlug }) => {
           ctaSub: data.cta_sub || data.ctaSub || "Sin tarjeta de crédito · Configuración en 2 minutos",
           ctaBtn: data.cta_btn || data.ctaBtn || "Comenzar Ahora",
           ctaBtnUrl: data.cta_btn_url || data.ctaBtnUrl || "#form-section",
+          customText: data.custom_text || data.customText || "Escribe aquí tu contenido libre...",
+          imageUrl: data.image_url || data.imageUrl || "",
           faqItems: Array.isArray(data.faq_items) ? data.faq_items : (data.faqItems || []),
           statsItems: Array.isArray(data.stats_items) ? data.stats_items : (data.statsItems || []),
           features: Array.isArray(data.features) ? data.features : [],
@@ -101,6 +103,8 @@ export const LandingPagePublica = ({ siteSlug }) => {
             ctaSub: preview.cta_sub || "Sin tarjeta de crédito · Configuración en 2 minutos",
             ctaBtn: preview.cta_btn || "Comenzar Ahora",
             ctaBtnUrl: preview.cta_btn_url || "#form-section",
+            customText: preview.custom_text || "Escribe aquí tu contenido libre...",
+            imageUrl: preview.image_url || "",
             faqItems: preview.faq_items || [],
             statsItems: preview.stats_items || [],
             features: preview.features || [],
@@ -222,6 +226,20 @@ export const LandingPagePublica = ({ siteSlug }) => {
             <div style={{ maxWidth: 780, margin: "0 auto", borderRadius: 16, overflow: "hidden", boxShadow: "0 25px 60px rgba(0,0,0,0.5)" }}>
               <iframe src={page.videoUrl} width="100%" height="420" frameBorder="0" allowFullScreen style={{ display: "block" }} />
             </div>
+          </div>
+        ) : null;
+      case "text":
+        return (
+          <div key="text" style={{ padding: "60px 24px", background: "#fff", textAlign: "left", fontSize: 16, color: "#374151", lineHeight: 1.8, maxWidth: 800, margin: "0 auto" }}>
+            {(page.customText || "Agrega texto desde el editor...").split("\n").map((par, i) => (
+              <p key={i} style={{ margin: "0 0 16px", minHeight: par ? "auto" : 28 }}>{par}</p>
+            ))}
+          </div>
+        );
+      case "image":
+        return page.imageUrl ? (
+          <div key="image" style={{ padding: "40px 24px", background: "#F9FAFB", textAlign: "center" }}>
+            <img src={page.imageUrl} alt="Contenido" style={{ maxWidth: "100%", height: "auto", borderRadius: 16, boxShadow: "0 10px 30px rgba(0,0,0,0.1)", display: "block", margin: "0 auto" }} />
           </div>
         ) : null;
       case "form":
