@@ -97,4 +97,5 @@ export const SEMILLA = {
   notas: [
     { id: "n1", contactoId: "c1", dealId: "d1", texto: "Llamada muy positiva. CEO comprometida. Enviar contrato cuanto antes.", autor: "Alejandro Vega", fecha: "2024-03-14 10:45", fijada: true },
   ],
+  campos_personalizados: [],
 };

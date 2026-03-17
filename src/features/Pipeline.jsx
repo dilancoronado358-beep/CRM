@@ -2,7 +2,7 @@ import { useState } from "react";
 import { T } from "../theme";
 import { uid, money, fdate } from "../utils";
 import { Chip, Btn, Inp, Sel } from "../components/ui";
-import { Campo, Modal, Tarjeta, SelColor, EncabezadoSeccion, ControlSegmentado, Ico, Barra } from "../components/ui";
+import { Campo, Modal, Tarjeta, SelColor, EncabezadoSeccion, ControlSegmentado, Ico, Barra, Vacio } from "../components/ui";
 import { LeadTimeline } from "./LeadTimeline";
 
 export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModulo }) => {
