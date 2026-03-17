@@ -73,6 +73,8 @@ export const Websites = ({ db, setDb }) => {
   const [showNew, setShowNew] = useState(false);
   const [fNew, setFNew] = useState({ titulo: "", slug: "" });
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [expandedBlock, setExpandedBlock] = useState(null);
   const [dragBlock, setDragBlock] = useState(null);
   const [dragOverBlock, setDragOverBlock] = useState(null);
   const [idToDelete, setIdToDelete] = useState(null);
