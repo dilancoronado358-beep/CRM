@@ -21,7 +21,7 @@ export const FormularioPublico = ({ formId }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
     const dealStr = Object.entries(data).map(([k,v]) => `${k}: ${v}`).join(", ");
-    guardarEnSupa("deals", { titulo: `Lead (${form.titulo}): ${data.nombre?data.nombre:'Nuevo Prospecto'}`, pipelineId: "pl_1", etapaId: "et_1", valor: 0, prob: 20, notas: dealStr, customFields: Object.entries(data).map(([k,v]) => ({nombre: k, valor: v})) });
+    guardarEnSupa("deals", { titulo: `Lead (${form.titulo}): ${data.nombre?data.nombre:'Nuevo Prospecto'}`, pipelineId: "pl_1", etapaId: "et_1", valor: 0, prob: 20, notas: dealStr, custom_fields: Object.entries(data).map(([k,v]) => ({nombre: k, valor: v})) });
     setEnviado(true);
   };
 

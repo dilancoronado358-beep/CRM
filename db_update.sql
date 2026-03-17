@@ -1,5 +1,5 @@
--- MASTER SCHEMA REPAIR - Ejecutar en el Editor SQL de Supabase
--- Este script asegura que todas las tablas y columnas necesarias existan.
+-- MASTER SCHEMA REPAIR V3 - Ejecutar en el Editor SQL de Supabase
+-- Este script asegura que todas las tablas y columnas necesarias existan con nombres estandarizados.
 
 -- 1. EXTENSIONES
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
@@ -20,16 +20,12 @@ CREATE TABLE IF NOT EXISTS public.deals (
     etiquetas JSONB DEFAULT '[]'::jsonb,
     notas TEXT,
     archivos JSONB DEFAULT '[]'::jsonb,
-    "customFields" JSONB DEFAULT '{}'::jsonb
+    custom_fields JSONB DEFAULT '{}'::jsonb
 );
 
 -- Asegurar columnas individuales en deals (por si la tabla ya existía)
 ALTER TABLE public.deals ADD COLUMN IF NOT EXISTS archivos JSONB DEFAULT '[]'::jsonb;
-ALTER TABLE public.deals ADD COLUMN IF NOT EXISTS "customFields" JSONB DEFAULT '{}'::jsonb;
-ALTER TABLE public.deals ADD COLUMN IF NOT EXISTS "contactoId" TEXT;
-ALTER TABLE public.deals ADD COLUMN IF NOT EXISTS "empresaId" TEXT;
-ALTER TABLE public.deals ADD COLUMN IF NOT EXISTS "pipelineId" TEXT;
-ALTER TABLE public.deals ADD COLUMN IF NOT EXISTS "etapaId" TEXT;
+ALTER TABLE public.deals ADD COLUMN IF NOT EXISTS custom_fields JSONB DEFAULT '{}'::jsonb;
 
 -- 3. TABLA TAREAS
 CREATE TABLE IF NOT EXISTS public.tareas (
@@ -70,7 +66,7 @@ CREATE TABLE IF NOT EXISTS public.whatsapp_messages (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- 6. OTRAS TABLAS CORE (Si faltan)
+-- 6. OTRAS TABLAS CORE
 CREATE TABLE IF NOT EXISTS public.contactos (
     id TEXT PRIMARY KEY,
     nombre TEXT NOT NULL,

@@ -53,7 +53,7 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
     const [f, setF] = useState({
       titulo: "", contactoId: "", empresaId: "", pipelineId: plActivo, etapaId: pipeline?.etapas[0]?.id || "",
       valor: 0, prob: 50, fechaCierre: "", responsable: db.usuario?.name || "", etiquetas: "", notas: "",
-      archivos: [], customFields: {}, ...init, etiquetas: (init.etiquetas || []).join(", ")
+      archivos: [], custom_fields: {}, ...init, etiquetas: (init.etiquetas || []).join(", ")
     });
     const [dragActive, setDragActive] = useState(false);
 
@@ -163,8 +163,15 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                 {customFieldsDef.map(cf => {
-                  const val = f.customFields?.[cf.id] || "";
-                  const setVal = v => setF(p => ({ ...p, customFields: { ...p.customFields, [cf.id]: v } }));
+                  const val = f.custom_fields?.[cf.id] || "";
+                  const setVal = async (v) => {
+                    const nextF = { ...f, custom_fields: { ...f.custom_fields, [cf.id]: v } };
+                    setF(nextF);
+                    // AUTO-SAVE: Si es un deal existente, guardar al momento
+                    if (editDeal) {
+                      await guardarEnSupa("deals", { ...editDeal, custom_fields: nextF.custom_fields });
+                    }
+                  };
 
                   return (
                     <Campo key={cf.id} label={cf.nombre}>

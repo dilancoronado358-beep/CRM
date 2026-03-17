@@ -42,7 +42,7 @@ export const Formularios = ({ db, setDb }) => {
       etiquetas: ["lead_web", "formulario"],
       creado: new Date().toISOString().slice(0, 10),
       notas: `Lead generado automáticamente desde formulario ${activo.nombre}. Email de contacto: ${previewEmail}`,
-      customFields: activo.campos.map(c => ({ nombre: c.etiqueta, valor: c.tipo === "email" ? previewEmail : c.tipo === "text" && c.etiqueta.includes("Nombre") ? previewName : "(Capturado en Web)" }))
+      custom_fields: activo.campos.map(c => ({ nombre: c.etiqueta, valor: c.tipo === "email" ? previewEmail : c.tipo === "text" && c.etiqueta.includes("Nombre") ? previewName : "(Capturado en Web)" }))
     };
     setDb(d => ({ ...d, deals: [nv, ...(d.deals || [])] }));
     alert("¡Simulación exitosa! Los datos se han enrutado y se ha creado un nuevo Deal en tu Pipeline en la primera etapa.");
