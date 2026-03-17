@@ -68,12 +68,19 @@ export const LandingPagePublica = ({ siteSlug }) => {
           heroTitle: data.hero_title || data.heroTitle || "Genera más negocios hoy",
           heroSub: data.hero_sub || data.heroSub || "",
           heroCTA: data.hero_cta || data.heroCTA || "Ver Demo",
+          heroCTAUrl: data.hero_cta_url || data.heroCTAUrl || "#form-section",
           heroCTA2: data.hero_cta2 || data.heroCTA2 || "",
+          heroCTA2Url: data.hero_cta2_url || data.heroCTA2Url || "#features-section",
           accentColor: data.accent_color || data.accentColor || "#06B6D4",
           videoUrl: data.video_url || data.videoUrl || "",
+          ctaTitle: data.cta_title || data.ctaTitle || "Empieza hoy. Es gratis.",
+          ctaSub: data.cta_sub || data.ctaSub || "Sin tarjeta de crédito · Configuración en 2 minutos",
+          ctaBtn: data.cta_btn || data.ctaBtn || "Comenzar Ahora",
+          ctaBtnUrl: data.cta_btn_url || data.ctaBtnUrl || "#form-section",
           faqItems: Array.isArray(data.faq_items) ? data.faq_items : (data.faqItems || []),
           statsItems: Array.isArray(data.stats_items) ? data.stats_items : (data.statsItems || []),
           features: Array.isArray(data.features) ? data.features : [],
+          buttons: Array.isArray(data.buttons) ? data.buttons : [],
           blocks: Array.isArray(data.blocks) ? data.blocks : ["hero", "features", "cta"],
         });
       } else {
@@ -85,12 +92,19 @@ export const LandingPagePublica = ({ siteSlug }) => {
             heroTitle: preview.hero_title || "Genera más negocios hoy",
             heroSub: preview.hero_sub || "",
             heroCTA: preview.hero_cta || "Ver Demo",
+            heroCTAUrl: preview.hero_cta_url || "#form-section",
             heroCTA2: preview.hero_cta2 || "",
+            heroCTA2Url: preview.hero_cta2_url || "#features-section",
             accentColor: preview.accent_color || "#06B6D4",
             videoUrl: preview.video_url || "",
+            ctaTitle: preview.cta_title || "Empieza hoy. Es gratis.",
+            ctaSub: preview.cta_sub || "Sin tarjeta de crédito · Configuración en 2 minutos",
+            ctaBtn: preview.cta_btn || "Comenzar Ahora",
+            ctaBtnUrl: preview.cta_btn_url || "#form-section",
             faqItems: preview.faq_items || [],
             statsItems: preview.stats_items || [],
             features: preview.features || [],
+            buttons: Array.isArray(preview.buttons) ? preview.buttons : [],
             blocks: Array.isArray(preview.blocks) ? preview.blocks : ["hero", "features", "cta"],
           });
         } else {
@@ -130,8 +144,8 @@ export const LandingPagePublica = ({ siteSlug }) => {
             <h1 style={{ fontSize: "clamp(32px, 5vw, 56px)", fontWeight: 900, color: "#111827", margin: "0 0 18px", letterSpacing: "-.04em", lineHeight: 1.06, maxWidth: 700, marginInline: "auto" }}>{page.heroTitle}</h1>
             {page.heroSub && <p style={{ fontSize: 18, color: "#6B7280", margin: "0 auto 36px", maxWidth: 560, lineHeight: 1.7 }}>{page.heroSub}</p>}
             <div style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap" }}>
-              <a href="#form-section" style={{ display: "inline-block", background: accent, color: "#fff", border: "none", padding: "15px 30px", borderRadius: 12, fontSize: 15, fontWeight: 700, textDecoration: "none", boxShadow: `0 8px 24px ${accent}44` }}>{page.heroCTA}</a>
-              {page.heroCTA2 && <a href="#features-section" style={{ display: "inline-block", background: "#F3F4F6", color: "#374151", border: "none", padding: "15px 26px", borderRadius: 12, fontSize: 15, fontWeight: 700, textDecoration: "none" }}>{page.heroCTA2} →</a>}
+              <a href={page.heroCTAUrl || "#form-section"} target={page.heroCTAUrl?.startsWith("http") ? "_blank" : undefined} rel="noopener noreferrer" style={{ display: "inline-block", background: accent, color: "#fff", border: "none", padding: "15px 30px", borderRadius: 12, fontSize: 15, fontWeight: 700, textDecoration: "none", boxShadow: `0 8px 24px ${accent}44` }}>{page.heroCTA}</a>
+              {page.heroCTA2 && <a href={page.heroCTA2Url || "#features-section"} target={page.heroCTA2Url?.startsWith("http") ? "_blank" : undefined} rel="noopener noreferrer" style={{ display: "inline-block", background: "#F3F4F6", color: "#374151", border: "none", padding: "15px 26px", borderRadius: 12, fontSize: 15, fontWeight: 700, textDecoration: "none" }}>{page.heroCTA2} →</a>}
             </div>
           </div>
         );
@@ -220,12 +234,35 @@ export const LandingPagePublica = ({ siteSlug }) => {
             </div>
           </div>
         );
+      case "buttons":
+        return page.buttons?.length ? (
+          <div key="buttons" style={{ padding: "50px 24px", textAlign: "center", background: "#fff", borderBottom: "1px solid #E5E7EB" }}>
+            <div style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap" }}>
+              {page.buttons.map((btn, i) => {
+                const isSolid = !btn.variant || btn.variant === "solid";
+                const isOutline = btn.variant === "outline";
+                const btnBg = btn.bg || accent;
+                return (
+                  <a key={i} href={btn.url || "#"} target={btn.url?.startsWith("http") ? "_blank" : undefined} rel="noopener noreferrer"
+                    style={{
+                      background: isSolid ? btnBg : "transparent",
+                      color: isSolid ? "#fff" : btnBg,
+                      border: isOutline ? `2px solid ${btnBg}` : "none",
+                      padding: "14px 28px", borderRadius: 12, fontSize: 15, fontWeight: 700,
+                      cursor: "pointer", textDecoration: "none", display: "inline-block",
+                      boxShadow: isSolid ? `0 8px 24px ${btnBg}44` : "none"
+                    }}>{btn.label || "Botón"}</a>
+                );
+              })}
+            </div>
+          </div>
+        ) : null;
       case "cta":
         return (
           <div key="cta" style={{ padding: "70px 24px", background: accent, textAlign: "center" }}>
-            <h2 style={{ fontSize: 32, fontWeight: 900, color: "#fff", margin: "0 0 14px" }}>Empieza hoy. Es gratis.</h2>
-            <p style={{ color: "rgba(255,255,255,.85)", fontSize: 15, marginBottom: 26 }}>Sin tarjeta de crédito · Configuración en 2 minutos</p>
-            <a href="#form-section" style={{ display: "inline-block", background: "#fff", color: accent, border: "none", padding: "15px 34px", borderRadius: 12, fontSize: 15, fontWeight: 800, textDecoration: "none", boxShadow: "0 8px 24px rgba(0,0,0,0.15)" }}>{page.heroCTA || "Comenzar Ahora"} →</a>
+            <h2 style={{ fontSize: 32, fontWeight: 900, color: "#fff", margin: "0 0 14px" }}>{page.ctaTitle || "Empieza hoy. Es gratis."}</h2>
+            <p style={{ color: "rgba(255,255,255,.85)", fontSize: 15, marginBottom: 26 }}>{page.ctaSub || "Sin tarjeta de crédito · Configuración en 2 minutos"}</p>
+            <a href={page.ctaBtnUrl || "#form-section"} target={page.ctaBtnUrl?.startsWith("http") ? "_blank" : undefined} rel="noopener noreferrer" style={{ display: "inline-block", background: "#fff", color: accent, border: "none", padding: "15px 34px", borderRadius: 12, fontSize: 15, fontWeight: 800, textDecoration: "none", boxShadow: "0 8px 24px rgba(0,0,0,0.15)" }}>{page.ctaBtn || "Comenzar Ahora"} →</a>
           </div>
         );
       default: return null;

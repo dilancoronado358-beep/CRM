@@ -8,6 +8,7 @@ const BASE_URL = "https://crm.ensing.lat";
 
 const ALL_BLOCKS = [
   { id: "hero", title: "Hero Section", icon: "star", desc: "Título principal y CTA" },
+  { id: "buttons", title: "Botones Personalizados", icon: "link", desc: "Agrega botones con URL" },
   { id: "stats", title: "Estadísticas", icon: "bar-chart", desc: "Números de impacto" },
   { id: "features", title: "Grid de Beneficios", icon: "grid", desc: "Características en columnas" },
   { id: "pricing", title: "Tabla de Precios", icon: "dollar", desc: "Planes con CTA" },
@@ -27,9 +28,16 @@ const DEFAULT_PAGE = (id, titulo, slug) => ({
   heroTitle: titulo || "Genera más negocios hoy",
   heroSub: "La plataforma líder para captar leads y convertirlos en clientes.",
   heroCTA: "Ver Demo",
+  heroCTAUrl: "#form-section",
   heroCTA2: "Ver Precios",
+  heroCTA2Url: "#pricing",
   accentColor: "#06B6D4",
   videoUrl: "",
+  ctaTitle: "Empieza hoy. Es gratis.",
+  ctaSub: "Sin tarjeta de crédito · Configuración en 2 minutos",
+  ctaBtn: "Comenzar Ahora",
+  ctaBtnUrl: "#form-section",
+  buttons: [],
   faqItems: [
     { q: "¿Cuánto cuesta?", a: "Planes desde $29/mes con 14 días de prueba gratuita." },
     { q: "¿Es fácil de configurar?", a: "En menos de 2 horas puedes tener tu CRM listo." },
@@ -68,12 +76,26 @@ export const Websites = ({ db, setDb }) => {
       const { data, error } = await sb.from("landing_pages").select("*").order("created_at", { ascending: true });
       if (data && data.length > 0) {
         const parsed = data.map((p) => ({
-          ...DEFAULT_PAGE(p.id, p.titulo, p.slug), // fill any missing defaults
+          ...DEFAULT_PAGE(p.id, p.titulo, p.slug),
           ...p,
           blocks: Array.isArray(p.blocks) ? p.blocks : JSON.parse(p.blocks || '["hero","features","cta"]'),
           faqItems: Array.isArray(p.faq_items) ? p.faq_items : (p.faqItems || []),
           statsItems: Array.isArray(p.stats_items) ? p.stats_items : (p.statsItems || []),
           features: Array.isArray(p.features) ? p.features : (p.features || []),
+          buttons: Array.isArray(p.buttons) ? p.buttons : (p.buttons || []),
+          // camelCase mapping from DB snake_case
+          heroTitle: p.hero_title || p.heroTitle,
+          heroSub: p.hero_sub || p.heroSub,
+          heroCTA: p.hero_cta || p.heroCTA,
+          heroCTAUrl: p.hero_cta_url || p.heroCTAUrl || "#form-section",
+          heroCTA2: p.hero_cta2 || p.heroCTA2,
+          heroCTA2Url: p.hero_cta2_url || p.heroCTA2Url || "#pricing",
+          accentColor: p.accent_color || p.accentColor || "#06B6D4",
+          videoUrl: p.video_url || p.videoUrl || "",
+          ctaTitle: p.cta_title || p.ctaTitle || "Empieza hoy. Es gratis.",
+          ctaSub: p.cta_sub || p.ctaSub || "Sin tarjeta de crédito · Configuración en 2 minutos",
+          ctaBtn: p.cta_btn || p.ctaBtn || "Comenzar Ahora",
+          ctaBtnUrl: p.cta_btn_url || p.ctaBtnUrl || "#form-section",
         }));
         setPages(parsed);
         setActivoId(parsed[0].id);
@@ -99,7 +121,6 @@ export const Websites = ({ db, setDb }) => {
     const pg = overrideActivo || activo;
     if (!pg) return;
     setSaving(true);
-    // Only send columns that exist in the DB (strip undefined)
     const payload = {
       id: pg.id,
       slug: pg.slug,
@@ -109,9 +130,16 @@ export const Websites = ({ db, setDb }) => {
       hero_title: pg.heroTitle || null,
       hero_sub: pg.heroSub || null,
       hero_cta: pg.heroCTA || null,
+      hero_cta_url: pg.heroCTAUrl || null,
       hero_cta2: pg.heroCTA2 || null,
+      hero_cta2_url: pg.heroCTA2Url || null,
       accent_color: pg.accentColor || "#06B6D4",
       video_url: pg.videoUrl || null,
+      cta_title: pg.ctaTitle || null,
+      cta_sub: pg.ctaSub || null,
+      cta_btn: pg.ctaBtn || null,
+      cta_btn_url: pg.ctaBtnUrl || null,
+      buttons: pg.buttons || [],
       faq_items: pg.faqItems || [],
       stats_items: pg.statsItems || [],
       features: pg.features || [],
@@ -132,6 +160,9 @@ export const Websites = ({ db, setDb }) => {
     const { error } = await sb.from("landing_pages").insert({
       id: np.id, slug: np.slug, titulo: np.titulo, activo: false, blocks: np.blocks,
       hero_title: np.heroTitle, hero_sub: np.heroSub, hero_cta: np.heroCTA, accent_color: np.accentColor,
+      hero_cta_url: np.heroCTAUrl, hero_cta2: np.heroCTA2, hero_cta2_url: np.heroCTA2Url,
+      cta_title: np.ctaTitle, cta_sub: np.ctaSub, cta_btn: np.ctaBtn, cta_btn_url: np.ctaBtnUrl,
+      buttons: np.buttons,
       faq_items: np.faqItems, stats_items: np.statsItems, features: np.features,
     });
     if (!error) {
@@ -203,10 +234,59 @@ export const Websites = ({ db, setDb }) => {
         <div style={base}>
           <IE label="Título" value={activo.heroTitle || ""} onChange={(v) => upd("heroTitle", v)} />
           <IE label="Subtítulo" value={activo.heroSub || ""} onChange={(v) => upd("heroSub", v)} />
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
-            <IE label="Botón 1" value={activo.heroCTA || ""} onChange={(v) => upd("heroCTA", v)} />
-            <IE label="Botón 2" value={activo.heroCTA2 || ""} onChange={(v) => upd("heroCTA2", v)} />
+          <div style={{ borderTop: `1px dashed ${T.borderHi}`, paddingTop: 8, marginTop: 4 }}>
+            <div style={{ fontSize: 10, color: T.whiteDim, marginBottom: 6, fontWeight: 700 }}>BOTÓN 1</div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+              <IE label="Texto" value={activo.heroCTA || ""} onChange={(v) => upd("heroCTA", v)} />
+              <IE label="URL / Link" value={activo.heroCTAUrl || ""} onChange={(v) => upd("heroCTAUrl", v)} placeholder="https://... o #seccion" />
+            </div>
           </div>
+          <div style={{ borderTop: `1px dashed ${T.borderHi}`, paddingTop: 8, marginTop: 4 }}>
+            <div style={{ fontSize: 10, color: T.whiteDim, marginBottom: 6, fontWeight: 700 }}>BOTÓN 2 (opcional)</div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+              <IE label="Texto" value={activo.heroCTA2 || ""} onChange={(v) => upd("heroCTA2", v)} />
+              <IE label="URL / Link" value={activo.heroCTA2Url || ""} onChange={(v) => upd("heroCTA2Url", v)} placeholder="https://... o #seccion" />
+            </div>
+          </div>
+        </div>
+      );
+      case "cta": return (
+        <div style={base}>
+          <IE label="Título" value={activo.ctaTitle || ""} onChange={(v) => upd("ctaTitle", v)} />
+          <IE label="Subtítulo" value={activo.ctaSub || ""} onChange={(v) => upd("ctaSub", v)} />
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+            <IE label="Texto del Botón" value={activo.ctaBtn || ""} onChange={(v) => upd("ctaBtn", v)} />
+            <IE label="URL del Botón" value={activo.ctaBtnUrl || ""} onChange={(v) => upd("ctaBtnUrl", v)} placeholder="https://... o #seccion" />
+          </div>
+        </div>
+      );
+      case "buttons": return (
+        <div style={base}>
+          <div style={{ fontSize: 10, color: T.whiteDim, marginBottom: 4 }}>Agrega botones personalizados. Cada uno tiene su URL.</div>
+          {(activo.buttons || []).map((btn, i) => (
+            <div key={i} style={{ background: T.bg2, borderRadius: 8, padding: 10, display: "flex", flexDirection: "column", gap: 6, border: `1px solid ${T.borderHi}` }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr auto", gap: 6, alignItems: "end" }}>
+                <IE label="Texto del botón" value={btn.label} onChange={(v) => updArr("buttons", i, { label: v })} placeholder="Ej: Contáctanos" />
+                <IE label="URL" value={btn.url} onChange={(v) => updArr("buttons", i, { url: v })} placeholder="https://... o #form-section" />
+                <button onClick={() => rmArr("buttons", i)} style={delBtn}>✕</button>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+                <div>
+                  <div style={{ fontSize: 10, color: T.whiteDim, marginBottom: 3 }}>Color fondo</div>
+                  <input type="color" value={btn.bg || activo.accentColor || "#06B6D4"} onChange={(e) => updArr("buttons", i, { bg: e.target.value })} style={{ width: "100%", height: 30, border: "none", borderRadius: 6, cursor: "pointer" }} />
+                </div>
+                <div>
+                  <div style={{ fontSize: 10, color: T.whiteDim, marginBottom: 3 }}>Estilo</div>
+                  <select value={btn.variant || "solid"} onChange={(e) => updArr("buttons", i, { variant: e.target.value })} style={{ width: "100%", height: 30, background: T.bg1, border: `1px solid ${T.borderHi}`, borderRadius: 6, color: T.white, padding: "0 8px", fontSize: 11 }}>
+                    <option value="solid">Relleno</option>
+                    <option value="outline">Contorno</option>
+                    <option value="ghost">Fantasma</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          ))}
+          <button onClick={() => addArr("buttons", { label: "Nuevo Botón", url: "https://", bg: activo.accentColor || "#06B6D4", variant: "solid" })} style={addBtn}>+ Agregar Botón</button>
         </div>
       );
       case "video": return (
@@ -351,11 +431,31 @@ export const Websites = ({ db, setDb }) => {
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                 <IE label="Nombre de campaña" value={activo.titulo} onChange={(v) => updateActivo({ titulo: v })} />
                 <IE label="Slug URL" value={activo.slug} onChange={(v) => updateActivo({ slug: v.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "") })} />
-                <IE label="Título Hero" value={activo.heroTitle || ""} onChange={(v) => updateActivo({ heroTitle: v })} />
-                <IE label="Subtítulo" value={activo.heroSub || ""} onChange={(v) => updateActivo({ heroSub: v })} />
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                  <IE label="Botón CTA 1" value={activo.heroCTA || ""} onChange={(v) => updateActivo({ heroCTA: v })} />
-                  <IE label="Botón CTA 2" value={activo.heroCTA2 || ""} onChange={(v) => updateActivo({ heroCTA2: v })} />
+                <div style={{ borderTop: `1px solid ${T.borderHi}`, paddingTop: 10, marginTop: 4 }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: T.whiteDim, marginBottom: 8, textTransform: "uppercase" }}>Hero</div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    <IE label="Título Hero" value={activo.heroTitle || ""} onChange={(v) => updateActivo({ heroTitle: v })} />
+                    <IE label="Subtítulo" value={activo.heroSub || ""} onChange={(v) => updateActivo({ heroSub: v })} />
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                      <IE label="Botón 1 Texto" value={activo.heroCTA || ""} onChange={(v) => updateActivo({ heroCTA: v })} />
+                      <IE label="Botón 1 URL" value={activo.heroCTAUrl || ""} onChange={(v) => updateActivo({ heroCTAUrl: v })} placeholder="https:// o #seccion" />
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                      <IE label="Botón 2 Texto" value={activo.heroCTA2 || ""} onChange={(v) => updateActivo({ heroCTA2: v })} />
+                      <IE label="Botón 2 URL" value={activo.heroCTA2Url || ""} onChange={(v) => updateActivo({ heroCTA2Url: v })} placeholder="https:// o #seccion" />
+                    </div>
+                  </div>
+                </div>
+                <div style={{ borderTop: `1px solid ${T.borderHi}`, paddingTop: 10 }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: T.whiteDim, marginBottom: 8, textTransform: "uppercase" }}>Sección CTA (Banner Final)</div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    <IE label="Título" value={activo.ctaTitle || ""} onChange={(v) => updateActivo({ ctaTitle: v })} />
+                    <IE label="Subtítulo" value={activo.ctaSub || ""} onChange={(v) => updateActivo({ ctaSub: v })} />
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                      <IE label="Texto Botón" value={activo.ctaBtn || ""} onChange={(v) => updateActivo({ ctaBtn: v })} />
+                      <IE label="URL Botón" value={activo.ctaBtnUrl || ""} onChange={(v) => updateActivo({ ctaBtnUrl: v })} placeholder="https:// o #seccion" />
+                    </div>
+                  </div>
                 </div>
                 <IE label="URL Video (embed)" value={activo.videoUrl || ""} onChange={(v) => updateActivo({ videoUrl: v })} placeholder="https://www.youtube.com/embed/ID" />
               </div>
@@ -440,8 +540,8 @@ export const Websites = ({ db, setDb }) => {
                       <h1 style={{ fontSize: "clamp(30px, 5vw, 54px)", fontWeight: 900, color: "#111827", margin: "0 0 16px", letterSpacing: "-.04em", lineHeight: 1.08, maxWidth: 700, marginInline: "auto" }}>{activo.heroTitle || "Genera más negocios hoy"}</h1>
                       <p style={{ fontSize: 17, color: "#6B7280", margin: "0 auto 32px", maxWidth: 540, lineHeight: 1.7 }}>{activo.heroSub || "La plataforma líder para captar leads."}</p>
                       <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
-                        <button style={{ background: accent, color: "#fff", border: "none", padding: "14px 28px", borderRadius: 12, fontSize: 15, fontWeight: 700, cursor: "pointer", boxShadow: `0 8px 24px ${accent}44` }}>{activo.heroCTA || "Ver Demo"}</button>
-                        {activo.heroCTA2 && <button style={{ background: "#F3F4F6", color: "#374151", border: "none", padding: "14px 26px", borderRadius: 12, fontSize: 15, fontWeight: 700, cursor: "pointer" }}>{activo.heroCTA2} →</button>}
+                        {activo.heroCTA && <a href={activo.heroCTAUrl || "#"} target={activo.heroCTAUrl?.startsWith("http") ? "_blank" : undefined} rel="noopener noreferrer" style={{ background: accent, color: "#fff", border: "none", padding: "14px 28px", borderRadius: 12, fontSize: 15, fontWeight: 700, cursor: "pointer", boxShadow: `0 8px 24px ${accent}44`, textDecoration: "none", display: "inline-block" }}>{activo.heroCTA}</a>}
+                        {activo.heroCTA2 && <a href={activo.heroCTA2Url || "#"} target={activo.heroCTA2Url?.startsWith("http") ? "_blank" : undefined} rel="noopener noreferrer" style={{ background: "#F3F4F6", color: "#374151", border: "none", padding: "14px 26px", borderRadius: 12, fontSize: 15, fontWeight: 700, cursor: "pointer", textDecoration: "none", display: "inline-block" }}>{activo.heroCTA2} →</a>}
                       </div>
                     </div>
                   );
@@ -542,12 +642,39 @@ export const Websites = ({ db, setDb }) => {
                       </div>
                     </div>
                   );
+                case "buttons":
+                  return (
+                    <div key="buttons" style={{ padding: "50px 24px", textAlign: "center", background: "#fff", borderBottom: "1px solid #E5E7EB" }}>
+                      <div style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap" }}>
+                        {(activo.buttons || []).length === 0 && <p style={{ color: "#9CA3AF", fontSize: 13 }}>Agrega botones desde el panel izquierdo (✏️ editar sección)</p>}
+                        {(activo.buttons || []).map((btn, i) => {
+                          const isSolid = !btn.variant || btn.variant === "solid";
+                          const isOutline = btn.variant === "outline";
+                          const btnBg = btn.bg || accent;
+                          return (
+                            <a key={i} href={btn.url || "#"} target={btn.url?.startsWith("http") ? "_blank" : undefined} rel="noopener noreferrer"
+                              style={{
+                                background: isSolid ? btnBg : isOutline ? "transparent" : "transparent",
+                                color: isSolid ? "#fff" : btnBg,
+                                border: isOutline ? `2px solid ${btnBg}` : "none",
+                                padding: "14px 28px", borderRadius: 12, fontSize: 15, fontWeight: 700,
+                                cursor: "pointer", textDecoration: "none", display: "inline-block",
+                                boxShadow: isSolid ? `0 8px 24px ${btnBg}44` : "none"
+                              }}>{btn.label || "Botón"}</a>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
                 case "cta":
                   return (
                     <div key="cta" style={{ padding: "70px 24px", background: accent, textAlign: "center" }}>
-                      <h2 style={{ fontSize: 32, fontWeight: 900, color: "#fff", margin: "0 0 14px" }}>Empieza hoy. Es gratis.</h2>
-                      <p style={{ color: "rgba(255,255,255,.85)", fontSize: 15, marginBottom: 26 }}>Sin tarjeta de crédito · Configuración en 2 minutos</p>
-                      <button style={{ background: "#fff", color: accent, border: "none", padding: "15px 34px", borderRadius: 12, fontSize: 15, fontWeight: 800, cursor: "pointer" }}>{activo.heroCTA || "Comenzar Ahora"} →</button>
+                      <h2 style={{ fontSize: 32, fontWeight: 900, color: "#fff", margin: "0 0 14px" }}>{activo.ctaTitle || "Empieza hoy. Es gratis."}</h2>
+                      <p style={{ color: "rgba(255,255,255,.85)", fontSize: 15, marginBottom: 26 }}>{activo.ctaSub || "Sin tarjeta de crédito · Configuración en 2 minutos"}</p>
+                      <a href={activo.ctaBtnUrl || "#"} target={activo.ctaBtnUrl?.startsWith("http") ? "_blank" : undefined} rel="noopener noreferrer"
+                        style={{ background: "#fff", color: accent, border: "none", padding: "15px 34px", borderRadius: 12, fontSize: 15, fontWeight: 800, cursor: "pointer", textDecoration: "none", display: "inline-block" }}>
+                        {activo.ctaBtn || "Comenzar Ahora"} →
+                      </a>
                     </div>
                   );
                 default: return null;
