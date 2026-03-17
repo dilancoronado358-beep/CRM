@@ -240,9 +240,9 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
     // Guardar en usuario Y en usuariosApp para que persista en Supabase
     setDb(d => ({
       ...d,
-      usuario: { ...d.usuario, temaActivo: themeId },
+      usuario: { ...d.usuario, tema: themeId },
       usuariosApp: (d.usuariosApp || []).map(u =>
-        u.email === d.usuario?.email ? { ...u, temaActivo: themeId } : u
+        u.email === d.usuario?.email ? { ...u, tema: themeId } : u
       )
     }));
   };
@@ -392,7 +392,7 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
             <div style={{ fontSize: 14, color: T.whiteDim, marginBottom: 28 }}>Elige la apariencia visual del CRM. El cambio es instantáneo y se guarda automáticamente.</div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 16 }}>
               {Object.values(THEMES).map(th => {
-                const isSel = (db.usuario?.tema || "dark") === th.id;
+                const isSel = (db.usuario?.tema || localStorage.getItem("crm_theme") || "dark") === th.id;
                 return (
                   <div key={th.id} onClick={() => cambiarTema(th.id)}
                     style={{ border: `2px solid ${isSel ? T.teal : T.borderHi}`, borderRadius: 14, overflow: "hidden", cursor: "pointer", transition: "all .2s", transform: isSel ? "scale(1.03)" : "scale(1)", boxShadow: isSel ? `0 0 0 3px ${T.teal}30, 0 8px 24px rgba(0,0,0,0.15)` : "none" }}>

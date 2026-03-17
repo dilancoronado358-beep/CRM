@@ -29,8 +29,22 @@ export const SpotlightSearch = ({ db, open, onClose, onNavigate }) => {
 
   // 2. Contactos
   db.contactos?.forEach(c => {
-    if (c.nombre.toLowerCase().includes(searchLow) || c.email.toLowerCase().includes(searchLow) || c.empresa.toLowerCase().includes(searchLow)) {
+    if ((c.nombre || "").toLowerCase().includes(searchLow) || (c.email || "").toLowerCase().includes(searchLow) || (c.empresa || "").toLowerCase().includes(searchLow)) {
       results.push({ id: c.id, type: "Contacto", title: c.nombre, sub: c.empresa, icon: "users", color: T.teal, action: () => onNavigate("contactos") });
+    }
+  });
+
+  // 3. Empresas
+  db.empresas?.forEach(e => {
+    if ((e.nombre || "").toLowerCase().includes(searchLow) || (e.sector || "").toLowerCase().includes(searchLow)) {
+      results.push({ id: e.id, type: "Empresa", title: e.nombre, sub: e.sector || "Empresa B2B", icon: "building", color: T.amber, action: () => onNavigate("empresas") });
+    }
+  });
+
+  // 4. Tareas
+  db.tareas?.forEach(t => {
+    if ((t.titulo || "").toLowerCase().includes(searchLow)) {
+      results.push({ id: t.id, type: "Tarea", title: t.titulo, sub: `Vence: ${t.vencimiento}`, icon: "check", color: T.red, action: () => onNavigate("tareas") });
     }
   });
 

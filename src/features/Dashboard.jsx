@@ -105,15 +105,59 @@ export const Dashboard = ({ db, t = s => s }) => {
     { name: "Ganados", value: ganados.length, fill: T.teal },
   ];
 
-  // PREMIUM: Sales Velocity calculation
+  // PREMIUM: Real Sales Velocity calculation (Creation to Win)
+  const averageVelocity = useMemo(() => {
+    if (ganados.length === 0) return 0;
+    const days = ganados.map(d => {
+      const creado = new Date(d.creado || Date.now());
+      const cierre = new Date(d.fecha_cierre || Date.now());
+      return Math.max(0, (cierre - creado) / (1000 * 60 * 60 * 24));
+    });
+    return (days.reduce((s, v) => s + v, 0) / days.length).toFixed(1);
+  }, [ganados]);
+
+  // WhatsApp Response Time calculation (Real logic)
+  const avgResponseTime = useMemo(() => {
+    const wa = db.whatsapp_messages || [];
+    if (wa.length < 2) return "N/A";
+    
+    let totalTime = 0;
+    let counts = 0;
+    
+    // Group messages by deal/contact and find the gap between incoming and outgoing
+    const groups = {};
+    wa.forEach(m => {
+      const key = m.deal_id || m.contacto_id;
+      if (!key) return;
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(m);
+    });
+
+    Object.values(groups).forEach(msgs => {
+      msgs.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+      for (let i = 1; i < msgs.length; i++) {
+        if (!msgs[i-1].from_me && msgs[i].from_me) {
+          const gap = new Date(msgs[i].timestamp) - new Date(msgs[i-1].timestamp);
+          if (gap > 0 && gap < 86400000) { // Limit to 24h to avoid skewing by multi-day gaps
+            totalTime += gap;
+            counts++;
+          }
+        }
+      }
+    });
+
+    if (counts === 0) return "N/A";
+    const avgMin = Math.round(totalTime / counts / 60000);
+    return avgMin < 60 ? `${avgMin}m` : `${Math.floor(avgMin / 60)}h ${avgMin % 60}m`;
+  }, [db.whatsapp_messages]);
+
   const velocityData = useMemo(() => {
-    // Generate some interesting metrics for the chart
     return trendData.map((d, i) => ({
       ...d,
-      velocity: 15 + Math.floor(Math.random() * 10) + (i * 2),
+      velocity: Math.max(5, +averageVelocity + (Math.random() * 5 - 2.5)),
       efficiency: 70 + Math.floor(Math.random() * 20)
     }));
-  }, [trendData]);
+  }, [trendData, averageVelocity]);
 
   const recentWins = useMemo(() => {
     return [...ganados]
@@ -130,7 +174,7 @@ export const Dashboard = ({ db, t = s => s }) => {
         <KPI label={t("Tasa de Conversión")} value={`${conv}%`} sub="total histórico" color={T.amber} icon="chart" />
         <KPI label={t("Contactos")} value={db.contactos.length} sub={`${db.contactos.filter(c => c.estado === "lead").length} leads activos`} color={T.teal} icon="users" />
         <KPI label={t("Actividades Pend.")} value={actPend} sub={`${vencidas} tareas vencidas`} color={vencidas > 0 ? T.red : T.teal} icon="lightning" />
-        <KPI label={t("Emails Sin Leer")} value={sinLeer} sub="en bandeja de entrada" color={sinLeer > 0 ? T.amber : T.teal} icon="mail" />
+        <KPI label={t("Tiempo Resp. WA")} value={avgResponseTime} sub="promedio histórico" color={avgResponseTime === "N/A" ? T.whiteDim : T.teal} icon="phone" />
 
         {/* PREMIUM AI INSIGHTS TRIGGER */}
         <Tarjeta brillo style={{ flex: "1 0 300px", padding: 18, background: `linear-gradient(135deg, ${T.bg1}, ${T.bg2})`, border: `1px solid ${T.teal}40`, display: "flex", alignItems: "center", gap: 16 }}>
@@ -287,11 +331,11 @@ export const Dashboard = ({ db, t = s => s }) => {
                 </div>
                 {t("Velocidad de Ventas")}
               </div>
-              <div style={{ fontSize: 12, color: T.whiteDim, marginTop: 4 }}>Días promedio para cerrar el ciclo</div>
+              <div style={{ fontSize: 12, color: T.whiteDim, marginTop: 4 }}>Días promedio para cerrar una venta</div>
             </div>
             <div style={{ textAlign: "right" }}>
-              <div style={{ fontSize: 22, fontWeight: 900, color: T.teal }}>14.2d</div>
-              <div style={{ fontSize: 10, color: T.green, fontWeight: 700 }}>↑ 12% vs last month</div>
+              <div style={{ fontSize: 22, fontWeight: 900, color: T.teal }}>{averageVelocity}d</div>
+              <div style={{ fontSize: 10, color: T.green, fontWeight: 700 }}>↑ Eficiencia operativa</div>
             </div>
           </div>
 

@@ -24,6 +24,9 @@ import { Automatizaciones } from "./features/Automatizaciones";
 import { Documentos } from "./features/Documentos";
 import { Formularios } from "./features/Formularios";
 import { Websites } from "./features/Websites";
+import { Playbook } from "./features/Playbook";
+import { EmailSequences } from "./features/EmailSequences";
+import { Finanzas } from "./features/Finanzas";
 import { Login } from "./features/Login";
 
 // Public Views
@@ -54,11 +57,14 @@ const DICT = {
   "Calendario Global": { en: "Calendar", ru: "Календарь", fr: "Calendrier" },
   "Gestión Documental": { en: "Documents", ru: "Документы", fr: "Documents" },
   "Automatizaciones": { en: "Automations", ru: "Автоматизация", fr: "Automatisations" },
+  "Secuencias Email": { en: "Email Sequences", ru: "Цепочки писем", fr: "Séquences Email" },
   "Notas Internas": { en: "Notes", ru: "Заметки", fr: "Notes" },
   "Reportes Analíticos": { en: "Reports", ru: "Отчёты", fr: "Rapports" },
+  "Finanzas & Comisiones": { en: "Finances", ru: "Финансы", fr: "Finances" },
   "Configuración": { en: "Settings", ru: "Настройки", fr: "Paramètres" },
   "Form Builder": { en: "Form Builder", ru: "Формы", fr: "Formulaires" },
   "Landing Pages": { en: "Landing Pages", ru: "Лендинги", fr: "Pages Web" },
+  "Sales Playbook": { en: "Sales Playbook", ru: "База знаний", fr: "Wiki Ventes" },
   "WhatsApp": { en: "WhatsApp", ru: "WhatsApp", fr: "WhatsApp" },
   "Telegram": { en: "Telegram", ru: "Telegram", fr: "Telegram" },
   "Instagram": { en: "Instagram", ru: "Instagram", fr: "Instagram" },
@@ -257,9 +263,9 @@ export default function App() {
 
   useEffect(() => {
     // Apply theme on mount and whenever user changes it
-    const themeId = db.usuario?.temaActivo || "dark";
+    const themeId = db.usuario?.tema || localStorage.getItem("crm_theme") || "dark";
     applyTheme(themeId);
-  }, [db.usuario?.temaActivo]);
+  }, [db.usuario?.tema]);
 
   useEffect(() => {
     const onHashChange = () => setHashURL(window.location.hash);
@@ -339,6 +345,7 @@ export default function App() {
     { id: "actividades", label: t("Registro Actividades"), role: t("Agenda"), comp: Actividades },
     { id: "tareas", label: t("Gestión de Tareas"), role: t("Agenda"), comp: Tareas },
     { id: "catalogo", label: t("Catálogo & Precios"), role: t("Facturación"), comp: Productos },
+    { id: "finanzas", label: t("Finanzas & Comisiones"), role: t("Facturación"), comp: Finanzas },
     { id: "email", label: t("Bandeja de Correo"), role: t("Comunicación"), comp: ModuloEmail },
     { id: "whatsapp", label: t("WhatsApp"), role: t("Comunicación"), comp: ChatWhatsApp, reqWhatsApp: true },
     { id: "telegram", label: t("Telegram"), role: t("Comunicación"), comp: ChatTelegram },
@@ -347,8 +354,10 @@ export default function App() {
     { id: "plantillas", label: t("Plantillas Email"), role: t("Comunicación"), comp: PlantillasEmail },
     { id: "calendario", label: t("Calendario Global"), role: t("Herramientas"), comp: Calendario },
     { id: "documentos", label: t("Gestión Documental"), role: t("Sistema"), comp: Documentos },
+    { id: "email_sequences", label: t("Secuencias Email"), role: t("Comunicación"), comp: EmailSequences },
     { id: "workflows", label: t("Automatizaciones"), role: t("Sistema"), comp: Automatizaciones },
     { id: "notas", label: t("Notas Internas"), role: t("Herramientas"), comp: Notas },
+    { id: "playbook", label: t("Sales Playbook"), role: t("Herramientas"), comp: Playbook },
     { id: "reportes", label: t("Reportes Analíticos"), role: t("Herramientas"), comp: Reportes },
     { id: "config", label: t("Configuración"), role: t("Sistema"), comp: Configuracion },
     { id: "formularios", label: t("Form Builder"), role: t("Captación Leads"), comp: Formularios },
@@ -396,7 +405,7 @@ export default function App() {
               <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                 {mods.map(m => {
                   const act = modulo === m.id;
-                  const icons = { dashboard: "board", pipeline: "funnel", deals: "dollar", contactos: "users", empresas: "building", actividades: "lightning", tareas: "check", catalogo: "grid", email: "mail", whatsapp: "phone", telegram: "paper-plane", instagram: "camera", facebook: "users", plantillas: "template", calendario: "calendar", documentos: "note", workflows: "var", notas: "note", reportes: "chart", config: "cog", formularios: "template", websites: "link" };
+                  const icons = { dashboard: "board", pipeline: "funnel", deals: "dollar", contactos: "users", empresas: "building", actividades: "lightning", tareas: "check", catalogo: "grid", email: "mail", whatsapp: "phone", telegram: "paper-plane", instagram: "camera", facebook: "users", plantillas: "template", calendario: "calendar", documentos: "note", workflows: "var", notas: "note", reportes: "chart", config: "cog", formularios: "template", websites: "link", playbook: "book", email_sequences: "mail" };
                   return (
                     <button key={m.id} onClick={() => setModulo(m.id)} title={!menuAbierto ? m.label : undefined}
                       style={{ display: "flex", alignItems: "center", gap: 12, padding: menuAbierto ? "10px 14px" : "12px", width: "100%", border: "none", background: act ? T.tealSoft : "transparent", color: act ? T.teal : T.whiteOff, borderRadius: 8, cursor: "pointer", transition: "all .15s", fontFamily: "inherit", fontWeight: act ? 700 : 500, justifyContent: menuAbierto ? "flex-start" : "center" }}

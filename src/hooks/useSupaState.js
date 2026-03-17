@@ -27,6 +27,13 @@ const TABLAS_SUPA = [
   "chatbotRules",
   "whatsapp_automations",
   "campos_personalizados",
+  "cotizaciones",
+  "sales_playbook",
+  "email_sequences",
+  "email_sequence_subscriptions",
+  "custom_reports",
+  "finanzas_gastos",
+  "finanzas_comisiones",
 ];
 
 /* ═══════════════════════════════════════════
@@ -63,8 +70,8 @@ export function useSupaState() {
         try {
           localStorage.setItem("crm_usuario_activo", JSON.stringify(v.usuario));
           // Guardar tema por separado para que persista
-          if (v.usuario.temaActivo) {
-            localStorage.setItem("crm_theme", v.usuario.temaActivo);
+          if (v.usuario.tema) {
+            localStorage.setItem("crm_theme", v.usuario.tema);
           }
         } catch (e) { }
       }

@@ -3,10 +3,12 @@ import { T } from "../theme";
 import { money } from "../utils";
 import { Tarjeta, KPI, EncabezadoSeccion, Btn, Sel, Ico } from "../components/ui";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend } from "recharts";
+import { CustomReportBuilder } from "./CustomReportBuilder";
 
 const COLORS = [T.teal, T.green, T.amber, "#A78BFA", "#F472B6", "#60A5FA"];
 
-export const Reportes = ({ db }) => {
+export const Reportes = (props) => {
+  const { db, guardarEnSupa, eliminarDeSupa } = props;
   const [filtros, setFiltros] = useState({
     pipeline_id: (db.pipelines || [])[0]?.id || "",
     responsable: "todos"
@@ -95,7 +97,7 @@ export const Reportes = ({ db }) => {
         <KPI label="Leads Generados" value={db.contactos.length} color="#A78BFA" icon="users" />
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr", gap: 20 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr", gap: 20, marginBottom: 20 }}>
         <Tarjeta style={{ padding: 24, display: "flex", flexDirection: "column", minHeight: 350 }}>
           <div style={{ fontSize: 16, fontWeight: 800, color: T.white, marginBottom: 8 }}>Desempeño del Pipeline ({pl?.nombre})</div>
           <div style={{ fontSize: 13, color: T.whiteDim, marginBottom: 20 }}>Visión general del valor en cada fase macro.</div>
@@ -148,6 +150,9 @@ export const Reportes = ({ db }) => {
           </div>
         </Tarjeta>
       </div>
+
+      {/* CUSTOM REPORT BUILDER INTEGRATION */}
+      <CustomReportBuilder db={db} guardarEnSupa={guardarEnSupa} eliminarDeSupa={eliminarDeSupa} />
     </div>
   );
 };

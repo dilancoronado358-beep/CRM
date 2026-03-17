@@ -465,25 +465,59 @@ export function LeadTimeline({ deal = {}, contacto = {}, db = {}, setDb, guardar
 
       {/* COMPOSER BOTTOM SOLO PARA WHATSAPP (Como chat real) */}
       {composerTab === "WhatsApp" && (
-        <div style={{ padding: "16px", background: "#f0f3f5", borderTop: `1px solid #d4dde1`, flexShrink: 0, position: "relative" }}>
-
-          <div style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
-            <input type="file" ref={fileInputRef} onChange={handleFileChange} style={{ display: "none" }} />
-            <Btn onClick={() => fileInputRef.current?.click()} style={{ width: 44, height: 44, borderRadius: "50%", background: "#fff", border: "1px solid #c6d2d6", color: "#666", padding: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <Ico k="paperclip" size={18} />
-            </Btn>
-            <textarea
-              value={waMsg}
-              onChange={e => setWaMsg(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); previewFile ? confirmSendMedia() : handleSendWA(); } }}
-              placeholder={previewFile ? "Añadir comentario..." : "Escribe un mensaje..."}
-              style={{ flex: 1, background: "#fff", border: `1px solid #c6d2d6`, borderRadius: 8, padding: "10px 16px", fontSize: 14, minHeight: 44, maxHeight: 120, outline: "none", resize: "none" }}
-            />
-            <Btn onClick={previewFile ? confirmSendMedia() : handleSendWA} disabled={(!waMsg.trim() && !previewFile) || !cleanPhone} style={{ width: 44, height: 44, borderRadius: "50%", background: "#25D366", color: "#fff", padding: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <Ico k="paper-plane" size={18} style={{ marginLeft: -2 }} />
-            </Btn>
+        <div style={{ background: "#f0f3f5", borderTop: `1px solid #d4dde1`, flexShrink: 0 }}>
+          {/* QUICK SUGGESTIONS / ACTIONS */}
+          {cleanPhone && (
+            <div style={{ padding: "10px 16px 0 16px", display: "flex", gap: 8, overflowX: "auto", whiteSpace: "nowrap" }}>
+              <button onClick={async () => {
+                const manana = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
+                const uid_gen = () => Math.random().toString(36).substr(2, 9);
+                const t = { 
+                  id: "t" + uid_gen(), 
+                  titulo: "⏰ Seguimiento: " + (deal.titulo || "Lead"), 
+                  prioridad: "media", 
+                  estado: "pendiente", 
+                  asignado: db.usuario?.name || "Asignado", 
+                  vencimiento: manana, 
+                  contacto_id: contacto.id, 
+                  deal_id: deal.id, 
+                  creado: new Date().toISOString() 
+                };
+                await guardarEnSupa("tareas", t);
+                setDb(prev => ({ ...prev, tareas: [t, ...(prev.tareas || [])] }));
+              }} 
+              style={{ background: "#fff", border: "1px solid #d4dde1", borderRadius: 16, padding: "6px 14px", fontSize: 11, fontWeight: 700, cursor: "pointer", color: T.teal, display: "flex", alignItems: "center", gap: 5 }}>
+                <Ico k="clock" size={12} /> Seguimiento Mañana
+              </button>
+              <button onClick={() => setWaMsg("¿Hola, cómo estás? Quería dar seguimiento a lo conversado.")} 
+              style={{ background: "#fff", border: "1px solid #d4dde1", borderRadius: 16, padding: "6px 14px", fontSize: 11, fontWeight: 700, cursor: "pointer", color: "#555" }}>
+                👋 Saludo rápido
+              </button>
+              <button onClick={() => setWaMsg("¡Excelente! Quedo a la espera de tu respuesta para avanzar.")} 
+              style={{ background: "#fff", border: "1px solid #d4dde1", borderRadius: 16, padding: "6px 14px", fontSize: 11, fontWeight: 700, cursor: "pointer", color: "#555" }}>
+                🎯 Cierre de charla
+              </button>
+            </div>
+          )}
+          <div style={{ padding: "12px 16px 16px 16px", position: "relative" }}>
+            <div style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
+              <input type="file" ref={fileInputRef} onChange={handleFileChange} style={{ display: "none" }} />
+              <Btn onClick={() => fileInputRef.current?.click()} style={{ width: 44, height: 44, borderRadius: "50%", background: "#fff", border: "1px solid #c6d2d6", color: "#666", padding: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <Ico k="paperclip" size={18} />
+              </Btn>
+              <textarea
+                value={waMsg}
+                onChange={e => setWaMsg(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); previewFile ? confirmSendMedia() : handleSendWA(); } }}
+                placeholder={previewFile ? "Añadir comentario..." : "Escribe un mensaje..."}
+                style={{ flex: 1, background: "#fff", border: `1px solid #c6d2d6`, borderRadius: 8, padding: "10px 16px", fontSize: 14, minHeight: 44, maxHeight: 120, outline: "none", resize: "none" }}
+              />
+              <Btn onClick={previewFile ? confirmSendMedia() : handleSendWA} disabled={(!waMsg.trim() && !previewFile) || !cleanPhone} style={{ width: 44, height: 44, borderRadius: "50%", background: "#25D366", color: "#fff", padding: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <Ico k="paper-plane" size={18} style={{ marginLeft: -2 }} />
+              </Btn>
+            </div>
+            {!cleanPhone && <div style={{ color: "red", fontSize: 11, marginTop: 12, textAlign: "center", fontWeight: 700, background: "rgba(255,0,0,0.05)", padding: 8, borderRadius: 8 }}>⚠️ Este contacto no tiene un número de teléfono válido asignado o el número es demasiado corto.</div>}
           </div>
-          {!cleanPhone && <div style={{ color: "red", fontSize: 11, marginTop: 12, textAlign: "center", fontWeight: 700, background: "rgba(255,0,0,0.05)", padding: 8, borderRadius: 8 }}>⚠️ Este contacto no tiene un número de teléfono válido asignado o el número es demasiado corto.</div>}
         </div>
       )}
     </div>

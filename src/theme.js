@@ -90,6 +90,17 @@ export const THEMES = {
     red:"#F87171",redS:"rgba(248,113,113,.12)",
     grad:"linear-gradient(135deg,#34D399,#60A5FA)",
   },
+  sapphire: {
+    id: "sapphire", label: "Sapphire Pro", icon: "💎", preview: ["#0F172A","#38BDF8","#1E293B"],
+    bg0:"#0F172A",bg1:"#1E293B",bg2:"#334155",bg3:"#475569",bg4:"#64748B",
+    border:"#334155",borderHi:"#475569",
+    teal:"#38BDF8",tealDark:"#0EA5E9",tealSoft:"rgba(56,189,248,.12)",tealGlow:"rgba(56,189,248,.06)",
+    white:"#F8FAFC",whiteOff:"#CBD5E1",whiteDim:"#94A3B8",whiteFade:"#64748B",
+    green:"#10B981",greenS:"rgba(16,185,129,.12)",
+    amber:"#F59E0B",amberS:"rgba(245,158,11,.12)",
+    red:"#EF4444",redS:"rgba(239,68,68,.12)",
+    grad:"linear-gradient(135deg,#38BDF8,#1D4ED8)",
+  },
 };
 
 export function applyTheme(themeId) {
