@@ -119,10 +119,10 @@ export const Formularios = ({ db, setDb }) => {
                 </div>
               );
             })}
-            <button onClick={enviarForm} style={{ width: "100%", padding: "12px", marginTop: 8, background: T.teal, color: "#FFF", border: "none", borderRadius: 8, fontSize: 15, fontWeight: 700, cursor: "pointer", boxShadow: "0 4px 6px -1px rgba(37, 99, 235, 0.2)" }}>Enviar Datos (Enrutar a Leads)</button>
+            <button onClick={() => window.open(`https://crm.ensing.lat/#/f/${activo.id}`, '_blank')} style={{ width: "100%", padding: "12px", marginTop: 8, background: T.teal, color: "#FFF", border: "none", borderRadius: 8, fontSize: 15, fontWeight: 700, cursor: "pointer", boxShadow: "0 4px 6px -1px rgba(37, 99, 235, 0.2)" }}>Abrir Formulario Público →</button>
           </div>
           
-          <div style={{ textAlign: "center", marginTop: 20, fontSize: 11, color: "#9CA3AF" }}>Protegido por reCAPTCHA y {T.teal} Security.</div>
+          <div style={{ textAlign: "center", marginTop: 20, fontSize: 11, color: "#9CA3AF" }}>🔒 Formulario seguro · Los datos van directo a tu CRM.</div>
         </div>
 
       </div>
