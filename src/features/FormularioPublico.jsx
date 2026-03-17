@@ -19,7 +19,7 @@ const DEFAULT_FORMS = [
   },
 ];
 
-export const FormularioPublico = ({ formId }) => {
+export const FormularioPublico = ({ formId, embed = false }) => {
   const [form, setForm] = useState(null);
   const [values, setValues] = useState({});
   const [enviado, setEnviado] = useState(false);
@@ -148,144 +148,166 @@ export const FormularioPublico = ({ formId }) => {
   const accent = form?.color || "#06B6D4";
 
   if (error) {
+    const errContent = (
+      <>
+        <div style={{ fontSize: 48, marginBottom: 16 }}>⚠️</div>
+        <h2 style={{ color: "#111827" }}>Formulario no disponible</h2>
+        <p style={{ color: "#6B7280" }}>{error}</p>
+      </>
+    );
+    if (embed) return <div style={{ textAlign: "center" }}>{errContent}</div>;
     return (
       <div style={styles.page}>
-        <div style={styles.card}>
-          <div style={{ fontSize: 48, marginBottom: 16 }}>⚠️</div>
-          <h2 style={{ color: "#111827" }}>Formulario no disponible</h2>
-          <p style={{ color: "#6B7280" }}>{error}</p>
-        </div>
+        <div style={styles.card}>{errContent}</div>
       </div>
     );
   }
 
   if (!form) {
+    const loadContent = (
+      <>
+        <div style={{ width: 40, height: 40, border: "3px solid #E5E7EB", borderTopColor: "#06B6D4", borderRadius: "50%", animation: "spin 1s linear infinite", margin: embed ? "0 auto" : 0 }} />
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      </>
+    );
+    if (embed) return <div style={{ textAlign: "center", padding: 40 }}>{loadContent}</div>;
     return (
       <div style={styles.page}>
-        <div style={styles.card}>
-          <div style={{ width: 40, height: 40, border: "3px solid #E5E7EB", borderTopColor: "#06B6D4", borderRadius: "50%", animation: "spin 1s linear infinite" }} />
-          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-        </div>
+        <div style={styles.card}>{loadContent}</div>
       </div>
     );
   }
 
   if (enviado) {
+    const successContent = (
+      <>
+        <div style={{ width: 64, height: 64, borderRadius: "50%", background: accent + "22", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px", fontSize: 32 }}>✅</div>
+        <h2 style={{ color: "#111827", margin: "0 0 12px", fontSize: 24, fontWeight: 800 }}>¡Mensaje recibido!</h2>
+        <p style={{ color: "#6B7280", fontSize: 15, lineHeight: 1.7, margin: 0 }}>
+          Gracias por contactarnos. Un asesor se comunicará contigo en breve.
+        </p>
+      </>
+    );
+    if (embed) return <div style={{ textAlign: "center", padding: "20px 0" }}>{successContent}</div>;
     return (
       <div style={styles.page}>
-        <div style={{ ...styles.card, textAlign: "center" }}>
-          <div style={{ width: 64, height: 64, borderRadius: "50%", background: accent + "22", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px", fontSize: 32 }}>✅</div>
-          <h2 style={{ color: "#111827", margin: "0 0 12px", fontSize: 24, fontWeight: 800 }}>¡Mensaje recibido!</h2>
-          <p style={{ color: "#6B7280", fontSize: 15, lineHeight: 1.7, margin: 0 }}>
-            Gracias por contactarnos. Un asesor se comunicará contigo en breve.
-          </p>
-        </div>
+        <div style={{ ...styles.card, textAlign: "center" }}>{successContent}</div>
       </div>
     );
   }
 
-  return (
-    <div style={styles.page}>
-      <div style={styles.card}>
+  const innerForm = (
+    <div style={{ textAlign: "left" }}>
+      {!embed && (
         <div style={{ textAlign: "center", marginBottom: 28 }}>
           <div style={{ width: 48, height: 48, borderRadius: 14, background: accent + "22", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px", fontSize: 24 }}>📋</div>
           <h1 style={{ margin: 0, fontSize: 24, fontWeight: 800, color: "#111827" }}>{form.nombre}</h1>
           <p style={{ margin: "8px 0 0", color: "#6B7280", fontSize: 14 }}>Completa el formulario y te contactaremos pronto.</p>
         </div>
+      )}
 
-        <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          {(paginas[paso] || []).map((campo) => (
-            <div key={campo.id}>
-              {campo.tipo === "section" ? (
-                <div style={{ marginTop: 12, paddingBottom: 6, borderBottom: `1px solid ${accent}40`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ fontSize: 18, fontWeight: 800, color: "#111827" }}>{campo.etiqueta}</span>
-                  {paginas.length > 1 && <span style={{ fontSize: 13, fontWeight: 600, color: "#9CA3AF" }}>Paso {paso + 1} de {paginas.length}</span>}
-                </div>
-              ) : (
-                <>
-                  <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 6, marginTop: 4 }}>
-                    {campo.etiqueta}
-                    {campo.req && <span style={{ color: "#EF4444", marginLeft: 4 }}>*</span>}
+      <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        {(paginas[paso] || []).map((campo) => (
+          <div key={campo.id}>
+            {campo.tipo === "section" ? (
+              <div style={{ marginTop: 12, paddingBottom: 6, borderBottom: `1px solid ${accent}40`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span style={{ fontSize: 18, fontWeight: 800, color: "#111827" }}>{campo.etiqueta}</span>
+                {paginas.length > 1 && <span style={{ fontSize: 13, fontWeight: 600, color: "#9CA3AF" }}>Paso {paso + 1} de {paginas.length}</span>}
+              </div>
+            ) : (
+              <>
+                <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 6, marginTop: 4 }}>
+                  {campo.etiqueta}
+                  {campo.req && <span style={{ color: "#EF4444", marginLeft: 4 }}>*</span>}
+                </label>
+                {campo.tipo === "textarea" ? (
+                  <textarea
+                    rows={4}
+                    value={values[campo.id] || ""}
+                    onChange={(e) => setValues((v) => ({ ...v, [campo.id]: e.target.value }))}
+                    placeholder={`Ingresa ${campo.etiqueta.toLowerCase()}`}
+                    style={styles.input}
+                  />
+                ) : campo.tipo === "checkbox" ? (
+                  <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, cursor: "pointer", color: "#374151", userSelect: "none" }}>
+                    <input type="checkbox" checked={values[campo.id] === "Sí"} onChange={(e) => setValues((v) => ({ ...v, [campo.id]: e.target.checked ? "Sí" : "No" }))} style={{ width: 18, height: 18, accentColor: accent }} />
+                    Sí, acepto
                   </label>
-                  {campo.tipo === "textarea" ? (
-                    <textarea
-                      rows={4}
-                      value={values[campo.id] || ""}
-                      onChange={(e) => setValues((v) => ({ ...v, [campo.id]: e.target.value }))}
-                      placeholder={`Ingresa ${campo.etiqueta.toLowerCase()}`}
-                      style={styles.input}
-                    />
-                  ) : campo.tipo === "checkbox" ? (
-                    <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, cursor: "pointer", color: "#374151", userSelect: "none" }}>
-                      <input type="checkbox" checked={values[campo.id] === "Sí"} onChange={(e) => setValues((v) => ({ ...v, [campo.id]: e.target.checked ? "Sí" : "No" }))} style={{ width: 18, height: 18, accentColor: accent }} />
-                      Sí, acepto
-                    </label>
-                  ) : campo.tipo === "select" ? (
-                    <select
-                      value={values[campo.id] || ""}
-                      onChange={(e) => setValues((v) => ({ ...v, [campo.id]: e.target.value }))}
-                      style={styles.input}
-                      required={campo.req}
-                    >
-                      <option value="">Selecciona una opción</option>
-                      {(campo.opciones || "").split(",").filter(Boolean).map((o, i) => (
-                        <option key={i} value={o.trim()}>{o.trim()}</option>
-                      ))}
-                    </select>
-                  ) : (
-                    <input
-                      type={campo.tipo}
-                      value={values[campo.id] || ""}
-                      onChange={(e) => setValues((v) => ({ ...v, [campo.id]: e.target.value }))}
-                      placeholder={`Ingresa ${campo.etiqueta.toLowerCase()}`}
-                      style={styles.input}
-                      required={campo.req}
-                    />
-                  )}
-                </>
-              )}
-            </div>
-          ))}
-
-          <div style={{ display: "flex", gap: 12, marginTop: 8 }}>
-            {paso > 0 && (
-              <button
-                type="button"
-                onClick={() => setPaso(p => p - 1)}
-                disabled={enviando}
-                style={{
-                  ...styles.btn,
-                  flex: "0 0 auto",
-                  background: "#F3F4F6",
-                  color: "#374151",
-                  width: "auto",
-                  padding: "14px 24px",
-                }}
-              >
-                ← Anterior
-              </button>
+                ) : campo.tipo === "select" ? (
+                  <select
+                    value={values[campo.id] || ""}
+                    onChange={(e) => setValues((v) => ({ ...v, [campo.id]: e.target.value }))}
+                    style={styles.input}
+                    required={campo.req}
+                  >
+                    <option value="">Selecciona una opción</option>
+                    {(campo.opciones || "").split(",").filter(Boolean).map((o, i) => (
+                      <option key={i} value={o.trim()}>{o.trim()}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    type={campo.tipo}
+                    value={values[campo.id] || ""}
+                    onChange={(e) => setValues((v) => ({ ...v, [campo.id]: e.target.value }))}
+                    placeholder={`Ingresa ${campo.etiqueta.toLowerCase()}`}
+                    style={styles.input}
+                    required={campo.req}
+                  />
+                )}
+              </>
             )}
+          </div>
+        ))}
+
+        <div style={{ display: "flex", gap: 12, marginTop: 8 }}>
+          {paso > 0 && (
             <button
-              type="submit"
+              type="button"
+              onClick={() => setPaso(p => p - 1)}
               disabled={enviando}
               style={{
                 ...styles.btn,
-                background: enviando ? "#9CA3AF" : accent,
-                color: "#fff",
-                borderRadius: form.apariencia?.borderRadius ?? 10,
-                boxShadow: `0 4px 20px ${accent}44`,
+                flex: "0 0 auto",
+                background: "#F3F4F6",
+                color: "#374151",
+                width: "auto",
+                padding: "14px 24px",
               }}
             >
-              {enviando ? "Enviando..." : (paso < paginas.length - 1 ? "Siguiente →" : (form.apariencia?.buttonText || "Enviar →"))}
+              ← Anterior
             </button>
-          </div>
-        </form>
+          )}
+          <button
+            type="submit"
+            disabled={enviando}
+            style={{
+              ...styles.btn,
+              background: enviando ? "#9CA3AF" : accent,
+              color: "#fff",
+              borderRadius: form.apariencia?.borderRadius ?? 10,
+              boxShadow: `0 4px 20px ${accent}44`,
+            }}
+          >
+            {enviando ? "Enviando..." : (paso < paginas.length - 1 ? "Siguiente →" : (form.apariencia?.buttonText || "Enviar →"))}
+          </button>
+        </div>
+      </form>
 
-        {(form.apariencia?.footerText ?? "🔒 Tus datos están seguros con nosotros. Nunca los compartiremos.") && (
-          <p style={{ textAlign: "center", marginTop: 16, fontSize: 12, color: "#9CA3AF" }}>
-            {form.apariencia?.footerText ?? "🔒 Tus datos están seguros con nosotros. Nunca los compartiremos."}
-          </p>
-        )}
+      {!embed && (form.apariencia?.footerText ?? "🔒 Tus datos están seguros con nosotros. Nunca los compartiremos.") && (
+        <p style={{ textAlign: "center", marginTop: 16, fontSize: 12, color: "#9CA3AF" }}>
+          {form.apariencia?.footerText ?? "🔒 Tus datos están seguros con nosotros. Nunca los compartiremos."}
+        </p>
+      )}
+    </div>
+  );
+
+  if (embed) return innerForm;
+
+  return (
+    <div style={styles.page}>
+      <div style={styles.card}>
+        {innerForm}
       </div>
     </div>
   );

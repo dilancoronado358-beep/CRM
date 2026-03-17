@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { createClient } from "@supabase/supabase-js";
+import { FormularioPublico } from "./FormularioPublico";
 
 const SUPA_URL = "https://eoylgxwlhsmwqgadahvk.supabase.co";
 const SUPA_KEY = "sb_publishable_wKUbf7IFOoH4HIUayIAJdQ_Boj1jgZa";
@@ -250,7 +251,11 @@ export const LandingPagePublica = ({ siteSlug }) => {
             <h2 style={{ fontSize: 28, fontWeight: 800, color: "#111827", margin: "0 0 10px" }}>¿Listo para empezar?</h2>
             <p style={{ color: "#6B7280", marginBottom: 36, fontSize: 14 }}>Un asesor te contactará en menos de 24 horas.</p>
             <div style={{ maxWidth: 400, margin: "0 auto", background: "#fff", borderRadius: 18, padding: 30, boxShadow: "0 10px 40px rgba(0,0,0,0.08)", border: "1px solid #E5E7EB" }}>
-              <LeadForm accent={accent} />
+              {page.customFormId ? (
+                <FormularioPublico formId={page.customFormId} embed={true} />
+              ) : (
+                <LeadForm accent={accent} />
+              )}
             </div>
           </div>
         );

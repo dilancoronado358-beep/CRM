@@ -48,6 +48,7 @@ ALTER TABLE public.landing_pages ADD COLUMN IF NOT EXISTS cta_btn_url TEXT;
 ALTER TABLE public.landing_pages ADD COLUMN IF NOT EXISTS custom_text TEXT;
 ALTER TABLE public.landing_pages ADD COLUMN IF NOT EXISTS image_url TEXT;
 ALTER TABLE public.landing_pages ADD COLUMN IF NOT EXISTS floating_elements JSONB DEFAULT '[]';
+ALTER TABLE public.landing_pages ADD COLUMN IF NOT EXISTS custom_form_id TEXT;
 
 -- 5. Convertir columna blocks de TEXT[] a JSONB
 --    (Hay que eliminar el DEFAULT primero, luego cambiar tipo, luego poner nuevo DEFAULT)
