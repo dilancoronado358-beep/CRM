@@ -46,14 +46,17 @@ export const Tareas = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) => {
     { id: "completado", label: "Completadas", color: T.green, bg: T.bg2 }
   ];
 
+  const isAdmin = db.usuario?.role === "admin";
+  const misTareas = db.tareas.filter(t => isAdmin || t.asignado === db.usuario?.name);
+
   return (
     <div>
-      <EncabezadoSeccion title="Mis Tareas" sub={`${db.tareas.filter(t => t.estado !== "completado").length} tareas abiertas`}
+      <EncabezadoSeccion title="Mis Tareas" sub={`${misTareas.filter(t => t.estado !== "completado").length} tareas abiertas`}
         actions={<Btn onClick={() => setShowForm(true)}><Ico k="plus" size={14} />Nueva Tarea</Btn>} />
 
       <div style={{ display: "flex", gap: 16, overflowX: "auto", paddingBottom: 20 }}>
         {cols.map(c => {
-          const tareas = db.tareas.filter(t => t.estado === c.id);
+          const tareas = misTareas.filter(t => t.estado === c.id);
           return (
             <div key={c.id} style={{ minWidth: 300, maxWidth: 300, flexShrink: 0, display: "flex", flexDirection: "column", gap: 12 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: c.bg, padding: "12px 16px", borderRadius: 8, border: `1px solid ${T.borderHi}` }}>

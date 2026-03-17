@@ -25,6 +25,14 @@ export const Dashboard = ({ db, t = s => s }) => {
   const [cargandoIA, setCargandoIA] = useState(false);
   const [verModalIA, setVerModalIA] = useState(false);
 
+  const isAdmin = db.usuario?.role === "admin";
+  const userDeals = db.deals.filter(d => isAdmin || d.responsable === db.usuario?.name);
+  const userContacts = db.contactos.filter(c => isAdmin || c.vendedor === db.usuario?.name || c.vendedor_id === db.usuario?.id);
+  const userTasks = db.tareas.filter(t2 => isAdmin || t2.asignado === db.usuario?.name);
+  const userActs = db.actividades.filter(a => isAdmin || a.usuario_id === db.usuario?.id);
+  const userEmails = db.emails.filter(e => isAdmin || e.usuario_id === db.usuario?.id);
+  const userWA = db.whatsapp_messages || []; // Podríamos filtrar WA también si fuera necesario por deal_id -> responsable
+
   const solicitarAnalisis = async () => {
     setCargandoIA(true);
     setVerModalIA(true);
@@ -37,9 +45,9 @@ export const Dashboard = ({ db, t = s => s }) => {
 
     try {
       const { data } = await axios.post(`${API_URL}/ai/analyze`, {
-        deals: db.deals,
-        contactos: db.contactos,
-        tareas: db.tareas,
+        deals: userDeals,
+        contactos: userContacts,
+        tareas: userTasks,
       }, { timeout: 25000 }); // Timeout para dar tiempo a la IA
       setAnalisisIA(data.analysis || "No se pudo generar el análisis.");
     } catch (e) {
@@ -68,22 +76,22 @@ export const Dashboard = ({ db, t = s => s }) => {
 
   const esGanado = d => db.pipelines.find(p => p.id === d.pipelineId)?.etapas.find(e => e.id === d.etapaId)?.esGanado;
   const esPerdido = d => db.pipelines.find(p => p.id === d.pipelineId)?.etapas.find(e => e.id === d.etapaId)?.esPerdido;
-  const activos = db.deals.filter(d => !esGanado(d) && !esPerdido(d));
-  const ganados = db.deals.filter(esGanado);
-  const conv = db.deals.length > 0 ? Math.round(ganados.length / db.deals.length * 100) : 0;
-  const sinLeer = db.emails.filter(e => !e.leido && e.carpeta === "entrada").length;
-  const actPend = db.actividades.filter(a => !a.hecho).length;
-  const vencidas = db.tareas.filter(t2 => t2.estado !== "completado" && t2.vencimiento && new Date(t2.vencimiento) < new Date()).length;
+  const activos = userDeals.filter(d => !esGanado(d) && !esPerdido(d));
+  const ganados = userDeals.filter(esGanado);
+  const conv = userDeals.length > 0 ? Math.round(ganados.length / userDeals.length * 100) : 0;
+  const sinLeer = userEmails.filter(e => !e.leido && e.carpeta === "entrada").length;
+  const actPend = userActs.filter(a => !a.hecho).length;
+  const vencidas = userTasks.filter(t2 => t2.estado !== "completado" && t2.vencimiento && new Date(t2.vencimiento) < new Date()).length;
 
   // Pipeline funnel data for selected pipeline
   const plSel = db.pipelines.find(p => p.id === plFiltro) || db.pipelines[0];
   const totalPipeline = plSel?.etapas.reduce((s, e) => {
-    const v = db.deals.filter(d => d.pipelineId === plSel?.id && d.etapaId === e.id).reduce((ss, d) => ss + d.valor, 0);
+    const v = userDeals.filter(d => d.pipelineId === plSel?.id && d.etapaId === e.id).reduce((ss, d) => ss + d.valor, 0);
     return s + v;
   }, 0) || 1;
 
   const funnelData = (plSel?.etapas || []).map(e => {
-    const dealsEt = db.deals.filter(d => d.pipelineId === plSel?.id && d.etapaId === e.id);
+    const dealsEt = userDeals.filter(d => d.pipelineId === plSel?.id && d.etapaId === e.id);
     const valor = dealsEt.reduce((s, d) => s + d.valor, 0);
     return { name: e.nombre, color: e.color, deals: dealsEt.length, value: valor, pct: Math.max(10, Math.round((valor / totalPipeline) * 100)) };
   }).filter(e => e.deals > 0 || e.value > 0);
@@ -100,7 +108,7 @@ export const Dashboard = ({ db, t = s => s }) => {
   }, [ganados]);
 
   const conversiones = [
-    { name: "Leads", value: db.deals.length + 20, fill: "#1F2937" },
+    { name: "Leads", value: userDeals.length + 20, fill: "#1F2937" },
     { name: "Activos", value: activos.length + 10, fill: "#374151" },
     { name: "Ganados", value: ganados.length, fill: T.teal },
   ];
@@ -172,7 +180,7 @@ export const Dashboard = ({ db, t = s => s }) => {
         <KPI label={t("Pipeline Activo")} value={money(activos.reduce((s, d) => s + d.valor, 0))} sub={`${activos.length} oportunidades`} color={T.teal} icon="funnel" />
         <KPI label={t("Total Ganado")} value={money(ganados.reduce((s, d) => s + d.valor, 0))} sub={`${ganados.length} deals cerrados`} color={T.green} icon="trend" />
         <KPI label={t("Tasa de Conversión")} value={`${conv}%`} sub="total histórico" color={T.amber} icon="chart" />
-        <KPI label={t("Contactos")} value={db.contactos.length} sub={`${db.contactos.filter(c => c.estado === "lead").length} leads activos`} color={T.teal} icon="users" />
+        <KPI label={t("Contactos")} value={userContacts.length} sub={`${userContacts.filter(c => c.estado === "lead").length} leads activos`} color={T.teal} icon="users" />
         <KPI label={t("Actividades Pend.")} value={actPend} sub={`${vencidas} tareas vencidas`} color={vencidas > 0 ? T.red : T.teal} icon="lightning" />
         <KPI label={t("Tiempo Resp. WA")} value={avgResponseTime} sub="promedio histórico" color={avgResponseTime === "N/A" ? T.whiteDim : T.teal} icon="phone" />
 
@@ -367,10 +375,10 @@ export const Dashboard = ({ db, t = s => s }) => {
           <div style={{ fontWeight: 800, fontSize: 14, color: T.white, marginBottom: 16, display: "flex", alignItems: "center", gap: 8 }}>
             <Ico k="star" size={16} style={{ color: T.amber }} /> {t("Mejores Deals Activos")}
           </div>
-          {[...db.deals].filter(d => !esPerdido(d) && !esGanado(d)).sort((a, b) => b.valor - a.valor).slice(0, 5).map(deal => {
+          {[...userDeals].filter(d => !esPerdido(d) && !esGanado(d)).sort((a, b) => b.valor - a.valor).slice(0, 5).map(deal => {
             const pl = db.pipelines.find(p => p.id === deal.pipeline_id);
             const et = pl?.etapas.find(e => e.id === deal.etapa_id);
-            const contacto = db.contactos.find(c => c.id === deal.contacto_id);
+            const contacto = userContacts.find(c => c.id === deal.contacto_id);
             const pc = deal.prob >= 70 ? T.green : deal.prob >= 40 ? T.amber : T.red;
             return (
               <div key={deal.id} style={{ display: "flex", gap: 12, marginBottom: 14, alignItems: "center", paddingBottom: 14, borderBottom: `1px solid ${T.borderHi}` }}>
@@ -395,8 +403,8 @@ export const Dashboard = ({ db, t = s => s }) => {
           <div style={{ fontWeight: 800, fontSize: 14, color: T.white, marginBottom: 16, display: "flex", alignItems: "center", gap: 8 }}>
             <Ico k="lightning" size={16} style={{ color: T.teal }} /> {t("Actividad Reciente")}
           </div>
-          {[...db.actividades].sort((a, b) => new Date(b.fecha) - new Date(a.fecha)).slice(0, 6).map(act => {
-            const contacto = db.contactos.find(c => c.id === act.contacto_id);
+          {[...userActs].sort((a, b) => new Date(b.fecha) - new Date(a.fecha)).slice(0, 6).map(act => {
+            const contacto = userContacts.find(c => c.id === act.contacto_id);
             const cfg = ACT_CFG[act.tipo] || ACT_CFG.tarea;
             return (
               <div key={act.id} style={{ display: "flex", gap: 12, marginBottom: 14, alignItems: "flex-start", paddingBottom: 14, borderBottom: `1px solid ${T.borderHi}` }}>

@@ -11,6 +11,16 @@ export const Finanzas = ({ db, guardarEnSupa, eliminarDeSupa }) => {
   const comisiones = db.finanzas_comisiones || [];
   const deals = db.deals || [];
 
+  if (db.usuario?.role !== "admin") {
+    return (
+      <div style={{ padding: 40, textAlign: "center" }}>
+        <Ico k="lock" size={64} style={{ color: T.red, marginBottom: 20 }} />
+        <h2 style={{ color: T.white }}>Acceso Denegado</h2>
+        <p style={{ color: T.whiteDim }}>Solo los administradores pueden ver la información financiera.</p>
+      </div>
+    );
+  }
+
   const totalGastos = useMemo(() => gastos.reduce((acc, g) => acc + (Number(g.monto) || 0), 0), [gastos]);
   const totalComisiones = useMemo(() => comisiones.reduce((acc, c) => acc + (Number(c.monto) || 0), 0), [comisiones]);
   const totalVentas = useMemo(() => deals.filter(d => d.etapa_id?.toLowerCase().includes("won") || d.status === "won").reduce((acc, d) => acc + (Number(d.valor) || 0), 0), [deals]);

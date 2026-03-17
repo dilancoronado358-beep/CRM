@@ -134,7 +134,18 @@ export function LeadTimeline({ deal = {}, contacto = {}, db = {}, setDb, guardar
       } catch (e) { console.warn("Error cargar Timeline WA:", e); }
     }
 
-    // 3. Tareas (usamos las del DB GLOBAL para el timeline)
+    // 3. Auditoría (Fase 41)
+    (db.auditoria || []).filter(a => a.entidad_id === deal?.id || (contacto?.id && a.entidad_id === contacto.id)).forEach(a => {
+      entries.push({
+        type: "audit",
+        id: a.id,
+        body: `${a.usuario_nombre} cambió ${a.campo} de "${a.valor_anterior || 'vacío'}" a "${a.valor_nuevo}"`,
+        timestamp: new Date(a.creado).getTime() / 1000,
+        user: a.usuario_nombre
+      });
+    });
+
+    // 4. Tareas (usamos las del DB GLOBAL para el timeline)
     globalTasks.forEach(t => {
       entries.push({
         type: "task",
@@ -418,12 +429,12 @@ export function LeadTimeline({ deal = {}, contacto = {}, db = {}, setDb, guardar
             {dayItems.map((it, idx) => {
               return (
                 <div key={it.id + idx} style={{ display: "flex", gap: 16, marginBottom: 16 }}>
-                  <div style={{ width: 32, height: 32, borderRadius: "50%", background: it.type === "whatsapp" ? "#25D366" : it.type === "note" ? "#00bbd3" : "#f4c63d", display: "flex", alignItems: "center", justifyContent: "center", border: "4px solid #f0f3f5", flexShrink: 0 }}>
-                    <Ico k={it.type === "whatsapp" ? "phone" : it.type === "note" ? "note" : "star"} size={14} style={{ color: "#fff" }} />
+                  <div style={{ width: 32, height: 32, borderRadius: "50%", background: it.type === "whatsapp" ? "#25D366" : it.type === "note" ? "#00bbd3" : it.type === "audit" ? T.teal : "#f4c63d", display: "flex", alignItems: "center", justifyContent: "center", border: "4px solid #f0f3f5", flexShrink: 0 }}>
+                    <Ico k={it.type === "whatsapp" ? "phone" : it.type === "note" ? "note" : it.type === "audit" ? "history" : "star"} size={14} style={{ color: "#fff" }} />
                   </div>
                   <div style={{ flex: 1, background: "#fff", border: "1px solid #c6d2d6", borderRadius: 8, padding: 12 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                      <div style={{ fontSize: 11, fontWeight: 700, color: "#666", textTransform: "uppercase" }}>{it.type === "whatsapp" ? `WhatsApp (${it.fromMe ? 'Saliente' : 'Entrante'})` : it.type}</div>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: "#666", textTransform: "uppercase" }}>{it.type === "whatsapp" ? `WhatsApp (${it.fromMe ? 'Saliente' : 'Entrante'})` : it.type === "audit" ? "SISTEMA / CAMBIO" : it.type}</div>
                       <div style={{ fontSize: 10, color: "#999" }}>{new Date((it.timestamp || 0) * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
                     </div>
                     {it.hasMedia && it.file_name && (

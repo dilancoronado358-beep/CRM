@@ -170,6 +170,9 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
   const plDeals = db.deals.filter(d => {
     if (d.pipeline_id !== plActivo) return false;
 
+    // RBAC: Los vendedores solo ven sus propios leads
+    if (db.usuario?.role !== "admin" && d.responsable !== db.usuario?.name) return false;
+
     // Filtro Rápido
     if (filtroRapido === "mios") { if (d.responsable !== db.usuario?.name) return false; }
     else if (filtroRapido === "frios") {
@@ -281,7 +284,7 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
 
     const quitarArchivo = id => setF(p => ({ ...p, archivos: p.archivos.filter(a => a.id !== id) }));
 
-    const [leadTab, setLeadTab] = useState("timeline"); // timeline, info, tareas, whatsapp, cotizacion
+    const [leadTab, setLeadTab] = useState("timeline"); // timeline, info, tareas, whatsapp, cotizacion, historial
     
     const stages = plActual?.etapas || [];
     const currentEtIdx = stages.findIndex(s => s.id === f.etapa_id);
@@ -354,6 +357,7 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
           <Btn variant={leadTab === "whatsapp" ? "primario" : "fantasma"} size="sm" onClick={() => setLeadTab("whatsapp")}><Ico k="phone" size={14} /> WhatsApp</Btn>
           <Btn variant={leadTab === "cotizacion" ? "primario" : "fantasma"} size="sm" onClick={() => setLeadTab("cotizacion")}><Ico k="dollar" size={14} /> Cotización</Btn>
           <Btn variant={leadTab === "finanzas" ? "primario" : "fantasma"} size="sm" onClick={() => setLeadTab("finanzas")}><Ico k="trend" size={14} /> Finanzas</Btn>
+          <Btn variant={leadTab === "historial" ? "primario" : "fantasma"} size="sm" onClick={() => setLeadTab("historial")}><Ico k="history" size={14} /> Historial</Btn>
         </div>
 
         <div style={{ display: "flex", gap: 32 }}>
@@ -580,6 +584,27 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
                 </div>
               </div>
             )}
+            {leadTab === "historial" && (
+              <div style={{ padding: 20 }}>
+                {(db.auditoria || [])
+                  .filter(a => a.entidad_id === editDeal.id)
+                  .sort((a,b) => new Date(b.creado) - new Date(a.creado))
+                  .map(a => (
+                    <div key={a.id} style={{ padding: "12px 16px", borderBottom: `1px solid ${T.borderHi}`, display: "flex", gap: 12 }}>
+                      <div style={{ width: 8, height: 8, borderRadius: "50%", background: T.teal, marginTop: 4 }} />
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 13, color: T.white }}>
+                          <strong>{a.usuario_nombre}</strong> cambió <strong>{a.campo}</strong> de <span style={{ color: T.whiteDim }}>"{a.valor_anterior || 'vacío'}"</span> a <span style={{ color: T.teal }}>"{a.valor_nuevo}"</span>
+                        </div>
+                        <div style={{ fontSize: 11, color: T.whiteDim, marginTop: 4 }}>{new Date(a.creado).toLocaleString()}</div>
+                      </div>
+                    </div>
+                  ))}
+                {(!db.auditoria || db.auditoria.filter(a => a.entidad_id === editDeal.id).length === 0) && (
+                  <div style={{ padding: 40, textAlign: "center", color: T.whiteDim }}>No hay historial registrado para este negocio.</div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -590,6 +615,52 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
     if (editDeal) {
       const act = { ...editDeal, ...form };
       
+      // --- LOGICA DE AUDITORIA ---
+      const camposAObservar = ["titulo", "valor", "responsable", "etapa_id"];
+      for (const c of camposAObservar) {
+        if (form[c] !== undefined && String(form[c]) !== String(editDeal[c])) {
+          const log = {
+            id: "aud" + uid(),
+            usuario_id: db.usuario?.id,
+            usuario_nombre: db.usuario?.name,
+            entidad_tipo: "deal",
+            entidad_id: editDeal.id,
+            campo: c === "etapa_id" ? "Etapa" : (c.charAt(0).toUpperCase() + c.slice(1)),
+            valor_anterior: String(editDeal[c] === undefined ? "" : editDeal[c]),
+            valor_nuevo: String(form[c]),
+            creado: new Date().toISOString()
+          };
+          // Si es etapa_id, intentamos poner el nombre de la etapa para que sea humano
+          if (c === "etapa_id") {
+            const pl = db.pipelines.find(p => p.id === editDeal.pipeline_id);
+            log.valor_anterior = pl?.etapas.find(e => e.id === editDeal[c])?.nombre || editDeal[c];
+            log.valor_nuevo = pl?.etapas.find(e => e.id === form[c])?.nombre || form[c];
+          }
+          await guardarEnSupa("auditoria", log);
+        }
+      }
+
+      // 4. NOTIFICACIONES & WEBHOOKS (Phase 40 & 42)
+      // DISPARAR WEBHOOKS SEGÚN ETAPA (Phase 42)
+      const pl = db.pipelines.find(p => p.id === form.pipeline_id);
+      const etapa = pl?.etapas.find(e => e.id === form.etapa_id);
+      
+      if (etapa && etapa.id !== editDeal.etapa_id) {
+        let event = null;
+        if (etapa.es_ganado || etapa.es_ganado === true) event = 'deal.ganado';
+        else if (etapa.es_perdido || etapa.es_perdido === true) event = 'deal.perdido';
+        
+        if (event) {
+          const API_URL = `http://${window.location.hostname}:3001`;
+          import("axios").then(axios => {
+            axios.default.post(`${API_URL}/api/internal/trigger-webhook`, {
+              event,
+              payload: { deal: act, pipeline: pl.nombre, etapa: etapa.nombre, user: db.usuario?.name }
+            }).catch(() => {});
+          });
+        }
+      }
+
       // Notificación si cambia el responsable
       if (form.responsable && form.responsable !== editDeal.responsable) {
         const targetUser = db.usuariosApp?.find(u => u.name === form.responsable);
@@ -604,7 +675,7 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
             leida: false,
             creado: new Date().toISOString()
           };
-          await guardarEnSupa("notificaciones", noti);
+          guardarEnSupa("notificaciones", noti);
         }
       }
 

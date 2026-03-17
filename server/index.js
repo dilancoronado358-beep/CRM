@@ -9,6 +9,9 @@ const { createClient } = require('@supabase/supabase-js');
 const axios = require('axios');
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '.env') });
+const nodemailer = require('nodemailer');
+const imaps = require('imap-simple');
+const { simpleParser } = require('mailparser');
 
 // Configuración Supabase (Copiada del frontend para conveniencia)
 const SUPA_URL = process.env.SUPA_URL || "https://eoylgxwlhsmwqgadahvk.supabase.co";
@@ -19,6 +22,58 @@ const supabase = createClient(SUPA_URL, SUPA_KEY);
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY || "";
 
+// Middleware para validar el Bearer Token contra api_settings de Supabase
+const authenticateApi = async (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ error: "No autorizado. Se requiere 'Authorization: Bearer <token>'" });
+  }
+
+  const token = authHeader.split(' ')[1];
+  try {
+    const { data, error } = await supabase
+      .from('api_settings')
+      .select('api_token')
+      .eq('api_token', token)
+      .maybeSingle();
+
+    if (error || !data) {
+      return res.status(401).json({ error: "Token inválido o expirado." });
+    }
+
+    // Actualizar último uso
+    await supabase.from('api_settings').update({ ultimo_uso: new Date().toISOString() }).eq('api_token', token);
+    next();
+  } catch (err) {
+    res.status(500).json({ error: "Internal Server Error during auth" });
+  }
+};
+
+// Despachador de Webhooks: Busca suscripciones y envía el payload
+const triggerWebhooks = async (evento, payload) => {
+  try {
+    const { data: subs, error } = await supabase
+      .from('webhook_subscriptions')
+      .select('url')
+      .eq('evento', evento)
+      .eq('activo', true);
+
+    if (error || !subs || subs.length === 0) return;
+
+    console.log(`📡 Disparando ${subs.length} webhooks para evento: ${evento}`);
+
+    subs.forEach(sub => {
+      axios.post(sub.url, {
+        event: evento,
+        timestamp: new Date().toISOString(),
+        data: payload
+      }, { timeout: 5000 }).catch(e => console.error(`❌ Fallo al enviar webhook a ${sub.url}:`, e.message));
+    });
+  } catch (err) {
+    console.error("Error en dispatcher de webhooks:", err.message);
+  }
+};
+
 const app = express();
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
@@ -28,6 +83,60 @@ app.get('/health', (req, res) => res.json({ status: 'ok', clientReady, latestQR:
 app.get('/qr', (req, res) => {
   if (latestQRUrl) res.json({ qr: latestQRUrl });
   else res.status(404).json({ error: "No hay QR generado aún." });
+});
+
+/* ═══════════════════════════════════════════
+   API V1: EXTERNAL ENDPOINTS (Phase 42)
+   ═══════════════════════════════════════════ */
+
+// Consultar Negocios (Deals) desde externo
+app.get('/api/v1/deals', authenticateApi, async (req, res) => {
+  try {
+    const { data, error } = await supabase.from('deals').select('*, contactos(*)').order('creado', { ascending: false });
+    if (error) throw error;
+    res.json(data);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Crear Lead desde externo (ej: Formulario propio o Zapier)
+app.post('/api/v1/leads', authenticateApi, async (req, res) => {
+  const { nombre, email, telefono, titulo_deal, valor } = req.body;
+  
+  if (!nombre || !telefono) {
+    return res.status(400).json({ error: "Nombre y teléfono son obligatorios." });
+  }
+
+  try {
+    // 1. Crear Contacto
+    const { data: contacto, error: errC } = await supabase.from('contactos').insert({
+      id: "c_api_" + Date.now(),
+      nombre,
+      email,
+      telefono,
+      estado: 'lead',
+      fuente: 'API Gate'
+    }).select().single();
+    if (errC) throw errC;
+
+    // 2. Crear Deal
+    const { data: deal, error: errD } = await supabase.from('deals').insert({
+      id: "d_api_" + Date.now(),
+      titulo: titulo_deal || `Nuevo Lead API - ${nombre}`,
+      contacto_id: contacto.id,
+      etapa_id: 'et1',
+      valor: valor || 0
+    }).select().single();
+    if (errD) throw errD;
+
+    // Disparar Webhook de nuevo lead
+    triggerWebhooks('lead.nuevo', { contacto, deal });
+
+    res.status(201).json({ success: true, contactoId: contacto.id, dealId: deal.id });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
 const server = http.createServer(app);
@@ -53,6 +162,13 @@ const whatsappClient = new Client({
 });
 
 // Cargar reglas desde Supabase al iniciar
+// Endpoint interno para disparar webhooks desde el frontend (sin auth para simplicidad de puente local)
+app.post('/api/internal/trigger-webhook', async (req, res) => {
+  const { event, payload } = req.body;
+  triggerWebhooks(event, payload);
+  res.json({ ok: true });
+});
+
 async function loadAutoRules() {
   try {
     console.log("📡 Conectando a Supabase para cargar reglas...");
@@ -775,7 +891,174 @@ whatsappClient.on('message_ack', async (msg, ack) => {
 console.log('Iniciando Cliente WhatsApp...');
 whatsappClient.initialize();
 
-const PORT = process.env.PORT || 3001;
-server.listen(PORT, '0.0.0.0', () => {
-  console.log(`Servidor de integraciones y WebSockets escuchando en puerto ${PORT} (todas las interfaces de red)`);
+/* ═══════════════════════════════════════════
+   PHASE 43: EMAIL BRIDGE (IMAP & SMTP)
+   ═══════════════════════════════════════════ */
+
+// Sincronizar correos vía IMAP
+async function syncEmails(accountId) {
+  try {
+    const { data: acc, error } = await supabase.from('email_accounts').select('*').eq('id', accountId).single();
+    if (error || !acc) return { error: "Cuenta no encontrada" };
+
+    const config = {
+      imap: {
+        user: acc.email,
+        password: acc.password_hash,
+        host: acc.imap_host,
+        port: acc.imap_port,
+        tls: true,
+        authTimeout: 3000
+      }
+    };
+
+    const connection = await imaps.connect(config);
+    await connection.openBox('INBOX');
+
+    const searchCriteria = ['UNSEEN'];
+    const fetchOptions = { bodies: ['HEADER', 'TEXT', ''], markSeen: true };
+
+    const messages = await connection.search(searchCriteria, fetchOptions);
+    console.log(`📩 [IMAP] ${messages.length} nuevos correos para ${acc.email}`);
+
+    for (const item of messages) {
+      const all = item.parts.find(part => part.which === '');
+      const mail = await simpleParser(all.body);
+      
+      const msgId = item.attributes.uid.toString();
+      const fromEmail = mail.from?.value?.[0]?.address || "";
+      
+      // Intentar vincular con contacto existente
+      const { data: contacto } = await supabase.from('contactos').select('id').eq('email', fromEmail).maybeSingle();
+      let dealId = null;
+      if (contacto) {
+        const { data: deal } = await supabase.from('deals').select('id').eq('contacto_id', contacto.id).order('creado', { ascending: false }).limit(1).maybeSingle();
+        dealId = deal?.id;
+      }
+
+      await supabase.from('emails').upsert({
+        id: "em_" + Date.now() + "_" + msgId,
+        account_id: accountId,
+        carpeta: 'entrada',
+        de: fromEmail,
+        para: acc.email,
+        asunto: mail.subject,
+        cuerpo: mail.text,
+        html: mail.html,
+        fecha: mail.date || new Date().toISOString(),
+        leido: false,
+        mensaje_id: mail.messageId || msgId,
+        contacto_id: contacto?.id || null,
+        deal_id: dealId || null
+      }, { onConflict: 'mensaje_id' });
+    }
+
+    connection.end();
+    await supabase.from('email_accounts').update({ last_sync: new Date().toISOString() }).eq('id', accountId);
+    return { success: true, count: messages.length };
+  } catch (e) {
+    console.error("❌ [IMAP Error]:", e.message);
+    return { error: e.message };
+  }
+}
+
+// Endpoints Email
+app.post('/api/email/send', async (req, res) => {
+  const { accountId, to, subject, body, html } = req.body;
+  try {
+    const { data: acc, error } = await supabase.from('email_accounts').select('*').eq('id', accountId).single();
+    if (error || !acc) throw new Error("Cuenta no configurada");
+
+    const transporter = nodemailer.createTransport({
+      host: acc.smtp_host,
+      port: acc.smtp_port,
+      secure: acc.smtp_port === 465,
+      auth: { user: acc.email, pass: acc.password_hash }
+    });
+
+    const info = await transporter.sendMail({
+      from: `"${acc.email}" <${acc.email}>`,
+      to,
+      subject,
+      text: body,
+      html: html || body.replace(/\n/g, '<br>')
+    });
+
+    // Guardar en 'enviados'
+    await supabase.from('emails').insert({
+      id: "em_sent_" + Date.now(),
+      account_id: accountId,
+      carpeta: 'enviados',
+      de: acc.email,
+      para: to,
+      asunto: subject,
+      cuerpo: body,
+      fecha: new Date().toISOString(),
+      leido: true
+    });
+
+    res.json({ success: true, messageId: info.messageId });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.post('/api/email/sync', async (req, res) => {
+  const { accountId } = req.body;
+  const result = await syncEmails(accountId);
+  if (result.error) return res.status(500).json(result);
+  res.json(result);
+});
+
+app.post('/api/email/test-connection', async (req, res) => {
+  const { smtp_host, smtp_port, imap_host, imap_port, email, password_hash } = req.body;
+  const results = { smtp: null, imap: null };
+
+  // Test SMTP
+  try {
+    const transporter = nodemailer.createTransport({
+      host: smtp_host,
+      port: smtp_port,
+      secure: smtp_port === 465,
+      auth: { user: email, pass: password_hash },
+      connectionTimeout: 5000
+    });
+    await transporter.verify();
+    results.smtp = { ok: true };
+  } catch (e) {
+    results.smtp = { ok: false, error: e.message };
+  }
+
+  // Test IMAP
+  try {
+    const config = {
+      imap: {
+        user: email,
+        password: password_hash,
+        host: imap_host,
+        port: imap_port,
+        tls: true,
+        authTimeout: 5000
+      }
+    };
+    const connection = await imaps.connect(config);
+    connection.end();
+    results.imap = { ok: true };
+  } catch (e) {
+    results.imap = { ok: false, error: e.message };
+  }
+
+  res.json(results);
+});
+
+// Sync automático cada 10 minutos
+setInterval(async () => {
+    const { data: accounts } = await supabase.from('email_accounts').select('id').eq('active', true);
+    if (accounts) {
+        for (const acc of accounts) syncEmails(acc.id);
+    }
+}, 10 * 60 * 1000);
+
+server.listen(process.env.PORT || 3001, () => {
+  console.log(`Server CRM corriendo en puerto ${process.env.PORT || 3001}`);
 });

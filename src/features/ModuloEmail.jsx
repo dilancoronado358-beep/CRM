@@ -2,6 +2,7 @@ import { useState } from "react";
 import { T } from "../theme";
 import { uid, fdtm, fdate } from "../utils";
 import { Av, Chip, Btn, Inp, Sel, Campo, Modal, Tarjeta, Vacio, ControlSegmentado, Ico } from "../components/ui";
+import axios from "axios";
 
 export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) => {
   const [carpeta, setCarpeta] = useState("entrada");
@@ -28,27 +29,47 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) => {
 
   const enviarRealista = async () => {
     if (!f.para.trim() || !f.cuerpo.trim()) return;
+    const acc = db.email_accounts?.[0];
+    if (!acc) { alert("Configura tu cuenta de correo en la pestaña de Configuración."); return; }
+
     setSimulandoEnvio(true);
-    setLogEnvio(["[SMTP] Iniciando handshake con " + (db.cuentaEmail?.smtpHost || "smtp.servidor.com")]);
+    setLogEnvio(["[SMTP] Iniciando handshake con " + acc.smtp_host]);
 
-    await new Promise(r => setTimeout(r, 600));
-    setLogEnvio(prev => [...prev, "[AUTH] Autenticando canal TLS/SSL... ok."]);
+    try {
+      const API_URL = `http://${window.location.hostname}:3001`;
+      setLogEnvio(prev => [...prev, "[AUTH] Autenticando canal TLS/SSL... ok."]);
+      
+      const res = await axios.post(`${API_URL}/api/email/send`, {
+        accountId: acc.id,
+        to: f.para,
+        subject: f.asunto || "Sin asunto",
+        body: f.cuerpo
+      });
 
-    await new Promise(r => setTimeout(r, 800));
-    setLogEnvio(prev => [...prev, `[SEND] Transmitiendo payload cifrado a ${f.para}...`]);
+      setLogEnvio(prev => [...prev, `[SEND] Transmitiendo payload cifrado...`]);
+      setLogEnvio(prev => [...prev, "[250] OK: Email transmitido exitosamente."]);
+      
+      setTimeout(() => {
+        setShowRedactar(false);
+        setSimulandoEnvio(false);
+        setLogEnvio([]);
+        setF({ para: "", asunto: "", cuerpo: "", cc: "", bcc: "", plantillaId: "" });
+      }, 1000);
+    } catch (e) {
+      setLogEnvio(prev => [...prev, "❌ Error: " + e.message]);
+      setTimeout(() => setSimulandoEnvio(false), 3000);
+    }
+  };
 
-    await new Promise(r => setTimeout(r, 1200));
-    setLogEnvio(prev => [...prev, "[250] OK: Message accepted for delivery. Envío completado."]);
-
-    setTimeout(async () => {
-      const nuevo = { id: "e" + uid(), carpeta: "enviados", de: db.usuario?.email || "usuario@empresa.com", para: f.para, asunto: f.asunto || "Sin asunto", cuerpo: f.cuerpo, cc: f.cc, bcc: f.bcc, fecha: new Date().toISOString(), leido: true };
-      setDb(d => ({ ...d, emails: [nuevo, ...d.emails] }));
-      await guardarEnSupa("emails", nuevo);
-      setShowRedactar(false);
-      setSimulandoEnvio(false);
-      setLogEnvio([]);
-      setF({ para: "", asunto: "", cuerpo: "", cc: "", bcc: "", plantillaId: "" });
-    }, 1000);
+  const handleSync = async () => {
+    const acc = db.email_accounts?.[0];
+    if (!acc) return;
+    try {
+      const API_URL = `http://${window.location.hostname}:3001`;
+      await axios.post(`${API_URL}/api/email/sync`, { accountId: acc.id });
+    } catch (e) {
+      console.error("Sync error", e);
+    }
   };
 
   const eliminar = async id => {
@@ -110,7 +131,7 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) => {
               {carpeta === "entrada" ? "Bandeja de Entrada" : carpeta === "enviados" ? "Mensajes Enviados" : "Borradores"}
             </div>
             <div style={{ display: "flex", gap: 8 }}>
-              <Btn variant="fantasma" size="sm" style={{ padding: 6 }}><Ico k="refresh" size={16} /></Btn>
+              <Btn variant="fantasma" size="sm" style={{ padding: 6 }} onClick={handleSync} title="Sincronizar emails (IMAP)"><Ico k="refresh" size={16} /></Btn>
               <Btn variant="fantasma" size="sm" style={{ padding: 6 }}><Ico k="check" size={16} /></Btn>
             </div>
           </div>

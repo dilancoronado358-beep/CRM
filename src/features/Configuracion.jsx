@@ -39,7 +39,16 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
 
   const [fPassword, setFPassword] = useState({ nueva: "", confirmar: "" });
   const [cargandoPass, setCargandoPass] = useState(false);
-  const [fEmail, setFEmail] = useState(db.cuentaEmail || {});
+  const [fEmail, setFEmail] = useState(db.email_accounts?.[0] || {
+    email: "",
+    password_hash: "",
+    provider: "custom",
+    smtp_host: "smtp.mailgun.org",
+    smtp_port: 587,
+    imap_host: "imap.mailgun.org",
+    imap_port: 993
+  });
+  const [probandoEmail, setProbandoEmail] = useState(false);
   const [fEmpresa, setFEmpresa] = useState(db.empresaConfigs?.nombre || "");
   const [fWaUrl, setFWaUrl] = useState(db.usuario?.waServerUrl || "");
   const [showUserModal, setShowUserModal] = useState(false);
@@ -55,6 +64,11 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
   // Estados del Chatbot Local
   const [waQR, setWaQR] = useState("");
   const [waConnected, setWaConnected] = useState(false);
+
+  // Estados API & Webhooks
+  const [showWebhookModal, setShowWebhookModal] = useState(false);
+  const [fWebhook, setFWebhook] = useState({ url: "", evento: "deal.ganado" });
+  const [cargandoApi, setCargandoApi] = useState(false);
 
   // Efecto para escuchar eventos del WebSocket del Backend Local
   useEffect(() => {
@@ -348,6 +362,40 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
     }));
   };
 
+  // ── LÓGICA API & WEBHOOKS ──
+  const rotateApiToken = async () => {
+    if (!confirm("⚠️ ¿Estás seguro de rotar el secreto? Las integraciones actuales dejarán de funcionar hasta que actualices el token.")) return;
+    setCargandoApi(true);
+    const newToken = "sk_dev_" + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+    const payload = { id: "global_config", api_token: newToken, creado: new Date().toISOString() };
+    
+    await guardarEnSupa("api_settings", payload);
+    setDb(d => ({ ...d, api_settings: [payload] }));
+    setCargandoApi(false);
+    alert("¡Nuevo Token generado exitosamente! ✅");
+  };
+
+  const copiarToken = () => {
+    const token = db.api_settings?.[0]?.api_token || "";
+    navigator.clipboard.writeText(token);
+    alert("Token copiado al portapapeles 📋");
+  };
+
+  const registrarWebhook = async () => {
+    if (!fWebhook.url.startsWith("http")) return alert("Ingresa una URL de webhook válida (https://...)");
+    const nuevo = { ...fWebhook, id: "wh_" + uid(), creado: new Date().toISOString(), activo: true };
+    await guardarEnSupa("webhook_subscriptions", nuevo);
+    setDb(d => ({ ...d, webhook_subscriptions: [...(d.webhook_subscriptions || []), nuevo] }));
+    setShowWebhookModal(false);
+    setFWebhook({ url: "", evento: "deal.ganado" });
+  };
+
+  const eliminarWebhook = async (id) => {
+    if (!confirm("¿Eliminar este webhook?")) return;
+    await sb.from("webhook_subscriptions").delete().eq("id", id);
+    setDb(d => ({ ...d, webhook_subscriptions: d.webhook_subscriptions.filter(w => w.id !== id) }));
+  };
+
   const TABS = [
     { id: "perfil", label: "Mi Perfil", icon: "user" },
     { id: "apariencia", label: "Apariencia", icon: "star" },
@@ -615,36 +663,88 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
         {tab === "email" && (
           <Tarjeta style={{ padding: 32 }}>
             <div style={{ fontSize: 20, fontWeight: 800, color: T.white, marginBottom: 8, display: "flex", alignItems: "center", gap: 10 }}><Ico k="mail" size={24} style={{ color: T.teal }} /> Exchange & SMTP/IMAP Tunnels</div>
-            <div style={{ fontSize: 14, color: T.whiteDim, marginBottom: 32 }}>Orquesta el enrutamiento bidireccional de correos corporativos directamente al pipeline de ventas. Cifrado TLS estricto.</div>
+            <div style={{ fontSize: 14, color: T.whiteDim, marginBottom: 32 }}>Conecta tu correo corporativo para sincronizar bandeja de entrada y enviar mensajes directamente.</div>
 
             <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
-                <Campo label="Proveedor de Tránsito"><Sel value={fEmail.proveedor} onChange={e => setFEmail({ ...fEmail, proveedor: e.target.value })} style={{ fontSize: 15 }}><option value="personalizado">Enterprise Exchange (Custom IMAP/SMTP)</option><option value="gmail" disabled>Google Workspace (Requiere OAUTH2 Scopes)</option><option value="outlook" disabled>Azure AD / Microsoft 365</option></Sel></Campo>
-                <Campo label="Máscara de Remitente (Alias)"><Inp value={fEmail.direccion} onChange={e => setFEmail({ ...fEmail, direccion: e.target.value })} placeholder="Ej. ventas@tuempresa.com" style={{ fontSize: 15 }} /></Campo>
+                <Campo label="Proveedor">
+                  <Sel 
+                    value={fEmail.provider} 
+                    onChange={e => {
+                      const p = e.target.value;
+                      let update = { ...fEmail, provider: p };
+                      if (p === 'gmail') {
+                        update.smtp_host = 'smtp.gmail.com';
+                        update.smtp_port = 465;
+                        update.imap_host = 'imap.gmail.com';
+                        update.imap_port = 993;
+                      } else if (p === 'outlook') {
+                        update.smtp_host = 'smtp.office365.com';
+                        update.smtp_port = 587;
+                        update.imap_host = 'outlook.office365.com';
+                        update.imap_port = 993;
+                      }
+                      setFEmail(update);
+                    }} 
+                    style={{ fontSize: 15 }}
+                  >
+                    <option value="custom">Enterprise Exchange (Custom)</option>
+                    <option value="gmail">Gmail (App Password)</option>
+                    <option value="outlook">Outlook / Microsoft 365</option>
+                  </Sel>
+                </Campo>
+                <Campo label="Tu correo electrónico"><Inp value={fEmail.email} onChange={e => setFEmail({ ...fEmail, email: e.target.value })} placeholder="ej: ventas@tuempresa.com" /></Campo>
               </div>
 
-              <div style={{ padding: 24, background: T.bg2, borderRadius: 12, border: `1px solid ${T.borderHi}`, position: "relative" }}>
-                <div style={{ position: "absolute", top: 20, right: 24, color: T.whiteDim }}><Ico k="arrow" size={24} style={{ transform: "rotate(-45deg)" }} /></div>
-                <div style={{ fontSize: 16, fontWeight: 800, color: T.white, marginBottom: 20 }}>SMTP Egress / Enrutador de Salida</div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
-                  <Campo label="Endpoint SMTP"><Inp value={fEmail.smtpHost} onChange={e => setFEmail({ ...fEmail, smtpHost: e.target.value })} placeholder="smtp.mailgun.org" /></Campo>
-                  <Campo label="Puerto TCP"><Inp value={fEmail.smtpPort} onChange={e => setFEmail({ ...fEmail, smtpPort: e.target.value })} placeholder="587 (TLS/STARTTLS)" /></Campo>
-                  <Campo label="Identity (Usuario)"><Inp value={fEmail.smtpUser} onChange={e => setFEmail({ ...fEmail, smtpUser: e.target.value })} /></Campo>
-                  <Campo label="Secret (Contraseña / App Token)"><Inp type="password" value={fEmail.smtpPass} onChange={e => setFEmail({ ...fEmail, smtpPass: e.target.value })} /></Campo>
+              <div style={{ padding: 24, background: T.bg2, borderRadius: 12, border: `1px solid ${T.borderHi}` }}>
+                <div style={{ fontSize: 16, fontWeight: 800, color: T.white, marginBottom: 20 }}>Configuración de Servidor</div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 20 }}>
+                   <Campo label="SMTP Host"><Inp value={fEmail.smtp_host} onChange={e => setFEmail({ ...fEmail, smtp_host: e.target.value })} /></Campo>
+                   <Campo label="SMTP Port"><Inp type="number" value={fEmail.smtp_port} onChange={e => setFEmail({ ...fEmail, smtp_port: parseInt(e.target.value) })} /></Campo>
+                   <Campo label="IMAP Host"><Inp value={fEmail.imap_host} onChange={e => setFEmail({ ...fEmail, imap_host: e.target.value })} /></Campo>
+                   <Campo label="IMAP Port"><Inp type="number" value={fEmail.imap_port} onChange={e => setFEmail({ ...fEmail, imap_port: parseInt(e.target.value) })} /></Campo>
+                   <Campo label="Password / App Token (Secret)"><Inp type="password" value={fEmail.password_hash} onChange={e => setFEmail({ ...fEmail, password_hash: e.target.value })} /></Campo>
                 </div>
               </div>
 
-              <div style={{ padding: 24, background: T.bg2, borderRadius: 12, border: `1px solid ${T.borderHi}`, position: "relative" }}>
-                <div style={{ position: "absolute", top: 20, right: 24, color: T.whiteDim }}><Ico k="arrow" size={24} style={{ transform: "rotate(135deg)" }} /></div>
-                <div style={{ fontSize: 16, fontWeight: 800, color: T.white, marginBottom: 20 }}>IMAP Ingress / Receptor Entrada</div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
-                  <Campo label="Endpoint IMAP"><Inp value={fEmail.imapHost} onChange={e => setFEmail({ ...fEmail, imapHost: e.target.value })} placeholder="imap.mailgun.org" /></Campo>
-                  <Campo label="Puerto TCP"><Inp value={fEmail.imapPort} onChange={e => setFEmail({ ...fEmail, imapPort: e.target.value })} placeholder="993 (SSL Strict)" /></Campo>
-                </div>
-              </div>
-
-              <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 16 }}>
-                <Btn onClick={guardarEmail} style={{ padding: "12px 28px", fontSize: 14, background: "linear-gradient(45deg, #14B8A6, #0ea5e9)", border: "none" }}><Ico k="plug" size={16} /> Execute Handshake & Save</Btn>
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: 12 }}>
+                <Btn 
+                   variant="secundario" 
+                   disabled={probandoEmail}
+                   onClick={async () => {
+                     setProbandoEmail(true);
+                     const API_URL = `http://${window.location.hostname}:3001`;
+                     try {
+                       const res = await axios.post(`${API_URL}/api/email/test-connection`, fEmail);
+                       const { smtp, imap } = res.data;
+                       if (smtp.ok && imap.ok) {
+                         alert("✅ ¡Conexión exitosa! Tanto SMTP como IMAP funcionan.");
+                       } else {
+                         let msg = "⚠️ Problemas detectados:\n";
+                         if (!smtp.ok) msg += `- SMTP Falló: ${smtp.error}\n`;
+                         if (!imap.ok) msg += `- IMAP Falló: ${imap.error}\n`;
+                         alert(msg);
+                       }
+                     } catch(e) { alert("Error de red: " + e.message); }
+                     finally { setProbandoEmail(false); }
+                   }}
+                >
+                  {probandoEmail ? "Testing..." : <><Ico k="check" size={16} /> Test Connection</>}
+                </Btn>
+                <Btn variant="secundario" onClick={async () => {
+                   const API_URL = `http://${window.location.hostname}:3001`;
+                   try {
+                     const res = await axios.post(`${API_URL}/api/email/sync`, { accountId: fEmail.id || "acc_primary" });
+                     alert("Sincronización iniciada: " + (res.data.count || 0) + " correos nuevos.");
+                   } catch(e) { alert("Error al sincronizar: " + e.message); }
+                }}><Ico k="refresh" size={16} /> Sync Now</Btn>
+                <Btn onClick={async () => {
+                   const id = fEmail.id || "acc_primary";
+                   const data = { ...fEmail, id, user_id: db.usuario?.id };
+                   await guardarEnSupa("email_accounts", data);
+                   setDb(d => ({ ...d, email_accounts: [data] }));
+                   alert("Configuración de correo guardada.");
+                }} style={{ background: T.teal, color: "#000" }}><Ico k="check" size={16} /> Save & Connect</Btn>
               </div>
             </div>
           </Tarjeta>
@@ -656,25 +756,92 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
             <div style={{ fontSize: 14, color: T.whiteDim, marginBottom: 32 }}>Endpoints robustos para integraciones programáticas con tu stack tecnológico (Zapier, Snowflake, dbt).</div>
 
             <div style={{ padding: 24, background: T.bg2, borderRadius: 12, border: `1px solid ${T.tealSoft}`, marginBottom: 32 }}>
-              <Campo label="Private Bearer Auth Token (v2.0)"><div style={{ display: "flex", gap: 12 }}><Inp value={db.empresaConfigs?.apiKey || "sk_live_51Mxxxxx_1T8xx9qLxR"} readOnly style={{ fontFamily: "monospace", color: T.teal, backgroundColor: T.teal + "10", border: `1px solid ${T.tealSoft}`, fontSize: 15 }} /><Btn variant="secundario" style={{ fontSize: 14 }}>Clone</Btn><Btn variant="peligro" style={{ fontSize: 14 }}>Rotate Secret</Btn></div></Campo>
+              <Campo label="PRIVATE BEARER AUTH TOKEN (V2.0)">
+                <div style={{ display: "flex", gap: 12 }}>
+                  <Inp 
+                    value={db.api_settings?.[0]?.api_token || "⚠️ Haz clic en 'Generate Secret' →"} 
+                    readOnly 
+                    placeholder="Token no generado"
+                    style={{ 
+                      fontFamily: "monospace", 
+                      color: db.api_settings?.[0]?.api_token ? T.teal : T.whiteDim, 
+                      backgroundColor: T.teal + "10", 
+                      border: `1px solid ${T.tealSoft}`, 
+                      fontSize: 13, 
+                      flex: 1,
+                      fontStyle: db.api_settings?.[0]?.api_token ? "normal" : "italic"
+                    }} 
+                  />
+                  <Btn variant="secundario" style={{ fontSize: 13 }} onClick={copiarToken} disabled={!db.api_settings?.[0]?.api_token}>Clone</Btn>
+                  <Btn 
+                    variant="peligro" 
+                    style={{ 
+                      fontSize: 13, 
+                      background: db.api_settings?.[0]?.api_token ? T.red + "20" : T.teal + "20", 
+                      color: db.api_settings?.[0]?.api_token ? T.red : T.teal, 
+                      border: `1px solid ${db.api_settings?.[0]?.api_token ? T.red : T.teal}40`,
+                      minWidth: 140
+                    }} 
+                    onClick={rotateApiToken} 
+                    disabled={cargandoApi}
+                  >
+                    {cargandoApi ? "Procesando..." : (db.api_settings?.[0]?.api_token ? "Rotate Secret" : "Generate Secret")}
+                  </Btn>
+                </div>
+              </Campo>
             </div>
 
             <div>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
                 <div style={{ fontSize: 16, fontWeight: 800, color: T.white }}>Webhooks Subscriptions (Event-Driven Streams)</div>
-                <Btn style={{ padding: "8px 16px" }}><Ico k="plus" size={14} /> Register Endpoint</Btn>
+                <Btn style={{ padding: "8px 16px", background: T.teal, color: "#000" }} onClick={() => setShowWebhookModal(true)}>
+                  <Ico k="plus" size={14} /> Register Endpoint
+                </Btn>
               </div>
-              {db.empresaConfigs?.webhooks?.length > 0 ? (
-                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                  {db.empresaConfigs.webhooks.map(wh => (
-                    <div key={wh.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px", background: T.bg1, border: `1px solid ${T.borderHi}`, borderRadius: 8, boxShadow: "inset 4px 0 0 #14B8A6" }}>
-                      <div><div style={{ fontSize: 14, fontWeight: 800, color: T.white, marginBottom: 6, fontFamily: "monospace" }}>POST {wh.url}</div><Chip label={wh.evento} color={T.teal} bg={T.teal + "20"} /></div>
-                      <Btn variant="fantasma" size="sm"><Ico k="trash" size={16} style={{ color: T.red }} /></Btn>
+              
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                {db.webhook_subscriptions?.length > 0 ? (
+                  db.webhook_subscriptions.map(wh => (
+                    <div key={wh.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px", background: T.bg1, border: `1px solid ${T.borderHi}`, borderRadius: 8, borderLeft: `4px solid ${T.teal}` }}>
+                      <div>
+                        <div style={{ fontSize: 14, fontWeight: 800, color: T.white, marginBottom: 6, fontFamily: "monospace" }}>POST {wh.url}</div>
+                        <div style={{ display: "flex", gap: 8 }}>
+                           <Chip label={wh.evento} color={T.teal} bg={T.teal + "20"} />
+                           <span style={{ fontSize: 11, color: T.whiteDim }}>Activo desde {fdtm(wh.creado)}</span>
+                        </div>
+                      </div>
+                      <Btn variant="fantasma" size="sm" onClick={() => eliminarWebhook(wh.id)}>
+                        <Ico k="trash" size={16} style={{ color: T.red }} />
+                      </Btn>
                     </div>
-                  ))}
-                </div>
-              ) : <div style={{ padding: 40, border: `1px dashed ${T.borderHi}`, borderRadius: 10, textAlign: "center", color: T.whiteDim, fontSize: 14 }}>No listener endpoints attached to the bus.</div>}
+                  ))
+                ) : (
+                  <div style={{ padding: 40, border: `1px dashed ${T.borderHi}`, borderRadius: 10, textAlign: "center", color: T.whiteDim, fontSize: 14 }}>
+                    No listener endpoints attached to the bus.
+                  </div>
+                )}
+              </div>
             </div>
+
+            <Modal open={showWebhookModal} onClose={() => setShowWebhookModal(false)} title="Register Webhook Endpoint">
+               <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+                  <Campo label="Target URL (HTTPS)">
+                    <Inp value={fWebhook.url} onChange={e => setFWebhook({...fWebhook, url: e.target.value})} placeholder="https://hook.make.com/..." />
+                  </Campo>
+                  <Campo label="Event Topic">
+                    <Sel value={fWebhook.evento} onChange={e => setFWebhook({...fWebhook, evento: e.target.value})}>
+                      <option value="deal.ganado">🎯 Deal Ganado (Won)</option>
+                      <option value="deal.perdido">❌ Deal Perdido (Lost)</option>
+                      <option value="lead.nuevo">👤 Nuevo Lead Registrado</option>
+                      <option value="ticket.creado">🎫 Nuevo Ticket de Soporte</option>
+                    </Sel>
+                  </Campo>
+                  <div style={{ display: "flex", gap: 12, marginTop: 10 }}>
+                    <Btn variant="secundario" onClick={() => setShowWebhookModal(false)} full>Cancelar</Btn>
+                    <Btn onClick={registrarWebhook} full style={{ background: T.teal, color: "#000" }}>Register Sub</Btn>
+                  </div>
+               </div>
+            </Modal>
           </Tarjeta>
         )}
 

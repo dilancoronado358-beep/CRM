@@ -98,4 +98,6 @@ export const SEMILLA = {
     { id: "n1", contacto_id: "c1", deal_id: "d1", texto: "Llamada muy positiva. CEO comprometida. Enviar contrato cuanto antes.", autor: "Alejandro Vega", fecha: "2024-03-14 10:45", fijada: true },
   ],
   campos_personalizados: [],
+  api_settings: [],
+  webhook_subscriptions: [],
 };

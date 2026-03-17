@@ -19,22 +19,11 @@ const TABLAS_SUPA = [
   "tareas",
   "emails",
   "notas",
-  "productos",
-  "pipelines",
-  "plantillasEmail",
-  "usuariosApp",
-  "documentos",
-  "chatbotRules",
-  "whatsapp_automations",
-  "campos_personalizados",
-  "cotizaciones",
-  "sales_playbook",
-  "email_sequences",
-  "email_sequence_subscriptions",
-  "custom_reports",
-  "finanzas_gastos",
-  "finanzas_comisiones",
-  "notificaciones",
+  "usuario", "empresaConfigs", "usuariosApp", "productos", "contactos", "empresas",
+  "pipelines", "deals", "actividades", "tareas", "emails", "plantillasEmail",
+  "notas", "campos_personalizados", "whatsapp_automations", "whatsapp_messages",
+  "finanzas_gastos", "finanzas_comisiones", "notificaciones", "auditoria",
+  "api_settings", "webhook_subscriptions", "email_accounts"
 ];
 
 /* ═══════════════════════════════════════════

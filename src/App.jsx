@@ -367,7 +367,7 @@ export default function App() {
     { id: "actividades", label: t("Registro Actividades"), role: t("Agenda"), comp: Actividades },
     { id: "tareas", label: t("Gestión de Tareas"), role: t("Agenda"), comp: Tareas },
     { id: "catalogo", label: t("Catálogo & Precios"), role: t("Facturación"), comp: Productos },
-    { id: "finanzas", label: t("Finanzas & Comisiones"), role: t("Facturación"), comp: Finanzas },
+    { id: "finanzas", label: t("Finanzas & Comisiones"), role: t("Facturación"), comp: Finanzas, adminOnly: true },
     { id: "email", label: t("Bandeja de Correo"), role: t("Comunicación"), comp: ModuloEmail },
     { id: "whatsapp", label: t("WhatsApp"), role: t("Comunicación"), comp: ChatWhatsApp, reqWhatsApp: true },
     { id: "telegram", label: t("Telegram"), role: t("Comunicación"), comp: ChatTelegram },
