@@ -20,6 +20,7 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
   const [nuevaEt, setNuevaEt] = useState({ nombre: "", color: T.teal, probabilidad: 50 });
   const [showConfigCampos, setShowConfigCampos] = useState(false);
   const [nuevoCampo, setNuevoCampo] = useState({ nombre: "", tipo: "cadena", opciones: "" });
+  const [dragEtapa, setDragEtapa] = useState(null); // para reordenar etapas
 
   // Estado del formulario de Deal elevado al nivel de Pipeline para sobrevivir re-renders de Supabase Realtime.
   const defaultF = () => ({
@@ -435,56 +436,113 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
         <Btn variant="fantasma" size="sm" onClick={() => setShowNuevoPL(true)}><Ico k="plus" size={14} />Nuevo Pipeline</Btn>
       </div>
 
-      {/* KANBAN */}
+      {/* KANBAN — ESTILO BITRIX24 DARK */}
       {tab === "kanban" && pipeline && (
-        <div style={{ display: "flex", gap: 16, overflowX: "auto", paddingBottom: 20, minHeight: "60vh", alignItems: "flex-start" }}>
-          {pipeline.etapas.map(etapa => {
+        <div style={{ display: "flex", gap: 10, overflowX: "auto", paddingBottom: 20, minHeight: "70vh", alignItems: "flex-start" }}>
+          {pipeline.etapas.map((etapa, etapaIdx) => {
             const etDeals = plDeals.filter(d => d.etapa_id === etapa.id);
             const isOver = dragSobre === etapa.id;
+            const totalEtapa = etDeals.reduce((s, d) => s + (d.valor || 0), 0);
+            const colBg = isOver ? etapa.color + "15" : T.bg2;
             return (
-              <div key={etapa.id} style={{ minWidth: 280, maxWidth: 280, display: "flex", flexDirection: "column", gap: 12, flexShrink: 0, paddingBottom: 20 }}
+              <div key={etapa.id}
+                style={{ minWidth: 220, maxWidth: 220, display: "flex", flexDirection: "column", flexShrink: 0, borderRadius: 12, background: colBg, border: `1px solid ${isOver ? etapa.color + "60" : T.borderHi}`, transition: "all .2s", overflow: "hidden" }}
                 onDragOver={e => { e.preventDefault(); setDragSobre(etapa.id); }}
-                onDrop={e => { e.preventDefault(); if (dragDeal) setDb(d => ({ ...d, deals: d.deals.map(deal => deal.id === dragDeal.id ? { ...deal, etapa_id: etapa.id } : deal) })); setDragDeal(null); setDragSobre(null); }}
+                onDrop={async e => {
+                  e.preventDefault();
+                  if (dragDeal) {
+                    const updated = { ...dragDeal, etapa_id: etapa.id };
+                    setDb(d => ({ ...d, deals: d.deals.map(deal => deal.id === dragDeal.id ? updated : deal) }));
+                    await guardarEnSupa("deals", updated);
+                    if (dragDeal.etapa_id !== etapa.id) await ejecutarAutomaciones(dragDeal, etapa.id);
+                  }
+                  setDragDeal(null); setDragSobre(null);
+                }}
                 onDragLeave={() => setDragSobre(null)}>
-                <div style={{ background: isOver ? etapa.color + "12" : T.bg1, borderTop: `4px solid ${etapa.color}`, borderRight: `1px solid ${T.borderHi}`, borderBottom: `1px solid ${T.borderHi}`, borderLeft: `1px solid ${T.borderHi}`, borderRadius: 10, padding: "14px 16px", boxShadow: "0 2px 4px rgba(0,0,0,0.02)" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-                    <span style={{ fontSize: 14, fontWeight: 800, color: T.white, flex: 1 }}>{etapa.nombre}</span>
-                    <span style={{ background: etapa.color + "20", color: etapa.color, borderRadius: 10, padding: "2px 8px", fontSize: 11, fontWeight: 800 }}>{etDeals.length}</span>
+
+                {/* CABECERA SÓLIDA DE COLOR — compacta como Bitrix24 */}
+                <div style={{ background: etapa.color, padding: "7px 10px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 6 }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 10, fontWeight: 800, color: "#fff", textTransform: "uppercase", letterSpacing: ".08em", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{etapa.nombre}</div>
+                    <div style={{ fontSize: 13, fontWeight: 900, color: "#fff", opacity: 0.95 }}>{money(totalEtapa)}</div>
                   </div>
-                  <div style={{ fontSize: 13, fontWeight: 800, color: T.teal, marginBottom: 4 }}>{money(etDeals.reduce((s, d) => s + d.valor, 0))}</div>
-                  <div style={{ fontSize: 11, color: T.whiteDim, fontWeight: 600 }}>Probabilidad: {etapa.probabilidad}%</div>
+                  <span style={{ background: "rgba(0,0,0,0.25)", color: "#fff", borderRadius: 20, padding: "1px 8px", fontSize: 10, fontWeight: 800, flexShrink: 0 }}>{etDeals.length}</span>
                 </div>
 
-                {etDeals.map(deal => {
-                  const contacto = db.contactos.find(c => c.id === deal.contacto_id);
-                  const pc = deal.prob >= 70 ? T.green : deal.prob >= 40 ? T.amber : T.red;
-                  return (
-                    <div key={deal.id} draggable onDragStart={() => setDragDeal(deal)}
-                      style={{ background: T.bg1, border: `1px solid ${T.borderHi}`, borderRadius: 10, padding: 14, cursor: "grab", userSelect: "none", transition: "all .2s", boxShadow: "0 2px 5px rgba(0,0,0,0.03)" }}
-                      onMouseEnter={e => { e.currentTarget.style.borderColor = etapa.color + "70"; e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 8px 20px rgba(0,0,0,0.06)"; }}
-                      onMouseLeave={e => { e.currentTarget.style.borderColor = T.borderHi; e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = "0 2px 5px rgba(0,0,0,0.03)"; }}>
-                      <div style={{ fontSize: 14, fontWeight: 700, color: T.white, marginBottom: 10, lineHeight: 1.4 }}>{deal.titulo}</div>
-                      {contacto && <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 10 }}><div style={{ width: 24, height: 24, borderRadius: "50%", background: contacto.color + "20", color: contacto.color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 700 }}>{contacto.avatar}</div><span style={{ fontSize: 12, color: T.whiteOff, fontWeight: 600 }}>{contacto.nombre}</span></div>}
-                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8, alignItems: "center" }}>
-                       <div style={{ fontSize: 15, fontWeight: 800, color: T.green }}>{money(deal.valor)}</div>
-                        <div style={{ fontSize: 11, fontWeight: 800, color: pc, background: pc + "15", padding: "2px 8px", borderRadius: 10 }}>{deal.prob}%</div>
-                      </div>
-                      <Barra value={deal.prob} color={pc} h={5} />
-                      {deal.fecha_cierre && <div style={{ fontSize: 11, color: T.whiteDim, marginTop: 10, fontWeight: 500 }}>📅 Cierra {fdate(deal.fecha_cierre)}</div>}
-                      <div style={{ display: "flex", gap: 6, marginTop: 12, justifyContent: "flex-end" }} onClick={e => e.stopPropagation()}>
-                        <Btn variant="secundario" size="sm" onClick={() => { setEditDeal(deal); setShowDealForm(true); }}><Ico k="edit" size={12} /></Btn>
-                        <Btn variant="fantasma" size="sm" onClick={() => eliminarDeal(deal.id)}><Ico k="trash" size={12} style={{ color: T.red }} /></Btn>
-                      </div>
-                    </div>
-                  );
-                })}
-
+                {/* BOTÓN AGREGAR */}
                 <button onClick={() => { setEditDeal(null); setPreEtapa(etapa.id); setShowDealForm(true); }}
-                  style={{ background: "transparent", border: `2px dashed ${T.borderHi}`, borderRadius: 10, padding: "12px", color: T.whiteDim, cursor: "pointer", fontSize: 12, fontWeight: 600, display: "flex", alignItems: "center", gap: 6, justifyContent: "center", fontFamily: "inherit", transition: "all .2s" }}
-                  onMouseEnter={e => { e.currentTarget.style.borderColor = etapa.color; e.currentTarget.style.color = etapa.color; }}
-                  onMouseLeave={e => { e.currentTarget.style.borderColor = T.borderHi; e.currentTarget.style.color = T.whiteDim; }}>
-                  <Ico k="plus" size={14} />Agregar deal
+                  style={{ background: "transparent", border: "none", borderBottom: `1px solid ${T.borderHi}`, padding: "9px 14px", color: etapa.color, cursor: "pointer", fontSize: 12, fontWeight: 700, display: "flex", alignItems: "center", gap: 5, fontFamily: "inherit", textAlign: "left", width: "100%", transition: "background .15s" }}
+                  onMouseEnter={e => e.currentTarget.style.background = etapa.color + "12"}
+                  onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                  <span style={{ fontSize: 18, lineHeight: 1, fontWeight: 900 }}>+</span> Agregar
                 </button>
+
+                {/* LISTA DE TARJETAS */}
+                <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: "10px 8px", flex: 1 }}>
+                  {etDeals.map(deal => {
+                    const contacto = db.contactos.find(c => c.id === deal.contacto_id);
+                    const fechaCreacion = deal.creado ? new Date(deal.creado).toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "2-digit" }) : null;
+                    const dealIdCorto = (deal.id || "").toString().slice(-5);
+                    const avatarLetras = (deal.responsable || "?").trim().split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
+                    const colAvatar = etapa.color;
+
+                    return (
+                      <div key={deal.id} draggable onDragStart={() => setDragDeal(deal)}
+                        style={{ background: T.bg1, border: `1px solid ${T.borderHi}`, borderLeft: `3px solid ${etapa.color}`, borderRadius: 8, padding: "11px 12px", cursor: "grab", userSelect: "none", transition: "box-shadow .15s, transform .15s", position: "relative" }}
+                        onMouseEnter={e => { e.currentTarget.style.boxShadow = `0 4px 18px rgba(0,0,0,0.18)`; e.currentTarget.style.transform = "translateY(-1px)"; }}
+                        onMouseLeave={e => { e.currentTarget.style.boxShadow = "none"; e.currentTarget.style.transform = ""; }}>
+
+                        {/* Título + botones acción */}
+                        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 8 }}>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: T.white, lineHeight: 1.35, flex: 1, cursor: "pointer" }}
+                            onClick={() => { setEditDeal(deal); setShowDealForm(true); }}>
+                            {deal.titulo}
+                          </div>
+                          <div style={{ display: "flex", gap: 3, marginLeft: 6, flexShrink: 0 }}>
+                            <button title="Editar" onClick={e => { e.stopPropagation(); setEditDeal(deal); setShowDealForm(true); }}
+                              style={{ background: T.bg2, border: `1px solid ${T.borderHi}`, borderRadius: 4, padding: "3px 6px", cursor: "pointer", fontSize: 10, color: T.whiteDim, lineHeight: 1 }}>✏️</button>
+                            <button title="Eliminar" onClick={e => { e.stopPropagation(); eliminarDeal(deal.id); }}
+                              style={{ background: T.bg2, border: `1px solid ${T.borderHi}`, borderRadius: 4, padding: "3px 6px", cursor: "pointer", fontSize: 10, color: T.red, lineHeight: 1 }}>🗑</button>
+                          </div>
+                        </div>
+
+                        {/* Monto */}
+                        <div style={{ fontSize: 16, fontWeight: 900, color: T.green, marginBottom: 8, letterSpacing: "-0.01em" }}>{money(deal.valor)}</div>
+
+                        {/* Meta-data: ID y nombre */}
+                        <div style={{ display: "flex", flexDirection: "column", gap: 3, marginBottom: 8, borderTop: `1px solid ${T.borderHi}`, paddingTop: 8 }}>
+                          <div style={{ display: "flex", gap: 6, fontSize: 11, color: T.whiteDim }}>
+                            <span style={{ color: T.whiteDim, fontWeight: 700, minWidth: 42 }}>ID</span>
+                            <span style={{ color: T.whiteOff, fontWeight: 600 }}>{dealIdCorto}</span>
+                          </div>
+                          {contacto && (
+                            <div style={{ display: "flex", gap: 6, fontSize: 11, color: T.whiteDim }}>
+                              <span style={{ fontWeight: 700, minWidth: 42 }}>Nombre</span>
+                              <span style={{ color: T.whiteOff, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 120 }}>{contacto.nombre}</span>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Responsable con avatar */}
+                        <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 8 }}>
+                          <div style={{ width: 22, height: 22, borderRadius: "50%", background: colAvatar, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 900, flexShrink: 0, boxShadow: `0 0 0 2px ${colAvatar}40` }}>
+                            {avatarLetras}
+                          </div>
+                          <span style={{ fontSize: 11, color: T.whiteDim, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{deal.responsable || "Sin asignar"}</span>
+                        </div>
+
+                        {/* Footer */}
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderTop: `1px solid ${T.borderHi}`, paddingTop: 8 }}>
+                          <button onClick={e => { e.stopPropagation(); setEditDeal(deal); setShowDealForm(true); }}
+                            style={{ background: "none", border: "none", color: etapa.color, fontSize: 11, fontWeight: 700, cursor: "pointer", padding: 0, fontFamily: "inherit" }}>
+                            + Actividad
+                          </button>
+                          {fechaCreacion && <span style={{ fontSize: 10, color: T.whiteDim, opacity: 0.7 }}>{fechaCreacion}</span>}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             );
           })}
@@ -505,7 +563,22 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
               </div>
               <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 16 }}>
                 {pl.etapas.map((et, idx) => (
-                  <div key={et.id}>
+                  <div key={et.id}
+                    draggable
+                    onDragStart={() => setDragEtapa({ et, plId: pl.id })}
+                    onDragEnd={() => setDragEtapa(null)}
+                    onDragOver={e => e.preventDefault()}
+                    onDrop={() => {
+                      if (!dragEtapa || dragEtapa.plId !== pl.id || dragEtapa.et.id === et.id) return;
+                      const etapas = [...pl.etapas];
+                      const fromIdx = etapas.findIndex(e => e.id === dragEtapa.et.id);
+                      const toIdx = etapas.findIndex(e => e.id === et.id);
+                      const [moved] = etapas.splice(fromIdx, 1);
+                      etapas.splice(toIdx, 0, moved);
+                      actPipeline({ ...pl, etapas: etapas.map((e, i) => ({ ...e, orden: i })) });
+                      setDragEtapa(null);
+                    }}
+                    style={{ cursor: "grab" }}>
                     {etEditando === et.id ? (
                       <div style={{ background: T.bg2, border: `1px solid ${T.borderHi}`, borderRadius: 10, padding: 16, minWidth: 200, boxShadow: "0 4px 15px rgba(0,0,0,0.05)" }}>
                         <Inp value={et.nombre} onChange={e => actPipeline({ ...pl, etapas: pl.etapas.map(s => s.id === et.id ? { ...s, nombre: e.target.value } : s) })} style={{ marginBottom: 12 }} />
@@ -550,7 +623,7 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
                   </button>
                 ))}
               </div>
-              <div style={{ fontSize: 11, color: T.teal, fontWeight: 600, background: T.tealSoft, padding: "8px 12px", borderRadius: 6, display: "inline-block" }}>💡 Haz click en una etapa para editarla · Arrastra deals en el Kanban</div>
+              <div style={{ fontSize: 11, color: T.teal, fontWeight: 600, background: T.tealSoft, padding: "8px 12px", borderRadius: 6, display: "inline-block" }}>💡 Haz click en una etapa para editarla · <strong>Arrastra las etapas para reordenarlas</strong></div>
             </Tarjeta>
           ))}
         </div>

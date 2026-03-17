@@ -561,6 +561,11 @@ app.post('/ai/analyze', async (req, res) => {
 
 // Lógica de Chatbot Inteligente
 whatsappClient.on('message', async msg => {
+  // IGNORAR ESTADOS DE WHATSAPP (historias)
+  if (msg.isStatus || msg.from === 'status@broadcast') {
+    return; // No procesamos ni notificamos sobre estados
+  }
+
   console.log(`Mensaje recibido de ${msg.from}: ${msg.body}`);
 
   // 1. LEAD AUTOMÁTICO: Asegurar que el contacto existe en CRM
