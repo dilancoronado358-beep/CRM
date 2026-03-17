@@ -181,31 +181,35 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
               <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                 {customFieldsDef.map(cf => {
                   const val = f.custom_fields?.[cf.id] || "";
-                  const setVal = async (v) => {
-                    const nextF = { ...f, custom_fields: { ...(f.custom_fields || {}), [cf.id]: v } };
-                    setF(nextF);
-                    // AUTO-SAVE: Si es un deal existente, guardar al momento
+                  
+                  // Actualiza solo el estado local para fluidez total al escribir
+                  const handleChange = (v) => {
+                    setF(prev => ({ ...prev, custom_fields: { ...(prev.custom_fields || {}), [cf.id]: v } }));
+                  };
+
+                  // Guarda en Supabase solo al salir del campo (onBlur)
+                  const handleBlur = async () => {
                     if (editDeal) {
-                      await guardarEnSupa("deals", { ...editDeal, custom_fields: nextF.custom_fields });
+                      await guardarEnSupa("deals", { ...editDeal, custom_fields: f.custom_fields });
                     }
                   };
 
                   return (
                     <Campo key={cf.id} label={cf.nombre}>
                       {cf.tipo === "lista" ? (
-                        <Sel value={val} onChange={e => setVal(e.target.value)}>
+                        <Sel value={val} onChange={e => handleChange(e.target.value)} onBlur={handleBlur}>
                           <option value="">— Seleccionar —</option>
                           {cf.opciones?.map(opt => <option key={opt} value={opt}>{opt}</option>)}
                         </Sel>
                       ) : cf.tipo === "fecha" ? (
-                        <Inp type="date" value={val} onChange={e => setVal(e.target.value)} />
+                        <Inp type="date" value={val} onChange={e => handleChange(e.target.value)} onBlur={handleBlur} />
                       ) : cf.tipo === "dinero" ? (
                         <div style={{ position: "relative" }}>
                           <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: T.green, fontWeight: 800 }}>$</span>
-                          <Inp type="number" value={val} onChange={e => setVal(e.target.value)} style={{ paddingLeft: 24 }} />
+                          <Inp type="number" value={val} onChange={e => handleChange(e.target.value)} onBlur={handleBlur} style={{ paddingLeft: 24 }} />
                         </div>
                       ) : (
-                        <Inp value={val} onChange={e => setVal(e.target.value)} placeholder={`Ingresar ${cf.nombre.toLowerCase()}...`} />
+                        <Inp value={val} onChange={e => handleChange(e.target.value)} onBlur={handleBlur} placeholder={`Ingresar ${cf.nombre.toLowerCase()}...`} />
                       )}
                     </Campo>
                   );
