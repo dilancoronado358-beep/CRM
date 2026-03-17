@@ -106,17 +106,17 @@ export function Login() {
             display: 'inline-flex', 
             alignItems: 'center', 
             justifyContent: 'center', 
-            width: 72, 
-            height: 72, 
-            borderRadius: 20, 
-            background: 'linear-gradient(135deg, #06B6D4 0%, #3B82F6 100%)', 
-            marginBottom: 20,
-            boxShadow: '0 10px 20px -5px rgba(6, 182, 212, 0.5)'
+            width: '100%',
+            marginBottom: 20
           }}>
-            <Ico k="lock" size={36} style={{ color: '#FFF' }} />
+            <img 
+              src="https://res.cloudinary.com/dtmqftcsr/image/upload/v1772584406/ENSIG_PRINCIPAL_BALCK-artguru_yitvru.png" 
+              alt="Logo" 
+              style={{ maxHeight: 80, width: 'auto', filter: 'drop-shadow(0 0 10px rgba(6, 182, 212, 0.4))' }} 
+            />
           </div>
-          <h1 style={{ margin: 0, fontSize: 32, fontWeight: 800, letterSpacing: '-0.04em', color: '#FFF' }}>
-            ENSING<span style={{ color: '#06B6D4' }}>CRM</span>
+          <h1 style={{ margin: 0, fontSize: 32, fontWeight: 800, letterSpacing: '0.1em', color: '#06B6D4' }}>
+            CRM
           </h1>
           <p style={{ margin: '10px 0 0', color: 'rgba(255,255,255,0.6)', fontSize: 15, fontWeight: 500 }}>
             Bienvenido de nuevo
