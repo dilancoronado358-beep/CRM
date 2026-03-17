@@ -47,5 +47,15 @@ ALTER TABLE public.whatsapp_automations ADD COLUMN IF NOT EXISTS ai_prompt TEXT;
 -- 6. Nuevas columnas para anclaje a Leads
 ALTER TABLE public.whatsapp_messages ADD COLUMN IF NOT EXISTS deal_id TEXT;
 
+-- 6. Tabla para campos personalizados globales
+CREATE TABLE IF NOT EXISTS public.campos_personalizados (
+    id TEXT PRIMARY KEY,
+    nombre TEXT NOT NULL,
+    tipo TEXT NOT NULL, -- cadena, lista, fecha, dinero, etc
+    opciones JSONB DEFAULT '[]'::jsonb,
+    entidad TEXT DEFAULT 'deal',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
 -- 5. Habilitar Realtime para estas tablas (opcional pero recomendado)
--- alter publication supabase_realtime add table deals, contactos, whatsapp_messages, whatsapp_automations;
+-- alter publication supabase_realtime add table deals, contactos, whatsapp_messages, whatsapp_automations, campos_personalizados;

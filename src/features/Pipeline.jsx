@@ -18,6 +18,8 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
   const [etEditando, setEtEditando] = useState(null);
   const [showNuevaEt, setShowNuevaEt] = useState(false);
   const [nuevaEt, setNuevaEt] = useState({ nombre: "", color: T.teal, probabilidad: 50 });
+  const [showConfigCampos, setShowConfigCampos] = useState(false);
+  const [nuevoCampo, setNuevoCampo] = useState({ nombre: "", tipo: "cadena", opciones: "" });
 
   const pipeline = db.pipelines.find(p => p.id === plActivo);
   const plDeals = db.deals.filter(d => d.pipelineId === plActivo);
@@ -47,7 +49,12 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
   };
 
   const FormDeal = ({ init = {}, onGuardar, onCancelar }) => {
-    const [f, setF] = useState({ titulo: "", contactoId: "", empresaId: "", pipelineId: plActivo, etapaId: pipeline?.etapas[0]?.id || "", valor: 0, prob: 50, fechaCierre: "", responsable: db.usuario?.name || "", etiquetas: "", notas: "", archivos: [], customFields: [], ...init, etiquetas: (init.etiquetas || []).join(", ") });
+    const customFieldsDef = db.campos_personalizados || [];
+    const [f, setF] = useState({
+      titulo: "", contactoId: "", empresaId: "", pipelineId: plActivo, etapaId: pipeline?.etapas[0]?.id || "",
+      valor: 0, prob: 50, fechaCierre: "", responsable: db.usuario?.name || "", etiquetas: "", notas: "",
+      archivos: [], customFields: {}, ...init, etiquetas: (init.etiquetas || []).join(", ")
+    });
     const [dragActive, setDragActive] = useState(false);
 
     const s = k => e => setF(p => ({ ...p, [k]: e.target.value }));
@@ -151,18 +158,35 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
 
             <div style={{ background: T.bg1, border: `1px solid ${T.border}`, borderRadius: 16, padding: 24 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-                <span style={{ fontSize: 11, fontWeight: 700, color: T.whiteDim, textTransform: "uppercase" }}>Campos Extras</span>
-                <Btn variant="fantasma" size="sm" onClick={() => setF(p => ({ ...p, customFields: [...(p.customFields || []), { nombre: "", valor: "" }] }))}><Ico k="plus" size={12} /></Btn>
+                <span style={{ fontSize: 11, fontWeight: 700, color: T.whiteDim, textTransform: "uppercase" }}>Campos Personalizados</span>
+                <Btn variant="fantasma" size="sm" onClick={() => setShowConfigCampos(true)}><Ico k="plus" size={12} /> Configurar</Btn>
               </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                {f.customFields?.map((cf, i) => (
-                  <div key={i} style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                    <Inp value={cf.nombre} onChange={e => setF(p => ({ ...p, customFields: p.customFields.map((c, idx) => idx === i ? { ...c, nombre: e.target.value } : c) }))} placeholder="Eje: Región" style={{ flex: 1, fontSize: 11 }} />
-                    <Inp value={cf.valor} onChange={e => setF(p => ({ ...p, customFields: p.customFields.map((c, idx) => idx === i ? { ...c, valor: e.target.value } : c) }))} placeholder="Valor" style={{ flex: 1.5, fontSize: 11 }} />
-                    <button onClick={() => setF(p => ({ ...p, customFields: p.customFields.filter((_, idx) => idx !== i) }))} style={{ color: T.red, background: "none", border: "none" }}><Ico k="trash" size={12} /></button>
-                  </div>
-                ))}
-                {f.archivos?.length > 0 && <div style={{ fontSize: 11, color: T.whiteDim, marginTop: 10 }}>📎 {f.archivos.length} archivos adjuntos.</div>}
+              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                {customFieldsDef.map(cf => {
+                  const val = f.customFields?.[cf.id] || "";
+                  const setVal = v => setF(p => ({ ...p, customFields: { ...p.customFields, [cf.id]: v } }));
+
+                  return (
+                    <Campo key={cf.id} label={cf.nombre}>
+                      {cf.tipo === "lista" ? (
+                        <Sel value={val} onChange={e => setVal(e.target.value)}>
+                          <option value="">— Seleccionar —</option>
+                          {cf.opciones?.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                        </Sel>
+                      ) : cf.tipo === "fecha" ? (
+                        <Inp type="date" value={val} onChange={e => setVal(e.target.value)} />
+                      ) : cf.tipo === "dinero" ? (
+                        <div style={{ position: "relative" }}>
+                          <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: T.green, fontWeight: 800 }}>$</span>
+                          <Inp type="number" value={val} onChange={e => setVal(e.target.value)} style={{ paddingLeft: 24 }} />
+                        </div>
+                      ) : (
+                        <Inp value={val} onChange={e => setVal(e.target.value)} placeholder={`Ingresar ${cf.nombre.toLowerCase()}...`} />
+                      )}
+                    </Campo>
+                  );
+                })}
+                {customFieldsDef.length === 0 && <div style={{ fontSize: 11, color: T.whiteDim, textAlign: "center", fontStyle: "italic" }}>No hay campos adicionales configurados.</div>}
               </div>
             </div>
 
@@ -199,6 +223,29 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
       await guardarEnSupa("deals", nv);
     }
     setShowDealForm(false); setEditDeal(null); setPreEtapa(null);
+  };
+
+  const crearCampo = async () => {
+    if (!nuevoCampo.nombre.trim()) return;
+    const campo = {
+      id: "cf" + uid(),
+      nombre: nuevoCampo.nombre,
+      tipo: nuevoCampo.tipo,
+      opciones: nuevoCampo.tipo === "lista" ? nuevoCampo.opciones.split(",").map(o => o.trim()).filter(Boolean) : [],
+      entidad: "deal"
+    };
+
+    // Sincronizar con Supabase y estado local
+    setDb(d => ({ ...d, campos_personalizados: [...(d.campos_personalizados || []), campo] }));
+    await guardarEnSupa("campos_personalizados", campo);
+
+    setNuevoCampo({ nombre: "", tipo: "cadena", opciones: "" });
+  };
+
+  const eliminarCampo = async (id) => {
+    if (!confirm("¿Eliminar este campo global? Se borrarán sus valores en todos los deals.")) return;
+    setDb(d => ({ ...d, campos_personalizados: d.campos_personalizados.filter(c => c.id !== id) }));
+    await eliminarDeSupa("campos_personalizados", id);
   };
 
   const eliminarDeal = async (id) => {
@@ -360,6 +407,45 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
 
       <Modal open={showDealForm} onClose={() => { setShowDealForm(false); setEditDeal(null); }} title={editDeal ? "Editar Deal" : "Nuevo Deal"} width={editDeal ? 1300 : 720}>
         <FormDeal init={editDeal || (preEtapa ? { pipelineId: plActivo, etapaId: preEtapa } : { pipelineId: plActivo, etapaId: pipeline?.etapas[0]?.id })} onGuardar={guardarDeal} onCancelar={() => { setShowDealForm(false); setEditDeal(null); }} />
+      </Modal>
+      {/* CONFIGURACIÓN DE CAMPOS PERSONALIZADOS */}
+      <Modal open={showConfigCampos} onClose={() => setShowConfigCampos(false)} title="Configurar Campos Globales" width={500}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+          <div style={{ background: T.bg2, padding: 16, borderRadius: 10, border: `1px solid ${T.border}` }}>
+            <h4 style={{ margin: "0 0 12px", fontSize: 13, color: T.white }}>Crear Nuevo Campo</h4>
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <Campo label="Nombre del Campo"><Inp value={nuevoCampo.nombre} onChange={e => setNuevoCampo(p => ({ ...p, nombre: e.target.value }))} placeholder="Eje: Canal de Origen" /></Campo>
+              <Campo label="Tipo de Dato">
+                <Sel value={nuevoCampo.tipo} onChange={e => setNuevoCampo(p => ({ ...p, tipo: e.target.value }))}>
+                  <option value="cadena">Cadena (Texto)</option>
+                  <option value="lista">Lista (Selección)</option>
+                  <option value="fecha">Fecha</option>
+                  <option value="dinero">Dinero</option>
+                  <option value="numero">Número</option>
+                  <option value="si_no">Sí/No</option>
+                </Sel>
+              </Campo>
+              {nuevoCampo.tipo === "lista" && (
+                <Campo label="Opciones (separadas por coma)"><Inp value={nuevoCampo.opciones} onChange={e => setNuevoCampo(p => ({ ...p, opciones: e.target.value }))} placeholder="Opción 1, Opción 2..." /></Campo>
+              )}
+              <Btn onClick={crearCampo} disabled={!nuevoCampo.nombre.trim()} style={{ marginTop: 8 }}>Crear campo global</Btn>
+            </div>
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <h4 style={{ margin: 0, fontSize: 13, color: T.whiteDim }}>Campos Existentes</h4>
+            {db.campos_personalizados?.map(cf => (
+              <div key={cf.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: T.bg1, padding: "10px 14px", borderRadius: 8, border: `1px solid ${T.borderHi}` }}>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: T.white }}>{cf.nombre}</div>
+                  <div style={{ fontSize: 11, color: T.teal, textTransform: "uppercase", fontWeight: 700 }}>{cf.tipo}</div>
+                </div>
+                <button onClick={() => eliminarCampo(cf.id)} style={{ color: T.red, background: "none", border: "none", cursor: "pointer" }}><Ico k="trash" size={14} /></button>
+              </div>
+            ))}
+            {(!db.campos_personalizados || db.campos_personalizados.length === 0) && <Vacio text="No hay campos personalizados." />}
+          </div>
+        </div>
       </Modal>
     </div>
   );
