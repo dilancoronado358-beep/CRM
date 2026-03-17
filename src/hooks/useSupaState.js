@@ -23,7 +23,8 @@ const TABLAS_SUPA = [
   "pipelines", "deals", "actividades", "tareas", "emails", "plantillasEmail",
   "notas", "campos_personalizados", "whatsapp_automations", "whatsapp_messages",
   "finanzas_gastos", "finanzas_comisiones", "notificaciones", "auditoria",
-  "api_settings", "webhook_subscriptions", "email_accounts"
+  "api_settings", "webhook_subscriptions", "email_accounts",
+  "landing_pages", "formularios_publicos"
 ];
 
 /* ═══════════════════════════════════════════

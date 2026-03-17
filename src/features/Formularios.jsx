@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { T } from "../theme";
 import { uid } from "../utils";
 import { Btn, Inp, Tarjeta, EncabezadoSeccion, Ico, Sel } from "../components/ui";
@@ -16,395 +16,394 @@ const FIELD_TYPES = [
   { value: "url", label: "Sitio Web" },
 ];
 
-const DEFAULT_APARIENCIA = {
-  accentColor: "#06B6D4",
-  bgColor: "#FFFFFF",
-  textColor: "#111827",
-  fontFamily: "Inter, system-ui, sans-serif",
-  borderRadius: 8,
-  buttonText: "Enviar →",
-  titulo: "",
-  subtitulo: "",
-  logo: "",
-};
+const DEFAULT_FORM = () => ({
+  id: "f" + uid(),
+  nombre: "Nuevo Formulario",
+  pipeline_id: "",
+  apariencia: {
+    accentColor: "#06B6D4",
+    bgColor: "#FFFFFF",
+    textColor: "#111827",
+    fontFamily: "Inter, system-ui, sans-serif",
+    borderRadius: 8,
+    buttonText: "Enviar →",
+    subtitulo: "",
+  },
+  campos: [
+    { id: "c1x", tipo: "text", etiqueta: "Nombre Completo", req: true, opciones: "" },
+    { id: "c2x", tipo: "email", etiqueta: "Correo Electrónico", req: true, opciones: "" },
+    { id: "c3x", tipo: "textarea", etiqueta: "Mensaje", req: false, opciones: "" },
+  ],
+});
 
-export const Formularios = ({ db, setDb }) => {
+const BASE_URL = "https://crm.ensing.lat";
+
+export const Formularios = ({ db }) => {
   const pipelines = db.pipelines || [];
-
-  const [forms, setForms] = useState([
-    {
-      id: "f1",
-      nombre: "Contacto Web Principal",
-      pipeline_id: pipelines[0]?.id || "",
-      apariencia: { ...DEFAULT_APARIENCIA },
-      campos: [
-        { id: "c1", tipo: "text", etiqueta: "Nombre Completo", req: true, opciones: "" },
-        { id: "c2", tipo: "email", etiqueta: "Correo Electrónico", req: true, opciones: "" },
-        { id: "c3", tipo: "textarea", etiqueta: "Mensaje", req: false, opciones: "" },
-      ],
-    },
-  ]);
-  const [activo, setActivo] = useState(forms[0]);
-  const [tab, setTab] = useState("campos"); // campos | apariencia | config
+  const [forms, setForms] = useState([]);
+  const [activoId, setActivoId] = useState(null);
+  const [tab, setTab] = useState("campos");
+  const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [dragging, setDragging] = useState(null);
   const [dragOver, setDragOver] = useState(null);
-  const dragNode = useRef(null);
+  const dragRef = useRef(null);
+
+  // ── Load from Supabase on mount ────────────────────────────────────────────
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true);
+      const { data, error } = await sb.from("formularios_publicos").select("*");
+      if (data && data.length > 0) {
+        // Normalize: campos may be stored as JSON string
+        const parsed = data.map((f) => ({
+          ...f,
+          campos: Array.isArray(f.campos) ? f.campos : JSON.parse(f.campos || "[]"),
+          apariencia: typeof f.apariencia === "object" && f.apariencia !== null
+            ? f.apariencia
+            : JSON.parse(f.apariencia || "{}"),
+        }));
+        setForms(parsed);
+        setActivoId(parsed[0].id);
+      } else {
+        // Seed with default form
+        const def = DEFAULT_FORM();
+        def.id = "f1";
+        def.nombre = "Contacto Web Principal";
+        setForms([def]);
+        setActivoId(def.id);
+      }
+      setLoading(false);
+    };
+    load();
+  }, []);
+
+  const activo = forms.find((f) => f.id === activoId) || null;
 
   const updateActivo = (upd) => {
-    const nv = { ...activo, ...upd };
-    setForms((p) => p.map((x) => (x.id === activo.id ? nv : x)));
-    setActivo(nv);
+    setForms((prev) => prev.map((f) => f.id === activoId ? { ...f, ...upd } : f));
   };
   const updateApariencia = (upd) =>
-    updateActivo({ apariencia: { ...activo.apariencia, ...upd } });
+    updateActivo({ apariencia: { ...(activo?.apariencia || {}), ...upd } });
 
   const addCampo = () => {
+    if (!activo) return;
     updateActivo({
-      campos: [
-        ...activo.campos,
-        { id: "c" + uid(), tipo: "text", etiqueta: "Nuevo Campo", req: false, opciones: "" },
-      ],
+      campos: [...activo.campos, { id: "c" + uid(), tipo: "text", etiqueta: "Nuevo Campo", req: false, opciones: "" }],
     });
   };
-  const delCampo = (id) =>
-    updateActivo({ campos: activo.campos.filter((c) => c.id !== id) });
+  const delCampo = (id) => updateActivo({ campos: activo.campos.filter((c) => c.id !== id) });
   const upCampo = (id, k, v) =>
     updateActivo({ campos: activo.campos.map((c) => (c.id === id ? { ...c, [k]: v } : c)) });
 
-  // Drag to reorder
-  const handleDragStart = (e, idx) => {
+  // Drag reorder
+  const onDragStart = (e, idx) => {
     setDragging(idx);
-    dragNode.current = e.target;
-    setTimeout(() => { if (dragNode.current) dragNode.current.style.opacity = "0.4"; }, 0);
+    dragRef.current = e.currentTarget;
+    requestAnimationFrame(() => { if (dragRef.current) dragRef.current.style.opacity = "0.4"; });
   };
-  const handleDragEnter = (idx) => setDragOver(idx);
-  const handleDragEnd = () => {
+  const onDragEnd = () => {
     if (dragging !== null && dragOver !== null && dragging !== dragOver) {
-      const newCampos = [...activo.campos];
-      const [removed] = newCampos.splice(dragging, 1);
-      newCampos.splice(dragOver, 0, removed);
-      updateActivo({ campos: newCampos });
+      const arr = [...(activo?.campos || [])];
+      const [r] = arr.splice(dragging, 1);
+      arr.splice(dragOver, 0, r);
+      updateActivo({ campos: arr });
     }
-    if (dragNode.current) dragNode.current.style.opacity = "1";
-    setDragging(null);
-    setDragOver(null);
-    dragNode.current = null;
+    if (dragRef.current) dragRef.current.style.opacity = "1";
+    setDragging(null); setDragOver(null); dragRef.current = null;
   };
-
   const moveField = (idx, dir) => {
-    const newCampos = [...activo.campos];
-    const target = idx + dir;
-    if (target < 0 || target >= newCampos.length) return;
-    [newCampos[idx], newCampos[target]] = [newCampos[target], newCampos[idx]];
-    updateActivo({ campos: newCampos });
+    const arr = [...(activo?.campos || [])];
+    const t = idx + dir;
+    if (t < 0 || t >= arr.length) return;
+    [arr[idx], arr[t]] = [arr[t], arr[idx]];
+    updateActivo({ campos: arr });
   };
 
-  const BASE_URL = "https://crm.ensing.lat";
-
-  const copiarLink = () => {
-    const url = `${BASE_URL}/#/f/${activo.id}`;
-    navigator.clipboard.writeText(url);
-    alert(`✅ Link copiado!\n\n${url}`);
-  };
-
-  const guardarFormulario = async () => {
-    const { error } = await sb.from("formularios_publicos").upsert({
+  // ── Save to Supabase ───────────────────────────────────────────────────────
+  const guardar = async () => {
+    if (!activo) return;
+    setSaving(true);
+    const payload = {
       id: activo.id,
       nombre: activo.nombre,
-      color: activo.apariencia.accentColor,
+      color: activo.apariencia?.accentColor || "#06B6D4",
       campos: activo.campos,
       apariencia: activo.apariencia,
-      pipeline_id: activo.pipeline_id,
-      created_at: new Date().toISOString(),
-    });
+      pipeline_id: activo.pipeline_id || null,
+    };
+    const { error } = await sb.from("formularios_publicos").upsert(payload);
+    setSaving(false);
     if (error) {
-      alert("⚠️ Error al guardar en Supabase. Datos guardados localmente.\n" + error.message);
+      alert("❌ Error al guardar: " + error.message);
     } else {
       alert(`✅ Formulario guardado!\n\nLink público:\n${BASE_URL}/#/f/${activo.id}`);
     }
   };
 
-  const A = activo.apariencia || DEFAULT_APARIENCIA;
-  const selectedPipeline = pipelines.find((p) => p.id === activo.pipeline_id);
+  const nuevoFormulario = async () => {
+    const nf = DEFAULT_FORM();
+    const { error } = await sb.from("formularios_publicos").insert({
+      id: nf.id, nombre: nf.nombre, color: "#06B6D4", campos: nf.campos, apariencia: nf.apariencia, pipeline_id: null,
+    });
+    if (!error) {
+      setForms((p) => [...p, nf]);
+      setActivoId(nf.id);
+      setTab("campos");
+    }
+  };
 
-  // ─── RENDER ────────────────────────────────────────────────────────────────
+  const eliminarFormulario = async (id) => {
+    if (!confirm("¿Eliminar este formulario?")) return;
+    await sb.from("formularios_publicos").delete().eq("id", id);
+    const remaining = forms.filter((f) => f.id !== id);
+    setForms(remaining);
+    setActivoId(remaining[0]?.id || null);
+  };
+
+  const copiarLink = () => {
+    if (!activo) return;
+    const url = `${BASE_URL}/#/f/${activo.id}`;
+    navigator.clipboard.writeText(url);
+    alert(`✅ Link copiado!\n\n${url}`);
+  };
+
+  if (loading) return (
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", gap: 16, color: T.whiteDim }}>
+      <div style={{ width: 24, height: 24, border: `2px solid ${T.tealSoft}`, borderTopColor: T.teal, borderRadius: "50%", animation: "spin 1s linear infinite" }} />
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      Cargando formularios...
+    </div>
+  );
+
+  const A = activo?.apariencia || {};
+  const selectedPipeline = pipelines.find((p) => p.id === activo?.pipeline_id);
+
   return (
-    <div style={{ display: "flex", gap: 0, height: "calc(100vh - 120px)", overflow: "hidden" }}>
-      {/* ── PANEL IZQUIERDO ── */}
-      <div style={{ width: 380, display: "flex", flexDirection: "column", borderRight: `1px solid ${T.borderHi}`, flexShrink: 0 }}>
-        <div style={{ padding: "16px 20px", borderBottom: `1px solid ${T.borderHi}` }}>
-          <div style={{ fontSize: 17, fontWeight: 800, color: T.white, marginBottom: 4 }}>📋 Form Builder</div>
-          <div style={{ fontSize: 12, color: T.whiteDim }}>Crea formularios que capturan leads reales</div>
-          <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-            <Btn variant="secundario" size="sm" onClick={copiarLink}><Ico k="link" size={13} /> Link</Btn>
-            <Btn size="sm" onClick={guardarFormulario} style={{ background: T.teal, color: "#000" }}><Ico k="check" size={13} /> Guardar</Btn>
+    <div style={{ display: "flex", height: "calc(100vh - 120px)", overflow: "hidden" }}>
+      {/* ── Panel izquierdo ── */}
+      <div style={{ width: 370, display: "flex", flexDirection: "column", borderRight: `1px solid ${T.borderHi}`, flexShrink: 0, overflow: "hidden" }}>
+        {/* Header */}
+        <div style={{ padding: "14px 16px", borderBottom: `1px solid ${T.borderHi}`, flexShrink: 0 }}>
+          <div style={{ fontSize: 16, fontWeight: 800, color: T.white, marginBottom: 2 }}>📋 Form Builder</div>
+          <div style={{ fontSize: 11, color: T.whiteDim, marginBottom: 10 }}>Formularios que capturan leads reales</div>
+          {/* Form selector */}
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 }}>
+            {forms.map((f) => (
+              <button key={f.id} onClick={() => setActivoId(f.id)} style={{ padding: "4px 10px", borderRadius: 6, border: `1px solid ${activoId === f.id ? T.teal : T.borderHi}`, background: activoId === f.id ? T.tealSoft : T.bg2, color: activoId === f.id ? T.teal : T.whiteDim, fontSize: 11, fontWeight: activoId === f.id ? 700 : 400, cursor: "pointer" }}>
+                {f.nombre}
+              </button>
+            ))}
+            <button onClick={nuevoFormulario} style={{ padding: "4px 10px", borderRadius: 6, border: `1px dashed ${T.teal}`, background: "transparent", color: T.teal, fontSize: 11, cursor: "pointer" }}>+ Nuevo</button>
+          </div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <Btn variant="secundario" size="sm" onClick={copiarLink} style={{ flex: 1 }}><Ico k="link" size={12} /> Copiar Link</Btn>
+            <Btn size="sm" onClick={guardar} style={{ flex: 1, background: T.teal, color: "#000" }} disabled={saving}>
+              {saving ? "Guardando..." : <><Ico k="check" size={12} /> Guardar</>}
+            </Btn>
+            {activo && <button onClick={() => eliminarFormulario(activo.id)} style={{ background: "transparent", border: `1px solid ${T.red}40`, color: T.red, borderRadius: 6, padding: "4px 8px", fontSize: 11, cursor: "pointer" }}>🗑</button>}
           </div>
         </div>
 
-        {/* TABS */}
-        <div style={{ display: "flex", borderBottom: `1px solid ${T.borderHi}` }}>
-          {[["campos", "Campos"], ["apariencia", "Diseño"], ["config", "Config"]].map(([k, label]) => (
-            <button key={k} onClick={() => setTab(k)} style={{ flex: 1, padding: "10px 0", background: "transparent", border: "none", color: tab === k ? T.teal : T.whiteDim, fontWeight: tab === k ? 700 : 500, fontSize: 12, cursor: "pointer", borderBottom: `2px solid ${tab === k ? T.teal : "transparent"}`, transition: "all .15s" }}>
-              {label}
+        {/* Tabs */}
+        <div style={{ display: "flex", borderBottom: `1px solid ${T.borderHi}`, flexShrink: 0 }}>
+          {[["campos", "Campos"], ["apariencia", "Diseño"], ["config", "Config"]].map(([k, lbl]) => (
+            <button key={k} onClick={() => setTab(k)} style={{ flex: 1, padding: "9px 0", background: "transparent", border: "none", color: tab === k ? T.teal : T.whiteDim, fontWeight: tab === k ? 700 : 400, fontSize: 11, cursor: "pointer", borderBottom: `2px solid ${tab === k ? T.teal : "transparent"}` }}>
+              {lbl}
             </button>
           ))}
         </div>
 
-        <div style={{ flex: 1, overflowY: "auto", padding: "16px" }}>
-          {/* ── TAB: CAMPOS ── */}
-          {tab === "campos" && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              <div style={{ fontSize: 12, color: T.whiteDim, textAlign: "center", marginBottom: 4 }}>
-                Arrastra los campos para reordernarlos
-              </div>
+        {/* Tab content */}
+        <div style={{ flex: 1, overflowY: "auto", padding: 14 }}>
+          {!activo ? (
+            <div style={{ textAlign: "center", color: T.whiteDim, fontSize: 13, paddingTop: 40 }}>Crea un formulario para empezar</div>
+          ) : (<>
 
-              {activo.campos.map((c, idx) => (
-                <div key={c.id}
-                  draggable
-                  onDragStart={(e) => handleDragStart(e, idx)}
-                  onDragEnter={() => handleDragEnter(idx)}
-                  onDragEnd={handleDragEnd}
-                  onDragOver={(e) => e.preventDefault()}
-                  style={{
-                    background: dragOver === idx ? T.tealSoft : T.bg2,
-                    border: `1px solid ${dragOver === idx ? T.teal : T.borderHi}`,
-                    borderRadius: 10, padding: 14, cursor: "grab",
-                    transition: "all .15s",
-                  }}
-                >
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-                    <span style={{ color: T.whiteDim, fontSize: 16, cursor: "grab", userSelect: "none" }}>⠿</span>
-                    <Inp value={c.etiqueta} onChange={(e) => upCampo(c.id, "etiqueta", e.target.value)} style={{ flex: 1, fontWeight: 600, fontSize: 13 }} />
-                    <Sel value={c.tipo} onChange={(e) => upCampo(c.id, "tipo", e.target.value)} style={{ width: 120, fontSize: 12 }}>
-                      {FIELD_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
-                    </Sel>
-                  </div>
-
-                  {c.tipo === "select" && (
-                    <div style={{ marginBottom: 8 }}>
-                      <div style={{ fontSize: 11, color: T.whiteDim, marginBottom: 4 }}>Opciones (separadas por coma)</div>
-                      <Inp value={c.opciones || ""} onChange={(e) => upCampo(c.id, "opciones", e.target.value)} placeholder="Opción 1, Opción 2, Opción 3" style={{ fontSize: 12 }} />
+            {/* CAMPOS */}
+            {tab === "campos" && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <div style={{ fontSize: 11, color: T.whiteDim, textAlign: "center", marginBottom: 4 }}>Arrastra ⠿ para reordenar</div>
+                {activo.campos.map((c, idx) => (
+                  <div key={c.id}
+                    draggable
+                    onDragStart={(e) => onDragStart(e, idx)}
+                    onDragEnter={() => setDragOver(idx)}
+                    onDragEnd={onDragEnd}
+                    onDragOver={(e) => e.preventDefault()}
+                    style={{ background: dragOver === idx ? T.tealSoft : T.bg2, border: `1px solid ${dragOver === idx ? T.teal : T.borderHi}`, borderRadius: 10, padding: 12, transition: "all .1s" }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+                      <span style={{ color: T.whiteDim, cursor: "grab", fontSize: 14, userSelect: "none" }}>⠿</span>
+                      <Inp value={c.etiqueta} onChange={(e) => upCampo(c.id, "etiqueta", e.target.value)} style={{ flex: 1, fontWeight: 600, fontSize: 13 }} />
+                      <Sel value={c.tipo} onChange={(e) => upCampo(c.id, "tipo", e.target.value)} style={{ width: 120, fontSize: 12 }}>
+                        {FIELD_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+                      </Sel>
                     </div>
-                  )}
-
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: T.whiteDim, cursor: "pointer" }}>
-                      <input type="checkbox" checked={c.req} onChange={(e) => upCampo(c.id, "req", e.target.checked)} style={{ accentColor: T.teal }} />
-                      {c.req ? "Obligatorio" : "Opcional"}
-                    </label>
-                    <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
-                      <button onClick={() => moveField(idx, -1)} disabled={idx === 0} style={{ background: "transparent", border: `1px solid ${T.borderHi}`, color: T.whiteDim, cursor: "pointer", borderRadius: 4, padding: "2px 6px", fontSize: 12 }}>↑</button>
-                      <button onClick={() => moveField(idx, 1)} disabled={idx === activo.campos.length - 1} style={{ background: "transparent", border: `1px solid ${T.borderHi}`, color: T.whiteDim, cursor: "pointer", borderRadius: 4, padding: "2px 6px", fontSize: 12 }}>↓</button>
-                      <button onClick={() => delCampo(c.id)} style={{ background: "transparent", border: "none", color: T.red, cursor: "pointer", fontSize: 11, fontWeight: 700, padding: "2px 6px" }}>✕</button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-
-              <button onClick={addCampo} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "12px", background: "transparent", border: `2px dashed ${T.borderHi}`, borderRadius: 10, color: T.teal, fontWeight: 700, fontSize: 13, cursor: "pointer", width: "100%", transition: "all .15s" }}>
-                <Ico k="plus" size={14} /> Añadir Campo
-              </button>
-            </div>
-          )}
-
-          {/* ── TAB: APARIENCIA ── */}
-          {tab === "apariencia" && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-              <div>
-                <div style={{ fontSize: 12, fontWeight: 700, color: T.whiteDim, textTransform: "uppercase", letterSpacing: ".08em", marginBottom: 10 }}>Textos</div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                  <div>
-                    <label style={{ fontSize: 11, color: T.whiteDim, display: "block", marginBottom: 4 }}>Nombre del Formulario</label>
-                    <Inp value={activo.nombre} onChange={(e) => updateActivo({ nombre: e.target.value })} style={{ fontWeight: 700 }} />
-                  </div>
-                  <div>
-                    <label style={{ fontSize: 11, color: T.whiteDim, display: "block", marginBottom: 4 }}>Subtítulo</label>
-                    <Inp value={A.subtitulo || ""} onChange={(e) => updateApariencia({ subtitulo: e.target.value })} placeholder="Texto opcional debajo del título" />
-                  </div>
-                  <div>
-                    <label style={{ fontSize: 11, color: T.whiteDim, display: "block", marginBottom: 4 }}>Texto del Botón</label>
-                    <Inp value={A.buttonText || "Enviar →"} onChange={(e) => updateApariencia({ buttonText: e.target.value })} />
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <div style={{ fontSize: 12, fontWeight: 700, color: T.whiteDim, textTransform: "uppercase", letterSpacing: ".08em", marginBottom: 10 }}>Colores</div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                  {[
-                    { key: "accentColor", label: "Color Principal" },
-                    { key: "bgColor", label: "Fondo" },
-                    { key: "textColor", label: "Color Texto" },
-                  ].map(({ key, label }) => (
-                    <div key={key}>
-                      <label style={{ fontSize: 11, color: T.whiteDim, display: "block", marginBottom: 4 }}>{label}</label>
-                      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                        <input type="color" value={A[key] || "#06B6D4"} onChange={(e) => updateApariencia({ [key]: e.target.value })}
-                          style={{ width: 36, height: 32, border: "none", borderRadius: 6, cursor: "pointer", background: "transparent" }} />
-                        <span style={{ fontSize: 12, color: T.whiteDim, fontFamily: "monospace" }}>{A[key]}</span>
+                    {c.tipo === "select" && (
+                      <div style={{ marginBottom: 6 }}>
+                        <div style={{ fontSize: 10, color: T.whiteDim, marginBottom: 3 }}>Opciones (separadas por coma)</div>
+                        <Inp value={c.opciones || ""} onChange={(e) => upCampo(c.id, "opciones", e.target.value)} placeholder="Sí, No, Tal vez" style={{ fontSize: 12 }} />
+                      </div>
+                    )}
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <label style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: T.whiteDim, cursor: "pointer" }}>
+                        <input type="checkbox" checked={!!c.req} onChange={(e) => upCampo(c.id, "req", e.target.checked)} style={{ accentColor: T.teal }} />
+                        {c.req ? "Obligatorio" : "Opcional"}
+                      </label>
+                      <div style={{ display: "flex", gap: 3 }}>
+                        <button onClick={() => moveField(idx, -1)} disabled={idx === 0} style={btnSm}>↑</button>
+                        <button onClick={() => moveField(idx, 1)} disabled={idx === activo.campos.length - 1} style={btnSm}>↓</button>
+                        <button onClick={() => delCampo(c.id)} style={{ ...btnSm, color: T.red, borderColor: T.red + "40" }}>✕</button>
                       </div>
                     </div>
-                  ))}
-                  <div>
-                    <label style={{ fontSize: 11, color: T.whiteDim, display: "block", marginBottom: 4 }}>Radio Bordes</label>
-                    <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                      <input type="range" min="0" max="24" value={A.borderRadius || 8} onChange={(e) => updateApariencia({ borderRadius: parseInt(e.target.value) })} style={{ flex: 1, accentColor: T.teal }} />
-                      <span style={{ fontSize: 12, color: T.whiteDim }}>{A.borderRadius || 8}px</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <div style={{ fontSize: 12, fontWeight: 700, color: T.whiteDim, textTransform: "uppercase", letterSpacing: ".08em", marginBottom: 10 }}>Fuente</div>
-                <Sel value={A.fontFamily || "Inter, system-ui, sans-serif"} onChange={(e) => updateApariencia({ fontFamily: e.target.value })}>
-                  <option value="Inter, system-ui, sans-serif">Inter (Moderna)</option>
-                  <option value="'Georgia', serif">Georgia (Clásica)</option>
-                  <option value="'Montserrat', sans-serif">Montserrat (Elegante)</option>
-                  <option value="'Courier New', monospace">Courier New (Técnica)</option>
-                  <option value="'Poppins', sans-serif">Poppins (Amigable)</option>
-                </Sel>
-              </div>
-            </div>
-          )}
-
-          {/* ── TAB: CONFIG ── */}
-          {tab === "config" && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-              <div>
-                <div style={{ fontSize: 12, fontWeight: 700, color: T.whiteDim, textTransform: "uppercase", letterSpacing: ".08em", marginBottom: 10 }}>Destino de Leads</div>
-                <div style={{ marginBottom: 8, fontSize: 13, color: T.white }}>Pipeline donde irán los leads capturados:</div>
-                <Sel value={activo.pipeline_id || ""} onChange={(e) => updateActivo({ pipeline_id: e.target.value })}>
-                  <option value="">Sin pipeline asignado</option>
-                  {pipelines.map((p) => (
-                    <option key={p.id} value={p.id}>{p.nombre}</option>
-                  ))}
-                </Sel>
-                {selectedPipeline && (
-                  <div style={{ marginTop: 8, padding: "8px 12px", background: T.tealSoft, borderRadius: 8, border: `1px solid ${T.teal}30`, fontSize: 12, color: T.teal }}>
-                    ✅ Los leads entrarán en "{selectedPipeline.etapas?.[0]?.nombre || "Primera etapa"}" de {selectedPipeline.nombre}
-                  </div>
-                )}
-              </div>
-
-              <div>
-                <div style={{ fontSize: 12, fontWeight: 700, color: T.whiteDim, textTransform: "uppercase", letterSpacing: ".08em", marginBottom: 10 }}>Link Público</div>
-                <div style={{ padding: 12, background: T.bg2, borderRadius: 8, border: `1px solid ${T.borderHi}`, fontFamily: "monospace", fontSize: 12, color: T.teal, wordBreak: "break-all", marginBottom: 8 }}>
-                  {BASE_URL}/#/f/{activo.id}
-                </div>
-                <div style={{ display: "flex", gap: 8 }}>
-                  <Btn variant="secundario" size="sm" onClick={copiarLink} style={{ flex: 1 }}><Ico k="link" size={13} /> Copiar</Btn>
-                  <Btn variant="secundario" size="sm" onClick={() => window.open(`${BASE_URL}/#/f/${activo.id}`, "_blank")} style={{ flex: 1 }}><Ico k="eye" size={13} /> Abrir</Btn>
-                </div>
-              </div>
-
-              <div>
-                <div style={{ fontSize: 12, fontWeight: 700, color: T.whiteDim, textTransform: "uppercase", letterSpacing: ".08em", marginBottom: 10 }}>Código de Inserción (Embed)</div>
-                <div style={{ padding: 12, background: T.bg2, borderRadius: 8, border: `1px solid ${T.borderHi}`, fontFamily: "monospace", fontSize: 11, color: T.whiteDim, wordBreak: "break-all" }}>
-                  {`<iframe src="${BASE_URL}/#/f/${activo.id}" width="100%" height="600" frameborder="0"></iframe>`}
-                </div>
-                <button onClick={() => navigator.clipboard.writeText(`<iframe src="${BASE_URL}/#/f/${activo.id}" width="100%" height="600" frameborder="0"></iframe>`)}
-                  style={{ marginTop: 8, background: "transparent", border: `1px solid ${T.borderHi}`, color: T.whiteDim, borderRadius: 6, padding: "6px 12px", fontSize: 11, cursor: "pointer", width: "100%" }}>
-                  Copiar código embed
-                </button>
-              </div>
-
-              <div>
-                <div style={{ fontSize: 12, fontWeight: 700, color: T.whiteDim, textTransform: "uppercase", letterSpacing: ".08em", marginBottom: 10 }}>Formularios</div>
-                {forms.map((f) => (
-                  <div key={f.id} onClick={() => setActivo(f)} style={{ padding: "10px 12px", background: activo.id === f.id ? T.tealSoft : T.bg2, border: `1px solid ${activo.id === f.id ? T.teal : T.borderHi}`, borderRadius: 8, cursor: "pointer", marginBottom: 6, fontSize: 13, fontWeight: 600, color: activo.id === f.id ? T.teal : T.white }}>
-                    {f.nombre}
                   </div>
                 ))}
-                <button onClick={() => {
-                  const nf = { id: "f" + uid(), nombre: "Nuevo Formulario", pipeline_id: pipelines[0]?.id || "", apariencia: { ...DEFAULT_APARIENCIA }, campos: [{ id: "c" + uid(), tipo: "text", etiqueta: "Nombre Completo", req: true }] };
-                  setForms((p) => [...p, nf]);
-                  setActivo(nf);
-                }} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "10px", background: "transparent", border: `2px dashed ${T.borderHi}`, borderRadius: 8, color: T.teal, fontWeight: 700, fontSize: 12, cursor: "pointer", width: "100%" }}>
-                  <Ico k="plus" size={13} /> Nuevo Formulario
+                <button onClick={addCampo} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "11px", background: "transparent", border: `2px dashed ${T.borderHi}`, borderRadius: 10, color: T.teal, fontWeight: 700, fontSize: 12, cursor: "pointer", width: "100%" }}>
+                  <Ico k="plus" size={13} /> Añadir Campo
                 </button>
               </div>
-            </div>
-          )}
+            )}
+
+            {/* APARIENCIA */}
+            {tab === "apariencia" && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                <Section label="Textos">
+                  <Row label="Nombre del formulario"><Inp value={activo.nombre} onChange={(e) => updateActivo({ nombre: e.target.value })} style={{ fontWeight: 700 }} /></Row>
+                  <Row label="Subtítulo"><Inp value={A.subtitulo || ""} onChange={(e) => updateApariencia({ subtitulo: e.target.value })} placeholder="Texto debajo del título" /></Row>
+                  <Row label="Texto del botón"><Inp value={A.buttonText || "Enviar →"} onChange={(e) => updateApariencia({ buttonText: e.target.value })} /></Row>
+                </Section>
+                <Section label="Colores">
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                    {[["accentColor", "Color Principal"], ["bgColor", "Fondo"], ["textColor", "Color Texto"]].map(([k, lbl]) => (
+                      <div key={k}>
+                        <div style={{ fontSize: 10, color: T.whiteDim, marginBottom: 4 }}>{lbl}</div>
+                        <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                          <input type="color" value={A[k] || "#06B6D4"} onChange={(e) => updateApariencia({ [k]: e.target.value })} style={{ width: 32, height: 30, border: "none", borderRadius: 6, cursor: "pointer", background: "transparent" }} />
+                          <span style={{ fontSize: 11, color: T.whiteDim, fontFamily: "monospace" }}>{A[k]}</span>
+                        </div>
+                      </div>
+                    ))}
+                    <div>
+                      <div style={{ fontSize: 10, color: T.whiteDim, marginBottom: 4 }}>Radio Bordes</div>
+                      <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                        <input type="range" min="0" max="24" value={A.borderRadius ?? 8} onChange={(e) => updateApariencia({ borderRadius: +e.target.value })} style={{ flex: 1, accentColor: T.teal }} />
+                        <span style={{ fontSize: 11, color: T.whiteDim }}>{A.borderRadius ?? 8}px</span>
+                      </div>
+                    </div>
+                  </div>
+                </Section>
+                <Section label="Fuente">
+                  <Sel value={A.fontFamily || "Inter, system-ui, sans-serif"} onChange={(e) => updateApariencia({ fontFamily: e.target.value })}>
+                    <option value="Inter, system-ui, sans-serif">Inter (Moderna)</option>
+                    <option value="Georgia, serif">Georgia (Clásica)</option>
+                    <option value="'Courier New', monospace">Courier (Técnica)</option>
+                    <option value="'Poppins', sans-serif">Poppins (Amigable)</option>
+                  </Sel>
+                </Section>
+              </div>
+            )}
+
+            {/* CONFIG */}
+            {tab === "config" && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                <Section label="Pipeline destino">
+                  <Sel value={activo.pipeline_id || ""} onChange={(e) => updateActivo({ pipeline_id: e.target.value })}>
+                    <option value="">Sin pipeline asignado</option>
+                    {pipelines.map((p) => <option key={p.id} value={p.id}>{p.nombre}</option>)}
+                  </Sel>
+                  {selectedPipeline && (
+                    <div style={{ marginTop: 6, padding: "6px 10px", background: T.tealSoft, borderRadius: 6, border: `1px solid ${T.teal}30`, fontSize: 11, color: T.teal }}>
+                      ✅ Leads entran en "{selectedPipeline.etapas?.[0]?.nombre || "Primera etapa"}"
+                    </div>
+                  )}
+                </Section>
+                <Section label="Link Público">
+                  <div style={{ padding: "10px 12px", background: T.bg2, borderRadius: 8, fontFamily: "monospace", fontSize: 11, color: T.teal, wordBreak: "break-all", marginBottom: 8 }}>
+                    {BASE_URL}/#/f/{activo.id}
+                  </div>
+                  <div style={{ display: "flex", gap: 6 }}>
+                    <Btn variant="secundario" size="sm" onClick={copiarLink} style={{ flex: 1 }}>Copiar</Btn>
+                    <Btn variant="secundario" size="sm" onClick={() => window.open(`${BASE_URL}/#/f/${activo.id}`, "_blank")} style={{ flex: 1 }}>Abrir ↗</Btn>
+                  </div>
+                </Section>
+                <Section label="Código Embed">
+                  <div style={{ padding: "8px 10px", background: T.bg2, borderRadius: 6, fontFamily: "monospace", fontSize: 10, color: T.whiteDim, wordBreak: "break-all" }}>
+                    {`<iframe src="${BASE_URL}/#/f/${activo.id}" width="100%" height="600" frameborder="0"></iframe>`}
+                  </div>
+                  <button onClick={() => navigator.clipboard.writeText(`<iframe src="${BASE_URL}/#/f/${activo.id}" width="100%" height="600" frameborder="0"></iframe>`)} style={{ marginTop: 6, ...btnFull }}>Copiar embed</button>
+                </Section>
+              </div>
+            )}
+          </>)}
         </div>
       </div>
 
       {/* ── PREVIEW ── */}
-      <div style={{ flex: 1, background: `repeating-linear-gradient(45deg, ${T.bg0}, ${T.bg0} 10px, ${T.bg1} 10px, ${T.bg1} 20px)`, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-        {/* Preview header */}
-        <div style={{ height: 44, background: T.bg1, borderBottom: `1px solid ${T.borderHi}`, display: "flex", alignItems: "center", padding: "0 16px", gap: 12, flexShrink: 0 }}>
-          <div style={{ display: "flex", gap: 6 }}>
-            {["#EF4444", "#F59E0B", "#10B981"].map((c, i) => <div key={i} style={{ width: 11, height: 11, borderRadius: "50%", background: c }} />)}
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", background: `repeating-linear-gradient(45deg, ${T.bg0}, ${T.bg0} 10px, ${T.bg1} 10px, ${T.bg1} 20px)` }}>
+        <div style={{ height: 40, background: T.bg1, borderBottom: `1px solid ${T.borderHi}`, display: "flex", alignItems: "center", padding: "0 14px", gap: 8, flexShrink: 0 }}>
+          <div style={{ display: "flex", gap: 5 }}>{["#EF4444","#F59E0B","#10B981"].map((c,i)=><div key={i} style={{width:10,height:10,borderRadius:"50%",background:c}}/>)}</div>
+          <div style={{ flex: 1, background: T.bg2, height: 22, borderRadius: 6, display: "flex", alignItems: "center", padding: "0 10px", fontSize: 10, color: T.whiteDim, maxWidth: 350, margin: "0 auto", gap: 4, border: `1px solid ${T.borderHi}` }}>
+            <Ico k="lock" size={8} /> {BASE_URL}/#/f/{activo?.id}
           </div>
-          <div style={{ flex: 1, background: T.bg2, height: 24, borderRadius: 6, display: "flex", alignItems: "center", padding: "0 10px", fontSize: 11, color: T.whiteDim, maxWidth: 380, margin: "0 auto", gap: 6 }}>
-            <Ico k="lock" size={9} /> {BASE_URL}/#/f/{activo.id}
-          </div>
-          <Btn size="sm" onClick={() => window.open(`${BASE_URL}/#/f/${activo.id}`, "_blank")} style={{ fontSize: 11 }}>
-            <Ico k="eye" size={11} /> Preview Real
-          </Btn>
+          <Btn size="sm" onClick={() => activo && window.open(`${BASE_URL}/#/f/${activo.id}`, "_blank")} style={{ fontSize: 10 }}>↗ Ver Real</Btn>
         </div>
-
-        {/* Form preview */}
-        <div style={{ flex: 1, overflowY: "auto", display: "flex", alignItems: "flex-start", justifyContent: "center", padding: 32 }}>
-          <div style={{
-            background: A.bgColor || "#FFFFFF",
-            borderRadius: 20,
-            padding: 36,
-            width: "100%",
-            maxWidth: 460,
-            boxShadow: "0 25px 60px -12px rgba(0,0,0,0.25)",
-            fontFamily: A.fontFamily || "Inter, system-ui, sans-serif",
-            color: A.textColor || "#111827",
-          }}>
-            {/* Form header */}
-            <div style={{ textAlign: "center", marginBottom: 28 }}>
-              <div style={{ width: 48, height: 48, borderRadius: 14, background: (A.accentColor || "#06B6D4") + "22", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px", fontSize: 22 }}>📋</div>
-              <h2 style={{ margin: "0 0 8px", fontSize: 22, fontWeight: 800, color: A.textColor || "#111827" }}>{activo.nombre}</h2>
-              {A.subtitulo && <p style={{ margin: 0, fontSize: 14, color: "#6B7280" }}>{A.subtitulo}</p>}
-            </div>
-
-            {/* Fields */}
-            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-              {activo.campos.map((c) => (
-                <div key={c.id}>
-                  <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: A.textColor || "#374151", marginBottom: 6 }}>
-                    {c.etiqueta} {c.req && <span style={{ color: "#EF4444" }}>*</span>}
-                  </label>
-                  {c.tipo === "textarea" ? (
-                    <textarea rows={3} readOnly placeholder={`Ingresa ${c.etiqueta.toLowerCase()}`} style={{ width: "100%", padding: "11px 14px", border: `1.5px solid #E5E7EB`, borderRadius: A.borderRadius || 8, fontSize: 14, fontFamily: A.fontFamily, boxSizing: "border-box", resize: "vertical", color: "#111827" }} />
-                  ) : c.tipo === "select" ? (
-                    <select disabled style={{ width: "100%", padding: "11px 14px", border: `1.5px solid #E5E7EB`, borderRadius: A.borderRadius || 8, fontSize: 14, fontFamily: A.fontFamily, boxSizing: "border-box", background: "#fff", color: "#6B7280" }}>
-                      <option>Selecciona una opción</option>
-                      {(c.opciones || "").split(",").filter(Boolean).map((o, i) => <option key={i}>{o.trim()}</option>)}
-                    </select>
-                  ) : c.tipo === "checkbox" ? (
-                    <label style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 14, color: A.textColor || "#374151", cursor: "pointer" }}>
-                      <input type="checkbox" style={{ accentColor: A.accentColor, width: 16, height: 16 }} /> Sí, acepto
+        <div style={{ flex: 1, overflowY: "auto", display: "flex", alignItems: "flex-start", justifyContent: "center", padding: 24 }}>
+          {activo && (
+            <div style={{ background: A.bgColor || "#FFFFFF", borderRadius: 20, padding: 36, width: "100%", maxWidth: 440, boxShadow: "0 25px 60px rgba(0,0,0,0.25)", fontFamily: A.fontFamily || "Inter, system-ui, sans-serif", color: A.textColor || "#111827" }}>
+              <div style={{ textAlign: "center", marginBottom: 24 }}>
+                <div style={{ width: 46, height: 46, borderRadius: 12, background: (A.accentColor || "#06B6D4") + "22", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px", fontSize: 22 }}>📋</div>
+                <h2 style={{ margin: "0 0 6px", fontSize: 20, fontWeight: 800, color: A.textColor || "#111827" }}>{activo.nombre}</h2>
+                {A.subtitulo && <p style={{ margin: 0, fontSize: 13, color: "#6B7280" }}>{A.subtitulo}</p>}
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                {activo.campos.map((c) => (
+                  <div key={c.id}>
+                    <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: A.textColor || "#374151", marginBottom: 5 }}>
+                      {c.etiqueta} {c.req && <span style={{ color: "#EF4444" }}>*</span>}
                     </label>
-                  ) : (
-                    <input type={c.tipo} readOnly placeholder={`Ingresa ${c.etiqueta.toLowerCase()}`} style={{ width: "100%", padding: "11px 14px", border: `1.5px solid #E5E7EB`, borderRadius: A.borderRadius || 8, fontSize: 14, fontFamily: A.fontFamily, boxSizing: "border-box", color: "#111827" }} />
-                  )}
-                </div>
-              ))}
-
-              <button style={{
-                width: "100%", padding: "14px", marginTop: 6,
-                background: A.accentColor || "#06B6D4", color: "#fff",
-                border: "none", borderRadius: A.borderRadius || 8,
-                fontSize: 15, fontWeight: 700, cursor: "pointer",
-                boxShadow: `0 6px 20px ${A.accentColor || "#06B6D4"}44`,
-                fontFamily: A.fontFamily,
-              }}>
-                {A.buttonText || "Enviar →"}
-              </button>
+                    {c.tipo === "textarea" ? (
+                      <textarea rows={3} readOnly placeholder={`Ingresa ${c.etiqueta.toLowerCase()}`} style={{ ...previewInput, borderRadius: A.borderRadius ?? 8 }} />
+                    ) : c.tipo === "select" ? (
+                      <select disabled style={{ ...previewInput, borderRadius: A.borderRadius ?? 8 }}>
+                        <option>Selecciona una opción</option>
+                        {(c.opciones || "").split(",").filter(Boolean).map((o, i) => <option key={i}>{o.trim()}</option>)}
+                      </select>
+                    ) : c.tipo === "checkbox" ? (
+                      <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, cursor: "pointer" }}>
+                        <input type="checkbox" style={{ accentColor: A.accentColor, width: 15, height: 15 }} /> Sí, acepto
+                      </label>
+                    ) : (
+                      <input type={c.tipo} readOnly placeholder={`Ingresa ${c.etiqueta.toLowerCase()}`} style={{ ...previewInput, borderRadius: A.borderRadius ?? 8 }} />
+                    )}
+                  </div>
+                ))}
+                <button style={{ width: "100%", padding: "13px", marginTop: 4, background: A.accentColor || "#06B6D4", color: "#fff", border: "none", borderRadius: A.borderRadius ?? 8, fontSize: 14, fontWeight: 700, cursor: "pointer", boxShadow: `0 6px 20px ${A.accentColor || "#06B6D4"}44` }}>
+                  {A.buttonText || "Enviar →"}
+                </button>
+              </div>
+              <p style={{ textAlign: "center", marginTop: 14, fontSize: 11, color: "#9CA3AF" }}>🔒 Tus datos están seguros con nosotros</p>
             </div>
-
-            <p style={{ textAlign: "center", marginTop: 16, fontSize: 12, color: "#9CA3AF" }}>
-              🔒 Datos seguros · Nunca los compartiremos
-            </p>
-          </div>
+          )}
         </div>
       </div>
     </div>
   );
 };
+
+// ── Helpers ─────────────────────────────────────────────────────────────────
+const Section = ({ label, children }) => (
+  <div>
+    <div style={{ fontSize: 10, fontWeight: 700, color: "#6B7280", textTransform: "uppercase", letterSpacing: ".1em", marginBottom: 8 }}>{label}</div>
+    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>{children}</div>
+  </div>
+);
+const Row = ({ label, children }) => (
+  <div>
+    <div style={{ fontSize: 10, color: "#6B7280", marginBottom: 3 }}>{label}</div>
+    {children}
+  </div>
+);
+const btnSm = { background: "transparent", border: "1px solid #374151", color: "#9CA3AF", cursor: "pointer", borderRadius: 4, padding: "2px 6px", fontSize: 11 };
+const btnFull = { background: "transparent", border: "1px solid #374151", color: "#9CA3AF", borderRadius: 6, padding: "6px 12px", fontSize: 11, cursor: "pointer", width: "100%" };
+const previewInput = { width: "100%", padding: "10px 12px", border: "1.5px solid #E5E7EB", fontSize: 13, fontFamily: "inherit", boxSizing: "border-box", color: "#111827", background: "#fff", outline: "none" };

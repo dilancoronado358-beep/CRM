@@ -1,192 +1,291 @@
-import { useState, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { T } from "../theme";
 import { uid } from "../utils";
-import { Btn, Inp, Tarjeta, EncabezadoSeccion, Ico, Campo, Modal } from "../components/ui";
+import { Btn, Inp, Modal, Ico, Campo } from "../components/ui";
+import { sb } from "../hooks/useSupaState";
+
+const BASE_URL = "https://crm.ensing.lat";
 
 const ALL_BLOCKS = [
   { id: "hero", title: "Hero Section", icon: "star", desc: "Título principal y CTA" },
-  { id: "features", title: "Grid de Beneficios", icon: "grid", desc: "3-4 columnas de características" },
-  { id: "pricing", title: "Tabla de Precios", icon: "dollar", desc: "Planes con botón de acción" },
+  { id: "stats", title: "Estadísticas", icon: "bar-chart", desc: "Números de impacto" },
+  { id: "features", title: "Grid de Beneficios", icon: "grid", desc: "Características en columnas" },
+  { id: "pricing", title: "Tabla de Precios", icon: "dollar", desc: "Planes con CTA" },
   { id: "testimonials", title: "Testimonios", icon: "user", desc: "Opiniones de clientes" },
-  { id: "faq", title: "FAQ", icon: "help-circle", desc: "Preguntas frecuentes" },
-  { id: "stats", title: "Estadísticas", icon: "bar-chart", desc: "Números que impactan" },
-  { id: "team", title: "Equipo", icon: "users", desc: "Tu equipo o empresa" },
-  { id: "form", title: "Formulario Captura", icon: "template", desc: "Lead capture embebido" },
+  { id: "faq", title: "Preguntas Frecuentes", icon: "help-circle", desc: "FAQ interactivo" },
   { id: "video", title: "Video Embed", icon: "video", desc: "YouTube o Vimeo" },
-  { id: "cta", title: "Llamada a la Acción", icon: "mail", desc: "Banner final de conversión" },
+  { id: "form", title: "Formulario Captura", icon: "template", desc: "Lead capture en vivo" },
+  { id: "cta", title: "Llamada a la Acción", icon: "mail", desc: "Banner de conversión final" },
 ];
 
-export const Websites = ({ db, setDb }) => {
-  const pagesInit = [{
-    id: "p1", slug: "landing-2026", titulo: "Campaña Q1 2026", activo: true,
-    blocks: ["hero", "features", "cta"],
-    heroTitle: "Genera más negocios hoy", heroSub: "La plataforma líder para captar leads y convertirlos en clientes.",
-    heroCTA: "Ver Demo", heroCTA2: "Ver Precios",
-    accentColor: "#06B6D4", bgDark: false,
-    videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ",
-    faqItems: [
-      { q: "¿Cuánto cuesta?", a: "Tenemos planes desde $29/mes con prueba gratuita de 14 días." },
-      { q: "¿Es fácil de configurar?", a: "Sí, en menos de 2 horas puedes tener tu CRM listo para usar." },
-    ],
-    statsItems: [
-      { value: "+500", label: "Clientes Activos" },
-      { value: "40%", label: "Más Conversiones" },
-      { value: "10h", label: "Ahorradas por Semana" },
-      { value: "99.9%", label: "Uptime Garantizado" },
-    ],
-    customFeatures: [
-      { icon: "⚡", title: "Automatizaciones IA", desc: "Automatiza seguimientos y tareas con inteligencia artificial." },
-      { icon: "🎯", title: "Pipeline Visual", desc: "Gestiona todas tus oportunidades en un tablero Kanban." },
-      { icon: "📊", title: "Reportes al Instante", desc: "Métricas de ventas actualizadas en tiempo real." },
-      { icon: "📱", title: "WhatsApp Integrado", desc: "Chatbot automático con tu base de contactos." },
-    ],
-  }];
+const DEFAULT_PAGE = (id, titulo, slug) => ({
+  id: id || "p" + uid(),
+  slug: slug || "landing-" + Date.now(),
+  titulo: titulo || "Nueva Landing Page",
+  activo: false,
+  blocks: ["hero", "features", "cta"],
+  heroTitle: titulo || "Genera más negocios hoy",
+  heroSub: "La plataforma líder para captar leads y convertirlos en clientes.",
+  heroCTA: "Ver Demo",
+  heroCTA2: "Ver Precios",
+  accentColor: "#06B6D4",
+  videoUrl: "",
+  faqItems: [
+    { q: "¿Cuánto cuesta?", a: "Planes desde $29/mes con 14 días de prueba gratuita." },
+    { q: "¿Es fácil de configurar?", a: "En menos de 2 horas puedes tener tu CRM listo." },
+  ],
+  statsItems: [
+    { value: "+500", label: "Clientes Activos" },
+    { value: "40%", label: "Más Conversiones" },
+    { value: "10h", label: "Ahorradas/Semana" },
+    { value: "99.9%", label: "Uptime" },
+  ],
+  features: [
+    { icon: "⚡", title: "Automatizaciones IA", desc: "Automatiza seguimientos y respuestas con IA." },
+    { icon: "🎯", title: "Pipeline Visual", desc: "Gestiona oportunidades en tablero Kanban." },
+    { icon: "📊", title: "Reportes Reales", desc: "Métricas de ventas actualizadas al instante." },
+    { icon: "📱", title: "WhatsApp Integrado", desc: "Chatbot automático conectado al CRM." },
+  ],
+});
 
-  const [pages, setPages] = useState(db.websites?.length ? db.websites : pagesInit);
-  const [activoId, setActivoId] = useState(pages[0]?.id || null);
-  const [editPanel, setEditPanel] = useState("sections"); // sections | edit | design
+export const Websites = ({ db, setDb }) => {
+  const [pages, setPages] = useState([]);
+  const [activoId, setActivoId] = useState(null);
+  const [panel, setPanel] = useState("sections");
   const [showNew, setShowNew] = useState(false);
   const [fNew, setFNew] = useState({ titulo: "", slug: "" });
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [expandedBlock, setExpandedBlock] = useState(null);
   const [dragBlock, setDragBlock] = useState(null);
   const [dragOverBlock, setDragOverBlock] = useState(null);
-  const [expandedBlock, setExpandedBlock] = useState(null);
   const dragRef = useRef(null);
 
+  // ── Load from Supabase ────────────────────────────────────────────────────
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true);
+      const { data, error } = await sb.from("landing_pages").select("*").order("created_at", { ascending: true });
+      if (data && data.length > 0) {
+        const parsed = data.map((p) => ({
+          ...DEFAULT_PAGE(p.id, p.titulo, p.slug), // fill any missing defaults
+          ...p,
+          blocks: Array.isArray(p.blocks) ? p.blocks : JSON.parse(p.blocks || '["hero","features","cta"]'),
+          faqItems: Array.isArray(p.faq_items) ? p.faq_items : (p.faqItems || []),
+          statsItems: Array.isArray(p.stats_items) ? p.stats_items : (p.statsItems || []),
+          features: Array.isArray(p.features) ? p.features : (p.features || []),
+        }));
+        setPages(parsed);
+        setActivoId(parsed[0].id);
+      } else {
+        const def = DEFAULT_PAGE("p1", "Campaña Q1 2026", "landing-2026");
+        def.activo = true;
+        setPages([def]);
+        setActivoId(def.id);
+      }
+      setLoading(false);
+    };
+    load();
+  }, []);
+
   const activo = pages.find((p) => p.id === activoId) || null;
-  const save = (nPages) => { setPages(nPages); setDb((d) => ({ ...d, websites: nPages })); };
+
   const updateActivo = (upd) => {
-    const nPages = pages.map((p) => (p.id === activoId ? { ...p, ...upd } : p));
-    save(nPages);
+    setPages((prev) => prev.map((p) => p.id === activoId ? { ...p, ...upd } : p));
   };
 
-  const toggleBlock = (blockId) => {
-    const cur = activo.blocks || [];
-    const nBlocks = cur.includes(blockId) ? cur.filter((b) => b !== blockId) : [...cur, blockId];
-    updateActivo({ blocks: nBlocks });
+  // ── Save to Supabase ──────────────────────────────────────────────────────
+  const guardar = async () => {
+    if (!activo) return;
+    setSaving(true);
+    const payload = {
+      id: activo.id,
+      slug: activo.slug,
+      titulo: activo.titulo,
+      activo: activo.activo,
+      blocks: activo.blocks,
+      hero_title: activo.heroTitle,
+      hero_sub: activo.heroSub,
+      hero_cta: activo.heroCTA,
+      hero_cta2: activo.heroCTA2,
+      accent_color: activo.accentColor,
+      video_url: activo.videoUrl || null,
+      faq_items: activo.faqItems || [],
+      stats_items: activo.statsItems || [],
+      features: activo.features || [],
+    };
+    const { error } = await sb.from("landing_pages").upsert(payload);
+    setSaving(false);
+    if (error) {
+      alert("❌ Error al guardar: " + error.message);
+    } else {
+      alert(`✅ Landing page guardada!\n\nLink público:\n${BASE_URL}/#/sites/${activo.id}`);
+    }
   };
 
-  // Drag to reorder blocks
-  const handleBlockDragStart = (e, idx) => {
+  const nuevaPagina = async () => {
+    if (!fNew.titulo.trim()) return;
+    const slug = fNew.slug.trim() || fNew.titulo.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
+    const np = DEFAULT_PAGE(null, fNew.titulo, slug);
+    const { error } = await sb.from("landing_pages").insert({
+      id: np.id, slug: np.slug, titulo: np.titulo, activo: false, blocks: np.blocks,
+      hero_title: np.heroTitle, hero_sub: np.heroSub, hero_cta: np.heroCTA, accent_color: np.accentColor,
+      faq_items: np.faqItems, stats_items: np.statsItems, features: np.features,
+    });
+    if (!error) {
+      setPages((p) => [...p, np]);
+      setActivoId(np.id);
+    }
+    setShowNew(false); setFNew({ titulo: "", slug: "" });
+  };
+
+  const eliminarPagina = async (id) => {
+    if (!confirm("¿Eliminar esta landing page?")) return;
+    await sb.from("landing_pages").delete().eq("id", id);
+    const rem = pages.filter((p) => p.id !== id);
+    setPages(rem);
+    setActivoId(rem[0]?.id || null);
+  };
+
+  const toggleBloque = (blockId) => {
+    const cur = activo?.blocks || [];
+    updateActivo({ blocks: cur.includes(blockId) ? cur.filter((b) => b !== blockId) : [...cur, blockId] });
+  };
+
+  // Drag reorder
+  const onBlockDragStart = (e, idx) => {
     setDragBlock(idx);
-    dragRef.current = e.target;
-    setTimeout(() => { if (dragRef.current) dragRef.current.style.opacity = "0.4"; }, 0);
+    dragRef.current = e.currentTarget;
+    requestAnimationFrame(() => { if (dragRef.current) dragRef.current.style.opacity = "0.4"; });
   };
-  const handleBlockDragEnd = () => {
+  const onBlockDragEnd = () => {
     if (dragBlock !== null && dragOverBlock !== null && dragBlock !== dragOverBlock) {
-      const newBlocks = [...(activo.blocks || [])];
-      const [removed] = newBlocks.splice(dragBlock, 1);
-      newBlocks.splice(dragOverBlock, 0, removed);
-      updateActivo({ blocks: newBlocks });
+      const arr = [...(activo?.blocks || [])];
+      const [r] = arr.splice(dragBlock, 1);
+      arr.splice(dragOverBlock, 0, r);
+      updateActivo({ blocks: arr });
     }
     if (dragRef.current) dragRef.current.style.opacity = "1";
-    setDragBlock(null);
-    setDragOverBlock(null);
-    dragRef.current = null;
+    setDragBlock(null); setDragOverBlock(null); dragRef.current = null;
   };
   const moveBlock = (idx, dir) => {
-    const newBlocks = [...(activo.blocks || [])];
-    const target = idx + dir;
-    if (target < 0 || target >= newBlocks.length) return;
-    [newBlocks[idx], newBlocks[target]] = [newBlocks[target], newBlocks[idx]];
-    updateActivo({ blocks: newBlocks });
+    const arr = [...(activo?.blocks || [])];
+    const t = idx + dir;
+    if (t < 0 || t >= arr.length) return;
+    [arr[idx], arr[t]] = [arr[t], arr[idx]];
+    updateActivo({ blocks: arr });
   };
 
-  const nuevaPagina = () => {
-    if (!fNew.titulo.trim()) return;
-    const id = "p" + uid();
-    const slug = fNew.slug.trim() || fNew.titulo.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
-    const np = { ...pagesInit[0], id, slug, titulo: fNew.titulo, activo: false, blocks: ["hero", "features", "cta"], heroTitle: fNew.titulo };
-    const nPages = [...pages, np];
-    save(nPages); setActivoId(np.id); setShowNew(false); setFNew({ titulo: "", slug: "" });
-  };
-
-  const copyLink = (p) => {
-    const url = `https://crm.ensing.lat/#/sites/${p.id}`;
+  const copyLink = (pg) => {
+    const url = `${BASE_URL}/#/sites/${pg.id}`;
     navigator.clipboard?.writeText(url);
     alert(`✅ Link copiado!\n\n${url}\n\nCualquier persona puede abrirlo sin login.`);
   };
 
-  const accent = activo?.accentColor || "#06B6D4";
-
-  // Inline block editors
-  const BlockEditor = ({ blockId }) => {
+  // Inline editors per block type
+  const renderBlockEditor = (blockId) => {
     if (!activo) return null;
+    const upd = (k, v) => updateActivo({ [k]: v });
+    const updArr = (arrKey, idx, partial) => {
+      const arr = [...(activo[arrKey] || [])];
+      arr[idx] = { ...arr[idx], ...partial };
+      updateActivo({ [arrKey]: arr });
+    };
+    const rmArr = (arrKey, idx) => updateActivo({ [arrKey]: (activo[arrKey] || []).filter((_, i) => i !== idx) });
+    const addArr = (arrKey, item) => updateActivo({ [arrKey]: [...(activo[arrKey] || []), item] });
+
+    const base = { padding: 12, background: T.bg1, borderRadius: "0 0 8px 8px", borderTop: `1px solid ${T.borderHi}`, display: "flex", flexDirection: "column", gap: 8 };
+
     switch (blockId) {
-      case "hero":
-        return (
-          <div style={{ display: "flex", flexDirection: "column", gap: 10, padding: 14, background: T.bg2, borderRadius: 10, marginTop: 8 }}>
-            <div><label style={ls}>Título Principal</label>
-              <Inp value={activo.heroTitle || ""} onChange={(e) => updateActivo({ heroTitle: e.target.value })} /></div>
-            <div><label style={ls}>Subtítulo</label>
-              <Inp value={activo.heroSub || ""} onChange={(e) => updateActivo({ heroSub: e.target.value })} placeholder="Explica tu propuesta de valor" /></div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-              <div><label style={ls}>Botón 1</label><Inp value={activo.heroCTA || ""} onChange={(e) => updateActivo({ heroCTA: e.target.value })} /></div>
-              <div><label style={ls}>Botón 2</label><Inp value={activo.heroCTA2 || ""} onChange={(e) => updateActivo({ heroCTA2: e.target.value })} /></div>
+      case "hero": return (
+        <div style={base}>
+          <IE label="Título" value={activo.heroTitle || ""} onChange={(v) => upd("heroTitle", v)} />
+          <IE label="Subtítulo" value={activo.heroSub || ""} onChange={(v) => upd("heroSub", v)} />
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+            <IE label="Botón 1" value={activo.heroCTA || ""} onChange={(v) => upd("heroCTA", v)} />
+            <IE label="Botón 2" value={activo.heroCTA2 || ""} onChange={(v) => upd("heroCTA2", v)} />
+          </div>
+        </div>
+      );
+      case "video": return (
+        <div style={base}>
+          <IE label="URL Embed (YouTube/Vimeo)" value={activo.videoUrl || ""} onChange={(v) => upd("videoUrl", v)} placeholder="https://www.youtube.com/embed/VIDEO_ID" />
+        </div>
+      );
+      case "faq": return (
+        <div style={base}>
+          {(activo.faqItems || []).map((item, i) => (
+            <div key={i} style={{ background: T.bg2, borderRadius: 8, padding: 10, display: "flex", flexDirection: "column", gap: 6 }}>
+              <Inp value={item.q} onChange={(e) => updArr("faqItems", i, { q: e.target.value })} placeholder="Pregunta..." style={{ fontSize: 12 }} />
+              <textarea value={item.a} onChange={(e) => updArr("faqItems", i, { a: e.target.value })} rows={2} placeholder="Respuesta..." style={{ padding: "7px 10px", background: T.bg1, border: `1px solid ${T.borderHi}`, borderRadius: 6, color: T.white, fontSize: 12, fontFamily: "inherit", resize: "vertical", outline: "none" }} />
+              <button onClick={() => rmArr("faqItems", i)} style={delBtn}>✕ Eliminar</button>
             </div>
-          </div>
-        );
-      case "video":
-        return (
-          <div style={{ padding: 14, background: T.bg2, borderRadius: 10, marginTop: 8 }}>
-            <label style={ls}>URL de YouTube/Vimeo (embed)</label>
-            <Inp value={activo.videoUrl || ""} onChange={(e) => updateActivo({ videoUrl: e.target.value })} placeholder="https://www.youtube.com/embed/VIDEO_ID" />
-          </div>
-        );
-      case "faq":
-        return (
-          <div style={{ padding: 14, background: T.bg2, borderRadius: 10, marginTop: 8, display: "flex", flexDirection: "column", gap: 10 }}>
-            {(activo.faqItems || []).map((item, i) => (
-              <div key={i} style={{ display: "flex", flexDirection: "column", gap: 6, padding: "10px", background: T.bg1, borderRadius: 8, border: `1px solid ${T.borderHi}` }}>
-                <Inp value={item.q} onChange={(e) => { const n = [...(activo.faqItems || [])]; n[i] = { ...n[i], q: e.target.value }; updateActivo({ faqItems: n }); }} placeholder="Pregunta..." />
-                <textarea value={item.a} onChange={(e) => { const n = [...(activo.faqItems || [])]; n[i] = { ...n[i], a: e.target.value }; updateActivo({ faqItems: n }); }} rows={2} placeholder="Respuesta..." style={{ padding: "8px 10px", background: T.bg2, border: `1px solid ${T.borderHi}`, borderRadius: 6, color: T.white, fontSize: 13, fontFamily: "inherit", resize: "vertical" }} />
-                <button onClick={() => updateActivo({ faqItems: (activo.faqItems || []).filter((_, j) => j !== i) })} style={{ alignSelf: "flex-end", background: "transparent", border: "none", color: T.red, cursor: "pointer", fontSize: 11 }}>Eliminar</button>
+          ))}
+          <button onClick={() => addArr("faqItems", { q: "Nueva pregunta", a: "Respuesta aquí" })} style={addBtn}>+ Añadir pregunta</button>
+        </div>
+      );
+      case "stats": return (
+        <div style={base}>
+          {(activo.statsItems || []).map((s, i) => (
+            <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr 2fr auto", gap: 6, alignItems: "center" }}>
+              <Inp value={s.value} onChange={(e) => updArr("statsItems", i, { value: e.target.value })} placeholder="+500" style={{ fontSize: 12 }} />
+              <Inp value={s.label} onChange={(e) => updArr("statsItems", i, { label: e.target.value })} placeholder="Clientes activos" style={{ fontSize: 12 }} />
+              <button onClick={() => rmArr("statsItems", i)} style={delBtn}>✕</button>
+            </div>
+          ))}
+          <button onClick={() => addArr("statsItems", { value: "100+", label: "Nuevo stat" })} style={addBtn}>+ Añadir stat</button>
+        </div>
+      );
+      case "features": return (
+        <div style={base}>
+          {(activo.features || []).map((f, i) => (
+            <div key={i} style={{ background: T.bg2, borderRadius: 8, padding: 10, display: "flex", flexDirection: "column", gap: 6 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "50px 1fr 1fr", gap: 6 }}>
+                <Inp value={f.icon} onChange={(e) => updArr("features", i, { icon: e.target.value })} placeholder="⚡" style={{ fontSize: 20, textAlign: "center" }} />
+                <Inp value={f.title} onChange={(e) => updArr("features", i, { title: e.target.value })} placeholder="Título" style={{ fontSize: 12 }} />
+                <button onClick={() => rmArr("features", i)} style={delBtn}>✕</button>
               </div>
-            ))}
-            <button onClick={() => updateActivo({ faqItems: [...(activo.faqItems || []), { q: "Nueva pregunta", a: "Respuesta aquí" }] })} style={{ padding: "8px", background: "transparent", border: `1px dashed ${T.borderHi}`, borderRadius: 8, color: T.teal, cursor: "pointer", fontSize: 12 }}>+ Añadir pregunta</button>
-          </div>
-        );
-      case "stats":
-        return (
-          <div style={{ padding: 14, background: T.bg2, borderRadius: 10, marginTop: 8, display: "flex", flexDirection: "column", gap: 8 }}>
-            {(activo.statsItems || []).map((item, i) => (
-              <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr 2fr auto", gap: 8, alignItems: "center" }}>
-                <Inp value={item.value} onChange={(e) => { const n = [...(activo.statsItems || [])]; n[i] = { ...n[i], value: e.target.value }; updateActivo({ statsItems: n }); }} placeholder="+500" />
-                <Inp value={item.label} onChange={(e) => { const n = [...(activo.statsItems || [])]; n[i] = { ...n[i], label: e.target.value }; updateActivo({ statsItems: n }); }} placeholder="Clientes activos" />
-                <button onClick={() => updateActivo({ statsItems: (activo.statsItems || []).filter((_, j) => j !== i) })} style={{ background: "transparent", border: "none", color: T.red, cursor: "pointer", fontSize: 14 }}>✕</button>
-              </div>
-            ))}
-            <button onClick={() => updateActivo({ statsItems: [...(activo.statsItems || []), { value: "100+", label: "Nuevo stat" }] })} style={{ padding: "8px", background: "transparent", border: `1px dashed ${T.borderHi}`, borderRadius: 8, color: T.teal, cursor: "pointer", fontSize: 12 }}>+ Añadir estadística</button>
-          </div>
-        );
-      default:
-        return null;
+              <textarea value={f.desc} onChange={(e) => updArr("features", i, { desc: e.target.value })} rows={2} placeholder="Descripción..." style={{ padding: "7px 10px", background: T.bg1, border: `1px solid ${T.borderHi}`, borderRadius: 6, color: T.white, fontSize: 12, fontFamily: "inherit", resize: "vertical", outline: "none" }} />
+            </div>
+          ))}
+          <button onClick={() => addArr("features", { icon: "⭐", title: "Nueva función", desc: "Describir beneficio." })} style={addBtn}>+ Añadir característica</button>
+        </div>
+      );
+      default: return null;
     }
   };
 
-  const ls = { fontSize: 11, color: T.whiteDim, display: "block", marginBottom: 4 };
+  const accent = activo?.accentColor || "#06B6D4";
+
+  if (loading) return (
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", gap: 16, color: T.whiteDim }}>
+      <div style={{ width: 24, height: 24, border: `2px solid ${T.tealSoft}`, borderTopColor: T.teal, borderRadius: "50%", animation: "spin 1s linear infinite" }} />
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      Cargando páginas...
+    </div>
+  );
 
   return (
-    <div style={{ display: "flex", gap: 0, height: "calc(100vh - 120px)", overflow: "hidden" }}>
+    <div style={{ display: "flex", height: "calc(100vh - 120px)", overflow: "hidden" }}>
       {/* ── SIDEBAR ── */}
-      <div style={{ width: 340, display: "flex", flexDirection: "column", borderRight: `1px solid ${T.borderHi}`, flexShrink: 0 }}>
-        {/* Header */}
-        <div style={{ padding: "14px 16px", borderBottom: `1px solid ${T.borderHi}` }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <div style={{ fontSize: 16, fontWeight: 800, color: T.white }}>🌐 Landing Pages</div>
+      <div style={{ width: 340, display: "flex", flexDirection: "column", borderRight: `1px solid ${T.borderHi}`, flexShrink: 0, overflow: "hidden" }}>
+        {/* Header + page list */}
+        <div style={{ padding: "12px 14px", borderBottom: `1px solid ${T.borderHi}`, flexShrink: 0 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+            <div style={{ fontSize: 15, fontWeight: 800, color: T.white }}>🌐 Landing Pages</div>
             <Btn size="sm" onClick={() => setShowNew(true)}><Ico k="plus" size={12} /> Nueva</Btn>
           </div>
-          {/* Page list small */}
-          <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 5 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
             {pages.map((p) => (
-              <div key={p.id} onClick={() => setActivoId(p.id)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 10px", background: activoId === p.id ? T.tealSoft : T.bg2, border: `1px solid ${activoId === p.id ? T.teal : T.borderHi}`, borderRadius: 8, cursor: "pointer", transition: "all .15s" }}>
-                <div>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: activoId === p.id ? T.teal : T.white }}>{p.titulo}</div>
+              <div key={p.id} onClick={() => setActivoId(p.id)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 10px", background: activoId === p.id ? T.tealSoft : T.bg2, border: `1px solid ${activoId === p.id ? T.teal : T.borderHi}`, borderRadius: 8, cursor: "pointer", transition: "all .1s" }}>
+                <div style={{ overflow: "hidden" }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: activoId === p.id ? T.teal : T.white, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.titulo}</div>
                   <div style={{ fontSize: 10, color: T.whiteDim, fontFamily: "monospace" }}>/{p.slug}</div>
                 </div>
-                <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                  <div style={{ width: 7, height: 7, borderRadius: "50%", background: p.activo ? T.green : T.whiteDim }} />
-                  <button onClick={(e) => { e.stopPropagation(); copyLink(p); }} style={{ background: "transparent", border: `1px solid ${T.borderHi}`, color: T.whiteDim, borderRadius: 4, padding: "2px 6px", fontSize: 10, cursor: "pointer" }}>🔗</button>
-                  <button onClick={(e) => { e.stopPropagation(); updateActivo({ activo: !p.activo }); setActivoId(p.id); }} style={{ background: "transparent", border: `1px solid ${T.borderHi}`, color: p.activo ? T.green : T.whiteDim, borderRadius: 4, padding: "2px 6px", fontSize: 10, cursor: "pointer" }}>{p.activo ? "LIVE" : "OFF"}</button>
+                <div style={{ display: "flex", gap: 5, alignItems: "center", flexShrink: 0, marginLeft: 8 }}>
+                  <div style={{ width: 7, height: 7, borderRadius: "50%", background: p.activo ? T.green : T.whiteDim }} title={p.activo ? "Live" : "Sin publicar"} />
+                  <button onClick={(e) => { e.stopPropagation(); copyLink(p); }} style={{ ...smBtn }}>🔗</button>
+                  <button onClick={(e) => { e.stopPropagation(); eliminarPagina(p.id); }} style={{ ...smBtn, color: T.red }}>🗑</button>
                 </div>
               </div>
             ))}
@@ -195,144 +294,134 @@ export const Websites = ({ db, setDb }) => {
 
         {activo && (<>
           {/* Tabs */}
-          <div style={{ display: "flex", borderBottom: `1px solid ${T.borderHi}` }}>
-            {[["sections", "Secciones"], ["edit", "Editar"], ["design", "Diseño"]].map(([k, label]) => (
-              <button key={k} onClick={() => setEditPanel(k)} style={{ flex: 1, padding: "9px 0", background: "transparent", border: "none", color: editPanel === k ? T.teal : T.whiteDim, fontWeight: editPanel === k ? 700 : 500, fontSize: 11, cursor: "pointer", borderBottom: `2px solid ${editPanel === k ? T.teal : "transparent"}`, transition: "all .15s" }}>
-                {label}
+          <div style={{ display: "flex", borderBottom: `1px solid ${T.borderHi}`, flexShrink: 0 }}>
+            {[["sections", "Secciones"], ["edit", "Editar"], ["design", "Diseño"]].map(([k, lbl]) => (
+              <button key={k} onClick={() => setPanel(k)} style={{ flex: 1, padding: "8px 0", background: "transparent", border: "none", color: panel === k ? T.teal : T.whiteDim, fontWeight: panel === k ? 700 : 400, fontSize: 11, cursor: "pointer", borderBottom: `2px solid ${panel === k ? T.teal : "transparent"}` }}>
+                {lbl}
               </button>
             ))}
           </div>
 
-          <div style={{ flex: 1, overflowY: "auto", padding: 14 }}>
+          <div style={{ flex: 1, overflowY: "auto", padding: 12 }}>
             {/* SECCIONES */}
-            {editPanel === "sections" && (
+            {panel === "sections" && (
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                <div style={{ fontSize: 11, color: T.whiteDim, textAlign: "center", marginBottom: 6 }}>Arrastra para reordenar · Activa/desactiva secciones</div>
+                <div style={{ fontSize: 10, color: T.whiteDim, textAlign: "center", marginBottom: 4 }}>Arrastra ⠿ para reordenar</div>
 
-                {/* Active blocks (reorderable) */}
+                {/* Active blocks */}
                 {(activo.blocks || []).map((blockId, idx) => {
                   const def = ALL_BLOCKS.find((b) => b.id === blockId);
                   if (!def) return null;
+                  const isExp = expandedBlock === blockId;
                   return (
-                    <div key={blockId}
-                      draggable
-                      onDragStart={(e) => handleBlockDragStart(e, idx)}
-                      onDragEnter={() => setDragOverBlock(idx)}
-                      onDragEnd={handleBlockDragEnd}
-                      onDragOver={(e) => e.preventDefault()}
-                      style={{ background: dragOverBlock === idx ? T.tealSoft : T.tealSoft, border: `1px solid ${T.teal}`, borderRadius: 8, transition: "all .15s" }}
-                    >
-                      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 12px", cursor: "grab" }}>
-                        <span style={{ color: T.whiteDim, fontSize: 15, userSelect: "none" }}>⠿</span>
-                        <Ico k={def.icon} size={13} style={{ color: T.teal, flexShrink: 0 }} />
+                    <div key={blockId} draggable onDragStart={(e) => onBlockDragStart(e, idx)} onDragEnter={() => setDragOverBlock(idx)} onDragEnd={onBlockDragEnd} onDragOver={(e) => e.preventDefault()}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 10px", background: dragOverBlock === idx ? T.tealSoft : T.tealSoft, border: `1px solid ${T.teal}`, borderRadius: isExp ? "8px 8px 0 0" : 8, cursor: "grab", transition: "all .1s" }}>
+                        <span style={{ color: T.whiteDim, userSelect: "none", fontSize: 14 }}>⠿</span>
+                        <Ico k={def.icon} size={12} style={{ color: T.teal, flexShrink: 0 }} />
                         <div style={{ flex: 1 }}>
-                          <div style={{ fontSize: 12, fontWeight: 700, color: T.teal }}>{def.title}</div>
-                          <div style={{ fontSize: 10, color: T.whiteDim }}>{def.desc}</div>
+                          <div style={{ fontSize: 11, fontWeight: 700, color: T.teal }}>{def.title}</div>
                         </div>
-                        <div style={{ display: "flex", gap: 3 }}>
-                          <button onClick={() => moveBlock(idx, -1)} disabled={idx === 0} style={{ background: "transparent", border: `1px solid ${T.borderHi}`, color: T.whiteDim, cursor: "pointer", borderRadius: 4, padding: "1px 5px", fontSize: 11 }}>↑</button>
-                          <button onClick={() => moveBlock(idx, 1)} disabled={idx === (activo.blocks || []).length - 1} style={{ background: "transparent", border: `1px solid ${T.borderHi}`, color: T.whiteDim, cursor: "pointer", borderRadius: 4, padding: "1px 5px", fontSize: 11 }}>↓</button>
-                          <button onClick={() => setExpandedBlock(expandedBlock === blockId ? null : blockId)} style={{ background: expandedBlock === blockId ? T.teal : "transparent", border: `1px solid ${T.teal}`, color: expandedBlock === blockId ? "#000" : T.teal, cursor: "pointer", borderRadius: 4, padding: "1px 5px", fontSize: 11 }}>✏️</button>
-                          <button onClick={() => toggleBlock(blockId)} style={{ background: "transparent", border: `1px solid ${T.red}40`, color: T.red, cursor: "pointer", borderRadius: 4, padding: "1px 5px", fontSize: 11 }}>✕</button>
+                        <div style={{ display: "flex", gap: 3, flexShrink: 0 }}>
+                          <button onClick={() => moveBlock(idx, -1)} disabled={idx === 0} style={smBtn}>↑</button>
+                          <button onClick={() => moveBlock(idx, 1)} disabled={idx === (activo.blocks || []).length - 1} style={smBtn}>↓</button>
+                          <button onClick={() => setExpandedBlock(isExp ? null : blockId)} style={{ ...smBtn, background: isExp ? T.teal : "transparent", color: isExp ? "#000" : T.teal, border: `1px solid ${T.teal}` }}>✏️</button>
+                          <button onClick={() => toggleBloque(blockId)} style={{ ...smBtn, color: T.red, borderColor: T.red + "40" }}>✕</button>
                         </div>
                       </div>
-                      {expandedBlock === blockId && <BlockEditor blockId={blockId} />}
+                      {isExp && renderBlockEditor(blockId)}
                     </div>
                   );
                 })}
 
-                <div style={{ margin: "10px 0 6px", fontSize: 11, color: T.whiteDim, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".08em" }}>Añadir Sección</div>
-
-                {/* Available blocks */}
+                <div style={{ fontSize: 10, color: T.whiteDim, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".1em", marginTop: 10, marginBottom: 4 }}>+ Agregar Sección</div>
                 {ALL_BLOCKS.filter((b) => !(activo.blocks || []).includes(b.id)).map((b) => (
-                  <div key={b.id} onClick={() => toggleBlock(b.id)} style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 12px", background: T.bg2, border: `1px solid ${T.borderHi}`, borderRadius: 8, cursor: "pointer", transition: "all .15s" }}>
-                    <Ico k={b.icon} size={13} style={{ color: T.whiteDim, flexShrink: 0 }} />
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 12, fontWeight: 600, color: T.white }}>{b.title}</div>
-                      <div style={{ fontSize: 10, color: T.whiteDim }}>{b.desc}</div>
-                    </div>
-                    <span style={{ color: T.teal, fontSize: 18, fontWeight: 300 }}>+</span>
+                  <div key={b.id} onClick={() => toggleBloque(b.id)} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", background: T.bg2, border: `1px solid ${T.borderHi}`, borderRadius: 8, cursor: "pointer", transition: "all .1s" }}>
+                    <Ico k={b.icon} size={12} style={{ color: T.whiteDim }} />
+                    <div style={{ flex: 1, fontSize: 12, fontWeight: 600, color: T.white }}>{b.title}</div>
+                    <span style={{ color: T.teal, fontSize: 16, fontWeight: 300 }}>+</span>
                   </div>
                 ))}
               </div>
             )}
 
-            {/* EDIT */}
-            {editPanel === "edit" && (
-              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                <div><label style={ls}>Título / Nombre de Campaña</label><Inp value={activo.titulo} onChange={(e) => updateActivo({ titulo: e.target.value })} style={{ fontWeight: 700 }} /></div>
-                <div><label style={ls}>Slug URL</label>
-                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                    <span style={{ fontSize: 12, color: T.whiteDim, whiteSpace: "nowrap" }}>/</span>
-                    <Inp value={activo.slug} onChange={(e) => updateActivo({ slug: e.target.value.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "") })} style={{ fontSize: 13, fontFamily: "monospace" }} />
-                  </div>
+            {/* EDITAR */}
+            {panel === "edit" && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                <IE label="Nombre de campaña" value={activo.titulo} onChange={(v) => updateActivo({ titulo: v })} />
+                <IE label="Slug URL" value={activo.slug} onChange={(v) => updateActivo({ slug: v.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "") })} />
+                <IE label="Título Hero" value={activo.heroTitle || ""} onChange={(v) => updateActivo({ heroTitle: v })} />
+                <IE label="Subtítulo" value={activo.heroSub || ""} onChange={(v) => updateActivo({ heroSub: v })} />
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                  <IE label="Botón CTA 1" value={activo.heroCTA || ""} onChange={(v) => updateActivo({ heroCTA: v })} />
+                  <IE label="Botón CTA 2" value={activo.heroCTA2 || ""} onChange={(v) => updateActivo({ heroCTA2: v })} />
                 </div>
-                <div><label style={ls}>Título Principal (Hero)</label><Inp value={activo.heroTitle || ""} onChange={(e) => updateActivo({ heroTitle: e.target.value })} /></div>
-                <div><label style={ls}>Subtítulo</label><Inp value={activo.heroSub || ""} onChange={(e) => updateActivo({ heroSub: e.target.value })} /></div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                  <div><label style={ls}>Botón CTA 1</label><Inp value={activo.heroCTA || ""} onChange={(e) => updateActivo({ heroCTA: e.target.value })} /></div>
-                  <div><label style={ls}>Botón CTA 2</label><Inp value={activo.heroCTA2 || ""} onChange={(e) => updateActivo({ heroCTA2: e.target.value })} /></div>
-                </div>
-                <div><label style={ls}>URL Video (YouTube embed)</label><Inp value={activo.videoUrl || ""} onChange={(e) => updateActivo({ videoUrl: e.target.value })} placeholder="https://www.youtube.com/embed/ID" /></div>
+                <IE label="URL Video (embed)" value={activo.videoUrl || ""} onChange={(v) => updateActivo({ videoUrl: v })} placeholder="https://www.youtube.com/embed/ID" />
               </div>
             )}
 
-            {/* DESIGN */}
-            {editPanel === "design" && (
-              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                <div><label style={ls}>Color Principal</label>
-                  <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-                    <input type="color" value={activo.accentColor || "#06B6D4"} onChange={(e) => updateActivo({ accentColor: e.target.value })} style={{ width: 40, height: 36, border: "none", borderRadius: 6, cursor: "pointer", background: "transparent" }} />
+            {/* DISEÑO */}
+            {panel === "design" && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                <div>
+                  <div style={{ fontSize: 10, color: T.whiteDim, marginBottom: 6 }}>Color Principal</div>
+                  <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                    <input type="color" value={activo.accentColor || "#06B6D4"} onChange={(e) => updateActivo({ accentColor: e.target.value })} style={{ width: 38, height: 34, border: "none", borderRadius: 6, cursor: "pointer", background: "transparent" }} />
                     <span style={{ fontSize: 12, color: T.whiteDim, fontFamily: "monospace" }}>{activo.accentColor}</span>
                   </div>
                 </div>
                 <div>
-                  <label style={ls}>Paletas Rápidas</label>
-                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  <div style={{ fontSize: 10, color: T.whiteDim, marginBottom: 6 }}>Paleta Rápida</div>
+                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                     {["#06B6D4", "#8B5CF6", "#10B981", "#F59E0B", "#EF4444", "#EC4899", "#3B82F6", "#111827"].map((c) => (
-                      <button key={c} onClick={() => updateActivo({ accentColor: c })} style={{ width: 28, height: 28, borderRadius: "50%", background: c, border: activo.accentColor === c ? "3px solid #fff" : "2px solid transparent", cursor: "pointer" }} />
+                      <button key={c} onClick={() => updateActivo({ accentColor: c })} style={{ width: 26, height: 26, borderRadius: "50%", background: c, border: activo.accentColor === c ? "3px solid #fff" : "2px solid transparent", cursor: "pointer" }} />
                     ))}
                   </div>
                 </div>
                 <div>
-                  <label style={{ ...ls, marginBottom: 8 }}>Link Público</label>
-                  <div style={{ padding: "10px 12px", background: T.bg2, borderRadius: 8, fontFamily: "monospace", fontSize: 11, color: T.teal, wordBreak: "break-all", marginBottom: 8 }}>
-                    https://crm.ensing.lat/#/sites/{activo.id}
+                  <div style={{ fontSize: 10, color: T.whiteDim, marginBottom: 6 }}>Link Público</div>
+                  <div style={{ padding: "9px 10px", background: T.bg2, borderRadius: 8, fontFamily: "monospace", fontSize: 11, color: T.teal, wordBreak: "break-all", marginBottom: 6 }}>
+                    {BASE_URL}/#/sites/{activo.id}
                   </div>
-                  <div style={{ display: "flex", gap: 8 }}>
+                  <div style={{ display: "flex", gap: 6 }}>
                     <Btn variant="secundario" size="sm" onClick={() => copyLink(activo)} style={{ flex: 1 }}>Copiar</Btn>
-                    <Btn variant="secundario" size="sm" onClick={() => window.open(`https://crm.ensing.lat/#/sites/${activo.id}`, "_blank")} style={{ flex: 1 }}>Abrir</Btn>
+                    <Btn variant="secundario" size="sm" onClick={() => window.open(`${BASE_URL}/#/sites/${activo.id}`, "_blank")} style={{ flex: 1 }}>Abrir ↗</Btn>
                   </div>
                 </div>
               </div>
             )}
           </div>
-        </>)}
-      </div>
 
-      {/* ── CANVAS PREVIEW ── */}
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-        {activo ? (<>
-          {/* Browser bar */}
-          <div style={{ height: 44, background: T.bg1, borderBottom: `1px solid ${T.borderHi}`, display: "flex", alignItems: "center", padding: "0 16px", gap: 8, flexShrink: 0 }}>
-            <div style={{ display: "flex", gap: 5 }}>
-              {["#EF4444", "#F59E0B", "#10B981"].map((c, i) => <div key={i} style={{ width: 11, height: 11, borderRadius: "50%", background: c }} />)}
-            </div>
-            <div style={{ flex: 1, background: T.bg2, height: 26, borderRadius: 8, display: "flex", alignItems: "center", padding: "0 12px", fontSize: 11, color: T.whiteDim, maxWidth: 420, margin: "0 auto", gap: 6, border: `1px solid ${T.borderHi}` }}>
-              <Ico k="lock" size={9} /> crm.ensing.lat/#/sites/{activo.slug}
-            </div>
-            <Btn size="sm" onClick={() => copyLink(activo)} style={{ fontSize: 11 }}><Ico k="link" size={11} /> Copiar Link</Btn>
-            <Btn size="sm" onClick={() => updateActivo({ activo: !activo.activo })} style={{ background: activo.activo ? T.green : T.teal, color: "#fff", border: "none", fontSize: 11 }}>
+          {/* Save bar */}
+          <div style={{ padding: "10px 14px", borderTop: `1px solid ${T.borderHi}`, flexShrink: 0, display: "flex", gap: 8 }}>
+            <Btn onClick={guardar} disabled={saving} style={{ flex: 1, background: T.teal, color: "#000" }}>
+              {saving ? "Guardando..." : "💾 Guardar Landing Page"}
+            </Btn>
+            <Btn variant="secundario" onClick={() => updateActivo({ activo: !activo.activo })} style={{ fontSize: 12, background: activo.activo ? T.green + "22" : "transparent", color: activo.activo ? T.green : T.whiteDim, border: `1px solid ${activo.activo ? T.green : T.borderHi}` }}>
               {activo.activo ? "● LIVE" : "Publicar"}
             </Btn>
           </div>
+        </>)}
+      </div>
 
-          {/* Live render */}
-          <div style={{ flex: 1, background: "#fff", overflowY: "auto", display: "flex", flexDirection: "column" }}>
+      {/* ── CANVAS ── */}
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+        {activo ? (<>
+          {/* Address bar */}
+          <div style={{ height: 40, background: T.bg1, borderBottom: `1px solid ${T.borderHi}`, display: "flex", alignItems: "center", padding: "0 14px", gap: 8, flexShrink: 0 }}>
+            <div style={{ display: "flex", gap: 5 }}>{["#EF4444", "#F59E0B", "#10B981"].map((c, i) => <div key={i} style={{ width: 10, height: 10, borderRadius: "50%", background: c }} />)}</div>
+            <div style={{ flex: 1, background: T.bg2, height: 24, borderRadius: 6, display: "flex", alignItems: "center", padding: "0 10px", fontSize: 10, color: T.whiteDim, maxWidth: 380, margin: "0 auto", gap: 4, border: `1px solid ${T.borderHi}` }}>
+              <Ico k="lock" size={8} /> {BASE_URL}/#/sites/{activo.slug}
+            </div>
+            <Btn size="sm" onClick={() => copyLink(activo)} style={{ fontSize: 10 }}>🔗 Link</Btn>
+            <Btn size="sm" onClick={() => window.open(`${BASE_URL}/#/sites/${activo.id}`, "_blank")} style={{ fontSize: 10 }}>↗ Ver</Btn>
+          </div>
+
+          {/* Scrollable canvas */}
+          <div style={{ flex: 1, overflowY: "auto", background: "#fff" }}>
             {(!activo.blocks || activo.blocks.length === 0) && (
-              <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: "#6B7280", flexDirection: "column", gap: 12 }}>
+              <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 12, color: "#9CA3AF" }}>
                 <div style={{ fontSize: 40 }}>📄</div>
-                <div style={{ fontSize: 15, fontWeight: 600 }}>Activa secciones desde el panel izquierdo</div>
+                <div style={{ fontSize: 14, fontWeight: 600 }}>Activa secciones desde el panel izquierdo</div>
               </div>
             )}
 
@@ -340,164 +429,148 @@ export const Websites = ({ db, setDb }) => {
               switch (blockId) {
                 case "hero":
                   return (
-                    <div key="hero" style={{ padding: "80px 24px", textAlign: "center", background: `linear-gradient(180deg, ${accent}0A 0%, #fff 100%)`, borderBottom: "1px solid #E5E7EB" }}>
-                      <div style={{ display: "inline-block", background: accent + "18", color: accent, padding: "5px 16px", borderRadius: 20, fontSize: 11, fontWeight: 700, marginBottom: 20, border: `1px solid ${accent}30`, textTransform: "uppercase", letterSpacing: ".08em" }}>🚀 Plataforma CRM Empresarial</div>
-                      <h1 style={{ fontSize: "clamp(32px, 5vw, 56px)", fontWeight: 900, color: "#111827", margin: "0 0 18px", letterSpacing: "-.04em", lineHeight: 1.05 }}>{activo.heroTitle || "Genera más negocios hoy"}</h1>
-                      <p style={{ fontSize: 18, color: "#6B7280", margin: "0 auto 36px", maxWidth: 560, lineHeight: 1.7 }}>{activo.heroSub || "La plataforma líder para captar leads y convertirlos en clientes usando automatización inteligente."}</p>
+                    <div key="hero" style={{ padding: "80px 24px", textAlign: "center", background: `linear-gradient(180deg, ${accent}0D 0%, #fff 100%)`, borderBottom: "1px solid #E5E7EB" }}>
+                      <div style={{ display: "inline-block", background: accent + "18", color: accent, padding: "5px 16px", borderRadius: 20, fontSize: 11, fontWeight: 700, marginBottom: 20, border: `1px solid ${accent}33`, textTransform: "uppercase", letterSpacing: ".08em" }}>🚀 Plataforma CRM #1</div>
+                      <h1 style={{ fontSize: "clamp(30px, 5vw, 54px)", fontWeight: 900, color: "#111827", margin: "0 0 16px", letterSpacing: "-.04em", lineHeight: 1.08, maxWidth: 700, marginInline: "auto" }}>{activo.heroTitle || "Genera más negocios hoy"}</h1>
+                      <p style={{ fontSize: 17, color: "#6B7280", margin: "0 auto 32px", maxWidth: 540, lineHeight: 1.7 }}>{activo.heroSub || "La plataforma líder para captar leads."}</p>
                       <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
-                        <button style={{ background: accent, color: "#fff", border: "none", padding: "15px 30px", borderRadius: 12, fontSize: 15, fontWeight: 700, cursor: "pointer", boxShadow: `0 8px 24px ${accent}44` }}>{activo.heroCTA || "Ver Demo"}</button>
-                        {activo.heroCTA2 && <button style={{ background: "#F3F4F6", color: "#374151", border: "none", padding: "15px 28px", borderRadius: 12, fontSize: 15, fontWeight: 700, cursor: "pointer" }}>{activo.heroCTA2} →</button>}
+                        <button style={{ background: accent, color: "#fff", border: "none", padding: "14px 28px", borderRadius: 12, fontSize: 15, fontWeight: 700, cursor: "pointer", boxShadow: `0 8px 24px ${accent}44` }}>{activo.heroCTA || "Ver Demo"}</button>
+                        {activo.heroCTA2 && <button style={{ background: "#F3F4F6", color: "#374151", border: "none", padding: "14px 26px", borderRadius: 12, fontSize: 15, fontWeight: 700, cursor: "pointer" }}>{activo.heroCTA2} →</button>}
                       </div>
                     </div>
                   );
-
                 case "stats":
                   return (
-                    <div key="stats" style={{ padding: "50px 24px", background: accent, textAlign: "center" }}>
-                      <div style={{ display: "grid", gridTemplateColumns: `repeat(${Math.min((activo.statsItems || []).length, 4)}, 1fr)`, gap: 24, maxWidth: 900, margin: "0 auto" }}>
+                    <div key="stats" style={{ padding: "50px 24px", background: accent }}>
+                      <div style={{ display: "grid", gridTemplateColumns: `repeat(${Math.min((activo.statsItems || []).length, 4)}, 1fr)`, gap: 24, maxWidth: 900, margin: "0 auto", textAlign: "center" }}>
                         {(activo.statsItems || []).map((s, i) => (
-                          <div key={i}>
-                            <div style={{ fontSize: 36, fontWeight: 900, color: "#fff" }}>{s.value}</div>
-                            <div style={{ fontSize: 13, color: "rgba(255,255,255,.8)", marginTop: 4 }}>{s.label}</div>
-                          </div>
+                          <div key={i}><div style={{ fontSize: 34, fontWeight: 900, color: "#fff" }}>{s.value}</div><div style={{ fontSize: 13, color: "rgba(255,255,255,.8)", marginTop: 4 }}>{s.label}</div></div>
                         ))}
                       </div>
                     </div>
                   );
-
                 case "features":
                   return (
                     <div key="features" style={{ padding: "70px 24px", background: "#F9FAFB" }}>
-                      <h2 style={{ fontSize: 30, fontWeight: 800, color: "#111827", textAlign: "center", margin: "0 0 40px", letterSpacing: "-.02em" }}>Todo lo que necesitas para vender más</h2>
-                      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 20, maxWidth: 900, margin: "0 auto" }}>
-                        {(activo.customFeatures || []).map((f, i) => (
-                          <div key={i} style={{ background: "#fff", padding: 26, borderRadius: 14, border: "1px solid #E5E7EB", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.04)" }}>
-                            <div style={{ width: 44, height: 44, borderRadius: 12, background: accent + "18", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, marginBottom: 16 }}>{f.icon}</div>
-                            <h3 style={{ fontSize: 15, fontWeight: 800, margin: "0 0 8px", color: "#111827" }}>{f.title}</h3>
+                      <h2 style={{ fontSize: 28, fontWeight: 800, color: "#111827", textAlign: "center", margin: "0 0 40px" }}>Todo lo que necesitas</h2>
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 20, maxWidth: 900, margin: "0 auto" }}>
+                        {(activo.features || []).map((f, i) => (
+                          <div key={i} style={{ background: "#fff", padding: 24, borderRadius: 14, border: "1px solid #E5E7EB" }}>
+                            <div style={{ width: 42, height: 42, borderRadius: 12, background: accent + "18", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, marginBottom: 14 }}>{f.icon}</div>
+                            <h3 style={{ fontSize: 14, fontWeight: 800, margin: "0 0 8px", color: "#111827" }}>{f.title}</h3>
                             <p style={{ fontSize: 13, color: "#6B7280", margin: 0, lineHeight: 1.6 }}>{f.desc}</p>
                           </div>
                         ))}
                       </div>
                     </div>
                   );
-
                 case "pricing":
                   return (
-                    <div key="pricing" style={{ padding: "70px 24px", textAlign: "center", background: "#fff" }}>
-                      <h2 style={{ fontSize: 30, fontWeight: 800, color: "#111827", margin: "0 0 40px" }}>Planes simples y transparentes</h2>
+                    <div key="pricing" style={{ padding: "70px 24px", textAlign: "center" }}>
+                      <h2 style={{ fontSize: 28, fontWeight: 800, color: "#111827", margin: "0 0 40px" }}>Planes simples y transparentes</h2>
                       <div style={{ display: "flex", gap: 20, justifyContent: "center", flexWrap: "wrap" }}>
-                        {[{ p: "Starter", price: "$29", f: ["5 usuarios", "1 pipeline", "Email básico"], h: false },
-                          { p: "Pro", price: "$79", f: ["25 usuarios", "Pipelines ilimitados", "Automatizaciones IA", "API Access"], h: true },
-                          { p: "Enterprise", price: "Custom", f: ["Usuarios ilimitados", "SSO", "SLA 99.9%"], h: false }].map((plan, i) => (
-                          <div key={i} style={{ background: plan.h ? accent : "#fff", padding: "28px 24px", borderRadius: 16, border: `2px solid ${plan.h ? accent : "#E5E7EB"}`, width: 200, boxShadow: plan.h ? `0 10px 30px ${accent}40` : "none" }}>
-                            <div style={{ fontSize: 12, fontWeight: 700, color: plan.h ? "rgba(255,255,255,.8)" : "#6B7280", marginBottom: 8 }}>{plan.p}</div>
-                            <div style={{ fontSize: 34, fontWeight: 900, color: plan.h ? "#fff" : "#111827", marginBottom: 16 }}>{plan.price}</div>
-                            {plan.f.map((f, j) => <div key={j} style={{ fontSize: 11, color: plan.h ? "rgba(255,255,255,.85)" : "#374151", marginBottom: 5 }}>✓ {f}</div>)}
+                        {[{ p: "Starter", price: "$29", f: ["5 usuarios","1 pipeline","Email básico"], h: false },
+                          { p: "Pro", price: "$79", f: ["25 usuarios","Pipelines ilimitados","IA & Automations","API Access"], h: true },
+                          { p: "Enterprise", price: "Custom", f: ["Usuarios ilimitados","SSO","SLA 99.9%"], h: false }].map((pl, i) => (
+                          <div key={i} style={{ background: pl.h ? accent : "#fff", padding: 28, borderRadius: 16, border: `2px solid ${pl.h ? "transparent" : "#E5E7EB"}`, width: 200, boxShadow: pl.h ? `0 10px 30px ${accent}40` : "none" }}>
+                            <div style={{ fontSize: 12, fontWeight: 700, color: pl.h ? "rgba(255,255,255,.8)" : "#6B7280", marginBottom: 8 }}>{pl.p}</div>
+                            <div style={{ fontSize: 32, fontWeight: 900, color: pl.h ? "#fff" : "#111827", marginBottom: 14 }}>{pl.price}</div>
+                            {pl.f.map((feat, j) => <div key={j} style={{ fontSize: 12, color: pl.h ? "rgba(255,255,255,.85)" : "#374151", marginBottom: 5 }}>✓ {feat}</div>)}
                           </div>
                         ))}
                       </div>
                     </div>
                   );
-
                 case "testimonials":
                   return (
                     <div key="testimonials" style={{ padding: "70px 24px", background: "#F9FAFB" }}>
-                      <h2 style={{ fontSize: 30, fontWeight: 800, color: "#111827", textAlign: "center", margin: "0 0 40px" }}>Lo que dicen nuestros clientes</h2>
-                      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 20, maxWidth: 900, margin: "0 auto" }}>
-                        {[{ n: "María G.", c: "TechCorp", t: "Incrementamos las ventas en 40% el primer trimestre." },
-                          { n: "Carlos R.", c: "Startup SL", t: "La automatización nos ahorra 10h a la semana." },
-                          { n: "Ana P.", c: "AgenciaX", t: "El mejor CRM que hemos usado en 5 años." }].map((t, i) => (
-                          <div key={i} style={{ background: "#fff", padding: 24, borderRadius: 14, border: "1px solid #E5E7EB" }}>
-                            <div style={{ fontSize: 18, marginBottom: 12 }}>⭐⭐⭐⭐⭐</div>
-                            <p style={{ fontSize: 14, color: "#374151", lineHeight: 1.7, margin: "0 0 16px", fontStyle: "italic" }}>"{t.t}"</p>
-                            <div style={{ fontSize: 13, fontWeight: 700, color: "#111827" }}>{t.n} · <span style={{ color: "#6B7280", fontWeight: 500 }}>{t.c}</span></div>
+                      <h2 style={{ fontSize: 28, fontWeight: 800, color: "#111827", textAlign: "center", margin: "0 0 40px" }}>Lo que dicen nuestros clientes</h2>
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 20, maxWidth: 900, margin: "0 auto" }}>
+                        {[{ n: "María G.", c: "TechCorp", t: "Incrementamos las ventas en 40%." },{ n: "Carlos R.", c: "Startup SL", t: "Ahorramos 10h semanales con la IA." },{ n: "Ana P.", c: "AgenciaX", t: "El mejor CRM en 5 años de trabajo." }].map((t, i) => (
+                          <div key={i} style={{ background: "#fff", padding: 22, borderRadius: 14, border: "1px solid #E5E7EB" }}>
+                            <div style={{ fontSize: 16, marginBottom: 10 }}>⭐⭐⭐⭐⭐</div>
+                            <p style={{ fontSize: 13, color: "#374151", lineHeight: 1.7, margin: "0 0 14px", fontStyle: "italic" }}>"{t.t}"</p>
+                            <div style={{ fontSize: 12, fontWeight: 700, color: "#111827" }}>{t.n} · <span style={{ color: "#6B7280", fontWeight: 400 }}>{t.c}</span></div>
                           </div>
                         ))}
                       </div>
                     </div>
                   );
-
                 case "faq":
                   return (
-                    <div key="faq" style={{ padding: "70px 24px", background: "#fff" }}>
-                      <h2 style={{ fontSize: 30, fontWeight: 800, color: "#111827", textAlign: "center", margin: "0 0 40px" }}>Preguntas Frecuentes</h2>
-                      <div style={{ maxWidth: 700, margin: "0 auto", display: "flex", flexDirection: "column", gap: 12 }}>
+                    <div key="faq" style={{ padding: "70px 24px" }}>
+                      <h2 style={{ fontSize: 28, fontWeight: 800, color: "#111827", textAlign: "center", margin: "0 0 40px" }}>Preguntas Frecuentes</h2>
+                      <div style={{ maxWidth: 680, margin: "0 auto", display: "flex", flexDirection: "column", gap: 12 }}>
                         {(activo.faqItems || []).map((item, i) => (
-                          <div key={i} style={{ background: "#F9FAFB", padding: "20px 24px", borderRadius: 12, border: "1px solid #E5E7EB" }}>
-                            <div style={{ fontWeight: 700, fontSize: 15, color: "#111827", marginBottom: 8 }}>❓ {item.q}</div>
-                            <div style={{ fontSize: 14, color: "#6B7280", lineHeight: 1.7 }}>{item.a}</div>
+                          <div key={i} style={{ background: "#F9FAFB", padding: "18px 22px", borderRadius: 12, border: "1px solid #E5E7EB" }}>
+                            <div style={{ fontWeight: 700, fontSize: 14, color: "#111827", marginBottom: 8 }}>❓ {item.q}</div>
+                            <div style={{ fontSize: 13, color: "#6B7280", lineHeight: 1.7 }}>{item.a}</div>
                           </div>
                         ))}
                       </div>
                     </div>
                   );
-
                 case "video":
                   return activo.videoUrl ? (
                     <div key="video" style={{ padding: "60px 24px", background: "#111827", textAlign: "center" }}>
-                      <h2 style={{ fontSize: 28, fontWeight: 800, color: "#fff", margin: "0 0 32px" }}>Ve cómo funciona</h2>
-                      <div style={{ maxWidth: 800, margin: "0 auto", borderRadius: 16, overflow: "hidden", boxShadow: "0 25px 60px rgba(0,0,0,0.4)" }}>
-                        <iframe src={activo.videoUrl} width="100%" height="450" frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen style={{ display: "block" }} />
+                      <h2 style={{ fontSize: 26, fontWeight: 800, color: "#fff", margin: "0 0 30px" }}>Ve cómo funciona</h2>
+                      <div style={{ maxWidth: 780, margin: "0 auto", borderRadius: 16, overflow: "hidden", boxShadow: "0 25px 60px rgba(0,0,0,0.5)" }}>
+                        <iframe src={activo.videoUrl} width="100%" height="420" frameBorder="0" allowFullScreen style={{ display: "block" }} />
                       </div>
                     </div>
                   ) : (
-                    <div key="video" style={{ padding: "60px 24px", background: "#111827", textAlign: "center" }}>
-                      <div style={{ color: "#6B7280", fontSize: 14 }}>Ingresa una URL de YouTube en el panel de edición</div>
+                    <div key="video" style={{ padding: "40px 24px", background: "#111827", textAlign: "center", color: "#6B7280", fontSize: 13 }}>
+                      📹 Ingresa una URL de YouTube en la sección "Editar"
                     </div>
                   );
-
                 case "form":
                   return (
-                    <div key="form" id="form-section" style={{ padding: "70px 24px", background: "#F9FAFB", textAlign: "center" }}>
-                      <h2 style={{ fontSize: 30, fontWeight: 800, color: "#111827", margin: "0 0 10px" }}>¿Listo para empezar?</h2>
-                      <p style={{ color: "#6B7280", marginBottom: 36, fontSize: 15 }}>Un asesor te contactará en menos de 24 horas.</p>
-                      <div style={{ maxWidth: 420, margin: "0 auto", background: "#fff", borderRadius: 20, padding: 32, boxShadow: "0 10px 40px rgba(0,0,0,0.08)", border: "1px solid #E5E7EB" }}>
+                    <div key="form" style={{ padding: "70px 24px", background: "#F9FAFB", textAlign: "center" }}>
+                      <h2 style={{ fontSize: 28, fontWeight: 800, color: "#111827", margin: "0 0 10px" }}>¿Listo para empezar?</h2>
+                      <p style={{ color: "#6B7280", marginBottom: 36, fontSize: 14 }}>Un asesor te contactará en menos de 24 horas.</p>
+                      <div style={{ maxWidth: 400, margin: "0 auto", background: "#fff", borderRadius: 18, padding: 30, boxShadow: "0 10px 40px rgba(0,0,0,0.08)", border: "1px solid #E5E7EB", display: "flex", flexDirection: "column", gap: 12 }}>
                         {["Nombre completo *", "Email empresarial *", "Empresa / Cargo"].map((pl, i) => (
-                          <input key={i} readOnly placeholder={pl} style={{ width: "100%", padding: "12px 14px", border: "1px solid #E5E7EB", borderRadius: 8, fontSize: 14, marginBottom: 12, fontFamily: "inherit", boxSizing: "border-box", color: "#9CA3AF" }} />
+                          <input key={i} readOnly placeholder={pl} style={{ padding: "11px 14px", border: "1.5px solid #E5E7EB", borderRadius: 8, fontSize: 13, fontFamily: "inherit", boxSizing: "border-box", color: "#9CA3AF", width: "100%" }} />
                         ))}
-                        <button style={{ width: "100%", padding: "14px", background: accent, color: "#fff", border: "none", borderRadius: 10, fontSize: 15, fontWeight: 700, cursor: "pointer", marginTop: 4, boxShadow: `0 8px 20px ${accent}44` }}>Solicitar Demo Gratuita →</button>
+                        <button style={{ padding: "14px", background: accent, color: "#fff", border: "none", borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: "pointer", boxShadow: `0 8px 20px ${accent}44` }}>Solicitar Demo →</button>
                       </div>
                     </div>
                   );
-
                 case "cta":
                   return (
                     <div key="cta" style={{ padding: "70px 24px", background: accent, textAlign: "center" }}>
-                      <h2 style={{ fontSize: 34, fontWeight: 900, color: "#fff", margin: "0 0 14px" }}>Empieza hoy. Es gratis.</h2>
-                      <p style={{ color: "rgba(255,255,255,.85)", fontSize: 16, marginBottom: 28 }}>Sin tarjeta de crédito · Configuración en 2 minutos</p>
-                      <button style={{ background: "#fff", color: accent, border: "none", padding: "16px 36px", borderRadius: 12, fontSize: 16, fontWeight: 800, cursor: "pointer" }}>{activo.heroCTA || "Comenzar Ahora"} →</button>
+                      <h2 style={{ fontSize: 32, fontWeight: 900, color: "#fff", margin: "0 0 14px" }}>Empieza hoy. Es gratis.</h2>
+                      <p style={{ color: "rgba(255,255,255,.85)", fontSize: 15, marginBottom: 26 }}>Sin tarjeta de crédito · Configuración en 2 minutos</p>
+                      <button style={{ background: "#fff", color: accent, border: "none", padding: "15px 34px", borderRadius: 12, fontSize: 15, fontWeight: 800, cursor: "pointer" }}>{activo.heroCTA || "Comenzar Ahora"} →</button>
                     </div>
                   );
-
                 default: return null;
               }
             })}
 
-            {/* Footer */}
             {(activo.blocks || []).length > 0 && (
-              <div style={{ padding: "24px", background: "#111827", textAlign: "center", color: "#6B7280", fontSize: 13 }}>
+              <footer style={{ padding: "20px", background: "#111827", textAlign: "center", color: "#6B7280", fontSize: 12 }}>
                 © {new Date().getFullYear()} · Potenciado por <span style={{ color: accent, fontWeight: 700 }}>ENSING CRM</span>
-              </div>
+              </footer>
             )}
           </div>
         </>) : (
           <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16 }}>
             <div style={{ fontSize: 48 }}>🌐</div>
-            <div style={{ fontSize: 18, fontWeight: 700, color: T.white }}>Crea tu primera landing page</div>
+            <div style={{ fontSize: 16, fontWeight: 700, color: T.white }}>Crea tu primera landing page</div>
             <Btn onClick={() => setShowNew(true)}><Ico k="plus" size={14} /> Nueva Landing Page</Btn>
           </div>
         )}
       </div>
 
-      {/* New Page Modal */}
       <Modal open={showNew} onClose={() => setShowNew(false)} title="Nueva Landing Page" width={440}>
         <Campo label="Nombre de la Campaña">
-          <Inp value={fNew.titulo} onChange={(e) => setFNew((p) => ({ ...p, titulo: e.target.value }))} placeholder="ej. Campaña Black Friday 2026" autoFocus />
+          <Inp value={fNew.titulo} onChange={(e) => setFNew((p) => ({ ...p, titulo: e.target.value }))} placeholder="ej. Black Friday 2026" autoFocus />
         </Campo>
         <Campo label="Slug URL (opcional)">
           <Inp value={fNew.slug} onChange={(e) => setFNew((p) => ({ ...p, slug: e.target.value.toLowerCase().replace(/\s+/g, "-") }))} placeholder="black-friday-2026" />
         </Campo>
-        <div style={{ display: "flex", gap: 12, justifyContent: "flex-end", marginTop: 24 }}>
+        <div style={{ display: "flex", gap: 12, justifyContent: "flex-end", marginTop: 20 }}>
           <Btn variant="secundario" onClick={() => setShowNew(false)}>Cancelar</Btn>
           <Btn onClick={nuevaPagina} disabled={!fNew.titulo.trim()}>Crear Página</Btn>
         </div>
@@ -505,3 +578,14 @@ export const Websites = ({ db, setDb }) => {
     </div>
   );
 };
+
+// ── Small helpers ────────────────────────────────────────────────────────────
+const IE = ({ label, value, onChange, placeholder }) => (
+  <div>
+    <div style={{ fontSize: 10, color: "#6B7280", marginBottom: 3 }}>{label}</div>
+    <Inp value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} style={{ fontSize: 13 }} />
+  </div>
+);
+const smBtn = { background: "transparent", border: "1px solid #374151", color: "#9CA3AF", cursor: "pointer", borderRadius: 4, padding: "2px 5px", fontSize: 10 };
+const delBtn = { background: "transparent", border: `1px solid #EF444440`, color: "#EF4444", cursor: "pointer", borderRadius: 4, padding: "2px 8px", fontSize: 10, alignSelf: "flex-end" };
+const addBtn = { padding: "8px", background: "transparent", border: "1px dashed #374151", borderRadius: 8, color: "#06B6D4", cursor: "pointer", fontSize: 12, width: "100%" };
