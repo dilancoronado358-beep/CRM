@@ -22,27 +22,17 @@ export function Login() {
 
     if (!error) {
       sessionStorage.setItem("just_logged_in", "true");
-      // Forzar recarga automática tras inicio de sesión exitoso
       window.location.reload();
       return;
     }
 
     if (error) {
-      // Intentamos fallback local (Directorio IAM de la semilla/estado guardado)
       const locUser = db.usuariosApp?.find(u => u.email === email && (u.password === password || (!u.password && password === "admin123")));
-
       if (locUser) {
         if (!locUser.activo) {
           setError('Tu cuenta local ha sido suspendida/revocada.');
         } else {
-          // Simulamos una sesión local al estilo jwt
-          const fallbackSession = {
-            user: { id: locUser.id || 'local-root', email: locUser.email, user_metadata: { role: locUser.role, name: locUser.name } },
-            access_token: "LOC_" + Date.now()
-          };
-          // Forzamos la asignacion local sin supabase
           setDb(d => ({ ...d, usuario: { name: locUser.name, email: locUser.email, role: locUser.role, avatar: locUser.name.charAt(0) } }));
-          // Refresh instantáneo para forzar App.jsx a detectar cambio
           setTimeout(() => window.location.reload(), 100);
           return;
         }
@@ -59,99 +49,187 @@ export function Login() {
       alignItems: 'center',
       justifyContent: 'center',
       minHeight: '100vh',
-      background: T.bg0,
-      color: T.white,
+      background: '#0F172A',
+      position: 'relative',
+      overflow: 'hidden',
       fontFamily: 'Inter, system-ui, sans-serif'
     }}>
+      {/* BACKGROUND ANIMATION */}
       <div style={{
-        background: T.bg1,
-        border: `1px solid ${T.border}`,
-        borderRadius: 20,
-        padding: '40px',
+        position: 'absolute',
+        inset: 0,
+        background: 'radial-gradient(circle at 0% 0%, #1E293B 0%, transparent 50%), radial-gradient(circle at 100% 100%, #06B6D422 0%, transparent 50%), radial-gradient(circle at 50% 50%, #0F172A 0%, #020617 100%)',
+        zIndex: 0
+      }} />
+      
+      {/* FLOATING BLOBS */}
+      <div className="blob" style={{ position: 'absolute', top: '10%', left: '15%', width: 300, height: 300, background: '#06B6D411', borderRadius: '50%', filter: 'blur(60px)', animation: 'float 20s infinite alternate' }} />
+      <div className="blob" style={{ position: 'absolute', bottom: '15%', right: '10%', width: 400, height: 400, background: '#3B82F608', borderRadius: '50%', filter: 'blur(80px)', animation: 'float 25s infinite alternate-reverse' }} />
+
+      <style>{`
+        @keyframes float {
+          from { transform: translate(0, 0) scale(1); }
+          to { transform: translate(100px, 50px) scale(1.1); }
+        }
+        @keyframes fadeInDown {
+          from { opacity: 0; transform: translateY(-20px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes shine {
+          0% { left: -100%; }
+          20% { left: 100%; }
+          100% { left: 100%; }
+        }
+        .premium-input:focus-within {
+          border-color: #06B6D4 !important;
+          box-shadow: 0 0 0 4px rgba(6, 182, 212, 0.1) !important;
+        }
+        .login-card {
+          animation: fadeInDown 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+      `}</style>
+
+      <div className="login-card" style={{
+        background: 'rgba(30, 41, 59, 0.5)',
+        backdropFilter: 'blur(20px) saturate(180%)',
+        border: '1px solid rgba(255, 255, 255, 0.08)',
+        borderRadius: 24,
+        padding: '48px',
         width: '100%',
-        maxWidth: 400,
-        boxShadow: '0 20px 40px rgba(0,0,0,0.3)'
+        maxWidth: 420,
+        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+        zIndex: 1,
+        position: 'relative'
       }}>
-        <div style={{ textAlign: 'center', marginBottom: 32 }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 56, height: 56, borderRadius: 16, background: T.grad, marginBottom: 16 }}>
-            <Ico k="check" size={32} style={{ color: '#FFF' }} />
+        <div style={{ textAlign: 'center', marginBottom: 40 }}>
+          <div style={{ 
+            display: 'inline-flex', 
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            width: 72, 
+            height: 72, 
+            borderRadius: 20, 
+            background: 'linear-gradient(135deg, #06B6D4 0%, #3B82F6 100%)', 
+            marginBottom: 20,
+            boxShadow: '0 10px 20px -5px rgba(6, 182, 212, 0.5)'
+          }}>
+            <Ico k="lock" size={36} style={{ color: '#FFF' }} />
           </div>
-          <h1 style={{ margin: 0, fontSize: 24, fontWeight: 800, letterSpacing: '-0.02em' }}>ENSING<span style={{ color: T.teal }}>CRM</span></h1>
-          <p style={{ margin: '8px 0 0', color: T.whiteDim, fontSize: 14 }}>Inicia sesión para continuar</p>
+          <h1 style={{ margin: 0, fontSize: 32, fontWeight: 800, letterSpacing: '-0.04em', color: '#FFF' }}>
+            ENSING<span style={{ color: '#06B6D4' }}>CRM</span>
+          </h1>
+          <p style={{ margin: '10px 0 0', color: 'rgba(255,255,255,0.6)', fontSize: 15, fontWeight: 500 }}>
+            Bienvenido de nuevo
+          </p>
         </div>
 
         {error && (
           <div style={{
             background: 'rgba(239, 68, 68, 0.1)',
-            border: `1px solid ${T.red}`,
-            color: T.red,
-            padding: 12,
-            borderRadius: 8,
-            marginBottom: 20,
+            border: '1px solid rgba(239, 68, 68, 0.2)',
+            color: '#F87171',
+            padding: '14px',
+            borderRadius: 12,
+            marginBottom: 24,
             fontSize: 13,
-            textAlign: 'center'
+            fontWeight: 600,
+            textAlign: 'center',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            justifyContent: 'center'
           }}>
-            {error}
+            <Ico k="x" size={16} /> {error}
           </div>
         )}
 
-        <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
           <div>
-            <label style={{ display: 'block', marginBottom: 6, fontSize: 13, fontWeight: 600, color: T.whiteDim }}>Correo Electrónico</label>
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '12px 16px',
-                background: T.bg2,
-                border: `1px solid ${T.borderHi}`,
-                borderRadius: 8,
-                color: T.white,
-                outline: 'none',
-                transition: 'border-color 0.2s',
-                fontFamily: 'inherit'
-              }}
-              onFocus={e => e.target.style.borderColor = T.teal}
-              onBlur={e => e.target.style.borderColor = T.borderHi}
-            />
+            <label style={{ display: 'block', marginBottom: 8, fontSize: 13, fontWeight: 700, color: 'rgba(255,255,255,0.8)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Correo Electrónico</label>
+            <div className="premium-input" style={{ position: 'relative', background: 'rgba(15, 23, 42, 0.5)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, transition: 'all 0.2s' }}>
+              <div style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.4)' }}>
+                <Ico k="user" size={18} />
+              </div>
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                placeholder="nombre@ejemplo.com"
+                style={{
+                  width: '100%',
+                  padding: '14px 16px 14px 44px',
+                  background: 'transparent',
+                  border: 'none',
+                  color: '#FFF',
+                  outline: 'none',
+                  fontSize: 15,
+                  fontFamily: 'inherit'
+                }}
+              />
+            </div>
           </div>
 
           <div>
-            <label style={{ display: 'block', marginBottom: 6, fontSize: 13, fontWeight: 600, color: T.whiteDim }}>Contraseña</label>
-            <input
-              type="password"
-              required
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '12px 16px',
-                background: T.bg2,
-                border: `1px solid ${T.borderHi}`,
-                borderRadius: 8,
-                color: T.white,
-                outline: 'none',
-                transition: 'border-color 0.2s',
-                fontFamily: 'inherit'
-              }}
-              onFocus={e => e.target.style.borderColor = T.teal}
-              onBlur={e => e.target.style.borderColor = T.borderHi}
-            />
+            <label style={{ display: 'block', marginBottom: 8, fontSize: 13, fontWeight: 700, color: 'rgba(255,255,255,0.8)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Contraseña</label>
+            <div className="premium-input" style={{ position: 'relative', background: 'rgba(15, 23, 42, 0.5)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, transition: 'all 0.2s' }}>
+              <div style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.4)' }}>
+                <Ico k="lock" size={18} />
+              </div>
+              <input
+                type="password"
+                required
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                placeholder="••••••••"
+                style={{
+                  width: '100%',
+                  padding: '14px 16px 14px 44px',
+                  background: 'transparent',
+                  border: 'none',
+                  color: '#FFF',
+                  outline: 'none',
+                  fontSize: 15,
+                  fontFamily: 'inherit'
+                }}
+              />
+            </div>
           </div>
 
-          <Btn
+          <button
             type="submit"
-            variant="primario"
-            style={{ width: '100%', marginTop: 8, padding: '12px', fontSize: 14, fontWeight: 700 }}
             disabled={cargando}
+            style={{ 
+              width: '100%', 
+              marginTop: 12, 
+              padding: '14px', 
+              fontSize: 16, 
+              fontWeight: 800, 
+              color: '#FFF', 
+              background: 'linear-gradient(135deg, #06B6D4 0%, #3B82F6 100%)',
+              border: 'none',
+              borderRadius: 12,
+              cursor: cargando ? 'not-allowed' : 'pointer',
+              boxShadow: '0 4px 15px rgba(6, 182, 212, 0.4)',
+              transition: 'all 0.2s',
+              position: 'relative',
+              overflow: 'hidden'
+            }}
+            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(6, 182, 212, 0.5)'; }}
+            onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 15px rgba(6, 182, 212, 0.4)'; }}
+            onMouseDown={e => e.currentTarget.style.transform = 'scale(0.98)'}
+            onMouseUp={e => e.currentTarget.style.transform = 'scale(1)'}
           >
-            {cargando ? 'Iniciando sesión...' : 'Entrar al CRM'}
-          </Btn>
+            {cargando ? 'Accediendo...' : 'Entrar al CRM'}
+            <div style={{ position: 'absolute', top: 0, height: '100%', width: '50%', background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)', animation: 'shine 3s infinite' }} />
+          </button>
         </form>
+
+        <div style={{ marginTop: 32, textAlign: 'center', fontSize: 13, color: 'rgba(255,255,255,0.4)' }}>
+          ENSING CRM v2.0 &bull; Platform Built for Growth
+        </div>
       </div>
     </div>
   );
 }
+
