@@ -280,11 +280,11 @@ export function ChatWhatsApp({ t }) {
   };
 
   const renderAck = (ack) => {
-    if (ack === 1) return <Ico k="check_plain" size={14} style={{ color: T.whiteDim, marginLeft: 6 }} />;
-    if (ack === 2) return <Ico k="checks" size={14} style={{ color: T.whiteDim, marginLeft: 6 }} />;
-    if (ack >= 3) return <Ico k="checks" size={14} style={{ color: "#34B7F1", marginLeft: 6 }} />;
-    // pending (0) or sending
-    return <Ico k="clock" size={12} style={{ color: T.whiteDim, marginLeft: 6 }} />;
+    // ✓ = enviado, ✓✓ gray = entregado, ✓✓ azul = leído
+    if (ack === undefined || ack === null || ack === 0) return <span style={{ color: "rgba(0,0,0,0.4)", marginLeft: 6, fontSize: 12 }}>🕐</span>;
+    if (ack === 1) return <span style={{ color: "rgba(0,0,0,0.45)", marginLeft: 6, fontSize: 12 }}>✓</span>;
+    if (ack === 2) return <span style={{ color: "rgba(0,0,0,0.45)", marginLeft: 6, fontSize: 12 }}>✓✓</span>;
+    return <span style={{ color: "#1E90FF", marginLeft: 6, fontSize: 12 }}>✓✓</span>;
   };
 
   const agregarRegla = () => {
@@ -449,7 +449,7 @@ export function ChatWhatsApp({ t }) {
                 {/* ÁREA DE CHAT SCROLL */}
                 <div style={{ flex: 1, overflowY: "auto", padding: 24, display: "flex", flexDirection: "column", gap: 16, backgroundImage: `radial-gradient(${T.borderHi} 1px, transparent 1px)`, backgroundSize: "20px 20px" }}>
                   {(messages[activeChatId] || []).map((m, i) => {
-                    const isMe = m.fromMe;
+                    const isMe = m.fromMe === true || m.from_me === true;
                     const hasMedia = m.hasMedia || m.mediaData;
                     const isImage = hasMedia && (m.mimeType?.startsWith('image/') || m.mediaData?.startsWith('data:image/'));
                     return (
