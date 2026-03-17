@@ -174,27 +174,22 @@ export function LeadTimeline({ deal, contacto, db, setDb, guardarEnSupa, setModu
       creado: new Date().toISOString()
     };
 
-    const { error } = await guardarEnSupa("tareas", nueva);
-    if (!error) {
-      // Actualizar estado global
-      setDb(prev => ({ ...prev, tareas: [nueva, ...prev.tareas] }));
+    // Guardar en Supabase (y actualizar estado global vía setDb en guardarEnSupa)
+    await guardarEnSupa("tareas", nueva);
 
-      // Actualizar vista local
-      setTasks(prev => [nueva, ...prev]);
-      setItems(prev => [{
-        type: "task",
-        id: nueva.id,
-        body: nueva.titulo,
-        timestamp: Date.now() / 1000,
-        deadline: nueva.vencimiento,
-        status: nueva.estado,
-        priority: nueva.prioridad
-      }, ...prev]);
+    // Actualizar vista local
+    setTasks(prev => [nueva, ...prev]);
+    setItems(prev => [{
+      type: "task",
+      id: nueva.id,
+      body: nueva.titulo,
+      timestamp: Date.now() / 1000,
+      deadline: nueva.vencimiento,
+      status: nueva.estado,
+      priority: nueva.prioridad
+    }, ...prev]);
 
-      setTaskForm({ titulo: "", prioridad: "media", vencimiento: "", asignado: db.usuario?.name || "", descripcion: "" });
-    } else {
-      console.error("Error al crear tarea:", error);
-    }
+    setTaskForm({ titulo: "", prioridad: "media", vencimiento: "", asignado: db.usuario?.name || "", descripcion: "" });
   };
 
   const handleGoToChat = () => {
