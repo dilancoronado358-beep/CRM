@@ -301,20 +301,18 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
         throw error;
       }
 
+      // Ya no necesitamos guardarEnSupa manualmente. El disparador (Trigger)
+      // que configuramos en la base de datos se encarga de crear el registro
+      // en "usuariosApp" automáticamente al detectar el nuevo Auth User.
+      
       const newUser = {
-        id: data.user?.id || Date.now().toString(),
+        id: data.user?.id,
         name: fNuevoUser.name,
         email: fNuevoUser.email,
         role: fNuevoUser.role,
-        password: fNuevoUser.password, // Solo para la simulación local
         activo: true,
-        whatsappAccess: false,
-        area: "General",
         creado: new Date().toISOString()
       };
-
-      // Guardado explícito para asegurar persistencia inmediata
-      await guardarEnSupa("usuariosApp", newUser);
 
       setDb(d => ({ ...d, usuariosApp: [...(d.usuariosApp || []), newUser] }));
 
