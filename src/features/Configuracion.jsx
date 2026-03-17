@@ -75,9 +75,9 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
     const protocol = window.location.protocol === "https:" ? "https:" : "http:";
     const adminUrl = db.usuariosApp?.find(u => u.role === 'admin' && u.waServerUrl)?.waServerUrl;
     const finalUrl = fWaUrl || adminUrl || `${protocol}//${window.location.hostname}:3001`;
-    socketRef.current = io(finalUrl, { 
+    socketRef.current = io(finalUrl, {
       transports: ['websocket'],
-      autoConnect: true 
+      autoConnect: true
     });
     const socket = socketRef.current;
 
@@ -122,9 +122,9 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
     }
 
     console.log("Re-conectando socket a:", finalUrl);
-    socketRef.current = io(finalUrl, { 
+    socketRef.current = io(finalUrl, {
       transports: ['websocket'],
-      autoConnect: true 
+      autoConnect: true
     });
 
     // Re-vincular eventos
@@ -145,7 +145,7 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
       const adminUrl = db.usuariosApp?.find(u => u.role === 'admin' && u.waServerUrl)?.waServerUrl;
       const url = fWaUrl || adminUrl;
       if (!url) throw new Error("No hay URL configurada.");
-      
+
       const res = await fetch(`${url}/health`, {
         headers: {
           "ngrok-skip-browser-warning": "true"
@@ -154,7 +154,7 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
       const data = await res.json();
       if (data.status === 'ok') {
         setTestResult({ success: true, msg: "¡Conexión exitosa! El servidor está respondiendo." });
-        
+
         // Proactivamente intentamos pedir el QR por HTTP si ya existe uno
         try {
           const qrRes = await fetch(`${url}/qr`, { headers: { "ngrok-skip-browser-warning": "true" } });
@@ -303,8 +303,13 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
         password: fNuevoUser.password, // Solo para la simulación local
         activo: true,
         whatsappAccess: false,
-        area: "General"
+        area: "General",
+        creado: new Date().toISOString()
       };
+
+      // Guardado explícito para asegurar persistencia inmediata
+      await guardarEnSupa("usuariosApp", newUser);
+
       setDb(d => ({ ...d, usuariosApp: [...(d.usuariosApp || []), newUser] }));
 
       alert("Usuario provisionado exitosamente en el sistema.");
@@ -368,7 +373,7 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
     setCargandoApi(true);
     const newToken = "sk_dev_" + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
     const payload = { id: "global_config", api_token: newToken, creado: new Date().toISOString() };
-    
+
     await guardarEnSupa("api_settings", payload);
     setDb(d => ({ ...d, api_settings: [payload] }));
     setCargandoApi(false);
@@ -668,8 +673,8 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
             <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
                 <Campo label="Proveedor">
-                  <Sel 
-                    value={fEmail.provider} 
+                  <Sel
+                    value={fEmail.provider}
                     onChange={e => {
                       const p = e.target.value;
                       let update = { ...fEmail, provider: p };
@@ -685,7 +690,7 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
                         update.imap_port = 993;
                       }
                       setFEmail(update);
-                    }} 
+                    }}
                     style={{ fontSize: 15 }}
                   >
                     <option value="custom">Enterprise Exchange (Custom)</option>
@@ -699,51 +704,51 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
               <div style={{ padding: 24, background: T.bg2, borderRadius: 12, border: `1px solid ${T.borderHi}` }}>
                 <div style={{ fontSize: 16, fontWeight: 800, color: T.white, marginBottom: 20 }}>Configuración de Servidor</div>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 20 }}>
-                   <Campo label="SMTP Host"><Inp value={fEmail.smtp_host} onChange={e => setFEmail({ ...fEmail, smtp_host: e.target.value })} /></Campo>
-                   <Campo label="SMTP Port"><Inp type="number" value={fEmail.smtp_port} onChange={e => setFEmail({ ...fEmail, smtp_port: parseInt(e.target.value) })} /></Campo>
-                   <Campo label="IMAP Host"><Inp value={fEmail.imap_host} onChange={e => setFEmail({ ...fEmail, imap_host: e.target.value })} /></Campo>
-                   <Campo label="IMAP Port"><Inp type="number" value={fEmail.imap_port} onChange={e => setFEmail({ ...fEmail, imap_port: parseInt(e.target.value) })} /></Campo>
-                   <Campo label="Password / App Token (Secret)"><Inp type="password" value={fEmail.password_hash} onChange={e => setFEmail({ ...fEmail, password_hash: e.target.value })} /></Campo>
+                  <Campo label="SMTP Host"><Inp value={fEmail.smtp_host} onChange={e => setFEmail({ ...fEmail, smtp_host: e.target.value })} /></Campo>
+                  <Campo label="SMTP Port"><Inp type="number" value={fEmail.smtp_port} onChange={e => setFEmail({ ...fEmail, smtp_port: parseInt(e.target.value) })} /></Campo>
+                  <Campo label="IMAP Host"><Inp value={fEmail.imap_host} onChange={e => setFEmail({ ...fEmail, imap_host: e.target.value })} /></Campo>
+                  <Campo label="IMAP Port"><Inp type="number" value={fEmail.imap_port} onChange={e => setFEmail({ ...fEmail, imap_port: parseInt(e.target.value) })} /></Campo>
+                  <Campo label="Password / App Token (Secret)"><Inp type="password" value={fEmail.password_hash} onChange={e => setFEmail({ ...fEmail, password_hash: e.target.value })} /></Campo>
                 </div>
               </div>
 
               <div style={{ display: "flex", justifyContent: "flex-end", gap: 12 }}>
-                <Btn 
-                   variant="secundario" 
-                   disabled={probandoEmail}
-                   onClick={async () => {
-                     setProbandoEmail(true);
-                     const API_URL = `http://${window.location.hostname}:3001`;
-                     try {
-                       const res = await axios.post(`${API_URL}/api/email/test-connection`, fEmail);
-                       const { smtp, imap } = res.data;
-                       if (smtp.ok && imap.ok) {
-                         alert("✅ ¡Conexión exitosa! Tanto SMTP como IMAP funcionan.");
-                       } else {
-                         let msg = "⚠️ Problemas detectados:\n";
-                         if (!smtp.ok) msg += `- SMTP Falló: ${smtp.error}\n`;
-                         if (!imap.ok) msg += `- IMAP Falló: ${imap.error}\n`;
-                         alert(msg);
-                       }
-                     } catch(e) { alert("Error de red: " + e.message); }
-                     finally { setProbandoEmail(false); }
-                   }}
+                <Btn
+                  variant="secundario"
+                  disabled={probandoEmail}
+                  onClick={async () => {
+                    setProbandoEmail(true);
+                    const API_URL = `http://${window.location.hostname}:3001`;
+                    try {
+                      const res = await axios.post(`${API_URL}/api/email/test-connection`, fEmail);
+                      const { smtp, imap } = res.data;
+                      if (smtp.ok && imap.ok) {
+                        alert("✅ ¡Conexión exitosa! Tanto SMTP como IMAP funcionan.");
+                      } else {
+                        let msg = "⚠️ Problemas detectados:\n";
+                        if (!smtp.ok) msg += `- SMTP Falló: ${smtp.error}\n`;
+                        if (!imap.ok) msg += `- IMAP Falló: ${imap.error}\n`;
+                        alert(msg);
+                      }
+                    } catch (e) { alert("Error de red: " + e.message); }
+                    finally { setProbandoEmail(false); }
+                  }}
                 >
                   {probandoEmail ? "Testing..." : <><Ico k="check" size={16} /> Test Connection</>}
                 </Btn>
                 <Btn variant="secundario" onClick={async () => {
-                   const API_URL = `http://${window.location.hostname}:3001`;
-                   try {
-                     const res = await axios.post(`${API_URL}/api/email/sync`, { accountId: fEmail.id || "acc_primary" });
-                     alert("Sincronización iniciada: " + (res.data.count || 0) + " correos nuevos.");
-                   } catch(e) { alert("Error al sincronizar: " + e.message); }
+                  const API_URL = `http://${window.location.hostname}:3001`;
+                  try {
+                    const res = await axios.post(`${API_URL}/api/email/sync`, { accountId: fEmail.id || "acc_primary" });
+                    alert("Sincronización iniciada: " + (res.data.count || 0) + " correos nuevos.");
+                  } catch (e) { alert("Error al sincronizar: " + e.message); }
                 }}><Ico k="refresh" size={16} /> Sync Now</Btn>
                 <Btn onClick={async () => {
-                   const id = fEmail.id || "acc_primary";
-                   const data = { ...fEmail, id, user_id: db.usuario?.id };
-                   await guardarEnSupa("email_accounts", data);
-                   setDb(d => ({ ...d, email_accounts: [data] }));
-                   alert("Configuración de correo guardada.");
+                  const id = fEmail.id || "acc_primary";
+                  const data = { ...fEmail, id, user_id: db.usuario?.id };
+                  await guardarEnSupa("email_accounts", data);
+                  setDb(d => ({ ...d, email_accounts: [data] }));
+                  alert("Configuración de correo guardada.");
                 }} style={{ background: T.teal, color: "#000" }}><Ico k="check" size={16} /> Save & Connect</Btn>
               </div>
             </div>
@@ -758,31 +763,31 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
             <div style={{ padding: 24, background: T.bg2, borderRadius: 12, border: `1px solid ${T.tealSoft}`, marginBottom: 32 }}>
               <Campo label="PRIVATE BEARER AUTH TOKEN (V2.0)">
                 <div style={{ display: "flex", gap: 12 }}>
-                  <Inp 
-                    value={db.api_settings?.[0]?.api_token || "⚠️ Haz clic en 'Generate Secret' →"} 
-                    readOnly 
+                  <Inp
+                    value={db.api_settings?.[0]?.api_token || "⚠️ Haz clic en 'Generate Secret' →"}
+                    readOnly
                     placeholder="Token no generado"
-                    style={{ 
-                      fontFamily: "monospace", 
-                      color: db.api_settings?.[0]?.api_token ? T.teal : T.whiteDim, 
-                      backgroundColor: T.teal + "10", 
-                      border: `1px solid ${T.tealSoft}`, 
-                      fontSize: 13, 
+                    style={{
+                      fontFamily: "monospace",
+                      color: db.api_settings?.[0]?.api_token ? T.teal : T.whiteDim,
+                      backgroundColor: T.teal + "10",
+                      border: `1px solid ${T.tealSoft}`,
+                      fontSize: 13,
                       flex: 1,
                       fontStyle: db.api_settings?.[0]?.api_token ? "normal" : "italic"
-                    }} 
+                    }}
                   />
                   <Btn variant="secundario" style={{ fontSize: 13 }} onClick={copiarToken} disabled={!db.api_settings?.[0]?.api_token}>Clone</Btn>
-                  <Btn 
-                    variant="peligro" 
-                    style={{ 
-                      fontSize: 13, 
-                      background: db.api_settings?.[0]?.api_token ? T.red + "20" : T.teal + "20", 
-                      color: db.api_settings?.[0]?.api_token ? T.red : T.teal, 
+                  <Btn
+                    variant="peligro"
+                    style={{
+                      fontSize: 13,
+                      background: db.api_settings?.[0]?.api_token ? T.red + "20" : T.teal + "20",
+                      color: db.api_settings?.[0]?.api_token ? T.red : T.teal,
                       border: `1px solid ${db.api_settings?.[0]?.api_token ? T.red : T.teal}40`,
                       minWidth: 140
-                    }} 
-                    onClick={rotateApiToken} 
+                    }}
+                    onClick={rotateApiToken}
                     disabled={cargandoApi}
                   >
                     {cargandoApi ? "Procesando..." : (db.api_settings?.[0]?.api_token ? "Rotate Secret" : "Generate Secret")}
@@ -798,7 +803,7 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
                   <Ico k="plus" size={14} /> Register Endpoint
                 </Btn>
               </div>
-              
+
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                 {db.webhook_subscriptions?.length > 0 ? (
                   db.webhook_subscriptions.map(wh => (
@@ -806,8 +811,8 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
                       <div>
                         <div style={{ fontSize: 14, fontWeight: 800, color: T.white, marginBottom: 6, fontFamily: "monospace" }}>POST {wh.url}</div>
                         <div style={{ display: "flex", gap: 8 }}>
-                           <Chip label={wh.evento} color={T.teal} bg={T.teal + "20"} />
-                           <span style={{ fontSize: 11, color: T.whiteDim }}>Activo desde {fdtm(wh.creado)}</span>
+                          <Chip label={wh.evento} color={T.teal} bg={T.teal + "20"} />
+                          <span style={{ fontSize: 11, color: T.whiteDim }}>Activo desde {fdtm(wh.creado)}</span>
                         </div>
                       </div>
                       <Btn variant="fantasma" size="sm" onClick={() => eliminarWebhook(wh.id)}>
@@ -824,23 +829,23 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
             </div>
 
             <Modal open={showWebhookModal} onClose={() => setShowWebhookModal(false)} title="Register Webhook Endpoint">
-               <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-                  <Campo label="Target URL (HTTPS)">
-                    <Inp value={fWebhook.url} onChange={e => setFWebhook({...fWebhook, url: e.target.value})} placeholder="https://hook.make.com/..." />
-                  </Campo>
-                  <Campo label="Event Topic">
-                    <Sel value={fWebhook.evento} onChange={e => setFWebhook({...fWebhook, evento: e.target.value})}>
-                      <option value="deal.ganado">🎯 Deal Ganado (Won)</option>
-                      <option value="deal.perdido">❌ Deal Perdido (Lost)</option>
-                      <option value="lead.nuevo">👤 Nuevo Lead Registrado</option>
-                      <option value="ticket.creado">🎫 Nuevo Ticket de Soporte</option>
-                    </Sel>
-                  </Campo>
-                  <div style={{ display: "flex", gap: 12, marginTop: 10 }}>
-                    <Btn variant="secundario" onClick={() => setShowWebhookModal(false)} full>Cancelar</Btn>
-                    <Btn onClick={registrarWebhook} full style={{ background: T.teal, color: "#000" }}>Register Sub</Btn>
-                  </div>
-               </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+                <Campo label="Target URL (HTTPS)">
+                  <Inp value={fWebhook.url} onChange={e => setFWebhook({ ...fWebhook, url: e.target.value })} placeholder="https://hook.make.com/..." />
+                </Campo>
+                <Campo label="Event Topic">
+                  <Sel value={fWebhook.evento} onChange={e => setFWebhook({ ...fWebhook, evento: e.target.value })}>
+                    <option value="deal.ganado">🎯 Deal Ganado (Won)</option>
+                    <option value="deal.perdido">❌ Deal Perdido (Lost)</option>
+                    <option value="lead.nuevo">👤 Nuevo Lead Registrado</option>
+                    <option value="ticket.creado">🎫 Nuevo Ticket de Soporte</option>
+                  </Sel>
+                </Campo>
+                <div style={{ display: "flex", gap: 12, marginTop: 10 }}>
+                  <Btn variant="secundario" onClick={() => setShowWebhookModal(false)} full>Cancelar</Btn>
+                  <Btn onClick={registrarWebhook} full style={{ background: T.teal, color: "#000" }}>Register Sub</Btn>
+                </div>
+              </div>
             </Modal>
           </Tarjeta>
         )}
@@ -872,7 +877,7 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
                         <span onClick={() => window.open(fWaUrl || db.usuariosApp?.find(u => u.role === 'admin' && u.waServerUrl)?.waServerUrl, '_blank')} style={{ cursor: "pointer", textDecoration: "underline", color: T.amber }}>🔗 Burlar Seguridad Túnel</span>
                       </div>
                       <div style={{ marginBottom: 4 }}>Conectando a: <b style={{ color: T.white }}>{fWaUrl || db.usuariosApp?.find(u => u.role === 'admin' && u.waServerUrl)?.waServerUrl || `http://${window.location.hostname}:3001`}</b></div>
-                      
+
                       {testResult && (
                         <div style={{ marginTop: 8, padding: 6, borderRadius: 4, background: testResult.success ? T.green + "20" : T.red + "20", color: testResult.success ? T.green : T.red, border: `1px solid ${testResult.success ? T.green : T.red}40` }}>
                           {testResult.success ? "✅ " : "❌ "} {testResult.msg}
