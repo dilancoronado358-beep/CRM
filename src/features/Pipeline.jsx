@@ -65,61 +65,120 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
 
     const quitarArchivo = id => setF(p => ({ ...p, archivos: p.archivos.filter(a => a.id !== id) }));
 
+    const stages = plActual?.etapas || [];
+    const currentEtIdx = stages.findIndex(s => s.id === f.etapaId);
+
     return (
-      <div style={{ display: "flex", gap: 32, minHeight: 600 }}>
-        {/* COLUMNA IZQUIERDA: INFORMACIÓN Y CAMPOS */}
-        <div style={{ width: 440, display: "flex", flexDirection: "column", gap: 20, flexShrink: 0 }}>
-          <div style={{ background: T.bg1, border: `1px solid ${T.border}`, borderRadius: 16, padding: 24 }}>
-            <Campo label="Título del Deal *" style={{ marginBottom: 20 }}><Inp value={f.titulo} onChange={s("titulo")} placeholder="ej. Acme — Plan Enterprise" style={{ fontSize: 16, fontWeight: 800 }} /></Campo>
+      <div style={{ display: "flex", flexDirection: "column", gap: 24, minHeight: 600 }}>
+        {/* STAGE SELECTOR (BITRIX STYLE) */}
+        <div style={{ display: "flex", width: "100%", gap: 4, paddingBottom: 10 }}>
+          {stages.map((st, idx) => {
+            const isActive = st.id === f.etapaId;
+            const isPast = idx < currentEtIdx;
+            const isFuture = idx > currentEtIdx;
+            
+            let bg = "#eef2f4";
+            let color = "#666";
+            let borderColor = "#d4dde1";
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 20 }}>
-              <Campo label="Monto ($)"><Inp type="number" value={f.valor} onChange={s("valor")} style={{ fontWeight: 800, color: T.green }} /></Campo>
-              <Campo label="Probabilidad (%)"><Inp type="number" value={f.prob} onChange={s("prob")} style={{ fontWeight: 800 }} /></Campo>
-            </div>
+            if (isActive) {
+              bg = st.color || T.teal;
+              color = "#fff";
+              borderColor = st.color || T.teal;
+            } else if (isPast) {
+              bg = (st.color || T.teal) + "30";
+              color = st.color || T.teal;
+              borderColor = (st.color || T.teal) + "60";
+            }
 
-            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-              <Campo label="Pipeline"><Sel value={f.pipelineId} onChange={e => setF(p => ({ ...p, pipelineId: e.target.value, etapaId: db.pipelines.find(pl => pl.id === e.target.value)?.etapas[0]?.id || "" }))}>{db.pipelines.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}</Sel></Campo>
-              <Campo label="Etapa"><Sel value={f.etapaId} onChange={s("etapaId")}>{plActual?.etapas.map(e => <option key={e.id} value={e.id}>{e.nombre}</option>)}</Sel></Campo>
-              <Campo label="Contacto Asociado"><Sel value={f.contactoId} onChange={s("contactoId")}><option value="">— Ninguno —</option>{db.contactos.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}</Sel></Campo>
-              <Campo label="Empresa (B2B)"><Sel value={f.empresaId} onChange={s("empresaId")}><option value="">— Ninguna —</option>{db.empresas.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}</Sel></Campo>
-              <Campo label="Fecha de Cierre"><Inp type="date" value={f.fechaCierre} onChange={s("fechaCierre")} /></Campo>
-              <Campo label="Responsable"><Inp value={f.responsable} onChange={s("responsable")} /></Campo>
-            </div>
-          </div>
-
-          <div style={{ background: T.bg1, border: `1px solid ${T.border}`, borderRadius: 16, padding: 24 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-              <span style={{ fontSize: 11, fontWeight: 700, color: T.whiteDim, textTransform: "uppercase" }}>Campos Extras</span>
-              <Btn variant="fantasma" size="sm" onClick={() => setF(p => ({ ...p, customFields: [...(p.customFields || []), { nombre: "", valor: "" }] }))}><Ico k="plus" size={12} /></Btn>
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {f.customFields?.map((cf, i) => (
-                <div key={i} style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                  <Inp value={cf.nombre} onChange={e => setF(p => ({ ...p, customFields: p.customFields.map((c, idx) => idx === i ? { ...c, nombre: e.target.value } : c) }))} placeholder="Eje: Región" style={{ flex: 1, fontSize: 11 }} />
-                  <Inp value={cf.valor} onChange={e => setF(p => ({ ...p, customFields: p.customFields.map((c, idx) => idx === i ? { ...c, valor: e.target.value } : c) }))} placeholder="Valor" style={{ flex: 1.5, fontSize: 11 }} />
-                  <button onClick={() => setF(p => ({ ...p, customFields: p.customFields.filter((_, idx) => idx !== i) }))} style={{ color: T.red, background: "none", border: "none" }}><Ico k="trash" size={12} /></button>
-                </div>
-              ))}
-              {f.archivos?.length > 0 && <div style={{ fontSize: 11, color: T.whiteDim, marginTop: 10 }}>📎 {f.archivos.length} archivos adjuntos.</div>}
-            </div>
-          </div>
-
-          <div style={{ display: "flex", gap: 12 }}>
-            <Btn variant="secundario" onClick={onCancelar} full>Cerrar</Btn>
-            <Btn onClick={() => { if (!f.titulo.trim()) return; onGuardar({ ...f, valor: +f.valor, prob: +f.prob, etiquetas: f.etiquetas.split(",").map(t => t.trim()).filter(Boolean) }); }} full style={{ background: T.teal, color: "#000" }}>Guardar Deal</Btn>
-          </div>
+            return (
+              <div 
+                key={st.id}
+                onClick={() => setF(p => ({ ...p, etapaId: st.id, prob: st.probabilidad }))}
+                style={{ 
+                  flex: 1, 
+                  height: 32, 
+                  display: "flex", 
+                  alignItems: "center", 
+                  justifyContent: "center", 
+                  fontSize: 11, 
+                  fontWeight: 700, 
+                  cursor: "pointer",
+                  background: bg,
+                  color: color,
+                  border: `1px solid ${borderColor}`,
+                  borderRadius: 4,
+                  transition: "all .2s",
+                  textAlign: "center",
+                  padding: "0 4px",
+                  textTransform: "uppercase",
+                  letterSpacing: ".02em",
+                  boxShadow: isActive ? `0 2px 8px ${bg}40` : "none"
+                }}
+                onMouseEnter={e => { if(!isActive) e.currentTarget.style.borderColor = st.color || T.teal; }}
+                onMouseLeave={e => { if(!isActive) e.currentTarget.style.borderColor = borderColor; }}
+              >
+                {st.nombre}
+              </div>
+            );
+          })}
         </div>
 
-        {/* COLUMNA DERECHA: TIMELINE (BITRIX STYLE) */}
-        <div style={{ flex: 1, minWidth: 400 }}>
-          <LeadTimeline
-            deal={f}
-            contacto={db.contactos.find(c => c.id === f.contactoId)}
-            db={db}
-            setDb={setDb}
-            guardarEnSupa={guardarEnSupa}
-            setModulo={setModulo}
-          />
+        <div style={{ display: "flex", gap: 32 }}>
+          {/* COLUMNA IZQUIERDA: INFORMACIÓN Y CAMPOS */}
+          <div style={{ width: 440, display: "flex", flexDirection: "column", gap: 20, flexShrink: 0 }}>
+            <div style={{ background: T.bg1, border: `1px solid ${T.border}`, borderRadius: 16, padding: 24 }}>
+              <Campo label="Título del Deal *" style={{ marginBottom: 20 }}><Inp value={f.titulo} onChange={s("titulo")} placeholder="ej. Acme — Plan Enterprise" style={{ fontSize: 16, fontWeight: 800 }} /></Campo>
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 20 }}>
+                <Campo label="Monto ($)"><Inp type="number" value={f.valor} onChange={s("valor")} style={{ fontWeight: 800, color: T.green }} /></Campo>
+                <Campo label="Probabilidad (%)"><Inp type="number" value={f.prob} onChange={s("prob")} style={{ fontWeight: 800 }} /></Campo>
+              </div>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                <Campo label="Pipeline"><Sel value={f.pipelineId} onChange={e => setF(p => ({ ...p, pipelineId: e.target.value, etapaId: db.pipelines.find(pl => pl.id === e.target.value)?.etapas[0]?.id || "" }))}>{db.pipelines.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}</Sel></Campo>
+                <Campo label="Etapa"><Sel value={f.etapaId} onChange={s("etapaId")}>{plActual?.etapas.map(e => <option key={e.id} value={e.id}>{e.nombre}</option>)}</Sel></Campo>
+                <Campo label="Contacto Asociado"><Sel value={f.contactoId} onChange={s("contactoId")}><option value="">— Ninguno —</option>{db.contactos.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}</Sel></Campo>
+                <Campo label="Empresa (B2B)"><Sel value={f.empresaId} onChange={s("empresaId")}><option value="">— Ninguna —</option>{db.empresas.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}</Sel></Campo>
+                <Campo label="Fecha de Cierre"><Inp type="date" value={f.fechaCierre} onChange={s("fechaCierre")} /></Campo>
+                <Campo label="Responsable"><Inp value={f.responsable} onChange={s("responsable")} /></Campo>
+              </div>
+            </div>
+
+            <div style={{ background: T.bg1, border: `1px solid ${T.border}`, borderRadius: 16, padding: 24 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                <span style={{ fontSize: 11, fontWeight: 700, color: T.whiteDim, textTransform: "uppercase" }}>Campos Extras</span>
+                <Btn variant="fantasma" size="sm" onClick={() => setF(p => ({ ...p, customFields: [...(p.customFields || []), { nombre: "", valor: "" }] }))}><Ico k="plus" size={12} /></Btn>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {f.customFields?.map((cf, i) => (
+                  <div key={i} style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                    <Inp value={cf.nombre} onChange={e => setF(p => ({ ...p, customFields: p.customFields.map((c, idx) => idx === i ? { ...c, nombre: e.target.value } : c) }))} placeholder="Eje: Región" style={{ flex: 1, fontSize: 11 }} />
+                    <Inp value={cf.valor} onChange={e => setF(p => ({ ...p, customFields: p.customFields.map((c, idx) => idx === i ? { ...c, valor: e.target.value } : c) }))} placeholder="Valor" style={{ flex: 1.5, fontSize: 11 }} />
+                    <button onClick={() => setF(p => ({ ...p, customFields: p.customFields.filter((_, idx) => idx !== i) }))} style={{ color: T.red, background: "none", border: "none" }}><Ico k="trash" size={12} /></button>
+                  </div>
+                ))}
+                {f.archivos?.length > 0 && <div style={{ fontSize: 11, color: T.whiteDim, marginTop: 10 }}>📎 {f.archivos.length} archivos adjuntos.</div>}
+              </div>
+            </div>
+
+            <div style={{ display: "flex", gap: 12 }}>
+              <Btn variant="secundario" onClick={onCancelar} full>Cerrar</Btn>
+              <Btn onClick={() => { if (!f.titulo.trim()) return; onGuardar({ ...f, valor: +f.valor, prob: +f.prob, etiquetas: f.etiquetas.split(",").map(t => t.trim()).filter(Boolean) }); }} full style={{ background: T.teal, color: "#000" }}>Guardar Deal</Btn>
+            </div>
+          </div>
+
+          {/* COLUMNA DERECHA: TIMELINE (BITRIX STYLE) */}
+          <div style={{ flex: 1, minWidth: 400 }}>
+            <LeadTimeline
+              deal={f}
+              contacto={db.contactos.find(c => c.id === f.contactoId)}
+              db={db}
+              setDb={setDb}
+              guardarEnSupa={guardarEnSupa}
+              setModulo={setModulo}
+            />
+          </div>
         </div>
       </div>
     );

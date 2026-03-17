@@ -25,7 +25,7 @@ export const PlantillasEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) =>
     }
     setShowForm(false); setEditando(null); setF({ titulo: "", categoria: "prospectacion", asunto: "", cuerpo: "" });
   };
-  
+
   const eliminar = async id => {
     if (!confirm("¿Eliminar plantilla?")) return;
     setDb(d => ({ ...d, plantillasEmail: d.plantillasEmail.filter(p => p.id !== id) }));
@@ -36,9 +36,9 @@ export const PlantillasEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) =>
     <div>
       <EncabezadoSeccion title="Plantillas de Correo" sub={`${filtradas.length} plantillas creadas listas para usar`}
         actions={<Btn onClick={() => { setEditando(null); setShowForm(true); }}><Ico k="plus" size={14} />Nueva Plantilla</Btn>} />
-      
+
       <div style={{ marginBottom: 24, maxWidth: 500 }}><BuscadorBar value={busqueda} onChange={e => setBusqueda(e.target.value)} placeholder="Buscar plantillas..." /></div>
-      
+
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(350px, 1fr))", gap: 20 }}>
         {filtradas.map(p => {
           const cinfo = TPL_CATS[p.categoria] || TPL_CATS.prospectacion;
