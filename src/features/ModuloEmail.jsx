@@ -30,13 +30,13 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) => {
     if (!f.para.trim() || !f.cuerpo.trim()) return;
     setSimulandoEnvio(true);
     setLogEnvio(["[SMTP] Iniciando handshake con " + (db.cuentaEmail?.smtpHost || "smtp.servidor.com")]);
-    
+
     await new Promise(r => setTimeout(r, 600));
     setLogEnvio(prev => [...prev, "[AUTH] Autenticando canal TLS/SSL... ok."]);
-    
+
     await new Promise(r => setTimeout(r, 800));
     setLogEnvio(prev => [...prev, `[SEND] Transmitiendo payload cifrado a ${f.para}...`]);
-    
+
     await new Promise(r => setTimeout(r, 1200));
     setLogEnvio(prev => [...prev, "[250] OK: Message accepted for delivery. Envío completado."]);
 
@@ -44,19 +44,19 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) => {
       const nuevo = { id: "e" + uid(), carpeta: "enviados", de: db.usuario?.email || "usuario@empresa.com", para: f.para, asunto: f.asunto || "Sin asunto", cuerpo: f.cuerpo, cc: f.cc, bcc: f.bcc, fecha: new Date().toISOString(), leido: true };
       setDb(d => ({ ...d, emails: [nuevo, ...d.emails] }));
       await guardarEnSupa("emails", nuevo);
-      setShowRedactar(false); 
+      setShowRedactar(false);
       setSimulandoEnvio(false);
       setLogEnvio([]);
       setF({ para: "", asunto: "", cuerpo: "", cc: "", bcc: "", plantillaId: "" });
     }, 1000);
   };
-  
+
   const eliminar = async id => {
     setDb(d => ({ ...d, emails: d.emails.filter(e => e.id !== id) }));
     await eliminarDeSupa("emails", id);
     if (emailFocus?.id === id) setEmailFocus(null);
   };
-  
+
   const marcarLeido = async id => {
     const act = db.emails.find(e => e.id === id);
     if (!act || act.leido) return;
@@ -92,7 +92,7 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) => {
             </button>
           );
         })}
-        
+
         <div style={{ marginTop: "auto", background: T.bg1, border: `1px solid ${T.borderHi}`, borderRadius: 10, padding: 16 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, color: db.cuentaEmail?.conectado ? T.green : T.amber }}>
             <div style={{ width: 8, height: 8, borderRadius: "50%", background: "currentColor", boxShadow: `0 0 10px currentColor` }} />
@@ -114,7 +114,7 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) => {
               <Btn variant="fantasma" size="sm" style={{ padding: 6 }}><Ico k="check" size={16} /></Btn>
             </div>
           </div>
-          
+
           <div style={{ flex: 1, overflowY: "auto", background: T.bg1 }}>
             {msgs.length === 0 ? <Vacio text="Carpeta vacía." /> : msgs.map(e => (
               <div key={e.id} onClick={() => { setEmailFocus(e); marcarLeido(e.id); }} style={{ padding: "16px 20px", borderBottom: `1px solid ${T.borderHi}`, cursor: "pointer", background: emailFocus?.id === e.id ? T.bg2 : (!e.leido && carpeta === "entrada" ? T.teal + "08" : "transparent"), transition: "background .15s", position: "relative" }}>
@@ -155,7 +155,7 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) => {
                 </div>
               </div>
             </div>
-            
+
             {/* Cuerpo Lector */}
             <div style={{ padding: "32px 24px", flex: 1, overflowY: "auto", fontSize: 15, color: T.white, lineHeight: 1.7, whiteSpace: "pre-wrap", fontFamily: "inherit" }}>
               {emailFocus.cuerpo}
@@ -171,7 +171,7 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) => {
       </Tarjeta>
 
       {/* MODAL DE REDACCIÓN COMPLEJO TIPO SUPERHUMAN */}
-      <Modal open={showRedactar} onClose={() => {if(!simulandoEnvio) setShowRedactar(false)}} title="Composer" width={800}>
+      <Modal open={showRedactar} onClose={() => { if (!simulandoEnvio) setShowRedactar(false) }} title="Composer" width={800}>
         {simulandoEnvio ? (
           <div style={{ padding: 40, textAlign: "center" }}>
             <div style={{ width: 60, height: 60, borderRadius: "50%", background: T.teal + "20", color: T.teal, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px", animation: "pulse 1s infinite" }}>
@@ -185,7 +185,7 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) => {
           </div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
-            
+
             <div style={{ display: "flex", background: T.bg2, borderTopLeftRadius: 10, borderTopRightRadius: 10, borderBottom: `1px solid ${T.borderHi}`, padding: "10px 16px" }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: T.whiteDim, textTransform: "uppercase", width: 60, alignSelf: "center" }}>Para</div>
               <input value={f.para} onChange={s("para")} placeholder="correo@empresa.com" style={{ flex: 1, border: "none", background: "transparent", outline: "none", color: T.white, fontSize: 14, fontWeight: 600, fontFamily: "inherit" }} />
@@ -206,7 +206,7 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) => {
               <Btn variant="fantasma" size="sm" style={{ padding: "4px 8px" }}><Ico k="list" size={14} /></Btn>
               <Btn variant="fantasma" size="sm" style={{ padding: "4px 8px" }}><Ico k="note" size={14} /></Btn>
               <div style={{ width: 1, height: 16, background: T.borderHi, margin: "0 4px" }} />
-              
+
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginLeft: "auto" }}>
                 <Sel value={f.plantillaId} onChange={e => aplicarTpl(e.target.value)} style={{ padding: "4px 8px", height: "auto", fontSize: 11, width: 140, background: T.bg1, border: "none" }}>
                   <option value="">Plantillas</option>
@@ -224,7 +224,7 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) => {
               <div style={{ fontSize: 11, color: T.whiteDim }}><Ico k="trash" size={14} style={{ cursor: "pointer", marginRight: 16 }} onClick={() => setShowRedactar(false)} /><Ico k="calendar" size={14} style={{ cursor: "pointer" }} /></div>
               <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                 <span style={{ fontSize: 11, color: T.whiteDim, fontWeight: 600 }}>Cmd + Enter para enviar</span>
-                <Btn onClick={enviarRealista} disabled={!f.para.trim() || !f.cuerpo.trim()} style={{ borderRadius: 20, padding: "8px 24px" }}><Ico k="send" size={14} style={{ marginRight: 6 }}/> Enviar</Btn>
+                <Btn onClick={enviarRealista} disabled={!f.para.trim() || !f.cuerpo.trim()} style={{ borderRadius: 20, padding: "8px 24px" }}><Ico k="send" size={14} style={{ marginRight: 6 }} /> Enviar</Btn>
               </div>
             </div>
           </div>
