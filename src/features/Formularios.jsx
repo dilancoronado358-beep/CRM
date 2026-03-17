@@ -3,6 +3,7 @@ import { T } from "../theme";
 import { uid } from "../utils";
 import { Btn, Inp, Tarjeta, EncabezadoSeccion, Ico, Sel } from "../components/ui";
 import { sb } from "../hooks/useSupaState";
+import { toast } from "sonner";
 
 const FIELD_TYPES = [
   { value: "text", label: "Texto Corto" },
@@ -136,9 +137,18 @@ export const Formularios = ({ db }) => {
     const { error } = await sb.from("formularios_publicos").upsert(payload);
     setSaving(false);
     if (error) {
-      alert("❌ Error al guardar: " + error.message);
+      toast.error("Error al guardar: " + error.message);
     } else {
-      alert(`✅ Formulario guardado!\n\nLink público:\n${BASE_URL}/#/f/${activo.id}`);
+      toast.success("¡Formulario guardado!", {
+        description: `Link público: ${BASE_URL}/#/f/${activo.id}`,
+        action: {
+          label: "Copiar Link",
+          onClick: () => {
+            navigator.clipboard.writeText(`${BASE_URL}/#/f/${activo.id}`);
+            toast.success("Link copiado al portapapeles");
+          }
+        }
+      });
     }
   };
 
@@ -166,7 +176,7 @@ export const Formularios = ({ db }) => {
     if (!activo) return;
     const url = `${BASE_URL}/#/f/${activo.id}`;
     navigator.clipboard.writeText(url);
-    alert(`✅ Link copiado!\n\n${url}`);
+    toast.success("Link copiado", { description: url });
   };
 
   if (loading) return (

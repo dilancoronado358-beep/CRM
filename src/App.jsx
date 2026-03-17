@@ -2,8 +2,9 @@ import { useState, useEffect } from "react";
 import { useSupaState, sb } from "./hooks/useSupaState";
 import { T, applyTheme } from "./theme";
 
-import { Av, Btn, ControlSegmentado, IndSupa, Ico, SpotlightSearch, Toasts } from "./components/ui";
+import { Av, Btn, ControlSegmentado, IndSupa, Ico, SpotlightSearch } from "./components/ui";
 import { io } from "socket.io-client";
+import { Toaster, toast } from "sonner";
 
 // Features
 import { Dashboard } from "./features/Dashboard";
@@ -253,10 +254,8 @@ export default function App() {
 
     socket.on("whatsapp_message", (msg) => {
       if (!msg.fromMe) {
-        addNoti({
-          title: "Nuevo WhatsApp",
-          body: msg.body.length > 50 ? msg.body.slice(0, 50) + "..." : msg.body,
-          color: "#25D366"
+        toast.info("Nuevo WhatsApp", {
+          description: msg.body.length > 50 ? msg.body.slice(0, 50) + "..." : msg.body,
         });
       }
     });
@@ -499,8 +498,8 @@ export default function App() {
       {/* GLOBAL OMNIBAR */}
       <SpotlightSearch db={db} open={spotlightOpen} onClose={() => setSpotlightOpen(false)} onNavigate={(m) => setModulo(m)} />
 
-      {/* NOTIFICACIONES */}
-      <Toasts items={notis} onRemove={id => setNotis(prev => prev.filter(x => x.id !== id))} />
+      {/* NOTIFICACIONES MODERNAS (SONNER) */}
+      <Toaster richColors position="top-right" />
     </div>
   );
 }

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@supabase/supabase-js";
 import { SEMILLA } from "../data/seed";
 import { applyTheme } from "../theme";
+import { toast } from "sonner";
 
 /* ═══════════════════════════════════════════
    SUPABASE
@@ -330,7 +331,7 @@ export function useSupaState() {
       if (error) {
         console.error(`🔴 Error en ${tabla}:`, error.message);
         // Alerta visual para el usuario en caso de error crítico
-        window.alert(`No se pudo guardar en ${tabla}: ${error.message}`);
+        toast.error(`No se pudo guardar en ${tabla}: ${error.message}`);
       } else {
         console.log(`🟢 Éxito en ${tabla}`);
         const confirmado = data?.[0] || payload;
@@ -346,7 +347,7 @@ export function useSupaState() {
       }
     } catch (e) {
       console.error(`❌ Fallo crítico guardarEnSupa (${tabla}):`, e);
-      window.alert("Error de conexión con el servidor. Por favor, revisa tu internet.");
+      toast.error("Error de conexión con el servidor. Por favor, revisa tu internet.");
     }
   };
 

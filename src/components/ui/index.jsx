@@ -5,31 +5,6 @@ import { SpotlightSearch } from "./Spotlight";
 
 export { Ico, SpotlightSearch };
 
-export const Toasts = ({ items = [], onRemove }) => (
-  <div style={{ position: "fixed", bottom: 24, right: 24, zIndex: 10000, display: "flex", flexDirection: "column", gap: 10, pointerEvents: "none" }}>
-    {items.map((it, i) => (
-      <div key={it.id || i} 
-        style={{ 
-          background: T.bg1, border: `1px solid ${it.color || T.teal}50`, borderRadius: 10, padding: "12px 16px", color: T.white, 
-          boxShadow: "0 10px 15px -3px rgba(0,0,0,0.3)", display: "flex", alignItems: "center", gap: 12, pointerEvents: "auto",
-          animation: "slideInRight .3s ease", minWidth: 280, maxWidth: 350
-        }}>
-        <div style={{ width: 8, height: 8, borderRadius: "50%", background: it.color || T.teal, boxShadow: `0 0 8px ${it.color || T.teal}` }} />
-        <div style={{ flex: 1 }}>
-          {it.title && <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 2 }}>{it.title}</div>}
-          <div style={{ fontSize: 12, color: T.whiteOff }}>{it.body}</div>
-        </div>
-        <button onClick={() => onRemove(it.id)} style={{ background: "none", border: "none", color: T.whiteDim, cursor: "pointer", padding: 4 }}><Ico k="x" size={14} /></button>
-        <style>{`
-          @keyframes slideInRight { 
-            from { transform: translateX(100%); opacity: 0; } 
-            to { transform: translateX(0); opacity: 1; } 
-          }
-        `}</style>
-      </div>
-    ))}
-  </div>
-);
 
 export const Av = ({ text = "?", color = T.teal, size = 36, fs }) => (
   <div style={{ width: size, height: size, borderRadius: "50%", background: color + "18", border: `1.5px solid ${color}40`, color, fontWeight: 700, fontSize: fs || size * .36, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>

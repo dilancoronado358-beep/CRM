@@ -4,6 +4,7 @@ import { uid } from "../utils";
 import { Btn, Inp, Modal, Ico, Campo } from "../components/ui";
 import { sb } from "../hooks/useSupaState";
 import { FormularioPublico } from "./FormularioPublico";
+import { toast } from "sonner";
 
 const BASE_URL = "https://crm.ensing.lat";
 
@@ -171,9 +172,18 @@ export const Websites = ({ db, setDb }) => {
     const { error } = await sb.from("landing_pages").upsert(payload);
     setSaving(false);
     if (error) {
-      alert("❌ Error al guardar: " + error.message);
+      toast.error("Error al guardar: " + error.message);
     } else {
-      alert(`✅ Landing page guardada!\n\nLink público:\n${BASE_URL}/#/sites/${pg.id}`);
+      toast.success("¡Landing page guardada!", {
+        description: `Link público: ${BASE_URL}/#/sites/${pg.id}`,
+        action: {
+          label: "Copiar Link",
+          onClick: () => {
+            navigator.clipboard.writeText(`${BASE_URL}/#/sites/${pg.id}`);
+            toast.success("Link copiado al portapapeles");
+          }
+        }
+      });
     }
   };
 
@@ -256,7 +266,7 @@ export const Websites = ({ db, setDb }) => {
   const copyLink = (pg) => {
     const url = `${BASE_URL}/#/sites/${pg.id}`;
     navigator.clipboard?.writeText(url);
-    alert(`✅ Link copiado!\n\n${url}\n\nCualquier persona puede abrirlo sin login.`);
+    toast.success("Link copiado", { description: url });
   };
 
   // Inline editors per block type
