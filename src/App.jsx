@@ -27,6 +27,8 @@ import { Websites } from "./features/Websites";
 import { Playbook } from "./features/Playbook";
 import { EmailSequences } from "./features/EmailSequences";
 import { Finanzas } from "./features/Finanzas";
+import { NotificationCenter } from "./features/NotificationCenter";
+import { DataHygiene } from "./features/DataHygiene";
 import { Login } from "./features/Login";
 
 // Public Views
@@ -61,6 +63,7 @@ const DICT = {
   "Notas Internas": { en: "Notes", ru: "Заметки", fr: "Notes" },
   "Reportes Analíticos": { en: "Reports", ru: "Отчёты", fr: "Rapports" },
   "Finanzas & Comisiones": { en: "Finances", ru: "Финансы", fr: "Finances" },
+  "Limpieza de Datos": { en: "Data Hygiene", ru: "Очистка данных", fr: "Nettoyage des Données" },
   "Configuración": { en: "Settings", ru: "Настройки", fr: "Paramètres" },
   "Form Builder": { en: "Form Builder", ru: "Формы", fr: "Formulaires" },
   "Landing Pages": { en: "Landing Pages", ru: "Лендинги", fr: "Pages Web" },
@@ -261,6 +264,25 @@ export default function App() {
     return () => socket.disconnect();
   }, []);
 
+  // Recordatorios de Tareas del Día
+  useEffect(() => {
+    if (!db.usuario || !db.tareas) return;
+    const hoy = new Date().toISOString().slice(0, 10);
+    const tareasHoy = db.tareas.filter(t => t.vencimiento === hoy && t.estado !== "completada" && t.asignado === db.usuario.name);
+    
+    if (tareasHoy.length > 0) {
+      const yaNotificado = sessionStorage.getItem(`noti_tareas_${hoy}`);
+      if (!yaNotificado) {
+        addNoti({
+          title: "Tareas para hoy",
+          body: `Tienes ${tareasHoy.length} tareas pendientes para el día de hoy.`,
+          color: T.amber
+        });
+        sessionStorage.setItem(`noti_tareas_${hoy}`, "true");
+      }
+    }
+  }, [db.tareas, db.usuario?.id]);
+
   useEffect(() => {
     // Apply theme on mount and whenever user changes it
     const themeId = db.usuario?.tema || localStorage.getItem("crm_theme") || "dark";
@@ -359,6 +381,7 @@ export default function App() {
     { id: "notas", label: t("Notas Internas"), role: t("Herramientas"), comp: Notas },
     { id: "playbook", label: t("Sales Playbook"), role: t("Herramientas"), comp: Playbook },
     { id: "reportes", label: t("Reportes Analíticos"), role: t("Herramientas"), comp: Reportes },
+    { id: "hygiene", label: t("Limpieza de Datos"), role: t("Herramientas"), comp: DataHygiene },
     { id: "config", label: t("Configuración"), role: t("Sistema"), comp: Configuracion },
     { id: "formularios", label: t("Form Builder"), role: t("Captación Leads"), comp: Formularios },
     { id: "websites", label: t("Landing Pages"), role: t("Captación Leads"), comp: Websites },
@@ -452,6 +475,7 @@ export default function App() {
             <IndSupa estado={estadoSupa} />
           </div>
           <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+            <NotificationCenter db={db} guardarEnSupa={guardarEnSupa} setModulo={setModulo} />
             {/* Buscador Global Rápido (Visual) */}
             <div style={{ position: "relative" }}>
               <div style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: T.whiteDim, pointerEvents: "none" }}><Ico k="search" size={14} /></div>

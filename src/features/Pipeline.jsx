@@ -25,6 +25,7 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
   const [nuevoCampo, setNuevoCampo] = useState({ nombre: "", tipo: "cadena", opciones: "" });
   const [dragEtapa, setDragEtapa] = useState(null); // para reordenar etapas
   const [filtroRapido, setFiltroRapido] = useState("todos");
+  const [selectedIds, setSelectedIds] = useState([]); // Acciones masivas
 
   // Filtros Avanzados
   const [busqueda, setBusqueda] = useState("");
@@ -588,10 +589,48 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
   const guardarDeal = async (form) => {
     if (editDeal) {
       const act = { ...editDeal, ...form };
+      
+      // Notificación si cambia el responsable
+      if (form.responsable && form.responsable !== editDeal.responsable) {
+        const targetUser = db.usuariosApp?.find(u => u.name === form.responsable);
+        if (targetUser && targetUser.id !== db.usuario?.id) {
+          const noti = {
+            id: "not" + uid(),
+            usuario_id: targetUser.id,
+            titulo: "🤝 Nuevo Lead Asignado",
+            mensaje: `Se te ha asignado el lead: ${form.titulo || editDeal.titulo}`,
+            tipo: "success",
+            url: "pipeline",
+            leida: false,
+            creado: new Date().toISOString()
+          };
+          await guardarEnSupa("notificaciones", noti);
+        }
+      }
+
       setDb(d => ({ ...d, deals: d.deals.map(deal => deal.id === editDeal.id ? act : deal) }));
       await guardarEnSupa("deals", act);
     } else {
       const nv = { ...form, id: "d" + uid(), creado: new Date().toISOString().slice(0, 10) };
+      
+      // Notificación si se asigna a otro al crear
+      if (nv.responsable && nv.responsable !== db.usuario?.name) {
+        const targetUser = db.usuariosApp?.find(u => u.name === nv.responsable);
+        if (targetUser) {
+          const noti = {
+            id: "not" + uid(),
+            usuario_id: targetUser.id,
+            titulo: "🆕 Nuevo Lead",
+            mensaje: `Tienes un nuevo lead asignado: ${nv.titulo}`,
+            tipo: "info",
+            url: "pipeline",
+            leida: false,
+            creado: new Date().toISOString()
+          };
+          await guardarEnSupa("notificaciones", noti);
+        }
+      }
+
       setDb(d => ({ ...d, deals: [nv, ...d.deals] }));
       await guardarEnSupa("deals", nv);
     }
@@ -626,6 +665,45 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
     if (!confirm("¿Eliminar deal?")) return;
     setDb(d => ({ ...d, deals: d.deals.filter(deal => deal.id !== id) }));
     await eliminarDeSupa("deals", id);
+  };
+
+  // --- ACCIONES MASIVAS ---
+  const handleBulkStage = async (newEtapaId) => {
+    if (!selectedIds.length) return;
+    setDb(prev => ({
+      ...prev,
+      deals: prev.deals.map(d => selectedIds.includes(d.id) ? { ...d, etapa_id: newEtapaId } : d)
+    }));
+    for (const id of selectedIds) {
+      const d = db.deals.find(x => x.id === id);
+      await guardarEnSupa("deals", { ...d, etapa_id: newEtapaId });
+    }
+    setSelectedIds([]);
+  };
+
+  const handleBulkResp = async (newResp) => {
+    if (!selectedIds.length) return;
+    setDb(prev => ({
+      ...prev,
+      deals: prev.deals.map(d => selectedIds.includes(d.id) ? { ...d, responsable: newResp } : d)
+    }));
+    for (const id of selectedIds) {
+      const d = db.deals.find(x => x.id === id);
+      await guardarEnSupa("deals", { ...d, responsable: newResp });
+    }
+    setSelectedIds([]);
+  };
+
+  const handleBulkDelete = async () => {
+    if (!selectedIds.length || !confirm(`¿Eliminar ${selectedIds.length} negocios seleccionados?`)) return;
+    setDb(prev => ({
+      ...prev,
+      deals: prev.deals.filter(d => !selectedIds.includes(d.id))
+    }));
+    for (const id of selectedIds) {
+      await eliminarDeSupa("deals", id);
+    }
+    setSelectedIds([]);
   };
 
   return (
@@ -795,9 +873,15 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
                     const avatarLetras = (deal.responsable || "?").trim().split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
                     const colAvatar = etapa.color;
 
+                    const isSelected = selectedIds.includes(deal.id);
+
                     return (
-                      <div key={deal.id} draggable onDragStart={() => setDragDeal(deal)} onClick={() => { setEditDeal(deal); setShowDealForm(true); }}
-                        style={{ background: T.bg1, border: `1px solid ${T.borderHi}`, borderLeft: `3px solid ${etapa.color}`, borderRadius: 8, padding: "11px 12px", cursor: "pointer", userSelect: "none", transition: "box-shadow .15s, transform .15s", position: "relative" }}
+                      <div key={deal.id} draggable onDragStart={() => setDragDeal(deal)}
+                        style={{ background: T.bg1, border: `1px solid ${isSelected ? T.teal : T.borderHi}`, borderLeft: `3px solid ${etapa.color}`, borderRadius: 8, padding: "11px 12px", cursor: "pointer", userSelect: "none", transition: "box-shadow .15s, transform .15s", position: "relative" }}
+                        onClick={(e) => {
+                          if (e.target.type === "checkbox") return;
+                          setEditDeal(deal); setShowDealForm(true);
+                        }}
                         onMouseEnter={e => { 
                           e.currentTarget.style.boxShadow = `0 4px 18px rgba(0,0,0,0.18)`; 
                           e.currentTarget.style.transform = "translateY(-1px)";
@@ -810,7 +894,16 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
                           const actions = e.currentTarget.querySelector(".card-actions");
                           if (actions) actions.style.opacity = "0";
                         }}>
+                        
+                        <input type="checkbox" checked={isSelected} 
+                          onChange={(e) => {
+                            e.stopPropagation();
+                            setSelectedIds(prev => e.target.checked ? [...prev, deal.id] : prev.filter(id => id !== deal.id));
+                          }}
+                          style={{ position: "absolute", top: 10, right: 10, cursor: "pointer", zIndex: 10 }} 
+                        />
 
+                        {/* INDICADOR SCORE */}
                          {/* Título + botones acción */}
                          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 8 }}>
                            <div style={{ fontSize: 13, fontWeight: 700, color: T.white, lineHeight: 1.35, flex: 1, display: "flex", alignItems: "center", gap: 6 }}>
@@ -1045,15 +1138,44 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
               <div key={cf.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: T.bg1, padding: "10px 14px", borderRadius: 8, border: `1px solid ${T.borderHi}` }}>
                 <div>
                   <div style={{ fontSize: 13, fontWeight: 700, color: T.white }}>{cf.nombre}</div>
-                  <div style={{ fontSize: 11, color: T.teal, textTransform: "uppercase", fontWeight: 700 }}>{cf.tipo}</div>
+                  <div style={{ fontSize: 11, color: T.whiteDim }}>Tipo: {cf.tipo}</div>
                 </div>
-                <button onClick={() => eliminarCampo(cf.id)} style={{ color: T.red, background: "none", border: "none", cursor: "pointer" }}><Ico k="trash" size={14} /></button>
+                <Btn variant="fantasma" size="sm" onClick={() => eliminarCampo(cf.id)} style={{ color: T.red }}><Ico k="trash" size={12} /></Btn>
               </div>
             ))}
             {(!db.campos_personalizados || db.campos_personalizados.length === 0) && <Vacio text="No hay campos personalizados." />}
           </div>
         </div>
       </Modal>
+
+      {/* BARRA DE ACCIONES MASIVAS */}
+      {selectedIds.length > 0 && (
+        <div style={{ position: "fixed", bottom: 24, left: "50%", transform: "translateX(-50%)", background: T.bg1, border: `1px solid ${T.teal}`, borderRadius: 12, padding: "12px 24px", display: "flex", alignItems: "center", gap: 24, boxShadow: "0 20px 25px -5px rgba(0,0,0,0.5)", zIndex: 10000, animation: "pop-up 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <span style={{ fontSize: 13, fontWeight: 800, color: T.teal }}>{selectedIds.length} seleccionados</span>
+            <Btn variant="fantasma" size="xs" onClick={() => setSelectedIds([])} style={{ color: T.whiteDim }}>Deseleccionar</Btn>
+          </div>
+          
+          <div style={{ height: 24, width: 1, background: T.border }} />
+
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <span style={{ fontSize: 11, color: T.whiteDim, fontWeight: 700 }}>ACCIONES:</span>
+            
+            <Sel value="" onChange={e => handleBulkStage(e.target.value)} style={{ width: 140, fontSize: 11, padding: "6px 10px" }}>
+              <option value="">Cambiar Etapa...</option>
+              {pipeline.etapas.map(et => <option key={et.id} value={et.id}>{et.nombre}</option>)}
+            </Sel>
+
+            <Sel value="" onChange={e => handleBulkResp(e.target.value)} style={{ width: 140, fontSize: 11, padding: "6px 10px" }}>
+              <option value="">Cambiar Responsable...</option>
+              {db.usuariosApp?.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
+            </Sel>
+
+            <Btn variant="peligro" size="sm" onClick={handleBulkDelete}><Ico k="trash" size={14} /> Eliminar</Btn>
+          </div>
+          <style>{`@keyframes pop-up { from { opacity:0; transform:translate(-50%, 20px); } to { opacity:1; transform:translate(-50%, 0); } }`}</style>
+        </div>
+      )}
     </div>
   );
 };

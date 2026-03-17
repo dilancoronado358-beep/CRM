@@ -164,6 +164,29 @@ export function LeadTimeline({ deal = {}, contacto = {}, db = {}, setDb, guardar
 
   const handleAddComment = async () => {
     if (!comentario.trim()) return;
+    
+    // Detectar menciones @nombre
+    const menciones = comentario.match(/@(\w+)/g);
+    if (menciones) {
+      for (const m of menciones) {
+        const nombre = m.substring(1).toLowerCase();
+        const targetUser = db.usuariosApp?.find(u => (u.name || "").toLowerCase().includes(nombre));
+        if (targetUser && targetUser.id !== db.usuario?.id) {
+          const noti = {
+            id: "not" + Math.random().toString(36).substr(2, 9),
+            usuario_id: targetUser.id,
+            titulo: "📌 Nueva mención",
+            mensaje: `${db.usuario?.name || "Alguien"} te mencionó en el lead: ${deal?.titulo || "Sin título"}`,
+            tipo: "info",
+            url: "pipeline", // Redirigir al pipeline para que lo vea
+            leida: false,
+            creado: new Date().toISOString()
+          };
+          await guardarEnSupa("notificaciones", noti);
+        }
+      }
+    }
+
     const nuevaNota = deal?.notas ? `${deal.notas}\n\n[${new Date().toLocaleString()}] ${comentario}` : `[${new Date().toLocaleString()}] ${comentario}`;
     await guardarEnSupa("deals", { ...deal, notas: nuevaNota });
     setComentario("");

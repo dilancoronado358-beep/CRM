@@ -34,6 +34,7 @@ const TABLAS_SUPA = [
   "custom_reports",
   "finanzas_gastos",
   "finanzas_comisiones",
+  "notificaciones",
 ];
 
 /* ═══════════════════════════════════════════
