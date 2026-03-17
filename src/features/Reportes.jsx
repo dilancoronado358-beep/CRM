@@ -1,32 +1,92 @@
 import { useState } from "react";
 import { T } from "../theme";
 import { money } from "../utils";
-import { Tarjeta, KPI, EncabezadoSeccion } from "../components/ui";
+import { Tarjeta, KPI, EncabezadoSeccion, Btn, Sel, Ico } from "../components/ui";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend } from "recharts";
 
 const COLORS = [T.teal, T.green, T.amber, "#A78BFA", "#F472B6", "#60A5FA"];
 
 export const Reportes = ({ db }) => {
-  const pl = db.pipelines[0];
-  const deals = db.deals.filter(d => d.pipelineId === pl?.id);
-  const totalValor = deals.reduce((s, d) => s + d.valor, 0);
-  const ganados = deals.filter(d => pl?.etapas.find(e => e.id === d.etapaId)?.esGanado);
-  const perdidos = deals.filter(d => pl?.etapas.find(e => e.id === d.etapaId)?.esPerdido);
-  const activos = deals.filter(d => !pl?.etapas.find(e => e.id === d.etapaId)?.esGanado && !pl?.etapas.find(e => e.id === d.etapaId)?.esPerdido);
-  const valGanados = ganados.reduce((s, d) => s + d.valor, 0);
+  const [filtros, setFiltros] = useState({
+    pipeline_id: db.pipelines[0]?.id || "",
+    responsable: "todos"
+  });
 
-  const statsFuente = db.contactos.reduce((acc, c) => { acc[c.fuente] = (acc[c.fuente] || 0) + 1; return acc; }, {});
+  const pipelines = db.pipelines || [];
+  const responsables = ["todos", ...new Set(db.deals.map(d => d.responsable).filter(Boolean))];
+
+  const s = k => e => setFiltros(p => ({ ...p, [k]: e.target.value }));
+
+  // Filtrado de Datos
+  const pl = pipelines.find(p => p.id === filtros.pipeline_id);
+  const deals = db.deals.filter(d => 
+    d.pipeline_id === filtros.pipeline_id && 
+    (filtros.responsable === "todos" || d.responsable === filtros.responsable)
+  );
+
+  const totalValor = deals.reduce((s, d) => s + (d.valor || 0), 0);
+  const ganados = deals.filter(d => pl?.etapas.find(e => e.id === d.etapa_id)?.es_ganado);
+  const perdidos = deals.filter(d => pl?.etapas.find(e => e.id === d.etapa_id)?.es_perdido);
+  const activos = deals.filter(d => !pl?.etapas.find(e => e.id === d.etapa_id)?.es_ganado && !pl?.etapas.find(e => e.id === d.etapa_id)?.es_perdido);
+  const valGanados = ganados.reduce((s, d) => s + (d.valor || 0), 0);
+
+  const statsFuente = db.contactos.reduce((acc, c) => { acc[c.fuente || "Sin Fuente"] = (acc[c.fuente || "Sin Fuente"] || 0) + 1; return acc; }, {});
   const dataFuentes = Object.keys(statsFuente).map(k => ({ name: k, value: statsFuente[k] })).sort((a, b) => b.value - a.value);
 
   const dataPipeline = [
-    { name: "Activos", cantidad: activos.length, valor: activos.reduce((s, d) => s + d.valor, 0), fill: T.teal },
-    { name: "Ganados", cantidad: ganados.length, valor: ganados.reduce((s, d) => s + d.valor, 0), fill: T.green },
-    { name: "Perdidos", cantidad: perdidos.length, valor: perdidos.reduce((s, d) => s + d.valor, 0), fill: T.red },
+    { name: "Activos", cantidad: activos.length, valor: activos.reduce((s, d) => s + (d.valor || 0), 0), fill: T.teal },
+    { name: "Ganados", cantidad: ganados.length, valor: ganados.reduce((s, d) => s + (d.valor || 0), 0), fill: T.green },
+    { name: "Perdidos", cantidad: perdidos.length, valor: perdidos.reduce((s, d) => s + (d.valor || 0), 0), fill: T.red },
   ];
+
+  const descargarCSV = () => {
+    const headers = ["ID", "Titulo", "Valor", "Etapa", "Responsable", "Creado"];
+    const rows = deals.map(d => [
+      d.id,
+      d.titulo,
+      d.valor,
+      pl?.etapas.find(e => e.id === d.etapa_id)?.nombre || "N/A",
+      d.responsable,
+      d.creado
+    ]);
+
+    const content = [headers, ...rows].map(e => e.join(",")).join("\n");
+    const blob = new Blob([content], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `reporte_crm_${new Date().toISOString().slice(0,10)}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   return (
     <div>
-      <EncabezadoSeccion title="Reportes Analíticos Profesionales" sub="Métricas en tiempo real de tu CRM" />
+      <EncabezadoSeccion 
+        title="Reportes Analíticos Profesionales" 
+        sub="Métricas en tiempo real de tu CRM" 
+        actions={
+          <div style={{ display: "flex", gap: 12 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ fontSize: 12, fontWeight: 700, color: T.whiteDim }}>Pipeline:</span>
+              <Sel value={filtros.pipeline_id} onChange={s("pipeline_id")} style={{ width: 140 }}>
+                {pipelines.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
+              </Sel>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ fontSize: 12, fontWeight: 700, color: T.whiteDim }}>Filtro:</span>
+              <Sel value={filtros.responsable} onChange={s("responsable")} style={{ width: 140 }}>
+                {responsables.map(r => <option key={r} value={r}>{r === "todos" ? "Todos los usuarios" : r}</option>)}
+              </Sel>
+            </div>
+            <Btn onClick={descargarCSV} variant="secundario">
+              <Ico k="download" size={14} /> Descargar CSV
+            </Btn>
+          </div>
+        }
+      />
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px,1fr))", gap: 16, marginBottom: 24 }}>
         <KPI label="Valor Total Pipeline" value={money(totalValor)} color={T.teal} icon="funnel" />

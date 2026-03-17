@@ -80,7 +80,7 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
     const quitarArchivo = id => setF(p => ({ ...p, archivos: p.archivos.filter(a => a.id !== id) }));
 
     const stages = plActual?.etapas || [];
-    const currentEtIdx = stages.findIndex(s => s.id === f.etapaId);
+    const currentEtIdx = stages.findIndex(s => s.id === f.etapa_id);
 
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: 24, minHeight: 600 }}>

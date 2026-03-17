@@ -5,15 +5,15 @@ import { Chip, Btn, Inp, Sel, Campo, Modal, Tarjeta, Vacio, EncabezadoSeccion, I
 
 export const Tareas = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) => {
   const [showForm, setShowForm] = useState(false);
-  const [f, setF] = useState({ titulo: "", prioridad: "media", vencimiento: "", asignado: db.usuario?.name || "", descripcion: "", contactoId: "", dealId: "", estado: "pendiente" });
+  const [f, setF] = useState({ titulo: "", prioridad: "media", vencimiento: "", asignado: db.usuario?.name || "", descripcion: "", contacto_id: "", deal_id: "", estado: "pendiente" });
   const s = k => e => setF(p => ({ ...p, [k]: e.target.value }));
 
   const guardar = async () => {
     if (!f.titulo.trim()) return;
-    const nueva = { ...f, id: "t" + uid(), contactoId: f.contactoId || null, dealId: f.dealId || null };
+    const nueva = { ...f, id: "t" + uid(), contacto_id: f.contacto_id || null, deal_id: f.deal_id || null };
     setDb(d => ({ ...d, tareas: [nueva, ...d.tareas] }));
     await guardarEnSupa("tareas", nueva);
-    setShowForm(false); setF({ titulo: "", prioridad: "media", vencimiento: "", asignado: db.usuario?.name || "", descripcion: "", contactoId: "", dealId: "", estado: "pendiente" });
+    setShowForm(false); setF({ titulo: "", prioridad: "media", vencimiento: "", asignado: db.usuario?.name || "", descripcion: "", contacto_id: "", deal_id: "", estado: "pendiente" });
   };
 
   const move = async (id, st) => {
