@@ -44,8 +44,14 @@ export const THEMES = {
     id: "light", label: "Light", icon: "☀️", preview: ["#F4F7FE","#06B6D4","#10B981"],
     bg0:"#F4F7FE",bg1:"#FFFFFF",bg2:"#F9FAFB",bg3:"#F3F4F6",bg4:"#E5E7EB",
     border:"#E5E7EB",borderHi:"#D1D5DB",
-    teal:"#06B6D4",tealDark:"#0891B2",tealSoft:"rgba(6,182,212,.08)",tealGlow:"rgba(6,182,212,.04)",
-    white:"#111827",whiteOff:"#374151",whiteDim:"#6B7280",whiteFade:"#9CA3AF",
+    teal:"#14B8A6",tealDark:"#0891B2",tealSoft:"rgba(6,182,212,.08)",tealGlow:"rgba(6,182,212,.04)",
+    white:"#111827",whiteOff:"#9CA3AF",whiteDim:"#6B7280",whiteFade:"#9CA3AF",
+    
+    // PREMIUM TOKENS
+    gold: "#F59E0B",
+    platinum: "#E5E7EB",
+    bronze: "#D97706",
+    
     green:"#10B981",greenS:"rgba(16,185,129,.12)",
     amber:"#F59E0B",amberS:"rgba(245,158,11,.12)",
     red:"#EF4444",redS:"rgba(239,68,68,.12)",

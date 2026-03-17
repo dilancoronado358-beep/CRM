@@ -26,6 +26,46 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
 
   const actPipeline = up => setDb(d => ({ ...d, pipelines: d.pipelines.map(p => p.id === up.id ? up : p) }));
 
+  // SISTEMA DE AUTOMATIZACIÓN DE ETAPAS (TRIGGERS)
+  const ejecutarAutomaciones = async (deal, etapaId) => {
+    const pl = db.pipelines.find(p => p.id === deal.pipeline_id);
+    const et = pl?.etapas.find(e => e.id === etapaId);
+    if (!et) return;
+
+    // 1. Si el deal se marca como GANADO -> Crear tarea de seguimiento
+    if (et.es_ganado) {
+      const nuevaTarea = {
+        id: "t" + uid(),
+        titulo: `🎉 Seguimiento Post-Venta: ${deal.titulo}`,
+        prioridad: "alta",
+        estado: "pendiente",
+        asignado: deal.responsable,
+        vencimiento: new Date(Date.now() + 86400000 * 2).toISOString().slice(0, 10), // +2 días
+        contacto_id: deal.contacto_id,
+        deal_id: deal.id,
+        descripcion: "Felicidades por el cierre. No olvides contactar al cliente para el onboarding.",
+        creado: new Date().toISOString()
+      };
+      await guardarEnSupa("tareas", nuevaTarea);
+    }
+
+    // 2. Si entra en NEGOCIACIÓN -> Crear recordatorio
+    if (et.nombre.toLowerCase().includes("negociación")) {
+      const recordatorio = {
+        id: "t" + uid(),
+        titulo: `📑 Revisar términos: ${deal.titulo}`,
+        prioridad: "media",
+        estado: "pendiente",
+        asignado: deal.responsable,
+        vencimiento: new Date(Date.now() + 86400000).toISOString().slice(0, 10), // +1 día
+        contacto_id: deal.contacto_id,
+        deal_id: deal.id,
+        creado: new Date().toISOString()
+      };
+      await guardarEnSupa("tareas", recordatorio);
+    }
+  };
+
   const crearPipeline = () => {
     if (!nuevoPL.nombre.trim()) return;
     const np = {
@@ -111,7 +151,10 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
                 onClick={async () => {
                   const nextF = { ...f, etapa_id: st.id, prob: st.probabilidad };
                   setF(nextF);
-                  if (editDeal) await guardarEnSupa("deals", { ...editDeal, ...nextF });
+                  if (editDeal) {
+                    await guardarEnSupa("deals", { ...editDeal, ...nextF });
+                    if (st.id !== f.etapa_id) await ejecutarAutomaciones(editDeal, st.id);
+                  }
                 }}
                 style={{
                   flex: 1,
@@ -159,7 +202,14 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
                   const pl = db.pipelines.find(p => p.id === plId);
                   const nextF = { ...f, pipeline_id: plId, etapa_id: pl?.etapas[0]?.id || "" };
                   setF(nextF);
-                  if (editDeal) await guardarEnSupa("deals", { ...editDeal, ...nextF });
+                  if (editDeal) {
+                    await guardarEnSupa("deals", { ...editDeal, ...nextF });
+                    // If the pipeline changes, the stage also implicitly changes to the first stage of the new pipeline.
+                    // We should trigger automations if the stage actually changed from the previous one.
+                    if (editDeal.etapa_id !== (pl?.etapas[0]?.id || "")) {
+                      await ejecutarAutomaciones(editDeal, pl?.etapas[0]?.id || "");
+                    }
+                  }
                 }}>{db.pipelines.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}</Sel></Campo>
                 <Campo label="Etapa"><Sel value={f.etapa_id} onChange={s("etapa_id")}>{plActual?.etapas.map(e => <option key={e.id} value={e.id}>{e.nombre}</option>)}</Sel></Campo>
                 <Campo label="Contacto Asociado"><Sel value={f.contacto_id} onChange={s("contacto_id")}><option value="">— Ninguno —</option>{db.contactos.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}</Sel></Campo>
