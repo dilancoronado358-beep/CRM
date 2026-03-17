@@ -95,7 +95,7 @@ export function LeadTimeline({ deal, contacto, db, setDb, guardarEnSupa, setModu
         }
 
         // 3. Traer Tareas (para sección Cosas para Hacer)
-        const { data: tasksData } = await sb.from('tareas').select('*').eq('contactoId', contacto?.id).order('vencimiento', { ascending: true });
+        const { data: tasksData } = await sb.from('tareas').select('*').eq('contacto_id', contacto?.id).order('vencimiento', { ascending: true });
         if (tasksData) {
           setTasks(tasksData.filter(t => t.estado !== 'completada'));
           tasksData.forEach(t => {
@@ -168,8 +168,8 @@ export function LeadTimeline({ deal, contacto, db, setDb, guardarEnSupa, setModu
     const nueva = {
       ...taskForm,
       id: "t" + uid(),
-      contactoId: contacto?.id || null,
-      dealId: deal?.id || null,
+      contacto_id: contacto?.id || null,
+      deal_id: deal?.id || null,
       estado: "pendiente",
       creado: new Date().toISOString()
     };

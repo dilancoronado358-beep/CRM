@@ -15,7 +15,7 @@ export const Tareas = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) => {
     await guardarEnSupa("tareas", nueva);
     setShowForm(false); setF({ titulo: "", prioridad: "media", vencimiento: "", asignado: db.usuario?.name || "", descripcion: "", contactoId: "", dealId: "", estado: "pendiente" });
   };
-  
+
   const move = async (id, st) => {
     const act = db.tareas.find(t => t.id === id);
     if (!act) return;
@@ -23,7 +23,7 @@ export const Tareas = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) => {
     setDb(d => ({ ...d, tareas: d.tareas.map(t => t.id === id ? actualizada : t) }));
     await guardarEnSupa("tareas", actualizada);
   };
-  
+
   const eliminar = async id => {
     setDb(d => ({ ...d, tareas: d.tareas.filter(t => t.id !== id) }));
     await eliminarDeSupa("tareas", id);
@@ -39,7 +39,7 @@ export const Tareas = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) => {
     <div>
       <EncabezadoSeccion title="Mis Tareas" sub={`${db.tareas.filter(t => t.estado !== "completado").length} tareas abiertas`}
         actions={<Btn onClick={() => setShowForm(true)}><Ico k="plus" size={14} />Nueva Tarea</Btn>} />
-      
+
       <div style={{ display: "flex", gap: 16, overflowX: "auto", paddingBottom: 20 }}>
         {cols.map(c => {
           const tareas = db.tareas.filter(t => t.estado === c.id);
@@ -49,7 +49,7 @@ export const Tareas = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) => {
                 <span style={{ fontSize: 13, fontWeight: 800, color: T.white, textTransform: "uppercase", letterSpacing: ".05em" }}>{c.label}</span>
                 <span style={{ background: c.color + "20", color: c.color, borderRadius: 10, padding: "2px 8px", fontSize: 11, fontWeight: 800 }}>{tareas.length}</span>
               </div>
-              
+
               {tareas.map(t => {
                 const pc = PRIO_CFG[t.prioridad] || PRIO_CFG.media;
                 const reqAt = t.estado !== "completado" && t.vencimiento && new Date(t.vencimiento) < new Date();
@@ -76,7 +76,7 @@ export const Tareas = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) => {
           );
         })}
       </div>
-      
+
       <Modal open={showForm} onClose={() => setShowForm(false)} title="Nueva Tarea">
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
           <Campo label="Título de tarea *" col={2}><Inp value={f.titulo} onChange={s("titulo")} placeholder="Ej. Revisar contrato..." /></Campo>

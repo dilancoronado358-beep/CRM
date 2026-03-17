@@ -22,19 +22,19 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
   const [nuevoCampo, setNuevoCampo] = useState({ nombre: "", tipo: "cadena", opciones: "" });
 
   const pipeline = db.pipelines.find(p => p.id === plActivo);
-  const plDeals = db.deals.filter(d => d.pipelineId === plActivo);
+  const plDeals = db.deals.filter(d => d.pipeline_id === plActivo);
 
   const actPipeline = up => setDb(d => ({ ...d, pipelines: d.pipelines.map(p => p.id === up.id ? up : p) }));
 
   const crearPipeline = () => {
     if (!nuevoPL.nombre.trim()) return;
     const np = {
-      id: "pl" + uid(), nombre: nuevoPL.nombre, color: nuevoPL.color, esPrincipal: false, etapas: [
+      id: "pl" + uid(), nombre: nuevoPL.nombre, color: nuevoPL.color, es_principal: false, etapas: [
         { id: "e" + uid(), nombre: "Nuevo Lead", color: T.whiteDim, orden: 0, probabilidad: 10 },
         { id: "e" + uid(), nombre: "En Proceso", color: "#60A5FA", orden: 1, probabilidad: 40 },
         { id: "e" + uid(), nombre: "Propuesta", color: "#A78BFA", orden: 2, probabilidad: 60 },
-        { id: "e" + uid(), nombre: "Ganado", color: T.green, orden: 3, probabilidad: 100, esGanado: true },
-        { id: "e" + uid(), nombre: "Perdido", color: T.red, orden: 4, probabilidad: 0, esPerdido: true },
+        { id: "e" + uid(), nombre: "Ganado", color: T.green, orden: 3, probabilidad: 100, es_ganado: true },
+        { id: "e" + uid(), nombre: "Perdido", color: T.red, orden: 4, probabilidad: 0, es_perdido: true },
       ]
     };
     setDb(d => ({ ...d, pipelines: [...d.pipelines, np] }));
@@ -51,14 +51,21 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
   const FormDeal = ({ init = {}, onGuardar, onCancelar }) => {
     const customFieldsDef = db.campos_personalizados || [];
     const [f, setF] = useState({
-      titulo: "", contactoId: "", empresaId: "", pipelineId: plActivo, etapaId: pipeline?.etapas[0]?.id || "",
-      valor: 0, prob: 50, fechaCierre: "", responsable: db.usuario?.name || "", etiquetas: "", notas: "",
+      titulo: "", contacto_id: "", empresa_id: "", pipeline_id: plActivo, etapa_id: pipeline?.etapas[0]?.id || "",
+      valor: 0, prob: 50, fecha_cierre: "", responsable: db.usuario?.name || "", etiquetas: "", notas: "",
       archivos: [], custom_fields: {}, ...init, etiquetas: (init.etiquetas || []).join(", ")
     });
     const [dragActive, setDragActive] = useState(false);
 
-    const s = k => e => setF(p => ({ ...p, [k]: e.target.value }));
-    const plActual = db.pipelines.find(p => p.id === f.pipelineId);
+    const s = k => async e => {
+      const val = e.target.value;
+      const nextF = { ...f, [k]: val };
+      setF(nextF);
+      // AUTO-SAVE: Si es un deal existente, guardar al momento
+      if (editDeal) await guardarEnSupa("deals", { ...editDeal, ...nextF });
+    };
+
+    const plActual = db.pipelines.find(p => p.id === f.pipeline_id);
 
     const handleDrop = e => {
       e.preventDefault(); setDragActive(false);
@@ -80,7 +87,7 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
         {/* STAGE SELECTOR (BITRIX STYLE) */}
         <div style={{ display: "flex", width: "100%", gap: 4, paddingBottom: 10 }}>
           {stages.map((st, idx) => {
-            const isActive = st.id === f.etapaId;
+            const isActive = st.id === f.etapa_id;
             const isPast = idx < currentEtIdx;
             const isFuture = idx > currentEtIdx;
 
@@ -101,7 +108,11 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
             return (
               <div
                 key={st.id}
-                onClick={() => setF(p => ({ ...p, etapaId: st.id, prob: st.probabilidad }))}
+                onClick={async () => {
+                  const nextF = { ...f, etapa_id: st.id, prob: st.probabilidad };
+                  setF(nextF);
+                  if (editDeal) await guardarEnSupa("deals", { ...editDeal, ...nextF });
+                }}
                 style={{
                   flex: 1,
                   height: 32,
@@ -143,11 +154,17 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
               </div>
 
               <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                <Campo label="Pipeline"><Sel value={f.pipelineId} onChange={e => setF(p => ({ ...p, pipelineId: e.target.value, etapaId: db.pipelines.find(pl => pl.id === e.target.value)?.etapas[0]?.id || "" }))}>{db.pipelines.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}</Sel></Campo>
-                <Campo label="Etapa"><Sel value={f.etapaId} onChange={s("etapaId")}>{plActual?.etapas.map(e => <option key={e.id} value={e.id}>{e.nombre}</option>)}</Sel></Campo>
-                <Campo label="Contacto Asociado"><Sel value={f.contactoId} onChange={s("contactoId")}><option value="">— Ninguno —</option>{db.contactos.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}</Sel></Campo>
-                <Campo label="Empresa (B2B)"><Sel value={f.empresaId} onChange={s("empresaId")}><option value="">— Ninguna —</option>{db.empresas.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}</Sel></Campo>
-                <Campo label="Fecha de Cierre"><Inp type="date" value={f.fechaCierre} onChange={s("fechaCierre")} /></Campo>
+                <Campo label="Pipeline"><Sel value={f.pipeline_id} onChange={async e => {
+                  const plId = e.target.value;
+                  const pl = db.pipelines.find(p => p.id === plId);
+                  const nextF = { ...f, pipeline_id: plId, etapa_id: pl?.etapas[0]?.id || "" };
+                  setF(nextF);
+                  if (editDeal) await guardarEnSupa("deals", { ...editDeal, ...nextF });
+                }}>{db.pipelines.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}</Sel></Campo>
+                <Campo label="Etapa"><Sel value={f.etapa_id} onChange={s("etapa_id")}>{plActual?.etapas.map(e => <option key={e.id} value={e.id}>{e.nombre}</option>)}</Sel></Campo>
+                <Campo label="Contacto Asociado"><Sel value={f.contacto_id} onChange={s("contacto_id")}><option value="">— Ninguno —</option>{db.contactos.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}</Sel></Campo>
+                <Campo label="Empresa (B2B)"><Sel value={f.empresa_id} onChange={s("empresa_id")}><option value="">— Ninguna —</option>{db.empresas.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}</Sel></Campo>
+                <Campo label="Fecha de Cierre"><Inp type="date" value={f.fecha_cierre} onChange={s("fecha_cierre")} /></Campo>
                 <Campo label="Responsable">
                   <Sel value={f.responsable} onChange={s("responsable")}>
                     {db.usuariosApp?.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
@@ -207,7 +224,7 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
           <div style={{ flex: 1, minWidth: 400 }}>
             <LeadTimeline
               deal={f}
-              contacto={db.contactos.find(c => c.id === f.contactoId)}
+              contacto={db.contactos.find(c => c.id === f.contacto_id)}
               db={db}
               setDb={setDb}
               guardarEnSupa={guardarEnSupa}
@@ -276,7 +293,7 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
           <span style={{ fontSize: 13, fontWeight: 700, color: T.whiteDim }}>Pipeline Activo:</span>
           <select value={plActivo} onChange={e => setPlActivo(e.target.value)}
             style={{ border: "none", background: "transparent", fontSize: 15, fontWeight: 800, color: T.teal, outline: "none", cursor: "pointer", paddingRight: 8, fontFamily: "inherit" }}>
-            {db.pipelines.map(pl => <option key={pl.id} value={pl.id}>{pl.nombre} ({db.deals.filter(d => d.pipelineId === pl.id).length})</option>)}
+            {db.pipelines.map(pl => <option key={pl.id} value={pl.id}>{pl.nombre} ({db.deals.filter(d => d.pipeline_id === pl.id).length})</option>)}
           </select>
         </div>
         <Btn variant="fantasma" size="sm" onClick={() => setShowNuevoPL(true)}><Ico k="plus" size={14} />Nuevo Pipeline</Btn>
@@ -286,12 +303,12 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
       {tab === "kanban" && pipeline && (
         <div style={{ display: "flex", gap: 16, overflowX: "auto", paddingBottom: 20, minHeight: "60vh", alignItems: "flex-start" }}>
           {pipeline.etapas.map(etapa => {
-            const etDeals = plDeals.filter(d => d.etapaId === etapa.id);
+            const etDeals = plDeals.filter(d => d.etapa_id === etapa.id);
             const isOver = dragSobre === etapa.id;
             return (
               <div key={etapa.id} style={{ minWidth: 280, maxWidth: 280, display: "flex", flexDirection: "column", gap: 12, flexShrink: 0, paddingBottom: 20 }}
                 onDragOver={e => { e.preventDefault(); setDragSobre(etapa.id); }}
-                onDrop={e => { e.preventDefault(); if (dragDeal) setDb(d => ({ ...d, deals: d.deals.map(deal => deal.id === dragDeal.id ? { ...deal, etapaId: etapa.id } : deal) })); setDragDeal(null); setDragSobre(null); }}
+                onDrop={e => { e.preventDefault(); if (dragDeal) setDb(d => ({ ...d, deals: d.deals.map(deal => deal.id === dragDeal.id ? { ...deal, etapa_id: etapa.id } : deal) })); setDragDeal(null); setDragSobre(null); }}
                 onDragLeave={() => setDragSobre(null)}>
                 <div style={{ background: isOver ? etapa.color + "12" : T.bg1, borderTop: `4px solid ${etapa.color}`, borderRight: `1px solid ${T.borderHi}`, borderBottom: `1px solid ${T.borderHi}`, borderLeft: `1px solid ${T.borderHi}`, borderRadius: 10, padding: "14px 16px", boxShadow: "0 2px 4px rgba(0,0,0,0.02)" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
@@ -303,7 +320,7 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
                 </div>
 
                 {etDeals.map(deal => {
-                  const contacto = db.contactos.find(c => c.id === deal.contactoId);
+                  const contacto = db.contactos.find(c => c.id === deal.contacto_id);
                   const pc = deal.prob >= 70 ? T.green : deal.prob >= 40 ? T.amber : T.red;
                   return (
                     <div key={deal.id} draggable onDragStart={() => setDragDeal(deal)}
@@ -313,11 +330,11 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
                       <div style={{ fontSize: 14, fontWeight: 700, color: T.white, marginBottom: 10, lineHeight: 1.4 }}>{deal.titulo}</div>
                       {contacto && <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 10 }}><div style={{ width: 24, height: 24, borderRadius: "50%", background: contacto.color + "20", color: contacto.color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 700 }}>{contacto.avatar}</div><span style={{ fontSize: 12, color: T.whiteOff, fontWeight: 600 }}>{contacto.nombre}</span></div>}
                       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8, alignItems: "center" }}>
-                        <span style={{ fontSize: 15, fontWeight: 800, color: T.green }}>{money(deal.valor)}</span>
-                        <span style={{ fontSize: 11, fontWeight: 800, color: pc, background: pc + "15", padding: "2px 8px", borderRadius: 10 }}>{deal.prob}%</span>
+                       <div style={{ fontSize: 15, fontWeight: 800, color: T.green }}>{money(deal.valor)}</div>
+                        <div style={{ fontSize: 11, fontWeight: 800, color: pc, background: pc + "15", padding: "2px 8px", borderRadius: 10 }}>{deal.prob}%</div>
                       </div>
                       <Barra value={deal.prob} color={pc} h={5} />
-                      {deal.fechaCierre && <div style={{ fontSize: 11, color: T.whiteDim, marginTop: 10, fontWeight: 500 }}>📅 Cierra {fdate(deal.fechaCierre)}</div>}
+                      {deal.fecha_cierre && <div style={{ fontSize: 11, color: T.whiteDim, marginTop: 10, fontWeight: 500 }}>📅 Cierra {fdate(deal.fecha_cierre)}</div>}
                       <div style={{ display: "flex", gap: 6, marginTop: 12, justifyContent: "flex-end" }} onClick={e => e.stopPropagation()}>
                         <Btn variant="secundario" size="sm" onClick={() => { setEditDeal(deal); setShowDealForm(true); }}><Ico k="edit" size={12} /></Btn>
                         <Btn variant="fantasma" size="sm" onClick={() => eliminarDeal(deal.id)}><Ico k="trash" size={12} style={{ color: T.red }} /></Btn>
@@ -346,9 +363,9 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
               <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 20 }}>
                 <div style={{ width: 14, height: 14, borderRadius: "50%", background: pl.color }} />
                 <span style={{ fontWeight: 800, fontSize: 16, color: T.white, flex: 1 }}>{pl.nombre}</span>
-                {pl.esPrincipal && <Chip label="Principal" color={T.teal} />}
-                <span style={{ fontSize: 13, color: T.whiteDim, fontWeight: 600 }}>{db.deals.filter(d => d.pipelineId === pl.id).length} deals</span>
-                {!pl.esPrincipal && <Btn variant="peligro" size="sm" onClick={() => { if (confirm("¿Eliminar pipeline?")) setDb(d => ({ ...d, pipelines: d.pipelines.filter(p => p.id !== pl.id) })); }}><Ico k="trash" size={12} />Eliminar</Btn>}
+                {pl.es_principal && <Chip label="Principal" color={T.teal} />}
+                <span style={{ fontSize: 13, color: T.whiteDim, fontWeight: 600 }}>{db.deals.filter(d => d.pipeline_id === pl.id).length} deals</span>
+                {!pl.es_principal && <Btn variant="peligro" size="sm" onClick={() => { if (confirm("¿Eliminar pipeline?")) setDb(d => ({ ...d, pipelines: d.pipelines.filter(p => p.id !== pl.id) })); }}><Ico k="trash" size={12} />Eliminar</Btn>}
               </div>
               <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 16 }}>
                 {pl.etapas.map((et, idx) => (
@@ -363,7 +380,7 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
                         </div>
                         <div style={{ display: "flex", gap: 8 }}>
                           <Btn variant="exito" size="sm" onClick={() => setEtEditando(null)}>OK</Btn>
-                          {!et.esGanado && !et.esPerdido && <Btn variant="peligro" size="sm" onClick={() => { actPipeline({ ...pl, etapas: pl.etapas.filter(s => s.id !== et.id) }); setEtEditando(null); }}>Del</Btn>}
+                          {!et.es_ganado && !et.es_perdido && <Btn variant="peligro" size="sm" onClick={() => { actPipeline({ ...pl, etapas: pl.etapas.filter(s => s.id !== et.id) }); setEtEditando(null); }}>Del</Btn>}
                         </div>
                       </div>
                     ) : (
@@ -413,7 +430,7 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
       </Modal>
 
       <Modal open={showDealForm} onClose={() => { setShowDealForm(false); setEditDeal(null); }} title={editDeal ? "Editar Deal" : "Nuevo Deal"} width={editDeal ? 1300 : 720}>
-        <FormDeal init={editDeal || (preEtapa ? { pipelineId: plActivo, etapaId: preEtapa } : { pipelineId: plActivo, etapaId: pipeline?.etapas[0]?.id })} onGuardar={guardarDeal} onCancelar={() => { setShowDealForm(false); setEditDeal(null); }} />
+        <FormDeal init={editDeal || (preEtapa ? { pipeline_id: plActivo, etapa_id: preEtapa } : { pipeline_id: plActivo, etapa_id: pipeline?.etapas[0]?.id })} onGuardar={guardarDeal} onCancelar={() => { setShowDealForm(false); setEditDeal(null); }} />
       </Modal>
       {/* CONFIGURACIÓN DE CAMPOS PERSONALIZADOS */}
       <Modal open={showConfigCampos} onClose={() => setShowConfigCampos(false)} title="Configurar Campos Globales" width={500}>

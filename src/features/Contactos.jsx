@@ -50,7 +50,7 @@ export const Contactos = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) => {
       setDb(d => ({ ...d, contactos: d.contactos.map(c => c.id === editando.id ? actualizado : c) }));
       await guardarEnSupa("contactos", actualizado);
     } else {
-      const nuevo = { ...form, id: "c" + uid(), color: colores[Math.floor(Math.random() * colores.length)], creado: new Date().toISOString().slice(0, 10), ultimoContacto: new Date().toISOString().slice(0, 10) };
+      const nuevo = { ...form, id: "c" + uid(), color: colores[Math.floor(Math.random() * colores.length)], creado: new Date().toISOString().slice(0, 10), ultimo_contacto: new Date().toISOString().slice(0, 10) };
       setDb(d => ({ ...d, contactos: [nuevo, ...d.contactos] }));
       await guardarEnSupa("contactos", nuevo);
     }
@@ -99,7 +99,7 @@ export const Contactos = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) => {
                     <Celda><AnilloScore score={c.score} size={36} /></Celda>
                     <Celda style={{ fontWeight: 800, color: T.green }}>{money(c.valor)}</Celda>
                     <Celda><span style={{ fontSize: 12, color: T.whiteOff }}>{c.fuente}</span></Celda>
-                    <Celda style={{ fontSize: 12, color: T.whiteDim }}>{fdate(c.ultimoContacto)}</Celda>
+                    <Celda style={{ fontSize: 12, color: T.whiteDim }}>{fdate(c.ultimo_contacto)}</Celda>
                     <Celda><div style={{ display: "flex", gap: 6 }} onClick={e => e.stopPropagation()}>
                       <Btn variant="secundario" size="sm" onClick={() => { setEditando(c); setShowForm(true); }}><Ico k="edit" size={14} /></Btn>
                       <Btn variant="fantasma" size="sm" onClick={() => eliminar(c.id)}><Ico k="trash" size={14} style={{ color: T.red }} /></Btn>

@@ -87,7 +87,7 @@ export const Empresas = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) => {
                 <div style={{ fontSize: 11, color: T.whiteDim, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".05em" }}>Contactos</div>
               </div>
               <div style={{ flex: 1, textAlign: "center" }}>
-                <div style={{ fontSize: 22, fontWeight: 800, color: T.white }}>{db.deals.filter(d => d.empresaId === emp.id).length}</div>
+                <div style={{ fontSize: 22, fontWeight: 800, color: T.white }}>{db.deals.filter(d => d.empresa_id === emp.id).length}</div>
                 <div style={{ fontSize: 11, color: T.whiteDim, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".05em" }}>Deals</div>
               </div>
             </div>
