@@ -293,7 +293,13 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
           }
         }
       });
-      if (error) throw error;
+      if (error) {
+        if (error.message.includes("rate limit exceeded")) {
+          alert("🛑 Supabase ha bloqueado temporalmente el envío de emails por seguridad (Rate Limit).\n\nPara solucionar esto:\n1. Ve a tu panel de Supabase.\n2. Ve a Authentication -> Providers -> Email.\n3. Aumenta el 'Email Rate Limit' o desactiva la confirmación de email temporalmente.");
+          return;
+        }
+        throw error;
+      }
 
       const newUser = {
         id: data.user?.id || Date.now().toString(),

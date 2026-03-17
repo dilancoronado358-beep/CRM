@@ -1,47 +1,44 @@
--- REPAIR SCRIPT V2: usuariosApp Schema Alignment
--- This script aligns the table with the CRM's expected structure based on your screenshot.
+-- REPAIR SCRIPT V4: Password Column & Case-Sensitivity
+-- This script adds the missing 'password' column and ensures case-sensitivity.
 
--- 1. Ensure RLS is disabled to prevent "silent failures" or permission errors
-ALTER TABLE public.usuariosApp DISABLE ROW LEVEL SECURITY;
+-- 1. Ensure RLS is disabled
+ALTER TABLE public."usuariosApp" DISABLE ROW LEVEL SECURITY;
 
--- 2. Add missing columns that the CRM expects
+-- 2. Add missing columns
 DO $$
 BEGIN
-    -- Column 'creado': Essential for tracking when a user was added
+    -- Column 'password': Required for the CRM's local fallback/record
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='usuariosApp' AND column_name='password') THEN
+        ALTER TABLE public."usuariosApp" ADD COLUMN "password" TEXT;
+    END IF;
+
+    -- Column 'creado'
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='usuariosApp' AND column_name='creado') THEN
-        ALTER TABLE public.usuariosApp ADD COLUMN creado TIMESTAMPTZ DEFAULT NOW();
+        ALTER TABLE public."usuariosApp" ADD COLUMN "creado" TIMESTAMPTZ DEFAULT NOW();
     END IF;
     
-    -- Ensure 'whatsappAccess' is present
+    -- Column 'whatsappAccess'
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='usuariosApp' AND column_name='whatsappAccess') THEN
-        ALTER TABLE public.usuariosApp ADD COLUMN whatsappAccess BOOLEAN DEFAULT false;
+        ALTER TABLE public."usuariosApp" ADD COLUMN "whatsappAccess" BOOLEAN DEFAULT false;
     END IF;
 
-    -- Ensure 'area' is present
+    -- Column 'area'
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='usuariosApp' AND column_name='area') THEN
-        ALTER TABLE public.usuariosApp ADD COLUMN area TEXT;
+        ALTER TABLE public."usuariosApp" ADD COLUMN "area" TEXT;
     END IF;
     
-    -- Ensure 'waServerUrl' is present
+    -- Column 'waServerUrl'
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='usuariosApp' AND column_name='waServerUrl') THEN
-        ALTER TABLE public.usuariosApp ADD COLUMN waServerUrl TEXT;
+        ALTER TABLE public."usuariosApp" ADD COLUMN "waServerUrl" TEXT;
     END IF;
 
-    -- Column 'tema': The CRM uses 'tema' to persist theme preference
+    -- Column 'tema'
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='usuariosApp' AND column_name='tema') THEN
-        ALTER TABLE public.usuariosApp ADD COLUMN tema TEXT DEFAULT 'light';
+        ALTER TABLE public."usuariosApp" ADD COLUMN "tema" TEXT DEFAULT 'light';
     END IF;
     
-    -- Column 'temaActivo': Adding as alias/fallback for compatibility
+    -- Column 'temaActivo'
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='usuariosApp' AND column_name='temaActivo') THEN
-        ALTER TABLE public.usuariosApp ADD COLUMN temaActivo TEXT DEFAULT 'light';
+        ALTER TABLE public."usuariosApp" ADD COLUMN "temaActivo" TEXT DEFAULT 'light';
     END IF;
 END $$;
-
--- 3. Clean up potential ID issues
--- If the PK is not set correctly, it might cause upsert issues.
--- Assuming 'id' is already the Primary Key as shown in your screenshot.
-
--- 4. Enable Realtime
--- This ensures that when you add a user, it shows up on other screens immediately.
--- ALTER PUBLICATION supabase_realtime ADD TABLE usuariosApp; 
