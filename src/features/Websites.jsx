@@ -518,9 +518,19 @@ export const Websites = ({ db, setDb }) => {
                       )}
                       {f.type === "button" && (
                         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                          <input type="text" value={f.content} onChange={(e) => updateActivo({ floatingElements: activo.floatingElements.map(x => x.id === f.id ? { ...x, content: e.target.value } : x) })} placeholder="Texto" style={{ width: "100%", padding: "6px", background: T.bg1, border: `1px solid ${T.borderHi}`, color: T.white, borderRadius: 4, outline: "none", fontSize: 12 }} />
-                          <input type="text" value={f.url} onChange={(e) => updateActivo({ floatingElements: activo.floatingElements.map(x => x.id === f.id ? { ...x, url: e.target.value } : x) })} placeholder="URL destino" style={{ width: "100%", padding: "6px", background: T.bg1, border: `1px solid ${T.borderHi}`, color: T.white, borderRadius: 4, outline: "none", fontSize: 12 }} />
-                          <input type="color" value={f.bg || activo.accentColor || "#06B6D4"} onChange={(e) => updateActivo({ floatingElements: activo.floatingElements.map(x => x.id === f.id ? { ...x, bg: e.target.value } : x) })} style={{ width: 30, height: 26, border: "none", cursor: "pointer" }} />
+                          <div>
+                            <div style={{ fontSize: 10, color: T.whiteDim, marginBottom: 2 }}>Texto del Botón:</div>
+                            <input type="text" value={f.content} onChange={(e) => updateActivo({ floatingElements: activo.floatingElements.map(x => x.id === f.id ? { ...x, content: e.target.value } : x) })} placeholder="Ej. Comprar" style={{ width: "100%", padding: "6px", background: T.bg1, border: `1px solid ${T.borderHi}`, color: T.white, borderRadius: 4, outline: "none", fontSize: 12 }} />
+                          </div>
+                          <div>
+                            <div style={{ fontSize: 10, color: T.whiteDim, marginBottom: 2 }}>Hipervínculo (URL):</div>
+                            <input type="text" value={f.url || ""} onChange={(e) => updateActivo({ floatingElements: activo.floatingElements.map(x => x.id === f.id ? { ...x, url: e.target.value } : x) })} placeholder="https://ejemplo.com" style={{ width: "100%", padding: "6px", background: T.bg1, border: `1px solid ${T.borderHi}`, color: T.white, borderRadius: 4, outline: "none", fontSize: 12 }} />
+                          </div>
+                          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                            <span style={{ fontSize: 10, color: T.whiteDim }}>Tam:</span>
+                            <input type="number" value={f.fontSize || 14} onChange={(e) => updateActivo({ floatingElements: activo.floatingElements.map(x => x.id === f.id ? { ...x, fontSize: Number(e.target.value) } : x) })} placeholder="Tam" style={{ width: 60, padding: 4, background: T.bg1, border: `1px solid ${T.borderHi}`, color: T.white, borderRadius: 4, fontSize: 11 }} />
+                            <input type="color" value={f.bg || activo.accentColor || "#06B6D4"} onChange={(e) => updateActivo({ floatingElements: activo.floatingElements.map(x => x.id === f.id ? { ...x, bg: e.target.value } : x) })} style={{ width: 30, height: 26, border: "none", cursor: "pointer" }} />
+                          </div>
                         </div>
                       )}
                     </div>
@@ -819,7 +829,8 @@ export const Websites = ({ db, setDb }) => {
               } else if (f.type === "image") {
                 contentNode = <img src={f.content} alt="Libre" style={{ width: f.width || 150, height: "auto", borderRadius: 8, pointerEvents: "none" }} />;
               } else if (f.type === "button") {
-                contentNode = <div style={{ background: f.bg || accent, color: "#fff", padding: "12px 24px", borderRadius: 10, fontSize: 14, fontWeight: 700, pointerEvents: "none", boxShadow: `0 8px 24px ${(f.bg || accent)}44` }}>{f.content}</div>;
+                const fz = f.fontSize || 14;
+                contentNode = <div style={{ background: f.bg || accent, color: "#fff", padding: `${fz * 0.8}px ${fz * 1.5}px`, borderRadius: (fz * 0.7), fontSize: fz, fontWeight: 700, pointerEvents: "none", boxShadow: `0 8px 24px ${(f.bg || accent)}44` }}>{f.content}</div>;
               }
 
               return (

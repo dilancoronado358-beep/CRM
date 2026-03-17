@@ -316,7 +316,8 @@ export const LandingPagePublica = ({ siteSlug }) => {
         } else if (f.type === "image") {
           return <img key={f.id} src={f.content} alt="Libre" style={{ position: "absolute", left: f.x, top: f.y, width: f.width || 150, height: "auto", borderRadius: 8, zIndex: 40 }} />;
         } else if (f.type === "button") {
-          return <a key={f.id} href={f.url || "#"} target={f.url?.startsWith("http") ? "_blank" : undefined} rel="noopener noreferrer" style={{ position: "absolute", left: f.x, top: f.y, background: f.bg || accent, color: "#fff", padding: "12px 24px", borderRadius: 10, fontSize: 14, fontWeight: 700, textDecoration: "none", boxShadow: `0 8px 24px ${(f.bg || accent)}44`, zIndex: 40 }}>{f.content}</a>;
+          const fz = f.fontSize || 14;
+          return <a key={f.id} href={f.url || "#"} target={f.url?.startsWith("http") ? "_blank" : undefined} rel="noopener noreferrer" style={{ position: "absolute", left: f.x, top: f.y, background: f.bg || accent, color: "#fff", padding: `${fz * 0.8}px ${fz * 1.5}px`, borderRadius: (fz * 0.7), fontSize: fz, fontWeight: 700, textDecoration: "none", boxShadow: `0 8px 24px ${(f.bg || accent)}44`, zIndex: 40 }}>{f.content}</a>;
         }
         return null;
       })}
