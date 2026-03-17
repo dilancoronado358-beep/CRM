@@ -2,8 +2,9 @@ import { useState, useEffect } from "react";
 import { T } from "../../theme";
 import { Ico } from "./Ico";
 import { SpotlightSearch } from "./Spotlight";
+import { ConfirmModal } from "./ConfirmModal";
 
-export { Ico, SpotlightSearch };
+export { Ico, SpotlightSearch, ConfirmModal };
 
 
 export const Av = ({ text = "?", color = T.teal, size = 36, fs }) => (

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useSupaState, sb } from "./hooks/useSupaState";
 import { T, applyTheme } from "./theme";
 
-import { Av, Btn, ControlSegmentado, IndSupa, Ico, SpotlightSearch } from "./components/ui";
+import { Av, Btn, ControlSegmentado, IndSupa, Ico, SpotlightSearch, ConfirmModal } from "./components/ui";
 import { io } from "socket.io-client";
 import { Toaster, toast } from "sonner";
 
@@ -237,6 +237,7 @@ export default function App() {
   const [menuAbierto, setMenuAbierto] = useState(true);
   const [spotlightOpen, setSpotlightOpen] = useState(false);
   const [hashURL, setHashURL] = useState(window.location.hash);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   // NOTIFICACIONES TOAST
   const [notis, setNotis] = useState([]);
@@ -482,22 +483,7 @@ export default function App() {
             </div>
             <Btn variant="secundario" style={{ padding: 8, borderRadius: "50%" }}><Ico k="refresh" size={16} /></Btn>
             <Btn variant="secundario" style={{ padding: 8, borderRadius: "50%", color: T.red, borderColor: T.red }} 
-              onClick={() => {
-                toast("¿Cerrar sesión?", {
-                  description: "Perderás el acceso hasta que vuelvas a ingresar.",
-                  action: {
-                    label: "Cerrar Sesión",
-                    onClick: async () => {
-                      await sb.auth.signOut();
-                      localStorage.removeItem("crm_usuario_activo");
-                      localStorage.removeItem("crm_theme");
-                      sessionStorage.clear();
-                      window.location.reload();
-                    }
-                  },
-                  cancel: { label: "Cancelar", onClick: () => {} }
-                });
-              }} 
+              onClick={() => setShowLogoutConfirm(true)} 
               title={t("Cerrar sesión")}>
               <Ico k="lock" size={16} />
             </Btn>
@@ -515,22 +501,39 @@ export default function App() {
       {/* GLOBAL OMNIBAR */}
       <SpotlightSearch db={db} open={spotlightOpen} onClose={() => setSpotlightOpen(false)} onNavigate={(m) => setModulo(m)} />
 
-      {/* NOTIFICACIONES MODERNAS (SONNER) - PREMIUM STYLE */}
+      {/* NOTIFICACIONES MODERNAS (SONNER) - ULTRA MODERN GLASSMOPHISM */}
       <Toaster 
         richColors 
         position="top-right" 
         toastOptions={{
           style: { 
-            background: T.bg1, 
-            border: `1px solid ${T.borderHi}`, 
-            color: T.white, 
-            borderRadius: '12px',
-            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2)',
+            background: 'rgba(15, 23, 42, 0.7)', 
+            backdropFilter: 'blur(12px) saturate(180%)',
+            border: '1px solid rgba(255, 255, 255, 0.12)', 
+            color: '#fff', 
+            borderRadius: '16px',
+            boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
             fontSize: '14px',
-            padding: '16px'
+            padding: '16px',
+            fontWeight: 500
           },
-          className: 'premium-toast',
         }}
+      />
+
+      <ConfirmModal 
+        open={showLogoutConfirm} 
+        onClose={() => setShowLogoutConfirm(false)}
+        onConfirm={async () => {
+          await sb.auth.signOut();
+          localStorage.removeItem("crm_usuario_activo");
+          localStorage.removeItem("crm_theme");
+          sessionStorage.clear();
+          window.location.reload();
+        }}
+        title="¿Cerrar sesión?"
+        description="Esta acción cerrará tu sesión actual de forma segura."
+        confirmText="Confirmar Cierre"
+        variant="danger"
       />
     </div>
   );

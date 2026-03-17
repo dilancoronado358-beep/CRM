@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { T } from "../theme";
 import { uid } from "../utils";
-import { Btn, Inp, Modal, Ico, Campo } from "../components/ui";
+import { Btn, Inp, Modal, Ico, Campo, ConfirmModal } from "../components/ui";
 import { sb } from "../hooks/useSupaState";
 import { FormularioPublico } from "./FormularioPublico";
 import { toast } from "sonner";
@@ -73,10 +73,9 @@ export const Websites = ({ db, setDb }) => {
   const [showNew, setShowNew] = useState(false);
   const [fNew, setFNew] = useState({ titulo: "", slug: "" });
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [expandedBlock, setExpandedBlock] = useState(null);
   const [dragBlock, setDragBlock] = useState(null);
   const [dragOverBlock, setDragOverBlock] = useState(null);
+  const [idToDelete, setIdToDelete] = useState(null);
   const dragRef = useRef(null);
 
   // Drag floating
@@ -208,21 +207,20 @@ export const Websites = ({ db, setDb }) => {
     setShowNew(false); setFNew({ titulo: "", slug: "" });
   };
 
-  const eliminarPagina = async (id) => {
-    toast("¿Eliminar esta landing page?", {
-      description: "Esta acción no se puede deshacer.",
-      action: {
-        label: "Eliminar",
-        onClick: async () => {
-          await sb.from("landing_pages").delete().eq("id", id);
-          const rem = pages.filter((p) => p.id !== id);
-          setPages(rem);
-          setActivoId(rem[0]?.id || null);
-          toast.success("Landing page eliminada");
-        }
-      },
-      cancel: { label: "Cancelar", onClick: () => {} }
-    });
+  const eliminarPagina = (id) => setIdToDelete(id);
+
+  const confirmEliminar = async () => {
+    if (!idToDelete) return;
+    const { error } = await sb.from("landing_pages").delete().eq("id", idToDelete);
+    if (error) {
+      toast.error("Error al eliminar: " + error.message);
+    } else {
+      const rem = pages.filter((p) => p.id !== idToDelete);
+      setPages(rem);
+      setActivoId(rem[0]?.id || null);
+      toast.success("Landing page eliminada correctamente");
+    }
+    setIdToDelete(null);
   };
 
   const toggleBloque = (blockId) => {
@@ -910,18 +908,35 @@ export const Websites = ({ db, setDb }) => {
         )}
       </div>
 
-      <Modal open={showNew} onClose={() => setShowNew(false)} title="Nueva Landing Page" width={440}>
-        <Campo label="Nombre de la Campaña">
-          <Inp value={fNew.titulo} onChange={(e) => setFNew((p) => ({ ...p, titulo: e.target.value }))} placeholder="ej. Black Friday 2026" autoFocus />
-        </Campo>
-        <Campo label="Slug URL (opcional)">
-          <Inp value={fNew.slug} onChange={(e) => setFNew((p) => ({ ...p, slug: e.target.value.toLowerCase().replace(/\s+/g, "-") }))} placeholder="black-friday-2026" />
-        </Campo>
-        <div style={{ display: "flex", gap: 12, justifyContent: "flex-end", marginTop: 20 }}>
-          <Btn variant="secundario" onClick={() => setShowNew(false)}>Cancelar</Btn>
-          <Btn onClick={nuevaPagina} disabled={!fNew.titulo.trim()}>Crear Página</Btn>
+      {/* MODAL NUEVA PAGINA */}
+      <Modal open={showNew} onClose={() => setShowNew(false)} title="Nueva Landing Page" width={400}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <Campo label="Título de la Página">
+            <Inp value={fNew.titulo} onChange={(e) => setFNew({ ...fNew, titulo: e.target.value })} placeholder="Ej: Promo Black Friday" />
+          </Campo>
+          <Campo label="URL (slug)">
+            <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+              <span style={{ color: T.whiteDim, fontSize: 12 }}>/</span>
+              <Inp value={fNew.slug} onChange={(e) => setFNew({ ...fNew, slug: e.target.value })} placeholder="mi-promo" />
+            </div>
+          </Campo>
+          <div style={{ display: "flex", gap: 12, justifyContent: "flex-end", marginTop: 8 }}>
+            <Btn variant="secundario" onClick={() => setShowNew(false)}>Cancelar</Btn>
+            <Btn onClick={nuevaPagina} disabled={!fNew.titulo.trim()}>Crear Página</Btn>
+          </div>
         </div>
       </Modal>
+
+      {/* CONFIRMACION ELIMINAR */}
+      <ConfirmModal 
+        open={!!idToDelete} 
+        onClose={() => setIdToDelete(null)}
+        onConfirm={confirmEliminar}
+        title="¿Eliminar Landing Page?"
+        description="Esta acción borrará permanentemente la página y no podrá recuperarse."
+        confirmText="Eliminar Permanentemente"
+        variant="danger"
+      />
     </div>
   );
 };

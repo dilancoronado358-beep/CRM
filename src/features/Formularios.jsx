@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { T } from "../theme";
 import { uid } from "../utils";
-import { Btn, Inp, Tarjeta, EncabezadoSeccion, Ico, Sel } from "../components/ui";
+import { Btn, Inp, Tarjeta, EncabezadoSeccion, Ico, Sel, Modal, Campo, ConfirmModal } from "../components/ui";
 import { sb } from "../hooks/useSupaState";
 import { toast } from "sonner";
 
@@ -49,6 +49,7 @@ export const Formularios = ({ db }) => {
   const [loading, setLoading] = useState(true);
   const [dragging, setDragging] = useState(null);
   const [dragOver, setDragOver] = useState(null);
+  const [idToDelete, setIdToDelete] = useState(null);
   const dragRef = useRef(null);
 
   // ── Load from Supabase on mount ────────────────────────────────────────────
@@ -164,21 +165,20 @@ export const Formularios = ({ db }) => {
     }
   };
 
-  const eliminarFormulario = async (id) => {
-    toast("¿Eliminar este formulario?", {
-      description: "Esta acción no se puede deshacer.",
-      action: {
-        label: "Eliminar",
-        onClick: async () => {
-          await sb.from("formularios_publicos").delete().eq("id", id);
-          const remaining = forms.filter((f) => f.id !== id);
-          setForms(remaining);
-          setActivoId(remaining[0]?.id || null);
-          toast.success("Formulario eliminado");
-        }
-      },
-      cancel: { label: "Cancelar", onClick: () => {} }
-    });
+  const eliminarFormulario = (id) => setIdToDelete(id);
+
+  const confirmEliminar = async () => {
+    if (!idToDelete) return;
+    const { error } = await sb.from("formularios_publicos").delete().eq("id", idToDelete);
+    if (error) {
+      toast.error("Error al eliminar: " + error.message);
+    } else {
+      const remaining = forms.filter((f) => f.id !== idToDelete);
+      setForms(remaining);
+      setActivoId(remaining[0]?.id || null);
+      toast.success("Formulario eliminado correctamente");
+    }
+    setIdToDelete(null);
   };
 
   const copiarLink = () => {
@@ -420,6 +420,16 @@ export const Formularios = ({ db }) => {
           )}
         </div>
       </div>
+      {/* CONFIRMACION ELIMINAR */}
+      <ConfirmModal 
+        open={!!idToDelete} 
+        onClose={() => setIdToDelete(null)}
+        onConfirm={confirmEliminar}
+        title="¿Eliminar Formulario?"
+        description="Esta acción borrará permanentemente el formulario y todos sus datos."
+        confirmText="Eliminar Permanentemente"
+        variant="danger"
+      />
     </div>
   );
 };
