@@ -16,6 +16,9 @@ export function LeadTimeline({ deal, contacto, db, setDb, guardarEnSupa, setModu
   const [waMsg, setWaMsg] = useState("");
   const [composerTab, setComposerTab] = useState("Comentario");
   const [tasks, setTasks] = useState([]);
+  
+  // States for New Task
+  const [taskForm, setTaskForm] = useState({ titulo: "", prioridad: "media", vencimiento: "", asignado: db.usuario?.name || "", descripcion: "" });
   const socketRef = useRef(null);
   const dummyRef = useRef(null);
 
@@ -231,6 +234,65 @@ export function LeadTimeline({ deal, contacto, db, setDb, guardarEnSupa, setModu
             />
             <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 8 }}>
               <Btn onClick={handleSendWA} disabled={!waMsg.trim()} size="sm" style={{ background: "#25D366", color: "#fff" }}>ENVIAR WHATSAPP</Btn>
+            </div>
+          </div>
+        )}
+
+        {composerTab === "Tarea" && (
+          <div style={{ background: "#fff", border: `1px solid #c6d2d6`, borderRadius: 8, padding: 16 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
+              <div style={{ gridColumn: "span 2" }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "#666", marginBottom: 4, textTransform: "uppercase" }}>Título de la tarea *</div>
+                <input 
+                  value={taskForm.titulo} 
+                  onChange={e => setTaskForm(p => ({ ...p, titulo: e.target.value }))}
+                  placeholder="¿Qué hay que hacer?" 
+                  style={{ width: "100%", padding: "8px 12px", border: "1px solid #d4dde1", borderRadius: 4, fontSize: 14, outline: "none" }}
+                />
+              </div>
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "#666", marginBottom: 4, textTransform: "uppercase" }}>Prioridad</div>
+                <select 
+                  value={taskForm.prioridad} 
+                  onChange={e => setTaskForm(p => ({ ...p, prioridad: e.target.value }))}
+                  style={{ width: "100%", padding: "8px 12px", border: "1px solid #d4dde1", borderRadius: 4, fontSize: 14, background: "#fff" }}
+                >
+                  <option value="alta">🔴 Alta</option>
+                  <option value="media">🟡 Media</option>
+                  <option value="baja">🟢 Baja</option>
+                </select>
+              </div>
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "#666", marginBottom: 4, textTransform: "uppercase" }}>Responsable</div>
+                <select 
+                  value={taskForm.asignado} 
+                  onChange={e => setTaskForm(p => ({ ...p, asignado: e.target.value }))}
+                  style={{ width: "100%", padding: "8px 12px", border: "1px solid #d4dde1", borderRadius: 4, fontSize: 14, background: "#fff" }}
+                >
+                  {db.usuariosApp?.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
+                </select>
+              </div>
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "#666", marginBottom: 4, textTransform: "uppercase" }}>Fecha límite</div>
+                <input 
+                  type="date" 
+                  value={taskForm.vencimiento} 
+                  onChange={e => setTaskForm(p => ({ ...p, vencimiento: e.target.value }))}
+                  style={{ width: "100%", padding: "8px 12px", border: "1px solid #d4dde1", borderRadius: 4, fontSize: 14, outline: "none" }}
+                />
+              </div>
+              <div style={{ gridColumn: "span 2" }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "#666", marginBottom: 4, textTransform: "uppercase" }}>Descripción</div>
+                <textarea 
+                  value={taskForm.descripcion} 
+                  onChange={e => setTaskForm(p => ({ ...p, descripcion: e.target.value }))}
+                  placeholder="Detalles adicionales..."
+                  style={{ width: "100%", padding: "8px 12px", border: "1px solid #d4dde1", borderRadius: 4, fontSize: 14, outline: "none", minHeight: 60, resize: "none" }}
+                />
+              </div>
+            </div>
+            <div style={{ display: "flex", justifyContent: "flex-end" }}>
+              <Btn onClick={handleAddTask} disabled={!taskForm.titulo.trim()} size="sm" style={{ background: "#7fb700", color: "#fff", fontWeight: 700 }}>CREAR TAREA</Btn>
             </div>
           </div>
         )}

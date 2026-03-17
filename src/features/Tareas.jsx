@@ -85,7 +85,11 @@ export const Tareas = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) => {
           <Campo label="Contacto relacionado"><Sel value={f.contactoId} onChange={s("contactoId")}><option value="">— Ninguno —</option>{db.contactos.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}</Sel></Campo>
           <Campo label="Deal relacionado"><Sel value={f.dealId} onChange={s("dealId")}><option value="">— Ninguno —</option>{db.deals.map(d => <option key={d.id} value={d.id}>{d.titulo}</option>)}</Sel></Campo>
           <Campo label="Descripción" col={2}><Inp value={f.descripcion} onChange={s("descripcion")} rows={3} placeholder="Detalles de la tarea..." /></Campo>
-          <Campo label="Asignar a" col={2}><Inp value={f.asignado} onChange={s("asignado")} placeholder="Nombre..." /></Campo>
+          <Campo label="Asignar a" col={2}>
+            <Sel value={f.asignado} onChange={s("asignado")}>
+              {db.usuariosApp?.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
+            </Sel>
+          </Campo>
         </div>
         <div style={{ display: "flex", gap: 12, justifyContent: "flex-end", marginTop: 24 }}>
           <Btn variant="secundario" onClick={() => setShowForm(false)}>Cancelar</Btn>

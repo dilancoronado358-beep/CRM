@@ -76,7 +76,7 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
             const isActive = st.id === f.etapaId;
             const isPast = idx < currentEtIdx;
             const isFuture = idx > currentEtIdx;
-            
+
             let bg = "#eef2f4";
             let color = "#666";
             let borderColor = "#d4dde1";
@@ -92,17 +92,17 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
             }
 
             return (
-              <div 
+              <div
                 key={st.id}
                 onClick={() => setF(p => ({ ...p, etapaId: st.id, prob: st.probabilidad }))}
-                style={{ 
-                  flex: 1, 
-                  height: 32, 
-                  display: "flex", 
-                  alignItems: "center", 
-                  justifyContent: "center", 
-                  fontSize: 11, 
-                  fontWeight: 700, 
+                style={{
+                  flex: 1,
+                  height: 32,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: 11,
+                  fontWeight: 700,
                   cursor: "pointer",
                   background: bg,
                   color: color,
@@ -115,8 +115,8 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
                   letterSpacing: ".02em",
                   boxShadow: isActive ? `0 2px 8px ${bg}40` : "none"
                 }}
-                onMouseEnter={e => { if(!isActive) e.currentTarget.style.borderColor = st.color || T.teal; }}
-                onMouseLeave={e => { if(!isActive) e.currentTarget.style.borderColor = borderColor; }}
+                onMouseEnter={e => { if (!isActive) e.currentTarget.style.borderColor = st.color || T.teal; }}
+                onMouseLeave={e => { if (!isActive) e.currentTarget.style.borderColor = borderColor; }}
               >
                 {st.nombre}
               </div>
@@ -141,7 +141,11 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
                 <Campo label="Contacto Asociado"><Sel value={f.contactoId} onChange={s("contactoId")}><option value="">— Ninguno —</option>{db.contactos.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}</Sel></Campo>
                 <Campo label="Empresa (B2B)"><Sel value={f.empresaId} onChange={s("empresaId")}><option value="">— Ninguna —</option>{db.empresas.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}</Sel></Campo>
                 <Campo label="Fecha de Cierre"><Inp type="date" value={f.fechaCierre} onChange={s("fechaCierre")} /></Campo>
-                <Campo label="Responsable"><Inp value={f.responsable} onChange={s("responsable")} /></Campo>
+                <Campo label="Responsable">
+                  <Sel value={f.responsable} onChange={s("responsable")}>
+                    {db.usuariosApp?.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
+                  </Sel>
+                </Campo>
               </div>
             </div>
 
