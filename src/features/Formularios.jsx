@@ -128,8 +128,8 @@ export const Formularios = ({ db }) => {
       id: activo.id,
       nombre: activo.nombre,
       color: activo.apariencia?.accentColor || "#06B6D4",
-      campos: activo.campos,
-      apariencia: activo.apariencia,
+      campos: activo.campos || [],
+      apariencia: activo.apariencia || {},
       pipeline_id: activo.pipeline_id || null,
     };
     const { error } = await sb.from("formularios_publicos").upsert(payload);

@@ -95,31 +95,33 @@ export const Websites = ({ db, setDb }) => {
   };
 
   // ── Save to Supabase ──────────────────────────────────────────────────────
-  const guardar = async () => {
-    if (!activo) return;
+  const guardar = async (overrideActivo = null) => {
+    const pg = overrideActivo || activo;
+    if (!pg) return;
     setSaving(true);
+    // Only send columns that exist in the DB (strip undefined)
     const payload = {
-      id: activo.id,
-      slug: activo.slug,
-      titulo: activo.titulo,
-      activo: activo.activo,
-      blocks: activo.blocks,
-      hero_title: activo.heroTitle,
-      hero_sub: activo.heroSub,
-      hero_cta: activo.heroCTA,
-      hero_cta2: activo.heroCTA2,
-      accent_color: activo.accentColor,
-      video_url: activo.videoUrl || null,
-      faq_items: activo.faqItems || [],
-      stats_items: activo.statsItems || [],
-      features: activo.features || [],
+      id: pg.id,
+      slug: pg.slug,
+      titulo: pg.titulo,
+      activo: pg.activo,
+      blocks: pg.blocks || [],
+      hero_title: pg.heroTitle || null,
+      hero_sub: pg.heroSub || null,
+      hero_cta: pg.heroCTA || null,
+      hero_cta2: pg.heroCTA2 || null,
+      accent_color: pg.accentColor || "#06B6D4",
+      video_url: pg.videoUrl || null,
+      faq_items: pg.faqItems || [],
+      stats_items: pg.statsItems || [],
+      features: pg.features || [],
     };
     const { error } = await sb.from("landing_pages").upsert(payload);
     setSaving(false);
     if (error) {
       alert("❌ Error al guardar: " + error.message);
     } else {
-      alert(`✅ Landing page guardada!\n\nLink público:\n${BASE_URL}/#/sites/${activo.id}`);
+      alert(`✅ Landing page guardada!\n\nLink público:\n${BASE_URL}/#/sites/${pg.id}`);
     }
   };
 
@@ -393,10 +395,14 @@ export const Websites = ({ db, setDb }) => {
 
           {/* Save bar */}
           <div style={{ padding: "10px 14px", borderTop: `1px solid ${T.borderHi}`, flexShrink: 0, display: "flex", gap: 8 }}>
-            <Btn onClick={guardar} disabled={saving} style={{ flex: 1, background: T.teal, color: "#000" }}>
-              {saving ? "Guardando..." : "💾 Guardar Landing Page"}
+            <Btn onClick={() => guardar()} disabled={saving} style={{ flex: 1, background: T.teal, color: "#000" }}>
+              {saving ? "Guardando..." : "💾 Guardar"}
             </Btn>
-            <Btn variant="secundario" onClick={() => updateActivo({ activo: !activo.activo })} style={{ fontSize: 12, background: activo.activo ? T.green + "22" : "transparent", color: activo.activo ? T.green : T.whiteDim, border: `1px solid ${activo.activo ? T.green : T.borderHi}` }}>
+            <Btn variant="secundario" onClick={async () => {
+              const nuevoEstado = { ...activo, activo: !activo.activo };
+              updateActivo({ activo: !activo.activo });
+              await guardar(nuevoEstado);
+            }} style={{ fontSize: 12, background: activo.activo ? T.green + "22" : "transparent", color: activo.activo ? T.green : T.whiteDim, border: `1px solid ${activo.activo ? T.green : T.borderHi}` }}>
               {activo.activo ? "● LIVE" : "Publicar"}
             </Btn>
           </div>

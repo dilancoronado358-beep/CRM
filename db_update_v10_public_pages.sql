@@ -1,9 +1,9 @@
 -- ================================================================
--- TABLAS PARA LANDING PAGES Y FORMULARIOS PÚBLICOS
+-- ACTUALIZACIÓN DE TABLAS PARA LANDING PAGES Y FORMULARIOS
 -- Ejecutar en Supabase SQL Editor
 -- ================================================================
 
--- Tabla para Formularios Públicos (Form Builder)
+-- 1. Crear las tablas si no existen
 CREATE TABLE IF NOT EXISTS public.formularios_publicos (
     id TEXT PRIMARY KEY,
     nombre TEXT NOT NULL,
@@ -12,31 +12,66 @@ CREATE TABLE IF NOT EXISTS public.formularios_publicos (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- Tabla para Landing Pages públicas
 CREATE TABLE IF NOT EXISTS public.landing_pages (
     id TEXT PRIMARY KEY,
     slug TEXT UNIQUE NOT NULL,
     titulo TEXT NOT NULL,
     activo BOOLEAN DEFAULT true,
-    blocks TEXT[] DEFAULT ARRAY['hero','features','form','cta'],
     hero_title TEXT,
     hero_cta TEXT,
     accent_color TEXT DEFAULT '#06B6D4',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- Habilitar acceso público (necesario para páginas sin sesión)
+-- 2. Deshabilitar RLS (acceso público sin login)
 ALTER TABLE public.formularios_publicos DISABLE ROW LEVEL SECURITY;
 ALTER TABLE public.landing_pages DISABLE ROW LEVEL SECURITY;
 
--- Insertar landing page de ejemplo  
+-- 3. Agregar columnas faltantes en formularios_publicos
+ALTER TABLE public.formularios_publicos ADD COLUMN IF NOT EXISTS apariencia JSONB DEFAULT '{}';
+ALTER TABLE public.formularios_publicos ADD COLUMN IF NOT EXISTS pipeline_id TEXT;
+
+-- 4. Agregar columnas faltantes en landing_pages
+ALTER TABLE public.landing_pages ADD COLUMN IF NOT EXISTS hero_sub TEXT;
+ALTER TABLE public.landing_pages ADD COLUMN IF NOT EXISTS hero_cta2 TEXT;
+ALTER TABLE public.landing_pages ADD COLUMN IF NOT EXISTS video_url TEXT;
+ALTER TABLE public.landing_pages ADD COLUMN IF NOT EXISTS faq_items JSONB DEFAULT '[]';
+ALTER TABLE public.landing_pages ADD COLUMN IF NOT EXISTS stats_items JSONB DEFAULT '[]';
+ALTER TABLE public.landing_pages ADD COLUMN IF NOT EXISTS features JSONB DEFAULT '[]';
+
+-- 5. Convertir columna blocks de TEXT[] a JSONB
+--    (Hay que eliminar el DEFAULT primero, luego cambiar tipo, luego poner nuevo DEFAULT)
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND table_name = 'landing_pages'
+      AND column_name = 'blocks'
+  ) THEN
+    -- Quitar el default anterior
+    ALTER TABLE public.landing_pages ALTER COLUMN blocks DROP DEFAULT;
+    -- Cambiar tipo a JSONB usando conversión explícita
+    ALTER TABLE public.landing_pages
+      ALTER COLUMN blocks TYPE JSONB USING to_jsonb(blocks::text[]);
+    -- Poner el nuevo default en JSONB
+    ALTER TABLE public.landing_pages
+      ALTER COLUMN blocks SET DEFAULT '["hero","features","cta"]'::jsonb;
+  ELSE
+    -- Si no existe la columna, crearla directamente como JSONB
+    ALTER TABLE public.landing_pages
+      ADD COLUMN blocks JSONB DEFAULT '["hero","features","cta"]'::jsonb;
+  END IF;
+END $$;
+
+-- 6. Insertar landing page de ejemplo
 INSERT INTO public.landing_pages (id, slug, titulo, activo, blocks, hero_title, hero_cta, accent_color)
 VALUES (
     'p1',
     'landing-2026',
     'Campaña Q1 2026',
     true,
-    ARRAY['hero','features','form','cta'],
+    '["hero","features","cta"]'::jsonb,
     'Genera más negocios hoy',
     'Ver Demo',
     '#06B6D4'
