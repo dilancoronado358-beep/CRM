@@ -46,6 +46,7 @@ export function useSupaState() {
   const [isAppReady, setIsAppReady] = useState(false);
   const [session, setSession] = useState(null);
   const channelRef = useRef(null);
+  const [intentoCarga, setIntentoCarga] = useState(0); // Para forzar reintentos si falla algo crítico
 
   const setDb = useCallback((next) => {
     setDbRaw((prev) => {
@@ -244,12 +245,11 @@ export function useSupaState() {
           await cargarDeSupa();
         }
       } catch (err) {
-        console.error("Critical error during app initialization:", err);
+        console.error("❌ Error en iniciarApp:", err);
       } finally {
-        clearTimeout(timeoutFallback);
-        // 3. Marcar la app como lista SIEMPRE, haya error o no
         if (montado) {
           setIsAppReady(true);
+          clearTimeout(timeoutFallback);
         }
       }
     };

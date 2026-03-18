@@ -290,17 +290,23 @@ export default function App() {
     applyTheme(themeId);
   }, [db.usuario?.tema]);
 
+  // Reset de UI al cambiar de usuario o entrar
   useEffect(() => {
-    const onHashChange = () => setHashURL(window.location.hash);
-    window.addEventListener("hashchange", onHashChange);
-    return () => window.removeEventListener("hashchange", onHashChange);
-  }, []);
+    setSpotlightOpen(false);
+    setShowLogoutConfirm(false);
+  }, [session?.user?.id]);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
+      // 1. Spotlight (Ctrl/Cmd + K)
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
         e.preventDefault();
-        setSpotlightOpen(true);
+        setSpotlightOpen(prev => !prev);
+      }
+      // 2. ESC para cerrar todo
+      if (e.key === "Escape") {
+        setSpotlightOpen(false);
+        setShowLogoutConfirm(false);
       }
     };
     window.addEventListener("keydown", handleKeyDown);
@@ -310,10 +316,15 @@ export default function App() {
   // 1. Mostrar pantalla de carga global SOLO acaba de hacer login explícitamente
   const isJustLoggedIn = sessionStorage.getItem("just_logged_in") === "true";
 
-  // Limpiar la bandera cuando ya terminó de cargar
-  if (isJustLoggedIn && !cargando) {
-    sessionStorage.removeItem("just_logged_in");
-  }
+  // Limpiar la bandera cuando ya terminó de cargar con un pequeño delay para evitar flashing
+  useEffect(() => {
+    if (isJustLoggedIn && !cargando) {
+      const t = setTimeout(() => {
+        sessionStorage.removeItem("just_logged_in");
+      }, 500);
+      return () => clearTimeout(t);
+    }
+  }, [isJustLoggedIn, cargando]);
 
   if (isJustLoggedIn && cargando) {
     return (
