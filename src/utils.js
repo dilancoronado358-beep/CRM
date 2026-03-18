@@ -1,7 +1,13 @@
 import { T } from "./theme";
 
-// Generador de ID aleatorio persistente (no dependiente de recargas de página)
+// Generador de ID aleatorio persistente
 export const uid = () => Math.random().toString(36).substr(2, 9);
+
+// Generador de UUID para base de datos
+export const uuid = () => (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+  const r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+  return v.toString(16);
+});
 
 export const money = v => new Intl.NumberFormat("es-MX", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(v || 0);
 

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { T } from "../theme";
-import { uid } from "../utils";
+import { uid, uuid } from "../utils";
 import { Chip, Btn, Inp, Sel, Campo, Modal, Tarjeta, EncabezadoSeccion, Ico, Vacio } from "../components/ui";
 
 // ─── CATÁLOGO DE MÓDULOS ───────────────────────────────────────────────────────
@@ -99,14 +99,14 @@ export const Automatizaciones = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t }
 
   const crearWf = async () => {
     if (!fNombre.trim()) return;
-    const wf = { id: "wf" + uid(), nombre: fNombre, nodos: [{ id: "n1", tipo: "trigger", ref: "deal_nuevo", extra: "" }], activo: false, stats: 0, org_id: db.usuario?.org_id };
+    const wf = { id: uuid(), nombre: fNombre, nodos: [{ id: uuid(), tipo: "trigger", ref: "deal_nuevo", extra: "" }], activo: false, stats: 0, org_id: db.usuario?.org_id };
     await guardarEnSupa("automatizaciones", wf);
     setWfSel(wf.id); setShowForm(false); setFNombre("");
   };
 
   const agregarNodo = async (tipo, ref) => {
     if (!actual) return;
-    const updatedWf = { ...actual, nodos: [...actual.nodos, { id: "n" + uid(), tipo, ref, extra: "" }] };
+    const updatedWf = { ...actual, nodos: [...actual.nodos, { id: uuid(), tipo, ref, extra: "" }] };
     await guardarEnSupa("automatizaciones", updatedWf);
     setShowAddNode(false);
   };

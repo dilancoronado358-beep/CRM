@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { T } from "../theme";
-import { uid } from "../utils";
+import { uid, uuid } from "../utils";
 import { Btn, Inp, Modal, Ico, Campo, ConfirmModal } from "../components/ui";
 import { sb } from "../hooks/useSupaState";
 import { FormularioPublico } from "./FormularioPublico";
@@ -24,7 +24,7 @@ const ALL_BLOCKS = [
 ];
 
 const DEFAULT_PAGE = (id, titulo, slug) => ({
-  id: id || "p" + uid(),
+  id: id || uuid(),
   slug: slug || "landing-" + Date.now(),
   titulo: titulo || "Nueva Landing Page",
   activo: false,
@@ -783,15 +783,15 @@ export const Websites = ({ db, guardarEnSupa, eliminarDeSupa }) => {
                       <p style={{ color: "#6B7280", marginBottom: 36, fontSize: 14 }}>Un asesor te contactará en menos de 24 horas.</p>
                       <div style={{ maxWidth: 400, margin: "0 auto", background: "#fff", borderRadius: 18, padding: 30, boxShadow: "0 10px 40px rgba(0,0,0,0.08)", border: "1px solid #E5E7EB" }}>
                         {activo.customFormId ? (
-                           <FormularioPublico formId={activo.customFormId} embed={true} />
-                         ) : (
-                           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                              {["Nombre completo *", "Email empresarial *", "Empresa / Cargo"].map((pl, i) => (
-                                <input key={i} readOnly placeholder={pl} style={{ padding: "11px 14px", border: "1.5px solid #E5E7EB", borderRadius: 8, fontSize: 13, fontFamily: "inherit", boxSizing: "border-box", color: "#9CA3AF", width: "100%" }} />
-                              ))}
-                              <button style={{ padding: "14px", background: accent, color: "#fff", border: "none", borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: "pointer", boxShadow: `0 8px 20px ${accent}44` }}>Solicitar Demo →</button>
-                           </div>
-                         )}
+                          <FormularioPublico formId={activo.customFormId} embed={true} />
+                        ) : (
+                          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                            {["Nombre completo *", "Email empresarial *", "Empresa / Cargo"].map((pl, i) => (
+                              <input key={i} readOnly placeholder={pl} style={{ padding: "11px 14px", border: "1.5px solid #E5E7EB", borderRadius: 8, fontSize: 13, fontFamily: "inherit", boxSizing: "border-box", color: "#9CA3AF", width: "100%" }} />
+                            ))}
+                            <button style={{ padding: "14px", background: accent, color: "#fff", border: "none", borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: "pointer", boxShadow: `0 8px 20px ${accent}44` }}>Solicitar Demo →</button>
+                          </div>
+                        )}
                       </div>
                     </div>
                   );
@@ -922,8 +922,8 @@ export const Websites = ({ db, guardarEnSupa, eliminarDeSupa }) => {
       </Modal>
 
       {/* CONFIRMACION ELIMINAR */}
-      <ConfirmModal 
-        open={!!idToDelete} 
+      <ConfirmModal
+        open={!!idToDelete}
         onClose={() => setIdToDelete(null)}
         onConfirm={confirmEliminar}
         title="¿Eliminar Landing Page?"

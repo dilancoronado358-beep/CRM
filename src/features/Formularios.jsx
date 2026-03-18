@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { T } from "../theme";
-import { uid } from "../utils";
+import { uid, uuid } from "../utils";
 import { Btn, Inp, Tarjeta, EncabezadoSeccion, Ico, Sel, Modal, Campo, ConfirmModal } from "../components/ui";
 import { sb } from "../hooks/useSupaState";
 import { toast } from "sonner";
@@ -18,7 +18,7 @@ const FIELD_TYPES = [
 ];
 
 const DEFAULT_FORM = () => ({
-  id: "f" + uid(),
+  id: uuid(),
   nombre: "Nuevo Formulario",
   pipeline_id: "",
   apariencia: {
@@ -356,7 +356,7 @@ export const Formularios = ({ db, guardarEnSupa, eliminarDeSupa }) => {
       {/* ── PREVIEW ── */}
       <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", background: `repeating-linear-gradient(45deg, ${T.bg0}, ${T.bg0} 10px, ${T.bg1} 10px, ${T.bg1} 20px)` }}>
         <div style={{ height: 40, background: T.bg1, borderBottom: `1px solid ${T.borderHi}`, display: "flex", alignItems: "center", padding: "0 14px", gap: 8, flexShrink: 0 }}>
-          <div style={{ display: "flex", gap: 5 }}>{["#EF4444","#F59E0B","#10B981"].map((c,i)=><div key={i} style={{width:10,height:10,borderRadius:"50%",background:c}}/>)}</div>
+          <div style={{ display: "flex", gap: 5 }}>{["#EF4444", "#F59E0B", "#10B981"].map((c, i) => <div key={i} style={{ width: 10, height: 10, borderRadius: "50%", background: c }} />)}</div>
           <div style={{ flex: 1, background: T.bg2, height: 22, borderRadius: 6, display: "flex", alignItems: "center", padding: "0 10px", fontSize: 10, color: T.whiteDim, maxWidth: 350, margin: "0 auto", gap: 4, border: `1px solid ${T.borderHi}` }}>
             <Ico k="lock" size={8} /> {BASE_URL}/#/f/{activo?.id}
           </div>
@@ -412,8 +412,8 @@ export const Formularios = ({ db, guardarEnSupa, eliminarDeSupa }) => {
         </div>
       </div>
       {/* CONFIRMACION ELIMINAR */}
-      <ConfirmModal 
-        open={!!idToDelete} 
+      <ConfirmModal
+        open={!!idToDelete}
         onClose={() => setIdToDelete(null)}
         onConfirm={confirmEliminar}
         title="¿Eliminar Formulario?"
