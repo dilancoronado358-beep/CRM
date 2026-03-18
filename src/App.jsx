@@ -232,7 +232,7 @@ const DICT = {
 
 
 export default function App() {
-  const { db, setDb, session, estadoSupa, cargando, isAppReady, guardarEnSupa, eliminarDeSupa } = useSupaState();
+  const { db, setDb, session, estadoSupa, cargando, isAppReady, guardarEnSupa, eliminarDeSupa, sendBroadcast } = useSupaState();
   const [modulo, setModulo] = useState("dashboard");
   const [menuAbierto, setMenuAbierto] = useState(true);
   const [spotlightOpen, setSpotlightOpen] = useState(false);
@@ -546,15 +546,20 @@ export default function App() {
         open={showLogoutConfirm}
         onClose={() => { setShowLogoutConfirm(false); setLogoutGlobal(false); }}
         onConfirm={async () => {
-          if (logoutGlobal) {
-            // Notificar a otros dispositivos para que cierren sesión inmediatamente
-            await sendBroadcast('force_logout', { email: db.usuario?.email, timestamp: Date.now() });
+          try {
+            if (logoutGlobal) {
+              // Notificar a otros dispositivos para que cierren sesión inmediatamente
+              await sendBroadcast('force_logout', { email: db.usuario?.email, timestamp: Date.now() });
+            }
+            await sb.auth.signOut({ scope: logoutGlobal ? 'global' : 'local' });
+          } catch (err) {
+            console.error("Error during logout:", err);
+          } finally {
+            localStorage.removeItem("crm_usuario_activo");
+            localStorage.removeItem("crm_theme");
+            sessionStorage.clear();
+            window.location.reload();
           }
-          await sb.auth.signOut({ scope: logoutGlobal ? 'global' : 'local' });
-          localStorage.removeItem("crm_usuario_activo");
-          localStorage.removeItem("crm_theme");
-          sessionStorage.clear();
-          window.location.reload();
         }}
         title="¿Cerrar sesión?"
         description="Esta acción cerrará tu sesión actual de forma segura."
