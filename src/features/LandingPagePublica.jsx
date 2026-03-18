@@ -7,7 +7,7 @@ const SUPA_KEY = "sb_publishable_wKUbf7IFOoH4HIUayIAJdQ_Boj1jgZa";
 const supa = createClient(SUPA_URL, SUPA_KEY);
 
 // ─── Form inside landing page ─────────────────────────────────────────────────
-const LeadForm = ({ accent }) => {
+const LeadForm = ({ accent, org_id }) => {
   const [v, setV] = useState({ nombre: "", email: "", empresa: "" });
   const [sent, setSent] = useState(false);
   const [sending, setSending] = useState(false);
@@ -18,10 +18,35 @@ const LeadForm = ({ accent }) => {
     setSending(true);
     try {
       const cid = "c_lp_" + Date.now();
-      await supa.from("contactos").insert({ id: cid, nombre: v.nombre, email: v.email, estado: "lead", fuente: "Landing Page Web", creado: new Date().toISOString().slice(0, 10) });
-      const { data: pls } = await supa.from("pipelines").select("id, etapas").limit(1);
+      await supa.from("contactos").insert({
+        id: cid,
+        nombre: v.nombre,
+        email: v.email,
+        estado: "lead",
+        fuente: "Landing Page Web",
+        org_id: org_id || '00000000-0000-0000-0000-000000000001',
+        creado: new Date().toISOString().slice(0, 10)
+      });
+      const { data: pls } = await supa
+        .from("pipelines")
+        .select("id, etapas")
+        .eq("org_id", org_id || '00000000-0000-0000-0000-000000000001')
+        .limit(1);
       const pl = pls?.[0];
-      await supa.from("deals").insert({ id: "d_lp_" + Date.now(), titulo: `Demo: ${v.nombre}`, contacto_id: cid, pipeline_id: pl?.id || "", etapa_id: pl?.etapas?.[0]?.id || "", valor: 0, prob: 15, fecha_cierre: new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10), etiquetas: ["landing_page"], creado: new Date().toISOString().slice(0, 10), notas: `Lead web: ${v.nombre} · ${v.email} · ${v.empresa}` });
+      await supa.from("deals").insert({
+        id: "d_lp_" + Date.now(),
+        titulo: `Demo: ${v.nombre}`,
+        contacto_id: cid,
+        pipeline_id: pl?.id || "",
+        etapa_id: pl?.etapas?.[0]?.id || "",
+        valor: 0,
+        prob: 15,
+        fecha_cierre: new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10),
+        etiquetas: ["landing_page"],
+        org_id: org_id || '00000000-0000-0000-0000-000000000001',
+        creado: new Date().toISOString().slice(0, 10),
+        notas: `Lead web: ${v.nombre} · ${v.email} · ${v.empresa}`
+      });
       setSent(true);
     } catch (err) { console.error(err); }
     setSending(false);
@@ -256,7 +281,7 @@ export const LandingPagePublica = ({ siteSlug }) => {
               {page.customFormId ? (
                 <FormularioPublico formId={page.customFormId} embed={true} />
               ) : (
-                <LeadForm accent={accent} />
+                <LeadForm accent={accent} org_id={page.org_id} />
               )}
             </div>
           </div>

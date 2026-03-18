@@ -40,7 +40,7 @@ const DEFAULT_FORM = () => ({
 
 const BASE_URL = "https://crm.ensing.lat";
 
-export const Formularios = ({ db }) => {
+export const Formularios = ({ db, guardarEnSupa, eliminarDeSupa }) => {
   const pipelines = db.pipelines || [];
   const [forms, setForms] = useState([]);
   const [activoId, setActivoId] = useState(null);
@@ -52,34 +52,24 @@ export const Formularios = ({ db }) => {
   const [idToDelete, setIdToDelete] = useState(null);
   const dragRef = useRef(null);
 
-  // ── Load from Supabase on mount ────────────────────────────────────────────
+  // ── Load from state ───────────────────────────────────────────────────────
   useEffect(() => {
-    const load = async () => {
-      setLoading(true);
-      const { data, error } = await sb.from("formularios_publicos").select("*");
-      if (data && data.length > 0) {
-        // Normalize: campos may be stored as JSON string
-        const parsed = data.map((f) => ({
-          ...f,
-          campos: Array.isArray(f.campos) ? f.campos : JSON.parse(f.campos || "[]"),
-          apariencia: typeof f.apariencia === "object" && f.apariencia !== null
-            ? f.apariencia
-            : JSON.parse(f.apariencia || "{}"),
-        }));
-        setForms(parsed);
-        setActivoId(parsed[0].id);
-      } else {
-        // Seed with default form
-        const def = DEFAULT_FORM();
-        def.id = "f1";
-        def.nombre = "Contacto Web Principal";
-        setForms([def]);
-        setActivoId(def.id);
-      }
+    if (db.formularios_publicos) {
+      const parsed = db.formularios_publicos.map((f) => ({
+        ...f,
+        campos: Array.isArray(f.campos) ? f.campos : JSON.parse(f.campos || "[]"),
+        apariencia: typeof f.apariencia === "object" && f.apariencia !== null
+          ? f.apariencia
+          : JSON.parse(f.apariencia || "{}"),
+      }));
+      setForms(parsed);
+      if (parsed.length > 0 && !activoId) setActivoId(parsed[0].id);
       setLoading(false);
-    };
-    load();
-  }, []);
+    } else {
+      // Seed fallback if absolutely no data
+      setLoading(false);
+    }
+  }, [db.formularios_publicos]);
 
   const activo = forms.find((f) => f.id === activoId) || null;
 
@@ -135,7 +125,7 @@ export const Formularios = ({ db }) => {
       apariencia: activo.apariencia || {},
       pipeline_id: activo.pipeline_id || null,
     };
-    const { error } = await sb.from("formularios_publicos").upsert(payload);
+    const { error } = await guardarEnSupa("formularios_publicos", payload);
     setSaving(false);
     if (error) {
       toast.error("Error al guardar: " + error.message);
@@ -155,7 +145,7 @@ export const Formularios = ({ db }) => {
 
   const nuevoFormulario = async () => {
     const nf = DEFAULT_FORM();
-    const { error } = await sb.from("formularios_publicos").insert({
+    const { error } = await guardarEnSupa("formularios_publicos", {
       id: nf.id, nombre: nf.nombre, color: "#06B6D4", campos: nf.campos, apariencia: nf.apariencia, pipeline_id: null,
     });
     if (!error) {
@@ -169,7 +159,8 @@ export const Formularios = ({ db }) => {
 
   const confirmEliminar = async () => {
     if (!idToDelete) return;
-    const { error } = await sb.from("formularios_publicos").delete().eq("id", idToDelete);
+    await eliminarDeSupa("formularios_publicos", idToDelete);
+    const error = null; // eliminarDeSupa handles UI updates via setDb
     if (error) {
       toast.error("Error al eliminar: " + error.message);
     } else {

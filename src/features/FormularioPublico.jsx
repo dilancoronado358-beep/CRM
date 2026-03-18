@@ -106,6 +106,7 @@ export const FormularioPublico = ({ formId, embed = false }) => {
         telefono,
         estado: "lead",
         fuente: `Formulario: ${form.nombre}`,
+        org_id: form.org_id || '00000000-0000-0000-0000-000000000001',
         creado: new Date().toISOString().slice(0, 10),
       });
 
@@ -113,6 +114,7 @@ export const FormularioPublico = ({ formId, embed = false }) => {
       const { data: pipelines } = await supa
         .from("pipelines")
         .select("id, etapas")
+        .eq("org_id", form.org_id || '00000000-0000-0000-0000-000000000001')
         .limit(1);
       const pl = pipelines?.[0];
       const etapas = pl?.etapas || [];
@@ -129,6 +131,7 @@ export const FormularioPublico = ({ formId, embed = false }) => {
         prob: 10,
         fecha_cierre: new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10),
         etiquetas: ["lead_web", "formulario"],
+        org_id: form.org_id || '00000000-0000-0000-0000-000000000001',
         creado: new Date().toISOString().slice(0, 10),
         notas: `Recibido por formulario "${form.nombre}". Campos:\n` +
           form.campos

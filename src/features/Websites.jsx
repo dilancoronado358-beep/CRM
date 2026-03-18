@@ -66,7 +66,7 @@ const DEFAULT_PAGE = (id, titulo, slug) => ({
   customFormId: null,
 });
 
-export const Websites = ({ db, setDb }) => {
+export const Websites = ({ db, guardarEnSupa, eliminarDeSupa }) => {
   const [pages, setPages] = useState([]);
   const [activoId, setActivoId] = useState(null);
   const [panel, setPanel] = useState("sections");
@@ -86,51 +86,42 @@ export const Websites = ({ db, setDb }) => {
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const canvasRef = useRef(null);
 
-  // ── Load from Supabase ────────────────────────────────────────────────────
+  // ── Load from state ────────────────────────────────────────────────────
   useEffect(() => {
-    const load = async () => {
-      setLoading(true);
-      const { data, error } = await sb.from("landing_pages").select("*").order("created_at", { ascending: true });
-
-      if (data && data.length > 0) {
-        const parsed = data.map((p) => ({
-          ...DEFAULT_PAGE(p.id, p.titulo, p.slug),
-          ...p,
-          blocks: Array.isArray(p.blocks) ? p.blocks : JSON.parse(p.blocks || '["hero","features","cta"]'),
-          faqItems: Array.isArray(p.faq_items) ? p.faq_items : (p.faqItems || []),
-          statsItems: Array.isArray(p.stats_items) ? p.stats_items : (p.statsItems || []),
-          features: Array.isArray(p.features) ? p.features : (p.features || []),
-          buttons: Array.isArray(p.buttons) ? p.buttons : (p.buttons || []),
-          // camelCase mapping from DB snake_case
-          heroTitle: p.hero_title || p.heroTitle,
-          heroSub: p.hero_sub || p.heroSub,
-          heroCTA: p.hero_cta || p.heroCTA,
-          heroCTAUrl: p.hero_cta_url || p.heroCTAUrl || "#form-section",
-          heroCTA2: p.hero_cta2 || p.heroCTA2,
-          heroCTA2Url: p.hero_cta2_url || p.heroCTA2Url || "#pricing",
-          accentColor: p.accent_color || p.accentColor || "#06B6D4",
-          videoUrl: p.video_url || p.videoUrl || "",
-          ctaTitle: p.cta_title || p.ctaTitle || "Empieza hoy. Es gratis.",
-          ctaSub: p.cta_sub || p.ctaSub || "Sin tarjeta de crédito · Configuración en 2 minutos",
-          ctaBtn: p.cta_btn || p.ctaBtn || "Comenzar Ahora",
-          ctaBtnUrl: p.cta_btn_url || p.ctaBtnUrl || "#form-section",
-          customText: p.custom_text || p.customText || "Escribe aquí tu contenido libre...",
-          imageUrl: p.image_url || p.imageUrl || "",
-          floatingElements: Array.isArray(p.floating_elements) ? p.floating_elements : (p.floatingElements || []),
-          customFormId: p.custom_form_id || p.customFormId || null,
-        }));
-        setPages(parsed);
-        setActivoId(parsed[0].id);
-      } else {
-        const def = DEFAULT_PAGE("p1", "Campaña Q1 2026", "landing-2026");
-        def.activo = true;
-        setPages([def]);
-        setActivoId(def.id);
-      }
+    if (db.landing_pages) {
+      const parsed = db.landing_pages.map((p) => ({
+        ...DEFAULT_PAGE(p.id, p.titulo, p.slug),
+        ...p,
+        blocks: Array.isArray(p.blocks) ? p.blocks : JSON.parse(p.blocks || '["hero","features","cta"]'),
+        faqItems: Array.isArray(p.faq_items) ? p.faq_items : (p.faqItems || []),
+        statsItems: Array.isArray(p.stats_items) ? p.stats_items : (p.statsItems || []),
+        features: Array.isArray(p.features) ? p.features : (p.features || []),
+        buttons: Array.isArray(p.buttons) ? p.buttons : (p.buttons || []),
+        // camelCase mapping from DB snake_case
+        heroTitle: p.hero_title || p.heroTitle,
+        heroSub: p.hero_sub || p.heroSub,
+        heroCTA: p.hero_cta || p.heroCTA,
+        heroCTAUrl: p.hero_cta_url || p.heroCTAUrl || "#form-section",
+        heroCTA2: p.hero_cta2 || p.heroCTA2,
+        heroCTA2Url: p.hero_cta2_url || p.heroCTA2Url || "#pricing",
+        accentColor: p.accent_color || p.accentColor || "#06B6D4",
+        videoUrl: p.video_url || p.videoUrl || "",
+        ctaTitle: p.cta_title || p.ctaTitle || "Empieza hoy. Es gratis.",
+        ctaSub: p.cta_sub || p.ctaSub || "Sin tarjeta de crédito · Configuración en 2 minutos",
+        ctaBtn: p.cta_btn || p.ctaBtn || "Comenzar Ahora",
+        ctaBtnUrl: p.cta_btn_url || p.ctaBtnUrl || "#form-section",
+        customText: p.custom_text || p.customText || "Escribe aquí tu contenido libre...",
+        imageUrl: p.image_url || p.imageUrl || "",
+        floatingElements: Array.isArray(p.floating_elements) ? p.floating_elements : (p.floatingElements || []),
+        customFormId: p.custom_form_id || p.customFormId || null,
+      }));
+      setPages(parsed);
+      if (parsed.length > 0 && !activoId) setActivoId(parsed[0].id);
       setLoading(false);
-    };
-    load();
-  }, []);
+    } else {
+      setLoading(false);
+    }
+  }, [db.landing_pages]);
 
   const activo = pages.find((p) => p.id === activoId) || null;
 
@@ -170,7 +161,7 @@ export const Websites = ({ db, setDb }) => {
       features: pg.features || [],
       custom_form_id: pg.customFormId || null,
     };
-    const { error } = await sb.from("landing_pages").upsert(payload);
+    const { error } = await guardarEnSupa("landing_pages", payload);
     setSaving(false);
     if (error) {
       toast.error("Error al guardar: " + error.message);
@@ -192,7 +183,7 @@ export const Websites = ({ db, setDb }) => {
     if (!fNew.titulo.trim()) return;
     const slug = fNew.slug.trim() || fNew.titulo.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
     const np = DEFAULT_PAGE(null, fNew.titulo, slug);
-    const { error } = await sb.from("landing_pages").insert({
+    const { error } = await guardarEnSupa("landing_pages", {
       id: np.id, slug: np.slug, titulo: np.titulo, activo: false, blocks: np.blocks,
       hero_title: np.heroTitle, hero_sub: np.heroSub, hero_cta: np.heroCTA, accent_color: np.accentColor,
       hero_cta_url: np.heroCTAUrl, hero_cta2: np.heroCTA2, hero_cta2_url: np.heroCTA2Url,
@@ -213,7 +204,8 @@ export const Websites = ({ db, setDb }) => {
 
   const confirmEliminar = async () => {
     if (!idToDelete) return;
-    const { error } = await sb.from("landing_pages").delete().eq("id", idToDelete);
+    await eliminarDeSupa("landing_pages", idToDelete);
+    const error = null;
     if (error) {
       toast.error("Error al eliminar: " + error.message);
     } else {

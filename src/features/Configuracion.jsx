@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { T, THEMES, applyTheme } from "../theme";
-import { Btn, Inp, Sel, Campo, Tarjeta, EncabezadoSeccion, Celda, CabeceraTabla, FilaTabla, Chip, Ico, Modal } from "../components/ui";
-import { fdtm } from "../utils";
+import { Btn, Inp, Sel, Campo, Tarjeta, EncabezadoSeccion, Celda, CabeceraTabla, FilaTabla, Chip, Ico, Modal, ConfirmModal } from "../components/ui";
+import { fdtm, uid } from "../utils";
 import { sb } from "../hooks/useSupaState";
 
 // Importamos el cliente de web sockets para comunicarse con el bot local
@@ -67,8 +67,18 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
 
   // Estados API & Webhooks
   const [showWebhookModal, setShowWebhookModal] = useState(false);
+  const [showOrgModal, setShowOrgModal] = useState(false);
   const [fWebhook, setFWebhook] = useState({ url: "", evento: "deal.ganado" });
+  const [fOrg, setFOrg] = useState({ nombre: "", slug: "" });
+  const [showSwitchModal, setShowSwitchModal] = useState(false);
+  const [targetOrgId, setTargetOrgId] = useState(null);
+
+  const confirmSwitch = (orgId) => {
+    setTargetOrgId(orgId);
+    setShowSwitchModal(true);
+  };
   const [cargandoApi, setCargandoApi] = useState(false);
+  const [cargandoOrg, setCargandoOrg] = useState(false);
 
   // Efecto para escuchar eventos del WebSocket del Backend Local
   useEffect(() => {
@@ -407,12 +417,52 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
     setDb(d => ({ ...d, webhook_subscriptions: d.webhook_subscriptions.filter(w => w.id !== id) }));
   };
 
+  const handleCrearOrg = async () => {
+    if (!fOrg.nombre || !fOrg.slug) return alert("Completa todos los campos");
+    setCargandoOrg(true);
+    // Usar crypto.randomUUID() para asegurar formato UUID válido en Supabase
+    const nuevaId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : uid();
+    const nueva = { id: nuevaId, ...fOrg, creado_at: new Date().toISOString() };
+    try {
+      const { error } = await guardarEnSupa("organizacion", nueva);
+      if (error) {
+         // El toast ya lo muestra guardarEnSupa
+      } else {
+        setShowOrgModal(false);
+        setFOrg({ nombre: "", slug: "" });
+        alert("Organización creada exitosamente ✅");
+      }
+    } catch (e) {
+      alert("Error al procesar: " + e.message);
+    } finally {
+      setCargandoOrg(false);
+    }
+  };
+
+  const handleSwitchFinal = async () => {
+    if (!targetOrgId) return;
+    try {
+      const userUpdate = { ...db.usuario, org_id: targetOrgId };
+      const { error } = await guardarEnSupa("usuariosApp", userUpdate);
+      if (!error) {
+        // Actualizar localStorage inmediatamente para que al recargar empiece con el ID correcto
+        localStorage.setItem("crm_usuario_activo", JSON.stringify(userUpdate));
+        window.location.reload();
+      }
+    } catch (e) {
+      alert("Error al cambiar organización: " + e.message);
+    } finally {
+      setShowSwitchModal(false);
+    }
+  };
+
   const TABS = [
     { id: "perfil", label: "Mi Perfil", icon: "user" },
     { id: "apariencia", label: "Apariencia", icon: "star" },
     { id: "recordatorios", label: "Recordatorios", icon: "bell" },
     { id: "empresa", label: "Infraestructura", icon: "building" },
     { id: "usuarios", label: "Equipo & Accesos", icon: "users" },
+    { id: "organizaciones", label: "Organizaciones", icon: "grid" },
     { id: "email", label: "SMTP / IMAP", icon: "mail" },
     { id: "api", label: "API & Webhooks", icon: "code" },
     { id: "chatbots", label: "Chatbots", icon: "message" },
@@ -607,6 +657,63 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
                 <div style={{ fontSize: 13, color: T.whiteDim }}>Este tenant posee un clúster dedicado de base de datos garantizando 99.99% SLA para la infraestructura configurada.</div>
               </div>
               <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 12 }}><Btn onClick={guardarEmpresa} disabled={!fEmpresa.trim()} style={{ fontSize: 14, padding: "10px 24px" }}>Synchronize Tenant</Btn></div>
+            </div>
+          </Tarjeta>
+        )}
+
+        {/* ── ORGANIZACIONES (MULTI-TENANT) ── */}
+        {tab === "organizaciones" && (
+          <Tarjeta style={{ padding: 32 }}>
+            <div style={{ fontSize: 20, fontWeight: 800, color: T.white, marginBottom: 8, display: "flex", alignItems: "center", gap: 10 }}><Ico k="grid" size={24} style={{ color: T.teal }} /> Gestión Multi-empresa</div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
+              <div style={{ fontSize: 13, color: T.whiteDim }}>Control de instancias aisladas.</div>
+              <Btn onClick={() => setShowOrgModal(true)} style={{ background: T.teal, color: "#000" }}><Ico k="plus" size={16} /> Nueva Organización</Btn>
+            </div>
+            
+            {(!db.organizacion || db.organizacion.length === 0) && (
+              <div style={{ background: T.amber + "10", border: `1px solid ${T.amber}40`, borderRadius: 12, padding: 20, marginBottom: 24 }}>
+                <div style={{ fontSize: 15, fontWeight: 800, color: T.amber, marginBottom: 8, display: "flex", alignItems: "center", gap: 8 }}><Ico k="lightning" size={18} /> Acción Requerida: Migración de Base de Datos</div>
+                <div style={{ fontSize: 13, color: T.whiteOff, lineHeight: 1.5 }}>
+                  Para activar la funcionalidad multi-empresa, debes ejecutar el script de migración en tu panel de Supabase. Esto añadirá el campo <code>org_id</code> a todas tus tablas.
+                </div>
+                <Btn variant="secundario" size="sm" style={{ marginTop: 12, background: T.amber, color: "#000", border: "none" }} onClick={() => {
+                  const sql = `CREATE TABLE IF NOT EXISTS organizacion (id UUID PRIMARY KEY DEFAULT uuid_generate_v4(), nombre TEXT NOT NULL, slug TEXT UNIQUE, creado_at TIMESTAMPTZ DEFAULT NOW());
+ALTER TABLE usuariosApp ADD COLUMN IF NOT EXISTS org_id UUID REFERENCES organizacion(id);
+-- ... (ejecutar script completo enviado por el asistente)`;
+                  navigator.clipboard.writeText(sql);
+                  alert("Script SQL parcial copiado. Por favor usa el script completo proporcionado en el chat.");
+                }}>Copiar Script SQL Base</Btn>
+              </div>
+            )}
+
+            <div style={{ borderRadius: 12, border: `1px solid ${T.borderHi}`, overflow: "hidden" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <CabeceraTabla cols={["Empresa / Organización", "Slug", "Status", "Usuarios", "Acciones"]} />
+                <tbody>
+                  {(db.organizacion || []).map(org => (
+                    <FilaTabla key={org.id}>
+                      <Celda>
+                        <div style={{ fontWeight: 800, color: T.white }}>{org.nombre}</div>
+                        <div style={{ fontSize: 11, color: T.whiteDim }}>ID: {org.id}</div>
+                      </Celda>
+                      <Celda><Chip label={org.slug} /></Celda>
+                      <Celda><div style={{ color: T.green, fontSize: 12, fontWeight: 800 }}>● Activo</div></Celda>
+                      <Celda>{(db.usuariosApp || []).filter(u => u.org_id === org.id).length} usuarios</Celda>
+                      <Celda>
+                        <div style={{ display: "flex", gap: 8 }}>
+                          <Btn variant="fantasma" size="sm" onClick={() => (org.id === db.usuario?.org_id ? null : confirmSwitch(org.id))} style={{ color: org.id === db.usuario?.org_id ? T.green : T.whiteOff }}>
+                            <Ico k={org.id === db.usuario?.org_id ? "check" : "lightning"} size={16} /> {org.id === db.usuario?.org_id ? "Actual" : "Usar"}
+                          </Btn>
+                          <Btn variant="fantasma" size="sm" onClick={() => alert("Función de edición en desarrollo")}><Ico k="edit" size={16} /></Btn>
+                        </div>
+                      </Celda>
+                    </FilaTabla>
+                  ))}
+                  {(!db.organizacion || db.organizacion.length === 0) && (
+                    <tr><td colSpan={5} style={{ padding: 40, textAlign: "center", color: T.whiteDim }}>No hay organizaciones detectadas. Asegúrate de ejecutar la migración SQL y registrar tu primera empresa.</td></tr>
+                  )}
+                </tbody>
+              </table>
             </div>
           </Tarjeta>
         )}
@@ -1036,6 +1143,37 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
           </Btn>
         </div>
       </Modal>
+
+      <Modal open={showOrgModal} onClose={() => setShowOrgModal(false)} title="Nueva Organización" width={480}>
+        <Campo label="Nombre de la Empresa"><Inp value={fOrg.nombre} onChange={e => setFOrg({ ...fOrg, nombre: e.target.value })} placeholder="ej. Mi Segunda Empresa" style={{ fontSize: 15 }} /></Campo>
+        <Campo label="Identificador (Slug)"><Inp value={fOrg.slug} onChange={e => setFOrg({ ...fOrg, slug: e.target.value.toLowerCase().replace(/\s+/g, '-') })} placeholder="ej. mi-segunda-empresa" style={{ fontSize: 15 }} /></Campo>
+        
+        <div style={{ padding: 16, background: T.teal + "10", border: `1px solid ${T.tealSoft}`, borderRadius: 8, marginTop: 16 }}>
+          <div style={{ fontSize: 12, color: T.whiteOff }}>Nota: Al crear una nueva organización, esta aparecerá en la lista y los usuarios que vincules a ella tendrán un panel totalmente independiente.</div>
+        </div>
+
+        <div style={{ display: "flex", gap: 12, justifyContent: "flex-end", marginTop: 32 }}>
+          <Btn variant="secundario" onClick={() => setShowOrgModal(false)} disabled={cargandoOrg}>Cancelar</Btn>
+          <Btn onClick={handleCrearOrg} disabled={cargandoOrg || !fOrg.nombre || !fOrg.slug} style={{ background: T.teal, color: "#000" }}>
+            {cargandoOrg ? "Creando..." : "Crear Organización"}
+          </Btn>
+        </div>
+      </Modal>
+      {showSwitchModal && (
+        <ConfirmModal
+          open={true}
+          onClose={() => setShowSwitchModal(false)}
+          onConfirm={handleSwitchFinal}
+          title="Cambiar Contexto"
+          description={`¿Estás seguro de cambiar a la organización ${db.organizacion?.find(o => o.id === targetOrgId)?.nombre || "seleccionada"}?`}
+          extraContent={
+            <div style={{ fontSize: 13, color: T.whiteDim, background: 'rgba(255,255,255,0.05)', padding: 12, borderRadius: 8, border: `1px solid ${T.borderHi}` }}>
+              Todos tus filtros actuales de pipelines y leads se ajustarán al contexto de esta empresa.
+            </div>
+          }
+          variant="info"
+        />
+      )}
     </div>
   );
 };

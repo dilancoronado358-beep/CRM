@@ -54,27 +54,22 @@ const LOG_MSGS = [
   "⚡ Flow completado en 148ms",
 ];
 
-export const Automatizaciones = ({ db, setDb, t }) => {
-  const [wfs, setWfs] = useState(db.automatizaciones || [
-    {
-      id: "wf1", nombre: "Onboarding Win → Welcome Email", nodos: [
-        { id: "n1", tipo: "trigger", ref: "deal_ganado", extra: "" },
-        { id: "n2", tipo: "condition", ref: "if_condition", extra: "valor > 500" },
-        { id: "n3", tipo: "action", ref: "enviar_email", extra: "Plantilla Bienvenida" },
-        { id: "n4", tipo: "action", ref: "slack_notify", extra: "#ventas channel" },
-      ],
-      activo: true, stats: 47
-    },
-    {
-      id: "wf2", nombre: "New Form Lead → Task Router", pipeline_id: "", nodos: [
-        { id: "n1", tipo: "trigger", ref: "form_submit", extra: "" },
-        { id: "n2", tipo: "action", ref: "crear_tarea", extra: "Contacted prospect" },
-        { id: "n3", tipo: "action", ref: "etiquetar", extra: "lead_web" },
-      ],
-      activo: false, stats: 12
+export const Automatizaciones = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t }) => {
+  const [wfs, setWfs] = useState([]);
+
+  useEffect(() => {
+    if (db.automatizaciones) {
+      setWfs(db.automatizaciones);
     }
-  ]);
-  const [wfSel, setWfSel] = useState(wfs[0]?.id || null);
+  }, [db.automatizaciones]);
+
+  const [wfSel, setWfSel] = useState(null);
+  
+  useEffect(() => {
+    if (wfs.length > 0 && !wfSel) {
+      setWfSel(wfs[0].id);
+    }
+  }, [wfs]);
   const [showForm, setShowForm] = useState(false);
   const [fNombre, setFNombre] = useState("");
   const [nodoSel, setNodoSel] = useState(null);

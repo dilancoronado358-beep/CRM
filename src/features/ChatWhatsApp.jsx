@@ -4,8 +4,7 @@ import { Btn, Inp, Tarjeta, Celda, Chip, Ico, Modal } from "../components/ui";
 import { io } from "socket.io-client";
 import { useSupaState } from "../hooks/useSupaState";
 
-export function ChatWhatsApp({ t }) {
-  const { db, setDb, guardarEnSupa, eliminarDeSupa } = useSupaState();
+export function ChatWhatsApp({ db, setDb, guardarEnSupa, eliminarDeSupa, t }) {
   const [waConnected, setWaConnected] = useState(false);
   const [waQR, setWaQR] = useState("");
   const socketRef = useRef(null);

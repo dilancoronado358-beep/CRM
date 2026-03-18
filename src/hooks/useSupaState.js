@@ -15,10 +15,10 @@ export const sb = createClient(SUPA_URL, SUPA_KEY);
 const TABLAS_SUPA = [
   "contactos", "empresas", "deals", "actividades", "tareas", "emails", "notas",
   "usuario", "empresaConfigs", "usuariosApp", "productos",
-  "pipelines", "plantillasEmail", "campos_personalizados",
+  "pipelines", "plantillasEmail", "campos_personalizados", "automatizaciones",
   "whatsapp_automations", "whatsapp_messages", "finanzas_gastos", "finanzas_comisiones",
   "notificaciones", "auditoria", "api_settings", "webhook_subscriptions",
-  "email_accounts", "landing_pages", "formularios_publicos"
+  "email_accounts", "landing_pages", "formularios_publicos", "organizacion"
 ];
 
 /* ═══════════════════════════════════════════
@@ -96,12 +96,21 @@ export function useSupaState() {
 
 
   // ── Cargar todos los datos desde Supabase ──────────────────────────────────
-  const cargarDeSupa = useCallback(async () => {
+  const cargarDeSupa = useCallback(async (orgIdForzado) => {
     try {
       setCargando(true);
-      console.log("🔌 Conectando a Supabase...", SUPA_URL);
+      const oi = orgIdForzado || db.usuario?.org_id;
+      console.log(`📡 [cargarDeSupa] Contexto: ${oi || "GLOBAL"} | Tablas: ${TABLAS_SUPA.length}`);
+      
       const resultados = await Promise.all(
-        TABLAS_SUPA.map((tabla) => sb.from(tabla).select("*"))
+        TABLAS_SUPA.map((tabla) => {
+          let q = sb.from(tabla).select("*");
+          // Si estamos en un contexto de organización, filtrar tablas operativas
+          if (oi && !["organizacion", "usuariosApp", "recordatorios", "notificaciones", "auditoria"].includes(tabla)) {
+            q = q.eq("org_id", oi);
+          }
+          return q;
+        })
       );
 
       const nuevoEstado = {};
@@ -191,6 +200,7 @@ export function useSupaState() {
       }, 5000);
 
       try {
+        let uLocal = null;
         // 1. Obtener sesión actual
         const { data: { session }, error: sessionError } = await sb.auth.getSession();
         if (sessionError) console.warn("Supabase auth error:", sessionError);
@@ -216,7 +226,8 @@ export function useSupaState() {
           });
 
           // Consultar directamente a Supabase para obtener datos reales
-          const { data: uLocal, error: fetchError } = await sb.from("usuariosApp").select("*").eq("email", session.user.email).maybeSingle();
+          const { data: userRow, error: fetchError } = await sb.from("usuariosApp").select("*").eq("email", session.user.email).maybeSingle();
+          uLocal = userRow;
           if (fetchError) console.warn("Supabase user fetch error:", fetchError);
           if (uLocal && montado) {
             if (uLocal.temaActivo) {
@@ -234,6 +245,8 @@ export function useSupaState() {
                 temaActivo: uLocal.temaActivo || null,
                 waServerUrl: uLocal.waServerUrl || null,
                 activo: uLocal.activo !== false,
+                id: uLocal.id, // IMPORTANTE: Guardar el ID para poder actualizar el perfil
+                org_id: uLocal.org_id || null, // Guardar org_id en el estado
               };
               return { ...d, usuario: { ...d.usuario, ...mapped } };
             });
@@ -242,7 +255,8 @@ export function useSupaState() {
 
         // 2. Cargar datos desde Supabase
         if (montado) {
-          await cargarDeSupa();
+          const targetOrg = uLocal?.org_id || db.usuario?.org_id;
+          await cargarDeSupa(targetOrg);
         }
       } catch (err) {
         console.error("❌ Error en iniciarApp:", err);
@@ -276,6 +290,10 @@ export function useSupaState() {
         setDbRaw(prev => {
           const lista = Array.isArray(prev[table]) ? prev[table] : [];
           if (eventType === 'INSERT' || eventType === 'UPDATE') {
+            // Guard: Ignorar si el registro no pertenece a la organización activa
+            if (prev.usuario?.org_id && record.org_id && record.org_id !== prev.usuario.org_id) {
+              return prev;
+            }
             const idx = lista.findIndex(r => r.id === record.id);
             if (idx >= 0 && JSON.stringify(lista[idx]) === JSON.stringify(record)) return prev;
             const nuevaLista = idx >= 0
@@ -325,6 +343,10 @@ export function useSupaState() {
       console.log(`[SUPA] Intentando guardar en ${tabla}:`, registro);
 
       const payload = { ...registro };
+      // Solo inyectar org_id si no es la tabla de organizaciones y no se pasó uno explícitamente
+      if (db.usuario?.org_id && tabla !== "organizacion" && !payload.org_id) {
+        payload.org_id = db.usuario.org_id;
+      }
       if (tabla === "tareas" && !payload.creado) {
         payload.creado = new Date().toISOString();
       }
@@ -333,8 +355,8 @@ export function useSupaState() {
 
       if (error) {
         console.error(`🔴 Error en ${tabla}:`, error.message);
-        // Alerta visual para el usuario en caso de error crítico
         toast.error(`No se pudo guardar en ${tabla}: ${error.message}`);
+        return { data: null, error };
       } else {
         console.log(`🟢 Éxito en ${tabla}`);
         const confirmado = data?.[0] || payload;
@@ -347,10 +369,12 @@ export function useSupaState() {
             : [confirmado, ...lista];
           return { ...d, [tabla]: nueva };
         });
+        return { data: confirmado, error: null };
       }
     } catch (e) {
       console.error(`❌ Fallo crítico guardarEnSupa (${tabla}):`, e);
       toast.error("Error de conexión con el servidor. Por favor, revisa tu internet.");
+      return { data: null, error: e };
     }
   };
 
