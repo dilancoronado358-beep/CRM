@@ -3,6 +3,7 @@ import { T, THEMES, applyTheme } from "../theme";
 import { Btn, Inp, Sel, Campo, Tarjeta, EncabezadoSeccion, Celda, CabeceraTabla, FilaTabla, Chip, Ico, Modal, ConfirmModal } from "../components/ui";
 import { fdtm, uid } from "../utils";
 import { sb } from "../hooks/useSupaState";
+import axios from "axios";
 
 // Importamos el cliente de web sockets para comunicarse con el bot local
 import { io } from "socket.io-client";

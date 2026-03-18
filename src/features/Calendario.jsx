@@ -4,6 +4,7 @@ import { es } from "date-fns/locale";
 import { T } from "../theme";
 import { money } from "../utils";
 import { Btn, Tarjeta, Celda, Chip, EncabezadoSeccion, Ico } from "../components/ui";
+import axios from "axios";
 
 export const Calendario = ({ db }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
