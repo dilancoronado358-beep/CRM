@@ -299,7 +299,8 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
         options: {
           data: {
             name: fNuevoUser.name,
-            role: fNuevoUser.role
+            role: fNuevoUser.role,
+            org_id: db.usuario?.org_id
           }
         }
       });
@@ -314,12 +315,13 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
       // Ya no necesitamos guardarEnSupa manualmente. El disparador (Trigger)
       // que configuramos en la base de datos se encarga de crear el registro
       // en "usuariosApp" automáticamente al detectar el nuevo Auth User.
-      
+
       const newUser = {
         id: data.user?.id,
         name: fNuevoUser.name,
         email: fNuevoUser.email,
         role: fNuevoUser.role,
+        org_id: db.usuario?.org_id,
         activo: true,
         creado: new Date().toISOString()
       };
@@ -426,7 +428,7 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
     try {
       const { error } = await guardarEnSupa("organizacion", nueva);
       if (error) {
-         // El toast ya lo muestra guardarEnSupa
+        // El toast ya lo muestra guardarEnSupa
       } else {
         setShowOrgModal(false);
         setFOrg({ nombre: "", slug: "" });
@@ -669,7 +671,7 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
               <div style={{ fontSize: 13, color: T.whiteDim }}>Control de instancias aisladas.</div>
               <Btn onClick={() => setShowOrgModal(true)} style={{ background: T.teal, color: "#000" }}><Ico k="plus" size={16} /> Nueva Organización</Btn>
             </div>
-            
+
             {(!db.organizacion || db.organizacion.length === 0) && (
               <div style={{ background: T.amber + "10", border: `1px solid ${T.amber}40`, borderRadius: 12, padding: 20, marginBottom: 24 }}>
                 <div style={{ fontSize: 15, fontWeight: 800, color: T.amber, marginBottom: 8, display: "flex", alignItems: "center", gap: 8 }}><Ico k="lightning" size={18} /> Acción Requerida: Migración de Base de Datos</div>
@@ -1147,7 +1149,7 @@ ALTER TABLE usuariosApp ADD COLUMN IF NOT EXISTS org_id UUID REFERENCES organiza
       <Modal open={showOrgModal} onClose={() => setShowOrgModal(false)} title="Nueva Organización" width={480}>
         <Campo label="Nombre de la Empresa"><Inp value={fOrg.nombre} onChange={e => setFOrg({ ...fOrg, nombre: e.target.value })} placeholder="ej. Mi Segunda Empresa" style={{ fontSize: 15 }} /></Campo>
         <Campo label="Identificador (Slug)"><Inp value={fOrg.slug} onChange={e => setFOrg({ ...fOrg, slug: e.target.value.toLowerCase().replace(/\s+/g, '-') })} placeholder="ej. mi-segunda-empresa" style={{ fontSize: 15 }} /></Campo>
-        
+
         <div style={{ padding: 16, background: T.teal + "10", border: `1px solid ${T.tealSoft}`, borderRadius: 8, marginTop: 16 }}>
           <div style={{ fontSize: 12, color: T.whiteOff }}>Nota: Al crear una nueva organización, esta aparecerá en la lista y los usuarios que vincules a ella tendrán un panel totalmente independiente.</div>
         </div>

@@ -101,12 +101,12 @@ export function useSupaState() {
       setCargando(true);
       const oi = orgIdForzado || db.usuario?.org_id;
       console.log(`📡 [cargarDeSupa] Contexto: ${oi || "GLOBAL"} | Tablas: ${TABLAS_SUPA.length}`);
-      
+
       const resultados = await Promise.all(
         TABLAS_SUPA.map((tabla) => {
           let q = sb.from(tabla).select("*");
           // Si estamos en un contexto de organización, filtrar tablas operativas
-          if (oi && !["organizacion", "usuariosApp", "recordatorios", "notificaciones", "auditoria"].includes(tabla)) {
+          if (oi && !["organizacion", "recordatorios"].includes(tabla)) {
             q = q.eq("org_id", oi);
           }
           return q;
