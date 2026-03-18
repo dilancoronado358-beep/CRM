@@ -883,7 +883,7 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
             <span style={{ fontSize: 11, fontWeight: 700, color: T.whiteDim, textTransform: "uppercase" }}>Responsable</span>
             <select value={fResp} onChange={e => setFResp(e.target.value)} style={{ background: T.bg2, color: T.white, border: `1px solid ${T.borderHi}`, borderRadius: 8, padding: "6px 12px", fontSize: 13, cursor: "pointer", outline: "none" }}>
               <option value="todos">Todos los responsables</option>
-              {[...new Set(db.deals.map(d => d.responsable))].filter(Boolean).map(r => <option key={r} value={r}>{r}</option>)}
+              {(db.usuariosApp || []).map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
             </select>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>

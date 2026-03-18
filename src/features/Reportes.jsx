@@ -15,7 +15,7 @@ export const Reportes = (props) => {
   });
 
   const pipelines = db.pipelines || [];
-  const responsables = ["todos", ...new Set((db.deals || []).map(d => d.responsable).filter(Boolean))];
+  const responsables = ["todos", ...(db.usuariosApp || []).map(u => u.name)];
 
   const s = k => e => setFiltros(p => ({ ...p, [k]: e.target.value }));
 
