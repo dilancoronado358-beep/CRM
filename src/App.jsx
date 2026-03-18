@@ -238,6 +238,7 @@ export default function App() {
   const [spotlightOpen, setSpotlightOpen] = useState(false);
   const [hashURL, setHashURL] = useState(window.location.hash);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [logoutGlobal, setLogoutGlobal] = useState(false);
 
   // NOTIFICACIONES TOAST
   const [notis, setNotis] = useState([]);
@@ -543,9 +544,9 @@ export default function App() {
 
       <ConfirmModal
         open={showLogoutConfirm}
-        onClose={() => setShowLogoutConfirm(false)}
+        onClose={() => { setShowLogoutConfirm(false); setLogoutGlobal(false); }}
         onConfirm={async () => {
-          await sb.auth.signOut();
+          await sb.auth.signOut({ scope: logoutGlobal ? 'global' : 'local' });
           localStorage.removeItem("crm_usuario_activo");
           localStorage.removeItem("crm_theme");
           sessionStorage.clear();
@@ -555,6 +556,19 @@ export default function App() {
         description="Esta acción cerrará tu sesión actual de forma segura."
         confirmText="Confirmar Cierre"
         variant="danger"
+        extraContent={
+          <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', padding: '10px 14px', background: 'rgba(255,255,255,0.03)', borderRadius: 12, border: `1px solid ${T.borderHi}` }}>
+            <input
+              type="checkbox"
+              checked={logoutGlobal}
+              onChange={e => setLogoutGlobal(e.target.checked)}
+              style={{ width: 18, height: 18, accentColor: T.teal }}
+            />
+            <span style={{ fontSize: 13, color: T.whiteDim, fontWeight: 500 }}>
+              Cerrar sesión en todos los dispositivos
+            </span>
+          </label>
+        }
       />
     </div>
   );

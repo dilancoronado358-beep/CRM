@@ -10,7 +10,8 @@ export const ConfirmModal = ({
   description = "¿Estás seguro de que deseas realizar esta acción?",
   confirmText = "Confirmar",
   cancelText = "Cancelar",
-  variant = "danger"
+  variant = "danger",
+  extraContent = null
 }) => {
   const isDanger = variant === "danger";
 
@@ -35,6 +36,12 @@ export const ConfirmModal = ({
           <h3 style={{ margin: '0 0 8px', fontSize: 18, color: T.white, fontWeight: 800 }}>{title}</h3>
           <p style={{ margin: 0, fontSize: 14, color: T.whiteDim, lineHeight: 1.5 }}>{description}</p>
         </div>
+
+        {extraContent && (
+          <div style={{ width: '100%', textAlign: 'left' }}>
+            {extraContent}
+          </div>
+        )}
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, width: '100%', marginTop: 10 }}>
           <button
