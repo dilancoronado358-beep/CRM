@@ -200,12 +200,14 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
 
   const syncEmails = async (accountId) => {
     setProbandoEmail(true);
-    const API_URL = `http://${window.location.hostname}:3001`;
     try {
-      const res = await axios.post(`${API_URL}/api/email/sync`, { accountId });
-      alert("✅ Sincronización finalizada: " + (res.data.count || 0) + " correos nuevos.");
+      const acc = db.email_accounts?.find(a => a.id === accountId);
+      if (!acc) return;
+      // Actualizamos last_sync para disparar el listener Realtime del servidor
+      await guardarEnSupa("email_accounts", { ...acc, last_sync: new Date().toISOString() });
+      alert("✅ Señal de sincronización enviada. Los correos deberían aparecer en 1 minuto.");
     } catch (e) {
-      alert("Error en el servidor de sync: " + e.message);
+      alert("Error al solicitar sync: " + e.message);
     } finally {
       setProbandoEmail(false);
     }

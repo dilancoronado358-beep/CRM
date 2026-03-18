@@ -65,9 +65,8 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) => {
     const acc = db.email_accounts?.find(a => a.active);
     if (!acc) return;
     try {
-      const API_URL = `http://${window.location.hostname}:3001`;
-      await axios.post(`${API_URL}/api/email/sync`, { accountId: acc.id });
-      alert("✅ Sincronización completada.");
+      await guardarEnSupa("email_accounts", { ...acc, last_sync: new Date().toISOString() });
+      alert("✅ Sincronización solicitada.");
     } catch (e) {
       console.error("Sync error", e);
     }

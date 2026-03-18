@@ -1218,8 +1218,19 @@ app.post('/api/email/test-connection', async (req, res) => {
   res.json(results);
 });
 
-// Sync automático cada 10 minutos
+// Listener en tiempo real para disparar sincronización desde el frontend sin depender del puerto 3001
+supabase
+  .channel('email_sync_triggers')
+  .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'email_accounts' }, (payload) => {
+    console.log(`🔔 [Realtime] Cambio detectado en cuenta ${payload.new.id}. disparando sync...`);
+    syncEmails(payload.new.id);
+    if (payload.new.sync_calendar) syncCalendar(payload.new.id);
+  })
+  .subscribe();
+
+// Sync automático cada 2 minutos (reducido para mejor experiencia)
 setInterval(async () => {
+    console.log("⏱️ [CRON] Iniciando sync automático...");
     const { data: accounts } = await supabase.from('email_accounts').select('id, sync_calendar').eq('active', true);
     if (accounts) {
         for (const acc of accounts) {
@@ -1227,7 +1238,7 @@ setInterval(async () => {
             if (acc.sync_calendar) syncCalendar(acc.id);
         }
     }
-}, 10 * 60 * 1000);
+}, 2 * 60 * 1000);
 
 server.listen(process.env.PORT || 3001, () => {
   console.log(`Server CRM corriendo en puerto ${process.env.PORT || 3001}`);

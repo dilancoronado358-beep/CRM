@@ -116,9 +116,9 @@ export const Calendario = ({ db }) => {
               const acc = db.email_accounts?.find(a => a.active);
               if (!acc) return alert("Conecta tu cuenta en Configuración primero.");
               try {
-                const API_URL = `http://${window.location.hostname}:3001`;
-                await axios.post(`${API_URL}/api/email/sync`, { accountId: acc.id });
-                alert("✅ Calendario y Correo sincronizados.");
+                // Trigger vía Realtime (modificando la DB)
+                await sb.from('email_accounts').update({ last_sync: new Date().toISOString() }).eq('id', acc.id);
+                alert("✅ Solicitud de sincronización enviada.");
               } catch (e) { alert("Error al sincronizar: " + e.message); }
             }}><Ico k="refresh" size={14} /> Sincronizar</Btn>
             <Btn><Ico k="plus" size={14} />Nueva Cita</Btn>
