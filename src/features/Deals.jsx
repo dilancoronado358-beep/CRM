@@ -9,13 +9,13 @@ export const Deals = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) => {
   const [fEt, setFEt] = useState("todas");
 
   const filtrados = db.deals.filter(d =>
-    (fPL === "todos" || d.pipelineId === fPL) &&
-    (fEt === "todas" || d.etapaId === fEt) &&
+    (fPL === "todos" || d.pipeline_id === fPL) &&
+    (fEt === "todas" || d.etapa_id === fEt) &&
     d.titulo.toLowerCase().includes(busqueda.toLowerCase())
   );
   
   const etapasActuales = fPL !== "todos" ? db.pipelines.find(p => p.id === fPL)?.etapas || [] : [];
-  const esGanado = d => db.pipelines.find(p => p.id === d.pipelineId)?.etapas.find(e => e.id === d.etapaId)?.esGanado;
+  const esGanado = d => db.pipelines.find(p => p.id === d.pipeline_id)?.etapas.find(e => e.id === d.etapa_id)?.es_ganado;
   
   const total = filtrados.reduce((s, d) => s + d.valor, 0);
   const ganados = filtrados.filter(esGanado);
@@ -32,7 +32,7 @@ export const Deals = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) => {
       
       <div style={{ display: "flex", gap: 16, marginBottom: 24, flexWrap: "wrap", maxWidth: 900 }}>
         <KPI label="Pipeline Seleccionado" value={money(total)} color={T.teal} icon="funnel" />
-        <KPI label="Total Ganado" value={money(ganados.reduce((s, d) => s + d.valor, 0))} color={T.green} sub={`${ganados.length} deals cerrados`} icon="trend" />
+        <KPI label="Total Ganado" value={money(ganados.reduce((s, d) => s + (d.valor || 0), 0))} color={T.green} sub={`${ganados.length} deals cerrados`} icon="trend" />
         <KPI label="Deals Pendientes" value={filtrados.filter(d => !esGanado(d)).length} color={T.amber} icon="clock" />
       </div>
 
@@ -55,9 +55,9 @@ export const Deals = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) => {
           <CabeceraTabla cols={["Deal", "Contacto", "Pipeline · Etapa", "Valor", "Probabilidad", "Cierre", "Responsable", ""]} />
           <tbody>
             {filtrados.map(deal => {
-              const contacto = db.contactos.find(c => c.id === deal.contactoId);
-              const pl = db.pipelines.find(p => p.id === deal.pipelineId);
-              const et = pl?.etapas.find(e => e.id === deal.etapaId);
+              const contacto = db.contactos.find(c => c.id === deal.contacto_id);
+              const pl = db.pipelines.find(p => p.id === deal.pipeline_id);
+              const et = pl?.etapas.find(e => e.id === deal.etapa_id);
               const pc = deal.prob >= 70 ? T.green : deal.prob >= 40 ? T.amber : T.red;
               return (
                 <FilaTabla key={deal.id}>
@@ -66,7 +66,7 @@ export const Deals = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) => {
                   <Celda><div style={{ fontSize: 11, color: T.whiteDim, fontWeight: 600, marginBottom: 6 }}>{pl?.nombre}</div>{et && <Chip label={et.nombre} color={et.color} />}</Celda>
                   <Celda style={{ fontWeight: 800, color: T.green, fontSize: 14 }}>{money(deal.valor)}</Celda>
                   <Celda><div style={{ display: "flex", gap: 8, alignItems: "center" }}><div style={{ width: 48 }}><Barra value={deal.prob} color={pc} h={6} /></div><span style={{ fontSize: 11, color: pc, fontWeight: 800 }}>{deal.prob}%</span></div></Celda>
-                  <Celda style={{ fontSize: 13, fontWeight: 500 }}>{fdate(deal.fechaCierre)}</Celda>
+                  <Celda style={{ fontSize: 13, fontWeight: 500 }}>{fdate(deal.fecha_cierre)}</Celda>
                   <Celda style={{ fontSize: 13, color: T.whiteDim }}>{deal.responsable}</Celda>
                   <Celda><Btn variant="fantasma" size="sm" onClick={() => eliminar(deal.id)}><Ico k="trash" size={14} style={{ color: T.red }} /></Btn></Celda>
                 </FilaTabla>

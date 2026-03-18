@@ -66,7 +66,7 @@ export const Automatizaciones = ({ db, setDb, t }) => {
       activo: true, stats: 47
     },
     {
-      id: "wf2", nombre: "New Form Lead → Task Router", pipelineId: "", nodos: [
+      id: "wf2", nombre: "New Form Lead → Task Router", pipeline_id: "", nodos: [
         { id: "n1", tipo: "trigger", ref: "form_submit", extra: "" },
         { id: "n2", tipo: "action", ref: "crear_tarea", extra: "Contacted prospect" },
         { id: "n3", tipo: "action", ref: "etiquetar", extra: "lead_web" },
@@ -190,8 +190,8 @@ export const Automatizaciones = ({ db, setDb, t }) => {
             <div style={{ display: "flex", alignItems: "center", gap: 8, background: "#111827", border: "1px solid #374151", borderRadius: 10, padding: "6px 12px" }}>
               <Ico k="funnel" size={14} style={{ color: T.teal, flexShrink: 0 }} />
               <span style={{ fontSize: 11, color: "#6B7280", fontWeight: 700, fontFamily: "monospace", whiteSpace: "nowrap" }}>{t ? t("Pipeline objetivo") : "Pipeline objetivo"}</span>
-              <select value={actual.pipelineId || ""} onChange={e => {
-                const nwfs = wfs.map(w => w.id === actual.id ? { ...w, pipelineId: e.target.value } : w);
+              <select value={actual.pipeline_id || ""} onChange={e => {
+                const nwfs = wfs.map(w => w.id === actual.id ? { ...w, pipeline_id: e.target.value } : w);
                 setWfs(nwfs); setDb(d => ({ ...d, automatizaciones: nwfs }));
               }} style={{ background: "transparent", color: T.teal, border: "none", outline: "none", fontFamily: "monospace", fontSize: 13, fontWeight: 700, cursor: "pointer", maxWidth: 160 }}>
                 <option value="">— {t ? t("Todos los Pipelines") : "Todos los Pipelines"} —</option>

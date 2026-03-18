@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { T } from "../theme";
 import { money, fdate, fdtm, ACT_CFG } from "../utils";
 import { Tarjeta, KPI, Chip, Ico, Btn, Modal, Vacio } from "../components/ui";
@@ -46,6 +46,15 @@ export const Dashboard = ({ db, t = s => s }) => {
     setWidgets(newWidgets);
     localStorage.setItem("crm_dashboard_widgets", JSON.stringify(newWidgets));
   };
+
+  // Sync pipeline filter when pipelines load
+  useEffect(() => {
+    if (!plFiltro && db.pipelines.length > 0) {
+      // Intentar buscar el primer pipeline que tenga algún deal
+      const withDeals = db.pipelines.find(p => db.deals.some(d => d.pipeline_id === p.id));
+      setPlFiltro(withDeals ? withDeals.id : db.pipelines[0].id);
+    }
+  }, [db.pipelines, plFiltro, db.deals]);
 
   const Widget = ({ id, title, icon, color, children, span = 1, height }) => {
     if (!widgets[id]) return null;
@@ -124,24 +133,33 @@ export const Dashboard = ({ db, t = s => s }) => {
     }
   };
 
-  const esGanado = d => db.pipelines.find(p => p.id === d.pipelineId)?.etapas.find(e => e.id === d.etapaId)?.esGanado;
-  const esPerdido = d => db.pipelines.find(p => p.id === d.pipelineId)?.etapas.find(e => e.id === d.etapaId)?.esPerdido;
+  const esGanado = d => {
+    const pl = db.pipelines.find(p => p.id == d.pipeline_id);
+    const et = pl?.etapas.find(e => e.id == d.etapa_id);
+    return et?.es_ganado;
+  };
+  const esPerdido = d => {
+    const pl = db.pipelines.find(p => p.id == d.pipeline_id);
+    const et = pl?.etapas.find(e => e.id == d.etapa_id);
+    return et?.es_perdido;
+  };
   const activos = userDeals.filter(d => !esGanado(d) && !esPerdido(d));
   const ganados = userDeals.filter(esGanado);
+  const sinAsignar = userDeals.filter(d => !d.pipeline_id);
   const conv = userDeals.length > 0 ? Math.round(ganados.length / userDeals.length * 100) : 0;
   const sinLeer = userEmails.filter(e => !e.leido && e.carpeta === "entrada").length;
   const actPend = userActs.filter(a => !a.hecho).length;
   const vencidas = userTasks.filter(t2 => t2.estado !== "completado" && t2.vencimiento && new Date(t2.vencimiento) < new Date()).length;
 
   // Pipeline funnel data for selected pipeline
-  const plSel = db.pipelines.find(p => p.id === plFiltro) || db.pipelines[0];
+  const plSel = db.pipelines.find(p => p.id == plFiltro) || db.pipelines[0];
   const totalPipeline = plSel?.etapas.reduce((s, e) => {
-    const v = userDeals.filter(d => d.pipelineId === plSel?.id && d.etapaId === e.id).reduce((ss, d) => ss + d.valor, 0);
+    const v = userDeals.filter(d => d.pipeline_id == plSel?.id && d.etapa_id == e.id).reduce((ss, d) => ss + d.valor, 0);
     return s + v;
   }, 0) || 1;
 
   const funnelData = (plSel?.etapas || []).map(e => {
-    const dealsEt = userDeals.filter(d => d.pipelineId === plSel?.id && d.etapaId === e.id);
+    const dealsEt = userDeals.filter(d => d.pipeline_id == plSel?.id && d.etapa_id == e.id);
     const valor = dealsEt.reduce((s, d) => s + d.valor, 0);
     return { name: e.nombre, color: e.color, deals: dealsEt.length, value: valor, pct: Math.max(10, Math.round((valor / totalPipeline) * 100)) };
   }).filter(e => e.deals > 0 || e.value > 0);
@@ -149,17 +167,26 @@ export const Dashboard = ({ db, t = s => s }) => {
   const trendData = useMemo(() => {
     const now = new Date();
     const res = [];
+    const ganadosSet = new Set(ganados.map(d => d.id));
+    
     for (let i = 5; i >= 0; i--) {
-      const past = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      res.push({ name: MONTHS[past.getMonth()], ingresos: Math.floor(Math.random() * 60000) + 15000 });
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const m = d.getMonth();
+      const y = d.getFullYear();
+      
+      const revenue = ganados.filter(g => {
+        const fc = new Date(g.fecha_cierre || g.creado);
+        return fc.getMonth() === m && fc.getFullYear() === y;
+      }).reduce((s, g) => s + (g.valor || 0), 0);
+      
+      res.push({ name: MONTHS[m], ingresos: revenue });
     }
-    res[5].ingresos += ganados.reduce((s, d) => s + d.valor, 0);
     return res;
   }, [ganados]);
 
   const conversiones = [
-    { name: "Leads", value: userDeals.length + 20, fill: "#1F2937" },
-    { name: "Activos", value: activos.length + 10, fill: "#374151" },
+    { name: "Leads", value: db.contactos.filter(c => c.estado === "lead").length, fill: "#1F2937" },
+    { name: "Activos", value: activos.length, fill: "#374151" },
     { name: "Ganados", value: ganados.length, fill: T.teal },
   ];
 
