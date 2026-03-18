@@ -62,11 +62,12 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) => {
   };
 
   const handleSync = async () => {
-    const acc = db.email_accounts?.[0];
+    const acc = db.email_accounts?.find(a => a.active);
     if (!acc) return;
     try {
       const API_URL = `http://${window.location.hostname}:3001`;
       await axios.post(`${API_URL}/api/email/sync`, { accountId: acc.id });
+      alert("✅ Sincronización completada.");
     } catch (e) {
       console.error("Sync error", e);
     }
@@ -115,11 +116,11 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) => {
         })}
 
         <div style={{ marginTop: "auto", background: T.bg1, border: `1px solid ${T.borderHi}`, borderRadius: 10, padding: 16 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, color: db.cuentaEmail?.conectado ? T.green : T.amber }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, color: db.email_accounts?.some(a => a.active) ? T.green : T.amber }}>
             <div style={{ width: 8, height: 8, borderRadius: "50%", background: "currentColor", boxShadow: `0 0 10px currentColor` }} />
-            <span style={{ fontSize: 12, fontWeight: 800 }}>{db.cuentaEmail?.conectado ? "IMAP Conectado" : "Modo Simulación"}</span>
+            <span style={{ fontSize: 12, fontWeight: 800 }}>{db.email_accounts?.some(a => a.active) ? "Correo Conectado" : "Esperando Conexión"}</span>
           </div>
-          <div style={{ fontSize: 11, color: T.whiteDim }}>Sincronización en tiempo real activa vía {db.cuentaEmail?.proveedor || "SMTP Mock"}.</div>
+          <div style={{ fontSize: 11, color: T.whiteDim }}>{db.email_accounts?.some(a => a.active) ? "Sincronización en tiempo real activa vía OAuth." : "Debes conectar tu cuenta en Configuración."}</div>
         </div>
       </div>
 

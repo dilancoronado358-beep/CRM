@@ -111,6 +111,15 @@ export const Calendario = ({ db }) => {
               <button onClick={prevMonth} style={{ padding: "6px 12px", border: "none", background: "transparent", cursor: "pointer", borderRight: `1px solid ${T.borderHi}`, color: T.whiteOff }}><Ico k="menu" size={14} style={{ transform: "rotate(90deg)" }} /></button>
               <button onClick={nextMonth} style={{ padding: "6px 12px", border: "none", background: "transparent", cursor: "pointer", color: T.whiteOff }}><Ico k="menu" size={14} style={{ transform: "rotate(-90deg)" }} /></button>
             </div>
+            <Btn variant="secundario" onClick={async () => {
+              const acc = db.email_accounts?.find(a => a.active);
+              if (!acc) return alert("Conecta tu cuenta en Configuración primero.");
+              try {
+                const API_URL = `http://${window.location.hostname}:3001`;
+                await axios.post(`${API_URL}/api/email/sync`, { accountId: acc.id });
+                alert("✅ Calendario y Correo sincronizados.");
+              } catch (e) { alert("Error al sincronizar: " + e.message); }
+            }}><Ico k="refresh" size={14} /> Sincronizar</Btn>
             <Btn><Ico k="plus" size={14} />Nueva Cita</Btn>
           </div>
         }

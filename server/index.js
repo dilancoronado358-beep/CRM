@@ -895,22 +895,85 @@ whatsappClient.initialize();
    PHASE 43: EMAIL BRIDGE (IMAP & SMTP)
    ═══════════════════════════════════════════ */
 
-// Sincronizar correos vía IMAP
-async function syncEmails(accountId) {
+// Función para refrescar tokens de Google/Microsoft
+async function refreshAccessToken(accountId) {
   try {
     const { data: acc, error } = await supabase.from('email_accounts').select('*').eq('id', accountId).single();
+    if (error || !acc || !acc.refresh_token) return null;
+
+    console.log(`🔄 Refrescando token para ${acc.email} (${acc.provider})...`);
+    let url = "";
+    let body = {};
+
+    if (acc.provider === 'google') {
+      url = "https://oauth2.googleapis.com/token";
+      body = {
+        client_id: process.env.GOOGLE_CLIENT_ID,
+        client_secret: process.env.GOOGLE_CLIENT_SECRET,
+        refresh_token: acc.refresh_token,
+        grant_type: 'refresh_token'
+      };
+    } else if (acc.provider === 'azure') {
+      url = `https://login.microsoftonline.com/common/oauth2/v2.0/token`;
+      body = {
+        client_id: process.env.AZURE_CLIENT_ID,
+        client_secret: process.env.AZURE_CLIENT_SECRET,
+        refresh_token: acc.refresh_token,
+        grant_type: 'refresh_token',
+        scope: 'offline_access Mail.Read Calendars.Read'
+      };
+    }
+
+    const res = await axios.post(url, new URLSearchParams(body));
+    const { access_token, expires_in } = res.data;
+
+    const updates = {
+      access_token,
+      expires_at: new Date(Date.now() + (expires_in * 1000)).toISOString()
+    };
+    await supabase.from('email_accounts').update(updates).eq('id', accountId);
+    return access_token;
+  } catch (e) {
+    console.error(`❌ Error refrescando token:`, e.response?.data || e.message);
+    return null;
+  }
+}
+
+// Sincronizar correos vía IMAP (Soporta XOAUTH2)
+async function syncEmails(accountId) {
+  try {
+    let { data: acc, error } = await supabase.from('email_accounts').select('*').eq('id', accountId).single();
     if (error || !acc) return { error: "Cuenta no encontrada" };
+
+    // Fallback de org_id si no existe en la cuenta (para cuentas viejas)
+    if (!acc.org_id && acc.user_id) {
+      const { data: u } = await supabase.from('usuariosApp').select('org_id').eq('id', acc.user_id).single();
+      if (u) acc.org_id = u.org_id;
+    }
+
+    // Validar expiración si es OAuth
+    let token = acc.access_token;
+    if (acc.access_token && acc.expires_at && new Date(acc.expires_at) <= new Date()) {
+      token = await refreshAccessToken(accountId);
+      if (!token) return { error: "No se pudo refrescar el token de acceso." };
+    }
 
     const config = {
       imap: {
         user: acc.email,
-        password: acc.password_hash,
-        host: acc.imap_host,
-        port: acc.imap_port,
+        host: acc.imap_host || (acc.provider === 'google' ? 'imap.gmail.com' : 'outlook.office365.com'),
+        port: acc.imap_port || 993,
         tls: true,
-        authTimeout: 3000
+        authTimeout: 5000
       }
     };
+
+    if (token) {
+      // Formato XOAUTH2 para node-imap
+      config.imap.xoauth2 = Buffer.from(`user=${acc.email}\x01auth=Bearer ${token}\x01\x01`).toString('base64');
+    } else {
+      config.imap.password = acc.password_hash;
+    }
 
     const connection = await imaps.connect(config);
     await connection.openBox('INBOX');
@@ -939,6 +1002,8 @@ async function syncEmails(accountId) {
       await supabase.from('emails').upsert({
         id: "em_" + Date.now() + "_" + msgId,
         account_id: accountId,
+        user_id: acc.user_id, // INCLUIR USER_ID PARA VISIBILIDAD
+        org_id: acc.org_id, // INCLUIR ORG_ID PARA VISIBILIDAD
         carpeta: 'entrada',
         de: fromEmail,
         para: acc.email,
@@ -962,6 +1027,69 @@ async function syncEmails(accountId) {
   }
 }
 
+// Sincronizar Calendario (Google / Microsoft)
+async function syncCalendar(accountId) {
+  try {
+    let { data: acc, error } = await supabase.from('email_accounts').select('*').eq('id', accountId).single();
+    if (error || !acc || !acc.access_token || !acc.sync_calendar) return;
+
+    // Fallback de org_id si no existe en la cuenta (para cuentas viejas)
+    if (!acc.org_id && acc.user_id) {
+      const { data: u } = await supabase.from('usuariosApp').select('org_id').eq('id', acc.user_id).single();
+      if (u) acc.org_id = u.org_id;
+    }
+
+    // Validar expiración
+    let token = acc.access_token;
+    if (acc.expires_at && new Date(acc.expires_at) <= new Date()) {
+      token = await refreshAccessToken(accountId);
+      if (!token) return;
+    }
+
+    console.log(`📅 [Calendar] Sincronizando eventos para ${acc.email}...`);
+    let events = [];
+
+    if (acc.provider === 'google') {
+      const res = await axios.get("https://www.googleapis.com/calendar/v3/calendars/primary/events", {
+        headers: { Authorization: `Bearer ${token}` },
+        params: { timeMin: new Date().toISOString(), maxResults: 10, singleEvents: true, orderBy: 'startTime' }
+      });
+      events = (res.data.items || []).map(e => ({
+        id: "cal_g_" + e.id,
+        titulo: e.summary || "(Sin título)",
+        descripcion: e.description || "",
+        vencimiento: (e.start.dateTime || e.start.date).split('T')[0],
+        estado: 'pendiente'
+      }));
+    } else if (acc.provider === 'azure') {
+      const res = await axios.get("https://graph.microsoft.com/v1.0/me/events", {
+        headers: { Authorization: `Bearer ${token}` },
+        params: { $top: 10, $select: 'subject,bodyPreview,start,id' }
+      });
+      events = (res.data.value || []).map(e => ({
+        id: "cal_m_" + e.id,
+        titulo: e.subject || "(Sin título)",
+        descripcion: e.bodyPreview || "",
+        vencimiento: e.start.dateTime.split('T')[0],
+        estado: 'pendiente'
+      }));
+    }
+
+    for (const ev of events) {
+      await supabase.from('tareas').upsert({
+        ...ev,
+        user_id: acc.user_id,
+        org_id: acc.org_id, // INCLUIR ORG_ID PARA VISIBILIDAD
+        prioridad: 'media',
+        asignado: 'Sincronizado'
+      }, { onConflict: 'id' });
+    }
+    console.log(`✅ [Calendar] ${events.length} eventos sincronizados.`);
+  } catch (e) {
+    console.error("❌ [Calendar Error]:", e.response?.data || e.message);
+  }
+}
+
 // Endpoints Email
 app.post('/api/email/send', async (req, res) => {
   const { accountId, to, subject, body, html } = req.body;
@@ -969,12 +1097,28 @@ app.post('/api/email/send', async (req, res) => {
     const { data: acc, error } = await supabase.from('email_accounts').select('*').eq('id', accountId).single();
     if (error || !acc) throw new Error("Cuenta no configurada");
 
-    const transporter = nodemailer.createTransport({
-      host: acc.smtp_host,
-      port: acc.smtp_port,
-      secure: acc.smtp_port === 465,
-      auth: { user: acc.email, pass: acc.password_hash }
-    });
+    let transporterConfig = {
+      host: acc.smtp_host || (acc.provider === 'google' ? 'smtp.gmail.com' : 'smtp.office365.com'),
+      port: acc.smtp_port || (acc.provider === 'google' ? 465 : 587),
+      secure: acc.smtp_port === 465 || acc.provider === 'google',
+    };
+
+    if (acc.access_token) {
+      // Validar expiración antes de enviar
+      let token = acc.access_token;
+      if (acc.expires_at && new Date(acc.expires_at) <= new Date()) {
+        token = await refreshAccessToken(accountId);
+      }
+      transporterConfig.auth = {
+        type: 'OAuth2',
+        user: acc.email,
+        accessToken: token
+      };
+    } else {
+      transporterConfig.auth = { user: acc.email, pass: acc.password_hash };
+    }
+
+    const transporter = nodemailer.createTransport(transporterConfig);
 
     const info = await transporter.sendMail({
       from: `"${acc.email}" <${acc.email}>`,
@@ -1006,6 +1150,7 @@ app.post('/api/email/send', async (req, res) => {
 app.post('/api/email/sync', async (req, res) => {
   const { accountId } = req.body;
   const result = await syncEmails(accountId);
+  await syncCalendar(accountId); // Sincronizar también calendario
   if (result.error) return res.status(500).json(result);
   res.json(result);
 });
@@ -1053,9 +1198,12 @@ app.post('/api/email/test-connection', async (req, res) => {
 
 // Sync automático cada 10 minutos
 setInterval(async () => {
-    const { data: accounts } = await supabase.from('email_accounts').select('id').eq('active', true);
+    const { data: accounts } = await supabase.from('email_accounts').select('id, sync_calendar').eq('active', true);
     if (accounts) {
-        for (const acc of accounts) syncEmails(acc.id);
+        for (const acc of accounts) {
+            syncEmails(acc.id);
+            if (acc.sync_calendar) syncCalendar(acc.id);
+        }
     }
 }, 10 * 60 * 1000);
 

@@ -79,6 +79,7 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
   };
   const [cargandoApi, setCargandoApi] = useState(false);
   const [cargandoOrg, setCargandoOrg] = useState(false);
+  const [showManualEmail, setShowManualEmail] = useState(false);
 
   // Efecto para escuchar eventos del WebSocket del Backend Local
   useEffect(() => {
@@ -143,6 +144,70 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
 
     socketRef.current.emit('get_whatsapp_status');
     alert(`Intentando conectar a: ${finalUrl}\n\nEspera unos segundos para que aparezca el QR.`);
+  };
+
+  // ── LÓGICA OAUTH EMAIL ──
+  useEffect(() => {
+    // Escuchar si regresamos de un OAuth login
+    const handleOAuthReturn = async () => {
+      const { data: { session } } = await sb.auth.getSession();
+      if (session?.provider_token) {
+        console.log("🧩 OAuth Token detectado:", session.provider_name);
+        
+        const accId = "acc_" + session.user.id + "_" + session.provider_name;
+        const payload = {
+          id: accId,
+          user_id: session.user.id,
+          email: session.user.email,
+          provider: session.provider_name,
+          access_token: session.provider_token,
+          refresh_token: session.provider_refresh_token,
+          expires_at: new Date(Date.now() + (session.expires_in * 1000)).toISOString(),
+          org_id: db.usuario?.org_id || session.user.user_metadata?.org_id,
+          active: true,
+          sync_calendar: true
+        };
+
+        const { error } = await guardarEnSupa("email_accounts", payload);
+        if (!error) {
+          setDb(d => ({ ...d, email_accounts: [payload] }));
+          alert(`✅ ¡${session.provider_name.toUpperCase()} conectado con éxito!`);
+          // Limpiar la URL de los tokens por seguridad
+          window.history.replaceState({}, document.title, window.location.pathname);
+        }
+      }
+    };
+
+    handleOAuthReturn();
+  }, []);
+
+  const handleConnectEmail = async (provider) => {
+    const { error } = await sb.auth.signInWithOAuth({
+      provider,
+      options: {
+        queryParams: {
+          access_type: 'offline',
+          prompt: 'consent',
+        },
+        scopes: provider === 'google' 
+          ? 'https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/userinfo.email' 
+          : 'Mail.Read Calendars.Read'
+      }
+    });
+    if (error) alert("Error al iniciar OAuth: " + error.message);
+  };
+
+  const syncEmails = async (accountId) => {
+    setProbandoEmail(true);
+    const API_URL = `http://${window.location.hostname}:3001`;
+    try {
+      const res = await axios.post(`${API_URL}/api/email/sync`, { accountId });
+      alert("✅ Sincronización finalizada: " + (res.data.count || 0) + " correos nuevos.");
+    } catch (e) {
+      alert("Error en el servidor de sync: " + e.message);
+    } finally {
+      setProbandoEmail(false);
+    }
   };
 
   const [conectando, setConectando] = useState(false);
@@ -392,15 +457,36 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
 
   // ── LÓGICA API & WEBHOOKS ──
   const rotateApiToken = async () => {
-    if (!confirm("⚠️ ¿Estás seguro de rotar el secreto? Las integraciones actuales dejarán de funcionar hasta que actualices el token.")) return;
-    setCargandoApi(true);
-    const newToken = "sk_dev_" + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-    const payload = { id: "global_config", api_token: newToken, creado: new Date().toISOString() };
+    const orgId = db.usuario?.org_id;
+    if (!orgId) return alert("Error: No se encontró organización vinculada a tu cuenta.");
 
-    await guardarEnSupa("api_settings", payload);
-    setDb(d => ({ ...d, api_settings: [payload] }));
-    setCargandoApi(false);
-    alert("¡Nuevo Token generado exitosamente! ✅");
+    if (!confirm("⚠️ ¿Deseas generar o rotar el secreto de API?")) return;
+    
+    setCargandoApi(true);
+    const newToken = "sk_dev_" + Math.random().toString(36).substring(2, 11) + Math.random().toString(36).substring(2, 11);
+    
+    const payload = { 
+      id: "api_cfg_" + orgId, 
+      api_token: newToken, 
+      org_id: orgId,
+      creado: new Date().toISOString() 
+    };
+
+    try {
+      const { error } = await guardarEnSupa("api_settings", payload);
+      if (error) {
+        alert("Error de Supabase: " + error.message);
+      } else {
+        // En lugar de setDb manual, dejamos que Supabase Realtime o el retorno de guardarEnSupa actualice db.api_settings
+        // pero para feedback inmediato lo forzamos localmente:
+        setDb(d => ({ ...d, api_settings: [payload] }));
+        alert("✅ Token generado exitosamente!");
+      }
+    } catch (e) {
+      alert("Error crítico: " + e.message);
+    } finally {
+      setCargandoApi(false);
+    }
   };
 
   const copiarToken = () => {
@@ -480,19 +566,22 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
     }
   };
 
+  const MASTER_ORG_ID = '00000000-0000-0000-0000-000000000001';
+  const esAdminGlobal = db.usuario?.org_id === MASTER_ORG_ID;
+
   const TABS = [
     { id: "perfil", label: "Mi Perfil", icon: "user" },
     { id: "apariencia", label: "Apariencia", icon: "star" },
     { id: "recordatorios", label: "Recordatorios", icon: "bell" },
-    { id: "empresa", label: "Infraestructura", icon: "building" },
+    esAdminGlobal && { id: "empresa", label: "Infraestructura", icon: "building" },
     { id: "usuarios", label: "Equipo & Accesos", icon: "users" },
-    { id: "organizaciones", label: "Organizaciones", icon: "grid" },
+    esAdminGlobal && { id: "organizaciones", label: "Organizaciones", icon: "grid" },
     { id: "email", label: "SMTP / IMAP", icon: "mail" },
     { id: "api", label: "API & Webhooks", icon: "code" },
     { id: "chatbots", label: "Chatbots", icon: "message" },
     { id: "security", label: "Seguridad", icon: "eye" },
-    { id: "avanzado", label: "Avanzado", icon: "cog" },
-  ];
+    esAdminGlobal && { id: "avanzado", label: "Avanzado", icon: "cog" },
+  ].filter(Boolean);
 
   return (
     <div style={{ display: "flex", gap: 32, alignItems: "flex-start", minHeight: "80vh" }}>
@@ -651,7 +740,7 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
           </Tarjeta>
         )}
 
-        {tab === "empresa" && (
+        {tab === "empresa" && esAdminGlobal && (
           <Tarjeta style={{ padding: 32 }}>
             <div style={{ fontSize: 20, fontWeight: 800, color: T.white, marginBottom: 24, display: "flex", alignItems: "center", gap: 10 }}><Ico k="building" size={24} style={{ color: T.teal }} /> Tenant & Infraestructura</div>
             <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
@@ -686,7 +775,7 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
         )}
 
         {/* ── ORGANIZACIONES (MULTI-TENANT) ── */}
-        {tab === "organizaciones" && (
+        {tab === "organizaciones" && esAdminGlobal && (
           <Tarjeta style={{ padding: 32 }}>
             <div style={{ fontSize: 20, fontWeight: 800, color: T.white, marginBottom: 8, display: "flex", alignItems: "center", gap: 10 }}><Ico k="grid" size={24} style={{ color: T.teal }} /> Gestión Multi-empresa</div>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
@@ -806,91 +895,98 @@ ALTER TABLE usuariosApp ADD COLUMN IF NOT EXISTS org_id UUID REFERENCES organiza
 
         {tab === "email" && (
           <Tarjeta style={{ padding: 32 }}>
-            <div style={{ fontSize: 20, fontWeight: 800, color: T.white, marginBottom: 8, display: "flex", alignItems: "center", gap: 10 }}><Ico k="mail" size={24} style={{ color: T.teal }} /> Exchange & SMTP/IMAP Tunnels</div>
-            <div style={{ fontSize: 14, color: T.whiteDim, marginBottom: 32 }}>Conecta tu correo corporativo para sincronizar bandeja de entrada y enviar mensajes directamente.</div>
+            <div style={{ fontSize: 20, fontWeight: 800, color: T.white, marginBottom: 8, display: "flex", alignItems: "center", gap: 10 }}><Ico k="mail" size={24} style={{ color: T.teal }} /> Conexión de Correo & Calendario</div>
+            <div style={{ fontSize: 14, color: T.whiteDim, marginBottom: 32 }}>Sincroniza tus mensajes y citas con un solo clic. Sin configuraciones técnicas complicadas.</div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
-                <Campo label="Proveedor">
-                  <Sel
-                    value={fEmail.provider}
-                    onChange={e => {
-                      const p = e.target.value;
-                      let update = { ...fEmail, provider: p };
-                      if (p === 'gmail') {
-                        update.smtp_host = 'smtp.gmail.com';
-                        update.smtp_port = 465;
-                        update.imap_host = 'imap.gmail.com';
-                        update.imap_port = 993;
-                      } else if (p === 'outlook') {
-                        update.smtp_host = 'smtp.office365.com';
-                        update.smtp_port = 587;
-                        update.imap_host = 'outlook.office365.com';
-                        update.imap_port = 993;
-                      }
-                      setFEmail(update);
-                    }}
-                    style={{ fontSize: 15 }}
-                  >
-                    <option value="custom">Enterprise Exchange (Custom)</option>
-                    <option value="gmail">Gmail (App Password)</option>
-                    <option value="outlook">Outlook / Microsoft 365</option>
-                  </Sel>
-                </Campo>
-                <Campo label="Tu correo electrónico"><Inp value={fEmail.email} onChange={e => setFEmail({ ...fEmail, email: e.target.value })} placeholder="ej: ventas@tuempresa.com" /></Campo>
+            {db.email_accounts?.filter(a => a.active)?.length > 0 ? (
+              // VISTA DE CUENTA CONECTADA
+              <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+                {db.email_accounts.filter(a => a.active).map(acc => (
+                  <div key={acc.id} style={{ display: "flex", background: T.bg2, borderRadius: 12, border: `1px solid ${T.tealSoft}`, overflow: "hidden" }}>
+                    <div style={{ width: 80, background: T.teal + "15", display: "flex", alignItems: "center", justifyContent: "center", borderRight: `1px solid ${T.borderHi}` }}>
+                      <Ico k={acc.provider === 'gmail' ? 'mail' : acc.provider === 'outlook' ? 'mail' : 'mail'} size={32} style={{ color: T.teal }} />
+                    </div>
+                    <div style={{ flex: 1, padding: 20, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <div>
+                        <div style={{ fontSize: 16, fontWeight: 800, color: T.white }}>{acc.email}</div>
+                        <div style={{ fontSize: 12, color: T.whiteDim, marginTop: 4 }}>
+                          <span style={{ color: T.green }}>● Conectado mediante {acc.provider || 'OAuth'}</span>
+                          <span style={{ margin: "0 8px" }}>|</span>
+                          Última sincronización: {acc.last_sync ? fdtm(acc.last_sync) : 'Pendiente'}
+                        </div>
+                        <div style={{ display: "flex", gap: 12, marginTop: 12 }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: T.whiteOff }}>
+                            <input type="checkbox" checked={acc.sync_calendar} onChange={() => {
+                              const updated = { ...acc, sync_calendar: !acc.sync_calendar };
+                              guardarEnSupa("email_accounts", updated);
+                            }} /> Sincronizar Calendario
+                          </div>
+                        </div>
+                      </div>
+                      <div style={{ display: "flex", gap: 10 }}>
+                        <Btn variant="secundario" size="sm" onClick={() => syncEmails(acc.id)} disabled={probandoEmail}>
+                          <Ico k="refresh" size={14} className={probandoEmail ? "spin" : ""} /> {probandoEmail ? "Syncing..." : "Sync Now"}
+                        </Btn>
+                        <Btn variant="fantasma" size="sm" style={{ color: T.red }} onClick={() => eliminarDeSupa("email_accounts", acc.id)}>
+                          <Ico k="trash" size={16} />
+                        </Btn>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                <Btn variant="secundario" onClick={() => setDb(d => ({ ...d, email_accounts: [] }))} style={{ alignSelf: "flex-start" }}>
+                  <Ico k="plus" size={14} /> Conectar otra cuenta
+                </Btn>
               </div>
+            ) : (
+              // VISTA DE SELECCION DE PROVEEDOR (NUEVA)
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+                {/* GMAIL */}
+                <div 
+                  onClick={() => handleConnectEmail('google')}
+                  style={{ cursor: "pointer", padding: 32, background: T.bg2, borderRadius: 16, border: `1px solid ${T.borderHi}`, textAlign: "center", transition: "all .2s", hover: { borderColor: T.teal } }}
+                >
+                  <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_Logo.svg" alt="Google" style={{ height: 40, marginBottom: 16 }} />
+                  <div style={{ fontSize: 18, fontWeight: 800, color: T.white }}>Gmail / Google Workspace</div>
+                  <div style={{ fontSize: 12, color: T.whiteDim, marginTop: 8 }}>Sincronización de Correo y Calendario</div>
+                </div>
 
-              <div style={{ padding: 24, background: T.bg2, borderRadius: 12, border: `1px solid ${T.borderHi}` }}>
-                <div style={{ fontSize: 16, fontWeight: 800, color: T.white, marginBottom: 20 }}>Configuración de Servidor</div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 20 }}>
-                  <Campo label="SMTP Host"><Inp value={fEmail.smtp_host} onChange={e => setFEmail({ ...fEmail, smtp_host: e.target.value })} /></Campo>
-                  <Campo label="SMTP Port"><Inp type="number" value={fEmail.smtp_port} onChange={e => setFEmail({ ...fEmail, smtp_port: parseInt(e.target.value) })} /></Campo>
-                  <Campo label="IMAP Host"><Inp value={fEmail.imap_host} onChange={e => setFEmail({ ...fEmail, imap_host: e.target.value })} /></Campo>
-                  <Campo label="IMAP Port"><Inp type="number" value={fEmail.imap_port} onChange={e => setFEmail({ ...fEmail, imap_port: parseInt(e.target.value) })} /></Campo>
-                  <Campo label="Password / App Token (Secret)"><Inp type="password" value={fEmail.password_hash} onChange={e => setFEmail({ ...fEmail, password_hash: e.target.value })} /></Campo>
+                {/* OUTLOOK */}
+                <div 
+                  onClick={() => handleConnectEmail('azure')}
+                  style={{ cursor: "pointer", padding: 32, background: T.bg2, borderRadius: 16, border: `1px solid ${T.borderHi}`, textAlign: "center", transition: "all .2s" }}
+                >
+                  <img src="https://upload.wikimedia.org/wikipedia/commons/4/44/Microsoft_logo.svg" alt="Outlook" style={{ height: 40, marginBottom: 16 }} />
+                  <div style={{ fontSize: 18, fontWeight: 800, color: T.white }}>Microsoft Outlook / Office 365</div>
+                  <div style={{ fontSize: 12, color: T.whiteDim, marginTop: 8 }}>Sincronización de Correo y Calendario</div>
+                </div>
+
+                <div 
+                  onClick={() => setShowManualEmail(true)}
+                  style={{ gridColumn: "span 2", cursor: "pointer", padding: 16, border: `1px dashed ${T.borderHi}`, borderRadius: 12, textAlign: "center", color: T.whiteDim, fontSize: 13 }}
+                >
+                  ¿Usas un servidor corporativo propio? <span style={{ color: T.teal, textDecoration: "underline" }}>Configurar SMTP/IMAP manualmente</span>
                 </div>
               </div>
+            )}
 
-              <div style={{ display: "flex", justifyContent: "flex-end", gap: 12 }}>
-                <Btn
-                  variant="secundario"
-                  disabled={probandoEmail}
-                  onClick={async () => {
-                    setProbandoEmail(true);
-                    const API_URL = `http://${window.location.hostname}:3001`;
-                    try {
-                      const res = await axios.post(`${API_URL}/api/email/test-connection`, fEmail);
-                      const { smtp, imap } = res.data;
-                      if (smtp.ok && imap.ok) {
-                        alert("✅ ¡Conexión exitosa! Tanto SMTP como IMAP funcionan.");
-                      } else {
-                        let msg = "⚠️ Problemas detectados:\n";
-                        if (!smtp.ok) msg += `- SMTP Falló: ${smtp.error}\n`;
-                        if (!imap.ok) msg += `- IMAP Falló: ${imap.error}\n`;
-                        alert(msg);
-                      }
-                    } catch (e) { alert("Error de red: " + e.message); }
-                    finally { setProbandoEmail(false); }
-                  }}
-                >
-                  {probandoEmail ? "Testing..." : <><Ico k="check" size={16} /> Test Connection</>}
-                </Btn>
-                <Btn variant="secundario" onClick={async () => {
-                  const API_URL = `http://${window.location.hostname}:3001`;
-                  try {
-                    const res = await axios.post(`${API_URL}/api/email/sync`, { accountId: fEmail.id || "acc_primary" });
-                    alert("Sincronización iniciada: " + (res.data.count || 0) + " correos nuevos.");
-                  } catch (e) { alert("Error al sincronizar: " + e.message); }
-                }}><Ico k="refresh" size={16} /> Sync Now</Btn>
-                <Btn onClick={async () => {
-                  const id = fEmail.id || "acc_primary";
-                  const data = { ...fEmail, id, user_id: db.usuario?.id };
-                  await guardarEnSupa("email_accounts", data);
-                  setDb(d => ({ ...d, email_accounts: [data] }));
-                  alert("Configuración de correo guardada.");
-                }} style={{ background: T.teal, color: "#000" }}><Ico k="check" size={16} /> Save & Connect</Btn>
-              </div>
-            </div>
+            {/* MODAL MANUAL (PARA CASOS EXCEPCIONALES) */}
+            <Modal open={showManualEmail} onClose={() => setShowManualEmail(false)} title="Configuración SMTP/IMAP Avanzada">
+               <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+                    <Campo label="Host SMTP"><Inp value={fEmail.smtp_host} onChange={e => setFEmail({...fEmail, smtp_host: e.target.value})} /></Campo>
+                    <Campo label="Puerto SMTP"><Inp value={fEmail.smtp_port} onChange={e => setFEmail({...fEmail, smtp_port: e.target.value})} /></Campo>
+                    <Campo label="Host IMAP"><Inp value={fEmail.imap_host} onChange={e => setFEmail({...fEmail, imap_host: e.target.value})} /></Campo>
+                    <Campo label="Puerto IMAP"><Inp value={fEmail.imap_port} onChange={e => setFEmail({...fEmail, imap_port: e.target.value})} /></Campo>
+                  </div>
+                  <Campo label="Email"><Inp value={fEmail.email} onChange={e => setFEmail({...fEmail, email: e.target.value})} /></Campo>
+                  <Campo label="Contraseña/App Token"><Inp type="password" value={fEmail.password_hash} onChange={e => setFEmail({...fEmail, password_hash: e.target.value})} /></Campo>
+                  <Btn onClick={async () => {
+                    await guardarEnSupa("email_accounts", {...fEmail, id: "acc_" + Date.now(), provider: 'custom'});
+                    setShowManualEmail(false);
+                  }} full>Guardar Configuración</Btn>
+               </div>
+            </Modal>
           </Tarjeta>
         )}
 
@@ -1130,7 +1226,7 @@ ALTER TABLE usuariosApp ADD COLUMN IF NOT EXISTS org_id UUID REFERENCES organiza
           </Tarjeta>
         )}
 
-        {tab === "avanzado" && (
+        {tab === "avanzado" && esAdminGlobal && (
           <Tarjeta style={{ padding: 32, background: T.red + "05", borderColor: T.red + "30" }}>
             <div style={{ fontSize: 20, fontWeight: 800, color: T.red, marginBottom: 12, display: "flex", alignItems: "center", gap: 10 }}><Ico k="cog" size={24} /> Database Local / Wipe Data (Root Mode)</div>
             <div style={{ fontSize: 14, color: T.whiteOff, marginBottom: 24, lineHeight: 1.6 }}>Precaución Severa: Esta acción purgará todo el árbol de IndexedDB/localStorage de este nodo de origen. Elimina deals, logs de auditoría, pipelines y credenciales inyectadas, forzando un resync forzoso o dejándolo en blando si Supabase está truncado.</div>
