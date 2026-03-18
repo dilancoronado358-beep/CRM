@@ -64,7 +64,7 @@ export function LeadTimeline({ deal = {}, contacto = {}, db = {}, setDb, guardar
     setLoading(true);
     let entries = [];
 
-    // 1. Nota del Deal
+    // 1. Nota del Deal / Comentarios
     if (deal?.notas) {
       entries.push({
         type: "note",
@@ -75,13 +75,24 @@ export function LeadTimeline({ deal = {}, contacto = {}, db = {}, setDb, guardar
       });
     }
 
-    // 2. WhatsApps (Supabase)
+    // 2. Evento de Creación
+    if (deal?.creado) {
+       entries.push({
+         type: "event",
+         id: "spawn_" + deal.id,
+         body: `Oportunidad creada por ${deal.responsable || 'Sistema'}`,
+         timestamp: new Date(deal.creado).getTime() / 1000,
+         icon: "plus",
+         color: T.teal
+       });
+    }
+
+    // 3. WhatsApps (Supabase)
     if (cleanPhone || deal?.id) {
       try {
         let waData = [];
         let waError = null;
 
-        // Attempt 1: Use chat_id (preferred snake_case)
         try {
           let q1 = sb.from('whatsapp_messages').select('*');
           if (deal?.id && cleanPhone) {
@@ -98,23 +109,17 @@ export function LeadTimeline({ deal = {}, contacto = {}, db = {}, setDb, guardar
           waError = error;
         } catch (e) {
           console.warn("Error en la primera consulta WA (chat_id):", e);
-          waError = { message: e.message }; // Treat network/other errors as if chat_id failed
+          waError = { message: e.message };
         }
 
-        // Fallback if chat_id column doesn't exist or query failed
         if (waError && (waError.message.includes("column \"chat_id\" does not exist") || waError.message.includes("chat_id"))) {
-          console.error("Error Supabase WA (chat_id no existe o falló), intentando con chatid:", waError.message);
           let q2 = sb.from('whatsapp_messages').select('*');
           if (deal?.id && cleanPhone) q2 = q2.or(`deal_id.eq.${deal.id},chatid.ilike.%${cleanPhone}%`);
           else if (deal?.id) q2 = q2.eq('deal_id', deal.id);
           else if (cleanPhone) q2 = q2.ilike('chatid', `%${cleanPhone}%`);
-          else q2 = q2.eq('id', 'impossible-match'); // Should not happen if cleanPhone or deal?.id is true
+          else q2 = q2.eq('id', 'impossible-match');
           const { data: waData2, error: waError2 } = await q2.order('timestamp', { ascending: false }).limit(50);
-          if (waError2) {
-            console.error("Error Supabase WA (chatid):", waError2.message);
-          } else if (waData2) {
-            waData = waData2;
-          }
+          if (!waError2 && waData2) waData = waData2;
         }
 
         if (waData) {
@@ -134,18 +139,20 @@ export function LeadTimeline({ deal = {}, contacto = {}, db = {}, setDb, guardar
       } catch (e) { console.warn("Error cargar Timeline WA:", e); }
     }
 
-    // 3. Auditoría (Fase 41)
+    // 4. Auditoría (Cambios de Etapa y otros)
     (db.auditoria || []).filter(a => a.entidad_id === deal?.id || (contacto?.id && a.entidad_id === contacto.id)).forEach(a => {
+      const isStage = a.campo?.toLowerCase().includes("etapa");
       entries.push({
-        type: "audit",
+        type: isStage ? "stage" : "audit",
         id: a.id,
-        body: `${a.usuario_nombre} cambió ${a.campo} de "${a.valor_anterior || 'vacío'}" a "${a.valor_nuevo}"`,
+        body: isStage ? `Movido de ${a.valor_anterior || 'Inicio'} a ${a.valor_nuevo}` : `${a.usuario_nombre} cambió ${a.campo} de "${a.valor_anterior || 'vacío'}" a "${a.valor_nuevo}"`,
         timestamp: new Date(a.creado).getTime() / 1000,
-        user: a.usuario_nombre
+        user: a.usuario_nombre,
+        color: isStage ? T.purple : T.whiteDim
       });
     });
 
-    // 4. Tareas (usamos las del DB GLOBAL para el timeline)
+    // 5. Tareas
     globalTasks.forEach(t => {
       entries.push({
         type: "task",
@@ -155,6 +162,18 @@ export function LeadTimeline({ deal = {}, contacto = {}, db = {}, setDb, guardar
         deadline: t.vencimiento,
         status: t.estado,
         priority: t.prioridad
+      });
+    });
+
+    // 6. Actividades Custom (Fase 43)
+    (db.actividades || []).filter(a => a.deal_id === deal.id).forEach(a => {
+      entries.push({
+        type: "activity",
+        id: a.id,
+        body: a.descripcion || a.tipo,
+        timestamp: new Date(a.fecha || a.creado).getTime() / 1000,
+        icon: a.tipo === "llamada" ? "phone" : a.tipo === "reunion" ? "users" : "note",
+        color: T.teal
       });
     });
 
@@ -314,7 +333,7 @@ export function LeadTimeline({ deal = {}, contacto = {}, db = {}, setDb, guardar
   }, [filteredItems]);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100%", background: "#f0f3f5", borderRadius: 12, overflow: "hidden", position: "relative" }}>
+    <div style={{ display: "flex", flexDirection: "column", height: "100%", background: T.bg1, borderLeft: `1px solid ${T.borderHi}`, position: "relative", overflow: "hidden" }}>
 
       {/* PREVIEW MODAL OVERLAY */}
       {previewFile && (
@@ -359,7 +378,7 @@ export function LeadTimeline({ deal = {}, contacto = {}, db = {}, setDb, guardar
       )}
 
       {/* HEADER COMPOSER */}
-      <div style={{ padding: "0 20px", borderBottom: `1px solid #d4dde1`, background: "#fff", flexShrink: 0 }}>
+      <div style={{ padding: "0 20px", borderBottom: `1px solid ${T.borderHi}`, background: T.bg1, flexShrink: 0 }}>
         <div style={{ display: "flex", gap: 24 }}>
           {["Comentario", "WhatsApp", "Tarea"].map(t => (
             <button key={t}
@@ -382,11 +401,11 @@ export function LeadTimeline({ deal = {}, contacto = {}, db = {}, setDb, guardar
 
       {/* COMPOSER TOP SOLO PARA COMENTARIOS O TAREAS */}
       {composerTab !== "WhatsApp" && (
-        <div style={{ padding: "16px 20px", background: "#f9fafb", flexShrink: 0 }}>
+        <div style={{ padding: "16px 20px", background: T.bg2, flexShrink: 0, borderBottom: `1px solid ${T.borderHi}` }}>
           {composerTab === "Comentario" && (
             <div>
-              <textarea value={comentario} onChange={e => setComentario(e.target.value)} placeholder="Deja un comentario..." style={{ width: "100%", background: "#fff", border: `1px solid #c6d2d6`, borderRadius: 4, padding: "12px 16px", fontSize: 14, minHeight: 60, outline: "none", resize: "none" }} />
-              <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 8 }}><Btn onClick={handleAddComment} disabled={!comentario.trim()} size="sm" style={{ background: "#7fb700", color: "#fff" }}>ENVIAR</Btn></div>
+              <textarea value={comentario} onChange={e => setComentario(e.target.value)} placeholder="Deja un comentario..." style={{ width: "100%", background: T.bg1, border: `1px solid ${T.borderHi}`, borderRadius: 10, padding: "12px 16px", fontSize: 14, minHeight: 60, outline: "none", resize: "none", color: T.white }} />
+              <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 10 }}><Btn onClick={handleAddComment} disabled={!comentario.trim()} size="sm" style={{ background: T.teal, color: "#000" }}>PUBLICAR</Btn></div>
             </div>
           )}
           {composerTab === "Tarea" && (
@@ -403,8 +422,8 @@ export function LeadTimeline({ deal = {}, contacto = {}, db = {}, setDb, guardar
       )}
 
       {/* SCROLL AREA */}
-      <div ref={scrollRef} style={{ flex: 1, overflowY: "auto", padding: composerTab === "WhatsApp" ? "20px" : "0 20px 40px", position: "relative", backgroundImage: composerTab === "WhatsApp" ? `radial-gradient(#d4dde1 1px, transparent 1px)` : "none", backgroundSize: "20px 20px" }}>
-        {filtro !== "whatsapp" && <div style={{ position: "absolute", left: 35, top: 0, bottom: 0, width: 2, background: "#d4dde1" }} />}
+      <div ref={scrollRef} style={{ flex: 1, overflowY: "auto", padding: composerTab === "WhatsApp" ? "20px" : "0 20px 40px", position: "relative" }}>
+        {filtro !== "whatsapp" && <div style={{ position: "absolute", left: 47, top: 0, bottom: 0, width: 2, background: T.borderHi, zIndex: 1, opacity: 0.5 }} />}
 
         {/* PENDING TASKS (Solo en TODOS) */}
         {filtro === "all" && pendingTasks.length > 0 && (
@@ -424,25 +443,80 @@ export function LeadTimeline({ deal = {}, contacto = {}, db = {}, setDb, guardar
 
         {/* FEED VISTA CRONOLÓGICA GENERAL */}
         {composerTab !== "WhatsApp" && Object.entries(groupedItems).map(([day, dayItems]) => (
-          <div key={day} style={{ position: "relative", zIndex: 1 }}>
-            <div style={{ textAlign: "center", margin: "24px 0" }}><span style={{ background: "#fff", padding: "4px 12px", borderRadius: 20, fontSize: 11, color: "#99b2b9", border: "1px solid #d4dde1" }}>{day}</span></div>
+          <div key={day} style={{ position: "relative", zIndex: 1, paddingLeft: 20 }}>
+            <div style={{ margin: "24px 0 16px -10px", display: "flex", alignItems: "center", gap: 12 }}>
+              <div style={{ width: 10, height: 10, borderRadius: "50%", background: T.border, border: `3px solid ${T.bg1}`, zIndex: 2 }} />
+              <span style={{ fontSize: 11, fontWeight: 800, color: T.whiteDim, textTransform: "uppercase", letterSpacing: ".1em" }}>{day}</span>
+            </div>
             {dayItems.map((it, idx) => {
+              const colors = {
+                whatsapp: "#25D366",
+                note: T.teal,
+                audit: T.whiteDim,
+                task: T.amber,
+                stage: T.purple,
+                activity: T.teal,
+                event: T.teal
+              };
+              const iconMap = {
+                whatsapp: "phone",
+                note: "note",
+                audit: "history",
+                task: "check",
+                stage: "trend",
+                activity: it.icon || "lightning",
+                event: it.icon || "plus"
+              };
+
               return (
-                <div key={it.id + idx} style={{ display: "flex", gap: 16, marginBottom: 16 }}>
-                  <div style={{ width: 32, height: 32, borderRadius: "50%", background: it.type === "whatsapp" ? "#25D366" : it.type === "note" ? "#00bbd3" : it.type === "audit" ? T.teal : "#f4c63d", display: "flex", alignItems: "center", justifyContent: "center", border: "4px solid #f0f3f5", flexShrink: 0 }}>
-                    <Ico k={it.type === "whatsapp" ? "phone" : it.type === "note" ? "note" : it.type === "audit" ? "history" : "star"} size={14} style={{ color: "#fff" }} />
+                <div key={it.id + idx} style={{ display: "flex", gap: 20, marginBottom: 20, animation: "fadeIn .3s ease" }}>
+                  {/* ICON NODE */}
+                  <div style={{ 
+                    width: 36, height: 36, borderRadius: 10, 
+                    background: (colors[it.type] || T.teal) + "18", 
+                    color: colors[it.type] || T.teal, 
+                    display: "flex", alignItems: "center", justifyContent: "center", 
+                    border: `1px solid ${(colors[it.type] || T.teal)}30`, 
+                    flexShrink: 0, zIndex: 2,
+                    boxShadow: `0 4px 12px ${(colors[it.type] || T.teal)}15`,
+                    backdropFilter: "blur(4px)"
+                  }}>
+                    <Ico k={iconMap[it.type]} size={16} />
                   </div>
-                  <div style={{ flex: 1, background: "#fff", border: "1px solid #c6d2d6", borderRadius: 8, padding: 12 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                      <div style={{ fontSize: 11, fontWeight: 700, color: "#666", textTransform: "uppercase" }}>{it.type === "whatsapp" ? `WhatsApp (${it.fromMe ? 'Saliente' : 'Entrante'})` : it.type === "audit" ? "SISTEMA / CAMBIO" : it.type}</div>
-                      <div style={{ fontSize: 10, color: "#999" }}>{new Date((it.timestamp || 0) * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+
+                  {/* GLASS CARD */}
+                  <div style={{ 
+                    flex: 1, 
+                    background: "rgba(255,255,255,0.03)", 
+                    backdropFilter: "blur(12px)",
+                    border: `1px solid ${T.borderHi}`, 
+                    borderRadius: 14, 
+                    padding: "14px 18px",
+                    boxShadow: "0 4px 15px rgba(0,0,0,0.05)",
+                    transition: "all .2s"
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,255,255,0.06)"; e.currentTarget.style.transform = "translateX(4px)"; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = "rgba(255,255,255,0.03)"; e.currentTarget.style.transform = "none"; }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <span style={{ fontSize: 10, fontWeight: 900, color: colors[it.type], textTransform: "uppercase", letterSpacing: ".05em" }}>{it.type}</span>
+                        {it.user && <span style={{ fontSize: 10, color: T.whiteDim }}>• {it.user}</span>}
+                      </div>
+                      <div style={{ fontSize: 10, color: T.whiteDim, fontWeight: 600 }}>{new Date((it.timestamp || 0) * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
                     </div>
                     {it.hasMedia && it.file_name && (
-                      <div style={{ marginBottom: 4, padding: "6px 10px", background: "rgba(0,0,0,0.05)", borderRadius: 6, fontSize: 12, fontWeight: 700, display: "flex", alignItems: "center", gap: 6 }}>
-                        <Ico k="paperclip" size={14} /> {it.file_name}
+                      <div style={{ marginBottom: 8, padding: "8px 12px", background: "rgba(255,255,255,0.05)", borderRadius: 8, fontSize: 12, fontWeight: 700, display: "flex", alignItems: "center", gap: 8, border: `1px solid ${T.border}` }}>
+                        <Ico k="paperclip" size={14} style={{ color: T.teal }} /> {it.file_name}
                       </div>
                     )}
-                    <div style={{ fontSize: 13, color: "#333", whiteSpace: "pre-wrap" }}>{it.body || (it.hasMedia ? "📎 Archivo adjunto" : "")}</div>
+                    <div style={{ fontSize: 14, color: it.type === "stage" ? T.purple : T.whiteOff, whiteSpace: "pre-wrap", lineHeight: 1.5, fontWeight: it.type === "stage" ? 700 : 500 }}>
+                      {it.body || (it.hasMedia ? "📎 Archivo adjunto" : "")}
+                    </div>
+                    {it.type === "task" && it.deadline && (
+                      <div style={{ marginTop: 10, fontSize: 11, color: T.whiteDim, display: "flex", alignItems: "center", gap: 6, background: T.bg2, padding: "4px 10px", borderRadius: 6, border: `1px solid ${T.border}`, width: "fit-content" }}>
+                        <Ico k="calendar" size={12} /> Límite: {it.deadline} {it.priority && <span style={{ color: it.priority === 'alta' ? T.red : T.teal }}>• {it.priority.toUpperCase()}</span>}
+                      </div>
+                    )}
                   </div>
                 </div>
               );

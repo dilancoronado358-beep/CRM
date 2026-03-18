@@ -54,6 +54,22 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
     return Math.min(100, score);
   };
 
+  const getDealStatus = (deal) => {
+    const acts = (db.actividades || []).filter(a => a.deal_id === deal.id);
+    const tareas = (db.tareas || []).filter(t => t.deal_id === deal.id && t.estado !== "completada");
+    
+    const now = Date.now();
+    const lastAct = acts.length > 0 ? Math.max(...acts.map(a => new Date(a.fecha).getTime())) : new Date(deal.creado).getTime();
+    const diff = now - lastAct;
+
+    // TODO: Considerar mensajes de WhatsApp si estuvieran en db.whatsapp_messages
+    
+    if (diff <= 86400000) return { label: "Hot", color: "#FF4500", icon: "🔥", glow: "0 0 12px #FF450060", desc: "Actividad en las últimas 24h" };
+    if (diff <= 86400000 * 3) return { label: "Warm", color: T.amber, icon: "⚡", glow: "none", desc: "Actividad en los últimos 3 días" };
+    if (diff >= 86400000 * 5) return { label: "Cold", color: T.whiteDim, icon: "❄️", glow: "none", desc: "Sin actividad por más de 5 días", cold: true };
+    return { label: "Normal", color: T.green, icon: "🌱", glow: "none", desc: "Actividad regular" };
+  };
+
   const chequearComision = async (dealId, etapaId, valor) => {
     const pl = db.pipelines.find(p => p.id === plActivo);
     const etapa = pl?.etapas.find(e => e.id === etapaId);
@@ -946,22 +962,38 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
 
                     const isSelected = selectedIds.includes(deal.id);
 
+                    const dStat = getDealStatus(deal);
+
                     return (
                       <div key={deal.id} draggable onDragStart={() => setDragDeal(deal)}
-                        style={{ background: T.bg1, border: `1px solid ${isSelected ? T.teal : T.borderHi}`, borderLeft: `3px solid ${etapa.color}`, borderRadius: 8, padding: "11px 12px", cursor: "pointer", userSelect: "none", transition: "box-shadow .15s, transform .15s", position: "relative" }}
+                        style={{ 
+                          background: T.bg1, 
+                          border: `1px solid ${isSelected ? T.teal : T.borderHi}`, 
+                          borderLeft: `3px solid ${etapa.color}`, 
+                          borderRadius: 8, 
+                          padding: "11px 12px", 
+                          cursor: "pointer", 
+                          userSelect: "none", 
+                          transition: "all .2s cubic-bezier(0.4, 0, 0.2, 1)", 
+                          position: "relative",
+                          boxShadow: dStat.glow,
+                          filter: dStat.cold ? "grayscale(0.6) opacity(0.8)" : "none"
+                        }}
                         onClick={(e) => {
                           if (e.target.type === "checkbox") return;
                           setEditDeal(deal); setShowDealForm(true);
                         }}
                         onMouseEnter={e => { 
-                          e.currentTarget.style.boxShadow = `0 4px 18px rgba(0,0,0,0.18)`; 
-                          e.currentTarget.style.transform = "translateY(-1px)";
+                          e.currentTarget.style.boxShadow = dStat.glow !== "none" ? `0 8px 24px rgba(0,0,0,0.2), ${dStat.glow}` : `0 4px 18px rgba(0,0,0,0.18)`; 
+                          e.currentTarget.style.transform = "translateY(-2px)";
+                          e.currentTarget.style.filter = "none";
                           const actions = e.currentTarget.querySelector(".card-actions");
                           if (actions) actions.style.opacity = "1";
                         }}
                         onMouseLeave={e => { 
-                          e.currentTarget.style.boxShadow = "none"; 
+                          e.currentTarget.style.boxShadow = dStat.glow; 
                           e.currentTarget.style.transform = ""; 
+                          e.currentTarget.style.filter = dStat.cold ? "grayscale(0.6) opacity(0.8)" : "none";
                           const actions = e.currentTarget.querySelector(".card-actions");
                           if (actions) actions.style.opacity = "0";
                         }}>
@@ -979,18 +1011,10 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
                          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 8 }}>
                            <div style={{ fontSize: 13, fontWeight: 700, color: T.white, lineHeight: 1.35, flex: 1, display: "flex", alignItems: "center", gap: 6 }}>
                              {/* Indicador de Temperatura */}
-                             {(() => {
-                               const acts = (db.actividades || []).filter(a => a.deal_id === deal.id);
-                               const taskVencida = (db.tareas || []).some(t => t.deal_id === deal.id && t.estado !== "completada" && t.vencimiento && new Date(t.vencimiento) < new Date());
-                               if (acts.length === 0) return <div title="Sin actividad" style={{ width: 8, height: 8, borderRadius: "50%", background: T.red, boxShadow: `0 0 6px ${T.red}` }} />;
-                               const ultimaAct = Math.max(...acts.map(a => new Date(a.fecha).getTime()));
-                               const diff = Date.now() - ultimaAct;
-                               let color = T.green;
-                               let label = "Activo recientemente";
-                               if (taskVencida || diff > 86400000 * 3) { color = T.red; label = "Crítico: Sin contacto > 3 días o tarea vencida"; }
-                               else if (diff > 86400000) { color = T.amber; label = "Advertencia: Sin contacto > 24h"; }
-                               return <div title={label} style={{ width: 8, height: 8, borderRadius: "50%", background: color, boxShadow: `0 0 6px ${color}80`, flexShrink: 0 }} />;
-                             })()}
+                             <div title={dStat.desc} style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                               <div style={{ width: 8, height: 8, borderRadius: "50%", background: dStat.color, boxShadow: `0 0 6px ${dStat.color}80` }} />
+                               <span style={{ fontSize: 14 }}>{dStat.icon}</span>
+                             </div>
 
                              {deal.titulo}
 

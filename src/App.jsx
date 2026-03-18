@@ -47,7 +47,7 @@ import { ChatFacebook } from "./features/ChatFacebook";
 // ─────────────────────────────────────────────────────────────────────────────
 const DICT = {
   // ── Navegación principal ──────────────────────────────────────────────────
-  "Dashboard": { en: "Dashboard", ru: "Панель управления", fr: "Tableau de Bord" },
+  "Control Center": { en: "Control Center", ru: "Панель управления", fr: "Tableau de Bord" },
   "Pipeline (Kanban)": { en: "Pipeline", ru: "Воронка продаж", fr: "Pipeline" },
   "Deals / Oportunidades": { en: "Deals", ru: "Сделки", fr: "Opportunités" },
   "Directorio Contactos": { en: "Contacts", ru: "Контакты", fr: "Contacts" },
@@ -392,7 +392,7 @@ export default function App() {
   };
 
   const MODULOS = [
-    { id: "dashboard", label: t("Dashboard"), role: t("Ventas"), comp: Dashboard },
+    { id: "dashboard", label: t("Control Center"), role: t("Ventas"), comp: Dashboard },
     { id: "pipeline", label: t("Pipeline (Kanban)"), role: t("Ventas"), comp: Pipeline },
     { id: "deals", label: t("Deals / Oportunidades"), role: t("Ventas"), comp: Deals },
     { id: "contactos", label: t("Directorio Contactos"), role: t("Agenda"), comp: Contactos },

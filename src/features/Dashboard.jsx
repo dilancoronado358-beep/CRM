@@ -24,6 +24,56 @@ export const Dashboard = ({ db, t = s => s }) => {
   const [analisisIA, setAnalisisIA] = useState("");
   const [cargandoIA, setCargandoIA] = useState(false);
   const [verModalIA, setVerModalIA] = useState(false);
+  const [showConfig, setShowConfig] = useState(false);
+  
+  // Widget Visibility State (Default all true)
+  const [widgets, setWidgets] = useState(() => {
+    const saved = localStorage.getItem("crm_dashboard_widgets");
+    return saved ? JSON.parse(saved) : {
+      kpis: true,
+      funnel: true,
+      trend: true,
+      recentWins: true,
+      velocity: true,
+      topDeals: true,
+      activities: true,
+      ai: true
+    };
+  });
+
+  const toggleWidget = (id) => {
+    const newWidgets = { ...widgets, [id]: !widgets[id] };
+    setWidgets(newWidgets);
+    localStorage.setItem("crm_dashboard_widgets", JSON.stringify(newWidgets));
+  };
+
+  const Widget = ({ id, title, icon, color, children, span = 1, height }) => {
+    if (!widgets[id]) return null;
+    return (
+      <Tarjeta style={{ 
+        padding: 24, 
+        display: "flex", 
+        flexDirection: "column", 
+        gap: 16, 
+        gridColumn: `span ${span}`,
+        minHeight: height || "auto",
+        position: "relative",
+        animation: "fadeIn .4s ease"
+      }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div style={{ fontWeight: 800, fontSize: 16, color: T.white, display: "flex", alignItems: "center", gap: 10 }}>
+            <div style={{ width: 32, height: 32, borderRadius: 10, background: (color || T.teal) + "20", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <Ico k={icon} size={18} style={{ color: color || T.teal }} />
+            </div>
+            {title}
+          </div>
+        </div>
+        <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+          {children}
+        </div>
+      </Tarjeta>
+    );
+  };
 
   const isAdmin = db.usuario?.role === "admin";
   const userDeals = db.deals.filter(d => isAdmin || d.responsable === db.usuario?.name);
@@ -174,252 +224,220 @@ export const Dashboard = ({ db, t = s => s }) => {
   }, [ganados]);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-      {/* KPI Row */}
-      <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-        <KPI label={t("Pipeline Activo")} value={money(activos.reduce((s, d) => s + d.valor, 0))} sub={`${activos.length} oportunidades`} color={T.teal} icon="funnel" />
-        <KPI label={t("Total Ganado")} value={money(ganados.reduce((s, d) => s + d.valor, 0))} sub={`${ganados.length} deals cerrados`} color={T.green} icon="trend" />
-        <KPI label={t("Tasa de Conversión")} value={`${conv}%`} sub="total histórico" color={T.amber} icon="chart" />
-        <KPI label={t("Contactos")} value={userContacts.length} sub={`${userContacts.filter(c => c.estado === "lead").length} leads activos`} color={T.teal} icon="users" />
-        <KPI label={t("Actividades Pend.")} value={actPend} sub={`${vencidas} tareas vencidas`} color={vencidas > 0 ? T.red : T.teal} icon="lightning" />
-        <KPI label={t("Tiempo Resp. WA")} value={avgResponseTime} sub="promedio histórico" color={avgResponseTime === "N/A" ? T.whiteDim : T.teal} icon="phone" />
-
-        {/* PREMIUM AI INSIGHTS TRIGGER */}
-        <Tarjeta brillo style={{ flex: "1 0 300px", padding: 18, background: `linear-gradient(135deg, ${T.bg1}, ${T.bg2})`, border: `1px solid ${T.teal}40`, display: "flex", alignItems: "center", gap: 16 }}>
-          <div style={{ width: 44, height: 44, borderRadius: 12, background: `linear-gradient(45deg, ${T.teal}, #60A5FA)`, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: `0 4px 15px ${T.teal}40` }}>
-            <Ico k="lightning" size={24} style={{ color: "#FFF" }} />
-          </div>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: T.white }}>IA Sales Assistant</div>
-            <div style={{ fontSize: 11, color: T.whiteDim, marginTop: 2 }}>Análisis proactivo de tu pipeline</div>
-          </div>
-          <Btn variant="primario" size="sm" onClick={solicitarAnalisis} disabled={cargandoIA}>
-            {cargandoIA ? "Analizando..." : "Ver Insights"}
+    <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+      {/* Dashboard Toolbar */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+        <div>
+          <h1 style={{ margin: 0, fontSize: 24, fontWeight: 900, color: T.white }}>Control Center</h1>
+          <p style={{ margin: 0, fontSize: 13, color: T.whiteDim }}>{isAdmin ? "Vista Global de Operaciones" : `Panel Personal de ${db.usuario?.name}`}</p>
+        </div>
+        <div style={{ display: "flex", gap: 12 }}>
+          {db.pipelines.length > 1 && (
+            <select value={plFiltro} onChange={e => setPlFiltro(e.target.value)}
+              style={{ background: T.bg2, color: T.teal, border: `1px solid ${T.borderHi}`, borderRadius: 10, padding: "8px 14px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", outline: "none" }}>
+              {db.pipelines.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
+            </select>
+          )}
+          <Btn variant="fantasma" onClick={() => setShowConfig(true)}>
+            <Ico k="edit" size={16} /> Personalizar
           </Btn>
-        </Tarjeta>
+        </div>
       </div>
 
-      {/* Charts Row 1: Funnel + Trend */}
-      <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: 20 }}>
+      {/* KPI Row */}
+      {widgets.kpis && (
+        <div style={{ display: "flex", gap: 12, flexWrap: "wrap", animation: "fadeIn .3s ease" }}>
+          <KPI label={t("Pipeline Activo")} value={money(activos.reduce((s, d) => s + d.valor, 0))} sub={`${activos.length} oportunidades`} color={T.teal} icon="funnel" />
+          <KPI label={t("Total Ganado")} value={money(ganados.reduce((s, d) => s + d.valor, 0))} sub={`${ganados.length} deals cerrados`} color={T.green} icon="trend" />
+          <KPI label={t("Tasa de Conversión")} value={`${conv}%`} sub="total histórico" color={T.amber} icon="chart" />
+          <KPI label={t("Contactos")} value={userContacts.length} sub={`${userContacts.filter(c => c.estado === "lead").length} leads activos`} color={T.teal} icon="users" />
+          <KPI label={t("Actividades Pend.")} value={actPend} sub={`${vencidas} tareas vencidas`} color={vencidas > 0 ? T.red : T.teal} icon="lightning" />
+          <KPI label={t("Tiempo Resp. WA")} value={avgResponseTime} sub="promedio histórico" color={avgResponseTime === "N/A" ? T.whiteDim : T.teal} icon="phone" />
+        </div>
+      )}
 
-        {/* Premium Funnel Chart */}
-        <Tarjeta style={{ padding: 24, display: "flex", flexDirection: "column", gap: 16 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <div>
-              <div style={{ fontWeight: 800, fontSize: 16, color: T.white, display: "flex", alignItems: "center", gap: 8 }}>
-                <Ico k="funnel" size={18} style={{ color: T.amber }} /> {t("Embudo de Ventas")}
+      {/* Main Grid Layout */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 20 }}>
+        
+        {/* WIDGET: AI INSIGHTS */}
+        <div style={{ gridColumn: "span 6", display: widgets.ai ? "block" : "none" }}>
+          <Tarjeta brillo style={{ padding: 20, background: `linear-gradient(135deg, ${T.bg1}, ${T.bg2})`, border: `1px solid ${T.teal}40`, display: "flex", alignItems: "center", gap: 20 }}>
+            <div style={{ position: "relative" }}>
+              <div style={{ width: 50, height: 50, borderRadius: 14, background: `linear-gradient(45deg, ${T.teal}, #6366F1)`, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: `0 8px 20px ${T.teal}40` }}>
+                <Ico k="lightning" size={28} style={{ color: "#FFF" }} />
               </div>
-              <div style={{ fontSize: 12, color: T.whiteDim, marginTop: 2 }}>{t("Revenue por etapa")} • {plSel?.nombre}</div>
+              <div style={{ position: "absolute", top: -4, right: -4, width: 12, height: 12, borderRadius: "50%", background: T.teal, border: `2px solid ${T.bg1}`, animation: "pulse 2s infinite" }} />
             </div>
-            {db.pipelines.length > 1 && (
-              <select value={plFiltro} onChange={e => setPlFiltro(e.target.value)}
-                style={{ background: T.bg2, color: T.teal, border: `1px solid ${T.borderHi}`, borderRadius: 8, padding: "6px 10px", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
-                {db.pipelines.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
-              </select>
-            )}
-          </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 16, fontWeight: 900, color: T.white }}>Sales Intelligence Pro</div>
+              <div style={{ fontSize: 13, color: T.whiteDim, marginTop: 2 }}>Tu asistente IA analizando el comportamiento de {userDeals.length} oportunidades en tiempo real.</div>
+            </div>
+            <div style={{ display: "flex", gap: 12 }}>
+              <Btn variant="primario" onClick={solicitarAnalisis} disabled={cargandoIA}>
+                {cargandoIA ? "Procesando..." : "Generar Insights Estratégicos"}
+              </Btn>
+            </div>
+          </Tarjeta>
+        </div>
 
+        {/* WIDGET: FUNNEL */}
+        <Widget id="funnel" span={4} title={t("Embudo de Ventas")} icon="funnel" color={T.amber}>
           {funnelData.length > 0 ? (
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               {funnelData.map((et, i) => {
                 const w = Math.max(30, et.pct);
                 return (
-                  <div key={i} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 2 }}>
+                  <div key={i} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <div style={{ width: 10, height: 10, borderRadius: "50%", background: et.color, boxShadow: `0 0 6px ${et.color}80` }} />
-                        <span style={{ fontSize: 13, fontWeight: 700, color: T.white }}>{et.name}</span>
-                        <span style={{ fontSize: 11, color: T.whiteDim, background: T.bg2, padding: "1px 7px", borderRadius: 10, border: `1px solid ${T.borderHi}` }}>{et.deals} deals</span>
+                        <div style={{ width: 10, height: 10, borderRadius: "2px", background: et.color, boxShadow: `0 0 8px ${et.color}60` }} />
+                        <span style={{ fontSize: 14, fontWeight: 700, color: T.white }}>{et.name}</span>
+                        <span style={{ fontSize: 11, color: T.whiteDim }}>{et.deals} deals</span>
                       </div>
-                      <span style={{ fontSize: 14, fontWeight: 800, color: et.color }}>{money(et.value)}</span>
+                      <span style={{ fontSize: 15, fontWeight: 900, color: et.color }}>{money(et.value)}</span>
                     </div>
-                    <div style={{ height: 28, background: T.bg2, borderRadius: 8, overflow: "hidden", position: "relative" }}>
+                    <div style={{ height: 32, background: T.bg2, borderRadius: 10, overflow: "hidden", position: "relative", border: `1px solid ${T.borderHi}` }}>
                       <div style={{
-                        height: "100%", width: `${w}%`, background: `linear-gradient(90deg, ${et.color}90, ${et.color})`,
-                        borderRadius: 8, transition: "width .8s cubic-bezier(0.34, 1.56, 0.64, 1)",
-                        boxShadow: `inset 0 0 10px ${et.color}30`,
-                        position: "relative", overflow: "hidden"
+                        height: "100%", width: `${w}%`, background: `linear-gradient(90deg, ${et.color}70, ${et.color})`,
+                        borderRadius: 10, transition: "width 1s cubic-bezier(0.34, 1.56, 0.64, 1)",
+                        position: "relative"
                       }}>
-                        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent)", animation: "shimmer 2s infinite" }} />
+                         <div style={{ position: "absolute", inset: 0, background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent)", animation: "shimmer 3s infinite" }} />
                       </div>
-                      <span style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", fontSize: 11, fontWeight: 700, color: T.whiteDim }}>{et.pct}%</span>
+                      <span style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", fontSize: 12, fontWeight: 900, color: T.whiteOff }}>{et.pct}%</span>
                     </div>
                   </div>
                 );
               })}
-              <style>{`@keyframes shimmer { 0%{transform:translateX(-100%)} 100%{transform:translateX(200%)} }`}</style>
             </div>
-          ) : (
-            <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: T.whiteDim, fontSize: 13 }}>No hay deals en este pipeline</div>
-          )}
-
-          {/* Mini stats row */}
-          <div style={{ display: "flex", gap: 12, marginTop: 8, paddingTop: 16, borderTop: `1px solid ${T.borderHi}` }}>
-            {[
-              { label: "Total Pipeline", value: money(funnelData.reduce((s, e) => s + e.value, 0)), color: T.teal },
-              { label: "Deals", value: funnelData.reduce((s, e) => s + e.deals, 0), color: T.white },
-              { label: "Tasa Win", value: `${conv}%`, color: T.amber },
-            ].map((s, i) => (
-              <div key={i} style={{ flex: 1, background: T.bg2, borderRadius: 10, padding: "10px 12px", border: `1px solid ${T.borderHi}` }}>
-                <div style={{ fontSize: 10, color: T.whiteDim, textTransform: "uppercase", letterSpacing: ".08em", marginBottom: 4 }}>{s.label}</div>
-                <div style={{ fontSize: 16, fontWeight: 800, color: s.color }}>{s.value}</div>
-              </div>
-            ))}
-          </div>
-        </Tarjeta>
-
-        {/* Revenue Trend - Area Chart */}
-        <Tarjeta style={{ padding: 24, display: "flex", flexDirection: "column", gap: 16 }}>
-          <div>
-            <div style={{ fontWeight: 800, fontSize: 16, color: T.white, display: "flex", alignItems: "center", gap: 8 }}>
-              <Ico k="trend" size={18} style={{ color: T.teal }} /> {t("Tendencia Revenue")}
+          ) : <Vacio text="Sin datos de funnel" />}
+          
+          <div style={{ display: "flex", gap: 15, marginTop: 24, paddingTop: 20, borderTop: `1px solid ${T.borderHi}` }}>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 11, color: T.whiteDim, textTransform: "uppercase", marginBottom: 4 }}>Revenue Total</div>
+              <div style={{ fontSize: 20, fontWeight: 900, color: T.teal }}>{money(funnelData.reduce((s, e) => s + e.value, 0))}</div>
             </div>
-            <div style={{ fontSize: 12, color: T.whiteDim, marginTop: 2 }}>{t("Últimos 6 meses")}</div>
+            <div style={{ flex: 1, textAlign: "right" }}>
+              <div style={{ fontSize: 11, color: T.whiteDim, textTransform: "uppercase", marginBottom: 4 }}>Conversión Promedio</div>
+              <div style={{ fontSize: 20, fontWeight: 900, color: T.amber }}>{conv}%</div>
+            </div>
           </div>
-          <div style={{ flex: 1, minHeight: 200 }}>
+        </Widget>
+
+        {/* WIDGET: TRENDING */}
+        <Widget id="trend" span={2} title="Tendencia" icon="trend" color={T.teal}>
+          <div style={{ flex: 1, minHeight: 250 }}>
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={trendData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+              <AreaChart data={trendData}>
                 <defs>
-                  <linearGradient id="tealGrad" x1="0" y1="0" x2="0" y2="1">
+                   <linearGradient id="widgetGrad" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor={T.teal} stopOpacity={0.3} />
                     <stop offset="95%" stopColor={T.teal} stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke={T.borderHi} vertical={false} />
-                <XAxis dataKey="name" stroke={T.whiteDim} fontSize={11} tickLine={false} axisLine={false} />
-                <YAxis stroke={T.whiteDim} fontSize={11} tickFormatter={v => `$${v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v}`} tickLine={false} axisLine={false} />
-                <Tooltip
-                  contentStyle={{ background: T.bg1, border: `1px solid ${T.borderHi}`, borderRadius: 8, color: T.white, fontWeight: 700 }}
-                  formatter={(v) => [money(v), t("Ingresos")]}
-                />
-                <Area type="monotone" dataKey="ingresos" stroke={T.teal} strokeWidth={3} fill="url(#tealGrad)" dot={{ r: 4, fill: T.teal, stroke: T.bg1, strokeWidth: 2 }} activeDot={{ r: 6, fill: T.teal }} />
+                <XAxis dataKey="name" hide />
+                <Tooltip contentStyle={{ background: T.bg1, border: `1px solid ${T.borderHi}`, borderRadius: 10 }} />
+                <Area type="monotone" dataKey="ingresos" stroke={T.teal} strokeWidth={3} fill="url(#widgetGrad)" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
-        </Tarjeta>
-      </div>
+          <div style={{ fontSize: 12, color: T.whiteDim, textAlign: "center", marginTop: 10 }}>Ingresos proyectados vs reales</div>
+        </Widget>
 
-      {/* Charts Row 2: Top Deals + Activity */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
-        {/* RECENT WINS REEL */}
-        <Tarjeta brillo style={{ padding: 24, background: `linear-gradient(160deg, ${T.bg1}, ${T.teal}05)`, border: `1px solid ${T.teal}20` }}>
-          <div style={{ fontWeight: 800, fontSize: 16, color: T.white, marginBottom: 20, display: "flex", alignItems: "center", gap: 10 }}>
-            <div style={{ width: 32, height: 32, borderRadius: "50%", background: T.green + "20", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <Ico k="star" size={18} style={{ color: T.green }} />
-            </div>
-            {t("Victorias Recientes")}
-          </div>
-          
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        {/* WIDGET: RECENT WINS */}
+        <Widget id="recentWins" span={3} title="Victorias Flash" icon="star" color={T.green}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             {recentWins.map(deal => (
-              <div key={deal.id} style={{ display: "flex", gap: 16, alignItems: "center", padding: 16, background: T.bg2, borderRadius: 12, border: `1px solid ${T.borderHi}`, position: "relative", overflow: "hidden" }}>
-                <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 4, background: T.green }} />
-                <div style={{ width: 40, height: 40, borderRadius: 10, background: T.bg1, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, border: `1px solid ${T.borderHi}` }}>🎉</div>
+              <div key={deal.id} style={{ display: "flex", gap: 14, alignItems: "center", padding: "12px 16px", background: T.bg2, borderRadius: 12, border: `1px solid ${T.borderHi}`, transition: "transform .2s" }}>
+                <div style={{ width: 42, height: 42, borderRadius: "50%", background: T.green + "15", border: `1px solid ${T.green}30`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>🏆</div>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 14, fontWeight: 800, color: T.white }}>{deal.titulo}</div>
-                  <div style={{ fontSize: 11, color: T.whiteDim, marginTop: 2 }}>Cerrado por {deal.responsable} • {fdate(deal.creado)}</div>
+                  <div style={{ fontSize: 11, color: T.whiteDim }}>{deal.responsable} · {money(deal.valor)}</div>
                 </div>
-                <div style={{ textAlign: "right" }}>
-                  <div style={{ fontSize: 16, fontWeight: 900, color: T.green }}>{money(deal.valor)}</div>
-                  <div style={{ fontSize: 10, fontWeight: 700, color: T.teal, textTransform: "uppercase", letterSpacing: ".1em" }}>Profit Unlocked</div>
-                </div>
+                <div style={{ fontSize: 10, color: T.green, fontWeight: 900 }}>GANADO</div>
               </div>
             ))}
-            {recentWins.length === 0 && <Vacio text="Aún no hay victorias registradas" />}
+            {recentWins.length === 0 && <Vacio text="Nada nuevo por aquí" />}
           </div>
-        </Tarjeta>
+        </Widget>
 
-        {/* SALES VELOCITY / PERFORMANCE */}
-        <Tarjeta style={{ padding: 24, display: "flex", flexDirection: "column", gap: 20 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <div>
-              <div style={{ fontWeight: 800, fontSize: 16, color: T.white, display: "flex", alignItems: "center", gap: 10 }}>
-                <div style={{ width: 32, height: 32, borderRadius: "50%", background: T.teal + "20", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <Ico k="lightning" size={18} style={{ color: T.teal }} />
+        {/* WIDGET: VELOCITY */}
+        <Widget id="velocity" span={3} title="Sales Velocity" icon="lightning" color={T.purple}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 20 }}>
+             <div>
+                <div style={{ fontSize: 32, fontWeight: 900, color: T.white }}>{averageVelocity}<span style={{ fontSize: 16, color: T.whiteDim, marginLeft: 4 }}>días</span></div>
+                <div style={{ fontSize: 12, color: T.purple, fontWeight: 700 }}>Ciclo de cierre promedio</div>
+             </div>
+             <div style={{ padding: "6px 12px", background: T.purple + "15", borderRadius: 20, fontSize: 11, color: T.purple, fontWeight: 800 }}>EFICIENCIA +12%</div>
+          </div>
+          <div style={{ height: 120 }}>
+             <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={velocityData}>
+                   <Line type="monotone" dataKey="velocity" stroke={T.purple} strokeWidth={4} dot={false} />
+                </LineChart>
+             </ResponsiveContainer>
+          </div>
+        </Widget>
+
+        {/* WIDGET: TOP DEALS */}
+        <Widget id="topDeals" span={3} title="Top Opportunities" icon="star" color={T.amber}>
+           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              {[...userDeals].filter(d => !esPerdido(d) && !esGanado(d)).sort((a, b) => b.valor - a.valor).slice(0, 4).map(deal => (
+                <div key={deal.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingBottom: 12, borderBottom: `1px solid ${T.borderHi}` }}>
+                   <div>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: T.white }}>{deal.titulo}</div>
+                      <div style={{ fontSize: 11, color: T.whiteDim }}>{userContacts.find(c => c.id === deal.contacto_id)?.nombre || "Sin contacto"}</div>
+                   </div>
+                   <div style={{ textAlign: "right" }}>
+                      <div style={{ fontSize: 15, fontWeight: 900, color: T.green }}>{money(deal.valor)}</div>
+                      <div style={{ fontSize: 10, color: T.amber, fontWeight: 700 }}>Prob: {deal.prob}%</div>
+                   </div>
                 </div>
-                {t("Velocidad de Ventas")}
-              </div>
-              <div style={{ fontSize: 12, color: T.whiteDim, marginTop: 4 }}>Días promedio para cerrar una venta</div>
-            </div>
-            <div style={{ textAlign: "right" }}>
-              <div style={{ fontSize: 22, fontWeight: 900, color: T.teal }}>{averageVelocity}d</div>
-              <div style={{ fontSize: 10, color: T.green, fontWeight: 700 }}>↑ Eficiencia operativa</div>
-            </div>
-          </div>
+              ))}
+           </div>
+        </Widget>
 
-          <div style={{ flex: 1, minHeight: 180 }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={velocityData}>
-                <CartesianGrid strokeDasharray="3 3" stroke={T.borderHi} vertical={false} />
-                <XAxis dataKey="name" stroke={T.whiteDim} fontSize={10} axisLine={false} tickLine={false} />
-                <Tooltip 
-                  contentStyle={{ background: T.bg1, border: `1px solid ${T.borderHi}`, borderRadius: 12, color: T.white }}
-                  itemStyle={{ fontSize: 12, fontWeight: 700 }}
-                />
-                <Line type="stepAfter" dataKey="velocity" stroke={T.teal} strokeWidth={3} dot={{ r: 4, fill: T.teal }} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-          
-          <div style={{ background: T.bg2, borderRadius: 12, padding: 12, border: `1px solid ${T.borderHi}`, display: "flex", alignItems: "center", gap: 12 }}>
-            <div style={{ fontSize: 20 }}>⚡</div>
-            <div style={{ fontSize: 12, color: T.whiteDim }}>
-              <strong style={{ color: T.white }}>Tip PRO:</strong> Tu velocidad ha mejorado. Reducir el tiempo en etapa "Propuesta" aumentará tu revenue un 15%.
-            </div>
-          </div>
-        </Tarjeta>
-      </div>
-
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
-        <Tarjeta style={{ padding: 20 }}>
-          <div style={{ fontWeight: 800, fontSize: 14, color: T.white, marginBottom: 16, display: "flex", alignItems: "center", gap: 8 }}>
-            <Ico k="star" size={16} style={{ color: T.amber }} /> {t("Mejores Deals Activos")}
-          </div>
-          {[...userDeals].filter(d => !esPerdido(d) && !esGanado(d)).sort((a, b) => b.valor - a.valor).slice(0, 5).map(deal => {
-            const pl = db.pipelines.find(p => p.id === deal.pipeline_id);
-            const et = pl?.etapas.find(e => e.id === deal.etapa_id);
-            const contacto = userContacts.find(c => c.id === deal.contacto_id);
-            const pc = deal.prob >= 70 ? T.green : deal.prob >= 40 ? T.amber : T.red;
-            return (
-              <div key={deal.id} style={{ display: "flex", gap: 12, marginBottom: 14, alignItems: "center", paddingBottom: 14, borderBottom: `1px solid ${T.borderHi}` }}>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: T.white, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{deal.titulo}</div>
-                  <div style={{ fontSize: 11, color: T.whiteDim, marginTop: 2 }}>{contacto?.nombre} · {fdate(deal.fecha_cierre)}</div>
-                </div>
-                <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4, flexShrink: 0 }}>
-                  <div style={{ fontSize: 14, fontWeight: 800, color: T.green }}>{money(deal.valor)}</div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                    {et && <Chip label={et.nombre} color={et.color} />}
-                    <span style={{ fontSize: 10, color: pc, fontWeight: 700, background: pc + "15", padding: "1px 6px", borderRadius: 6 }}>{deal.prob}%</span>
+        {/* WIDGET: ACTIVITIES */}
+        <Widget id="activities" span={3} title="Live Feed" icon="history" color={T.whiteDim}>
+           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              {[...userActs].sort((a, b) => new Date(b.fecha) - new Date(a.fecha)).slice(0, 4).map(act => {
+                const cfg = ACT_CFG[act.tipo] || ACT_CFG.tarea;
+                return (
+                  <div key={act.id} style={{ display: "flex", gap: 12, alignItems: "center" }}>
+                    <div style={{ width: 32, height: 32, borderRadius: 8, background: T.bg2, border: `1px solid ${T.borderHi}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>{cfg.icon}</div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                       <div style={{ fontSize: 13, fontWeight: 700, color: T.whiteOff, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{act.titulo}</div>
+                       <div style={{ fontSize: 10, color: T.whiteDim }}>{fdtm(act.fecha)}</div>
+                    </div>
                   </div>
-                </div>
-              </div>
-            );
-          })}
-          {activos.length === 0 && <div style={{ color: T.whiteDim, fontSize: 13, textAlign: "center", padding: 20 }}>No hay deals activos</div>}
-        </Tarjeta>
+                );
+              })}
+           </div>
+        </Widget>
 
-        <Tarjeta style={{ padding: 20 }}>
-          <div style={{ fontWeight: 800, fontSize: 14, color: T.white, marginBottom: 16, display: "flex", alignItems: "center", gap: 8 }}>
-            <Ico k="lightning" size={16} style={{ color: T.teal }} /> {t("Actividad Reciente")}
-          </div>
-          {[...userActs].sort((a, b) => new Date(b.fecha) - new Date(a.fecha)).slice(0, 6).map(act => {
-            const contacto = userContacts.find(c => c.id === act.contacto_id);
-            const cfg = ACT_CFG[act.tipo] || ACT_CFG.tarea;
-            return (
-              <div key={act.id} style={{ display: "flex", gap: 12, marginBottom: 14, alignItems: "flex-start", paddingBottom: 14, borderBottom: `1px solid ${T.borderHi}` }}>
-                <div style={{ width: 32, height: 32, borderRadius: 8, background: T.bg2, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 }}>{cfg.icon}</div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: act.hecho ? T.whiteDim : T.white, textDecoration: act.hecho ? "line-through" : "none", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{act.titulo}</div>
-                  <div style={{ fontSize: 11, color: T.whiteDim, marginTop: 2 }}>{contacto?.nombre && `${contacto.nombre} · `}{fdtm(act.fecha)}</div>
-                </div>
-                {act.hecho && <Chip label="✓" color={T.green} />}
-              </div>
-            );
-          })}
-          {db.actividades.length === 0 && <div style={{ color: T.whiteDim, fontSize: 13, textAlign: "center", padding: 20 }}>Sin actividades recientes</div>}
-        </Tarjeta>
       </div>
+
+      {/* MODAL CONFIGURACIÓN DASHBOARD */}
+      <Modal open={showConfig} onClose={() => setShowConfig(false)} title="Personalizar Control Center" width={450}>
+         <div style={{ display: "flex", flexDirection: "column", gap: 12, padding: "10px 0" }}>
+            <p style={{ color: T.whiteDim, fontSize: 13, marginBottom: 16 }}>Selecciona los widgets que deseas ver en tu dashboard principal.</p>
+            {Object.keys(widgets).map(wId => (
+              <label key={wId} style={{ display: "flex", alignItems: "center", gap: 14, padding: "12px 16px", background: T.bg2, borderRadius: 12, cursor: "pointer", transition: "all .2s", border: `1px solid ${widgets[wId] ? T.teal + "40" : T.borderHi}` }}>
+                 <input type="checkbox" checked={widgets[wId]} onChange={() => toggleWidget(wId)} style={{ width: 18, height: 18, accentColor: T.teal }} />
+                 <span style={{ fontSize: 14, fontWeight: 700, color: T.white, textTransform: "capitalize" }}>{wId === "kpis" ? "Resumen (KPIs)" : wId === "ai" ? "Sales AI Insights" : wId.replace(/[A-Z]/g, ' $&')}</span>
+                 <div style={{ flex: 1 }} />
+                 <Ico k={wId === "kpis" ? "board" : wId === "ai" ? "lightning" : "chart"} size={16} style={{ opacity: widgets[wId] ? 1 : 0.3 }} />
+              </label>
+            ))}
+            <Btn onClick={() => setShowConfig(false)} style={{ marginTop: 20 }}>Guardar Preferencias</Btn>
+         </div>
+      </Modal>
+
+      <style>{`
+        @keyframes fadeIn { from { opacity:0; transform: translateY(10px); } to { opacity:1; transform: translateY(0); } }
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 ${T.teal}80; } 70% { box-shadow: 0 0 0 10px ${T.teal}00; } 100% { box-shadow: 0 0 0 0 ${T.teal}00; } }
+      `}</style>
 
       <Modal
         open={verModalIA}
