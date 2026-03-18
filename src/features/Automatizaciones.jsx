@@ -73,10 +73,13 @@ export const Automatizaciones = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t }
   const [showForm, setShowForm] = useState(false);
   const [fNombre, setFNombre] = useState("");
   const [nodoSel, setNodoSel] = useState(null);
-  const [showAddNode, setShowAddNode] = useState(false);
   const [logs, setLogs] = useState([]);
   const [running, setRunning] = useState(false);
   const logRef = useRef(null);
+
+  // Local state for the node being edited to avoid hammering Supabase on every keystroke
+  const [localExtra, setLocalExtra] = useState("");
+  const editTimeoutRef = useRef(null);
 
   const actual = wfs.find(w => w.id === wfSel);
 
@@ -135,10 +138,23 @@ export const Automatizaciones = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t }
     if (wfSel === wId) setWfSel(wfs.filter(w => w.id !== wId)[0]?.id || null);
   };
 
-  const selNodo = actual?.nodos.find(n => n.id === nodoSel);
+  const selNodo = actual?.nodos?.find(n => n.id === nodoSel);
   const isTrigSel = selNodo?.tipo === "trigger";
   const catSel = isTrigSel ? TRIGGERS : (selNodo?.tipo === "condition" ? CONDITIONS : ACTIONS);
-  const defSel = catSel?.[selNodo?.ref] || Object.values(catSel || {})[0];
+  const defSel = selNodo ? (catSel?.[selNodo.ref] || Object.values(catSel || {})[0]) : null;
+
+  // Sync localExtra when selecting a new node
+  useEffect(() => {
+    setLocalExtra(selNodo?.extra || "");
+  }, [nodoSel]);
+
+  const handleExtraChange = (val) => {
+    setLocalExtra(val);
+    if (editTimeoutRef.current) clearTimeout(editTimeoutRef.current);
+    editTimeoutRef.current = setTimeout(() => {
+      actNodo(nodoSel, "extra", val);
+    }, 800);
+  };
 
   return (
     <div style={{ display: "flex", gap: 20, height: "calc(100vh - 120px)", overflow: "hidden" }}>
@@ -229,7 +245,7 @@ export const Automatizaciones = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t }
                   const startX = 60 + i * 360 + 300;
                   const endX = 60 + (i + 1) * 360;
                   const midY = 200;
-                  const def = ALL_NODE_TYPES[n.ref] || Object.values(ALL_NODE_TYPES)[0];
+                  const def = n?.ref ? (ALL_NODE_TYPES[n.ref] || Object.values(ALL_NODE_TYPES)[0]) : Object.values(ALL_NODE_TYPES)[0];
                   return (
                     <path key={i}
                       d={`M ${startX} ${midY} C ${startX + 60} ${midY}, ${endX - 60} ${midY}, ${endX} ${midY}`}
@@ -251,8 +267,8 @@ export const Automatizaciones = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t }
 
               {/* Nodes */}
               <div style={{ display: "flex", alignItems: "center", zIndex: 5, position: "relative" }}>
-                {actual.nodos.map((n, i) => {
-                  const def = ALL_NODE_TYPES[n.ref] || Object.values(ALL_NODE_TYPES)[0];
+                {actual?.nodos?.map((n, i) => {
+                  const def = n?.ref ? (ALL_NODE_TYPES[n.ref] || Object.values(ALL_NODE_TYPES)[0]) : Object.values(ALL_NODE_TYPES)[0];
                   const isSel = nodoSel === n.id;
                   const isTrig = n.tipo === "trigger";
                   const isCond = n.tipo === "condition";
@@ -342,7 +358,7 @@ export const Automatizaciones = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t }
                   </Campo>
 
                   <Campo label="Config / Payload">
-                    <Inp value={selNodo.extra || ""} onChange={e => actNodo(nodoSel, "extra", e.target.value)}
+                    <Inp value={localExtra} onChange={e => handleExtraChange(e.target.value)}
                       placeholder="e.g. template_id / webhook_url / condition..."
                       style={{ fontFamily: "monospace", fontSize: 12, background: "#111827", color: "#10B981", border: "1px solid #374151" }}
                       rows={3} />
@@ -353,7 +369,7 @@ export const Automatizaciones = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t }
                       <div style={{ fontSize: 11, color: "#6B7280", fontFamily: "monospace", marginBottom: 8, textTransform: "uppercase", letterSpacing: ".08em" }}>Variable Map</div>
                       <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                         {["{{deal.id}}", "{{deal.valor}}", "{{contact.name}}", "{{contact.email}}", "{{date.now}}", "{{form.data}}"].map(v => (
-                          <button key={v} onClick={() => actNodo(nodoSel, "extra", (selNodo.extra || "") + v)}
+                          <button key={v} onClick={() => handleExtraChange(localExtra + v)}
                             style={{ fontFamily: "monospace", fontSize: 10, color: "#10B981", background: "#10B98115", border: "1px solid #10B98130", borderRadius: 4, padding: "3px 8px", cursor: "pointer" }}>
                             {v}
                           </button>
