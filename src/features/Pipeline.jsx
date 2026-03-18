@@ -6,6 +6,8 @@ import { Campo, Modal, Tarjeta, SelColor, EncabezadoSeccion, ControlSegmentado, 
 import { LeadTimeline } from "./LeadTimeline";
 import { Cotizaciones } from "./Cotizaciones";
 
+import { executeRules } from "../automationRunner";
+
 export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModulo }) => {
   const [plActivo, setPlActivo] = useState(db.pipelines[0]?.id || "");
   const [tab, setTab] = useState("kanban");
@@ -91,81 +93,13 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
   };
 
   const ejecutarAutomaciones = async (deal, nuevaEtapaId) => {
-    const pl = db.pipelines.find(p => p.id === deal.pipeline_id);
-    const et = pl?.etapas.find(e => e.id === nuevaEtapaId);
-    if (!et) return;
-
-    const n = et.nombre.toLowerCase();
-    
-    // 1. Trigger por Flag: GANADO
-    if (et.es_ganado) {
-      const t = { 
-        id: "t" + uid(), 
-        titulo: `🎉 Seguimiento Post-Venta: ${deal.titulo}`, 
-        prioridad: "alta", 
-        estado: "pendiente", 
-        asignado: deal.responsable, 
-        vencimiento: new Date(Date.now() + 86400000 * 2).toISOString().slice(0, 10), 
-        contacto_id: deal.contacto_id, 
-        deal_id: deal.id, 
-        descripcion: "Felicidades por el cierre. No olvides contactar al cliente para el onboarding.",
-        creado: new Date().toISOString() 
-      };
-      setDb(prev => ({ ...prev, tareas: [t, ...(prev.tareas || [])] }));
-      await guardarEnSupa("tareas", t);
-    }
-
-    // 2. Trigger por Nombre: Propuesta / Envío
-    if (n.includes("propuesta") || n.includes("envio") || n.includes("enviado")) {
-      const t = { 
-        id: "t" + uid(), 
-        titulo: "📞 Seguimiento Propuesta: " + deal.titulo, 
-        prioridad: "alta", 
-        estado: "pendiente", 
-        asignado: deal.responsable, 
-        vencimiento: new Date(Date.now() + 86400000 * 2).toISOString().slice(0, 10), 
-        contacto_id: deal.contacto_id, 
-        deal_id: deal.id, 
-        creado: new Date().toISOString() 
-      };
-      setDb(prev => ({ ...prev, tareas: [t, ...(prev.tareas || [])] }));
-      await guardarEnSupa("tareas", t);
-    }
-
-    // 3. Trigger por Nombre: Nuevo / Contacto
-    if (n.includes("nuevo") || n.includes("contacto") || n.includes("primero")) {
-      const t = { 
-        id: "t" + uid(), 
-        titulo: "⚡ Primer Contacto: " + deal.titulo, 
-        prioridad: "media", 
-        estado: "pendiente", 
-        asignado: deal.responsable, 
-        vencimiento: new Date(Date.now() + 86400000).toISOString().slice(0, 10), 
-        contacto_id: deal.contacto_id, 
-        deal_id: deal.id, 
-        creado: new Date().toISOString() 
-      };
-      setDb(prev => ({ ...prev, tareas: [t, ...(prev.tareas || [])] }));
-      await guardarEnSupa("tareas", t);
-    }
-
-    // 4. Trigger por Nombre: Negociación
-    if (n.includes("negociación") || n.includes("negociacion")) {
-      const t = { 
-        id: "t" + uid(), 
-        titulo: `📑 Revisar términos: ${deal.titulo}`, 
-        prioridad: "media", 
-        estado: "pendiente", 
-        asignado: deal.responsable, 
-        vencimiento: new Date(Date.now() + 86400000).toISOString().slice(0, 10), 
-        contacto_id: deal.contacto_id, 
-        deal_id: deal.id, 
-        creado: new Date().toISOString() 
-      };
-      setDb(prev => ({ ...prev, tareas: [t, ...(prev.tareas || [])] }));
-      await guardarEnSupa("tareas", t);
-    }
+     try {
+       await executeRules(db, deal, nuevaEtapaId, { guardarEnSupa });
+     } catch (err) {
+       console.error("Error al ejecutar automatizaciones dinámicas:", err);
+     }
   };
+
 
 
   // Estado del formulario de Deal elevado al nivel de Pipeline para sobrevivir re-renders de Supabase Realtime.
@@ -720,6 +654,7 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
 
       setDb(d => ({ ...d, deals: [nv, ...d.deals] }));
       await guardarEnSupa("deals", nv);
+      await ejecutarAutomaciones(nv, nv.etapa_id);
     }
     setShowDealForm(false); setEditDeal(null); setPreEtapa(null);
   };
@@ -763,7 +698,10 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
     }));
     for (const id of selectedIds) {
       const d = db.deals.find(x => x.id === id);
-      await guardarEnSupa("deals", { ...d, etapa_id: newEtapaId });
+      if (d) {
+        await guardarEnSupa("deals", { ...d, etapa_id: newEtapaId });
+        await ejecutarAutomaciones(d, newEtapaId);
+      }
     }
     setSelectedIds([]);
   };

@@ -3,470 +3,637 @@ import { T } from "../theme";
 import { uid, uuid } from "../utils";
 import { Chip, Btn, Inp, Sel, Campo, Modal, Tarjeta, EncabezadoSeccion, Ico, Vacio } from "../components/ui";
 
-// ─── CATÁLOGO DE MÓDULOS ───────────────────────────────────────────────────────
-const TRIGGERS = {
-  deal_nuevo: { label: "Deal Creado", icon: "plus", color: "#F59E0B", badge: "CRM" },
-  deal_ganado: { label: "Deal Ganado", icon: "star", color: "#10B981", badge: "CRM" },
-  deal_perdido: { label: "Deal Perdido", icon: "x", color: "#EF4444", badge: "CRM" },
-  contacto_nuevo: { label: "Nuevo Contacto", icon: "user-plus", color: "#8B5CF6", badge: "CRM" },
-  form_submit: { label: "Formulario Enviado", icon: "check", color: "#06B6D4", badge: "Web" },
-  webhook_in: { label: "Webhook Recibido", icon: "code", color: "#6366F1", badge: "API" },
-  schedule: { label: "Temporizador", icon: "clock", color: "#EC4899", badge: "Timer" },
-  deal_sin_act: { label: "Deal Sin Actividad", icon: "clock", color: "#F59E0B", badge: "Reminder" },
-  tarea_vencida: { label: "Tarea Vencida", icon: "alert", color: "#EF4444", badge: "Reminder" },
-  cierre_cercano: { label: "Cierre Próximo", icon: "calendar", color: "#EC4899", badge: "Reminder" },
+// ─── CATÁLOGO DE CATEGORÍAS ──────────────────────────────────────────────────
+const CATEGORIES = [
+  { id: "comunicacion", label: "Comunicación con el cliente", icon: "mail" },
+  { id: "alertas", label: "Alertas para los empleados", icon: "bell" },
+  { id: "control", label: "Monitoreo y control de empleados", icon: "user-clock" },
+  { id: "pago", label: "Pago", icon: "credit-card" },
+  { id: "recurrentes", label: "Variables recurrentes", icon: "refresh" },
+  { id: "anuncio", label: "Anuncio", icon: "megaphone" },
+  { id: "workflow", label: "Administrar flujos de trabajo", icon: "git-branch" },
+  { id: "cliente_info", label: "Información del cliente", icon: "user" },
+  { id: "tareas", label: "Administrar tareas", icon: "check-circle" },
+  { id: "datos", label: "Almacenamiento de datos", icon: "database" },
+  { id: "otros", label: "Otros", icon: "layers" },
+];
+
+const OPERATORS = [
+  { id: "==", label: "es igual a" },
+  { id: "!=", label: "no es igual a" },
+  { id: "contiene", label: "contiene" },
+  { id: "no_contiene", label: "no contiene" },
+  { id: ">", label: "es mayor que" },
+  { id: "<", label: "es menor que" },
+  { id: "set", label: "está completo" },
+  { id: "not_set", label: "está vacío" },
+];
+
+/**
+ * COMPONENTE: Dropdown Estilo Bitrix (Enlace punteado)
+ */
+const BitrixSelect = ({ label, value, options, onChange, style = {} }) => {
+  const [open, setOpen] = useState(false);
+  const selected = options.find(o => o.id === value);
+
+  return (
+    <div style={{ position: "relative", ...style }}>
+      {label && <div style={{ fontSize: 12, color: "#999", marginBottom: 4 }}>{label}</div>}
+      <div 
+        onClick={() => setOpen(!open)}
+        style={{ color: "#00B4FF", fontSize: 13, fontWeight: 600, borderBottom: "1px dashed #00B4FF", cursor: "pointer", display: "inline-block", padding: "2px 0" }}
+      >
+        {selected ? selected.label : (value || "seleccionar")}
+      </div>
+      {open && (
+        <>
+          <div onClick={() => setOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 9998 }} />
+          <div style={{ position: "absolute", top: "100%", left: 0, background: "#FFF", boxShadow: "0 5px 20px rgba(0,0,0,0.15)", borderRadius: 8, border: "1px solid #EEE", zIndex: 9999, minWidth: 180, padding: 6, marginTop: 4, maxHeight: 300, overflowY: "auto" }}>
+             {options.map(o => (
+               <div 
+                key={o.id} 
+                onClick={() => { onChange(o.id); setOpen(false); }}
+                style={{ padding: "8px 12px", fontSize: 13, cursor: "pointer", borderRadius: 4, background: value === o.id ? "#F0F7FF" : "transparent", color: value === o.id ? "#00B4FF" : "#333" }}
+                onMouseEnter={e => e.currentTarget.style.background = "#F5F5F5"}
+                onMouseLeave={e => e.currentTarget.style.background = value === o.id ? "#F0F7FF" : "transparent"}
+               >
+                 {o.label}
+               </div>
+             ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
 };
 
-const ACTIONS = {
-  enviar_email: { label: "Enviar Email", icon: "mail", color: "#06B6D4", badge: "Email" },
-  crear_tarea: { label: "Crear Tarea", icon: "check", color: "#10B981", badge: "CRM" },
-  webhook_out: { label: "Llamar Webhook (POST)", icon: "code", color: "#6366F1", badge: "API" },
-  etiquetar: { label: "Agregar Etiqueta", icon: "tag", color: "#8B5CF6", badge: "CRM" },
-  slack_notify: { label: "Notif. Slack", icon: "bell", color: "#EC4899", badge: "Slack" },
-  update_field: { label: "Actualizar Campo", icon: "edit", color: "#F59E0B", badge: "CRM" },
-  mover_etapa: { label: "Mover a Etapa", icon: "funnel", color: "#14B8A6", badge: "CRM" },
-  crear_nota: { label: "Crear Nota", icon: "note", color: "#6366F1", badge: "CRM" },
-  asignar_prop: { label: "Asignar Propietario", icon: "user", color: "#8B5CF6", badge: "CRM" },
-  reminder_email: { label: "Recordatorio por Email", icon: "mail", color: "#F59E0B", badge: "Reminder" },
-};
+// ─── CATÁLOGO DE REGLAS (COMPLETO) ───────────────────────────────────────────
+const ALL_RULES = [
+  // COMUNICACIÓN (11 Reglas)
+  { cat: "comunicacion", id: "enviar_email", label: "Enviar correo electrónico al cliente", sub: "Envía un mensaje de correo electrónico al cliente.", icon: "mail", color: "#06B6D4" },
+  { cat: "comunicacion", id: "enviar_sms", label: "Enviar un SMS al cliente", sub: "Envía un mensaje de texto al móvil del cliente.", icon: "smartphone", color: "#06B6D4" },
+  { cat: "comunicacion", id: "enviar_wa", label: "Enviar mensaje de Whatsapp", sub: "Envía un mensaje usando plantillas de WhatsApp.", icon: "wa", color: "#10B981" },
+  { cat: "comunicacion", id: "llamar_cliente", label: "Llamada al cliente", sub: "Realice una llamada de voz automática al cliente.", icon: "phone", color: "#06B6D4" },
+  { cat: "comunicacion", id: "msg_telegram", label: "Enviar mensaje de Telegram", sub: "Envía un mensaje a través del bot de Telegram.", icon: "send", color: "#06B6D4" },
+  { cat: "comunicacion", id: "audio_msg", label: "Mensaje de audio", sub: "Envía un archivo de audio pregrabado al cliente.", icon: "mic", color: "#06B6D4" },
+  { cat: "comunicacion", id: "booking_link", label: "Enviar link de reserva", sub: "Envía un enlace para que el cliente agende una cita.", icon: "calendar", color: "#06B6D4" },
+  { cat: "comunicacion", id: "form_link", label: "Enviar link de formulario", sub: "Envía un enlace a un formulario de CRM.", icon: "file-text", color: "#06B6D4" },
+  { cat: "comunicacion", id: "review_request", label: "Solicitar reseña", sub: "Pide al cliente una valoración tras una compra.", icon: "star", color: "#06B6D4" },
+  { cat: "comunicacion", id: "promo_push", label: "Notificación Push", sub: "Envía una notificación push a la app móvil del cliente.", icon: "bell", color: "#06B6D4" },
+  { cat: "comunicacion", id: "vcard_send", label: "Enviar tarjeta de contacto", sub: "Envía los datos del responsable en formato vCard.", icon: "user-plus", color: "#06B6D4" },
 
-const CONDITIONS = {
-  if_condition: { label: "IF / Rama", icon: "branch", color: "#14B8A6", badge: "Logic" },
-  delay: { label: "Esperar / Delay", icon: "clock", color: "#6B7280", badge: "Timer" },
-  filter: { label: "Filtro / Detener", icon: "filter", color: "#EF4444", badge: "Logic" },
-  split: { label: "División A/B", icon: "branch", color: "#8B5CF6", badge: "Logic" },
-};
+  // ALERTAS (9 Reglas)
+  { cat: "alertas", id: "notif_user", label: "Agregar notificación", sub: "Notifica a un empleado sobre un cambio o evento.", icon: "bell", color: "#EC4899" },
+  { cat: "alertas", id: "add_comment", label: "Agregar un comentario", sub: "Deja una nota interna en el historial del elemento.", icon: "note", color: "#EC4899" },
+  { cat: "alertas", id: "send_chat_msg", label: "Enviar mensaje al chat", sub: "Notifica por el chat interno a un usuario o grupo.", icon: "send", color: "#EC4899" },
+  { cat: "alertas", id: "task_alert", label: "Alerta de tarea vencida", sub: "Avisa cuando una tarea crítica está por vencer.", icon: "clock", color: "#EC4899" },
+  { cat: "alertas", id: "manager_report", label: "Reporte al gerente", sub: "Envía un resumen de actividad al supervisor.", icon: "bar-chart", color: "#EC4899" },
+  { cat: "alertas", id: "daily_digest", label: "Resumen diario", sub: "Envía una lista de pendientes al inicio del día.", icon: "list-ul", color: "#EC4899" },
+  { cat: "alertas", id: "idle_alert", label: "Alerta de inactividad", sub: "Notifica si un lead no se ha movido en 3 días.", icon: "exclamation-triangle", color: "#EC4899" },
+  { cat: "alertas", id: "success_sound", label: "Reproducir sonido", sub: "Emite un sonido de éxito en el navegador del usuario.", icon: "volume-up", color: "#EC4899" },
+  { cat: "alertas", id: "email_internal", label: "Email interno", sub: "Envía un correo de notificación técnica al equipo.", icon: "mail", color: "#EC4899" },
 
-const ALL_NODE_TYPES = { ...TRIGGERS, ...ACTIONS, ...CONDITIONS };
+  // CONTROL (6 Reglas)
+  { cat: "control", id: "start_timer", label: "Iniciar temporizador", sub: "Mide el tiempo transcurrido en una etapa.", icon: "play", color: "#F59E0B" },
+  { cat: "control", id: "stop_timer", label: "Detener temporizador", sub: "Finaliza la medición de tiempo actual.", icon: "stop", color: "#F59E0B" },
+  { cat: "control", id: "log_activity", label: "Registrar actividad", sub: "Guarda un log detallado del evento de control.", icon: "history", color: "#F59E0B" },
+  { cat: "control", id: "geo_check", label: "Verificar ubicación", sub: "Valida la ubicación GPS si es reporte de campo.", icon: "map-pin", color: "#F59E0B" },
+  { cat: "control", id: "idle_reassign", label: "Reasignar por inactividad", sub: "Cambia el responsable si el lead se ignora.", icon: "user-minus", color: "#F59E0B" },
+  { cat: "control", id: "quota_check", label: "Verificar cuotas", sub: "Comprueba si el usuario ha cumplido sus objetivos.", icon: "check-circle", color: "#F59E0B" },
 
-// ─── SIMULACIÓN LOG EN TIEMPO REAL ─────────────────────────────────────────────
-const LOG_MSGS = [
-  "→ Disparador recibido: deal.estado === 'ganado'",
-  "✓ Condición aprobada: valor > 1000",
-  "→ Llamando Webhook POST https://hooks.zapier.com/...",
-  "← [200 OK] Respuesta: {\"estado\":\"en cola\"}",
-  "→ Enviando Email a: cliente@empresa.com",
-  "✓ Email entregado (SMTP 250 2.0.0 OK)",
-  "→ Creando Tarea: 'Llamada de seguimiento'",
-  "✓ Tarea creada ID: tsk_9f3a2b",
-  "→ Etiquetando deal: 'cliente-vip'",
-  "✓ Etiqueta aplicada correctamente",
-  "⚡ Flow completado en 148ms",
+  // PAGO (5 Reglas)
+  { cat: "pago", id: "gen_invoice", label: "Generar factura", sub: "Crea un borrador de factura automáticamente.", icon: "file-invoice", color: "#3B82F6" },
+  { cat: "pago", id: "send_payment_link", label: "Enviar link de pago", sub: "Envía enlace de PayPal/Stripe por email/WA.", icon: "credit-card", color: "#3B82F6" },
+  { cat: "pago", id: "check_payment", label: "Verificar pago", sub: "Consulta el estado de la transacción en la pasarela.", icon: "sync", color: "#3B82F6" },
+  { cat: "pago", id: "record_refund", label: "Registrar reembolso", sub: "Anota una devolución en el historial financiero.", icon: "undo", color: "#3B82F6" },
+  { cat: "pago", id: "tax_calc", label: "Calcular impuestos", sub: "Ajusta el monto total según la región impositiva.", icon: "percentage", color: "#3B82F6" },
+
+  // RECURRENTES (4 Reglas)
+  { cat: "recurrentes", id: "repeat_deal", label: "Repetir negociación", sub: "Crea una copia del deal para el próximo ciclo.", icon: "refresh", color: "#8B5CF6" },
+  { cat: "recurrentes", id: "sub_invoice", label: "Suscripción mensual", sub: "Genera cobros recurrentes cada 30 días.", icon: "calendar-alt", color: "#8B5CF6" },
+  { cat: "recurrentes", id: "renew_reminder", label: "Recordatorio de renovación", sub: "Avisa 15 días antes del vencimiento.", icon: "bell", color: "#8B5CF6" },
+  { cat: "recurrentes", id: "stop_recurrence", label: "Detener recurrencia", sub: "Cancela las repeticiones automáticas.", icon: "ban", color: "#8B5CF6" },
+
+  // ANUNCIO (4 Reglas)
+  { cat: "anuncio", id: "fb_pixel", label: "Facebook Pixel", sub: "Envía evento de conversión a Facebook.", icon: "facebook", color: "#1D4ED8" },
+  { cat: "anuncio", id: "google_ads", label: "Google Ads Offline", sub: "Sube conversión offline a Google Ads.", icon: "google", color: "#1D4ED8" },
+  { cat: "anuncio", id: "retarget_list", label: "Añadir a lista retargeting", sub: "Sincroniza el email con audiencias de ads.", icon: "users", color: "#1D4ED8" },
+  { cat: "anuncio", id: "lead_source_track", label: "Track de fuente", sub: "Atribuye la conversión a la campaña original.", icon: "link", color: "#1D4ED8" },
+
+  // WORKFLOW (12 Reglas)
+  { cat: "workflow", id: "mod_item", label: "Modificar elemento", sub: "Actualiza los campos de la negociación.", icon: "edit", color: "#6B7280" },
+  { cat: "workflow", id: "change_stage", label: "Cambiar etapa", sub: "Mueve el elemento a otra columna del pipeline.", icon: "arrow", color: "#6B7280" },
+  { cat: "workflow", id: "change_resp", label: "Cambiar responsable", sub: "Asigna una nueva persona a cargo.", icon: "user", color: "#6B7280" },
+  { cat: "workflow", id: "delete_item", label: "Eliminar elemento", sub: "Borra permanentemente el deal.", icon: "trash", color: "#EF4444" },
+  { cat: "workflow", id: "copy_deal", label: "Copiar negociación", sub: "Crea un duplicado en otro pipeline.", icon: "clone", color: "#6B7280" },
+  { cat: "workflow", id: "lock_deal", label: "Bloquear edición", sub: "Impide cambios manuales al elemento.", icon: "lock", color: "#6B7280" },
+  { cat: "workflow", id: "wait_worker", label: "Esperar empleado", sub: "Pausa el flujo hasta que alguien valide.", icon: "pause", color: "#6B7280" },
+  { cat: "workflow", id: "run_webhook", label: "Ejecutar Webhook", sub: "Envía datos a una URL externa (Make/Zapier).", icon: "code", color: "#6B7280" },
+  { cat: "workflow", id: "gen_document", label: "Generar documento", sub: "Crea un PDF (Contrato/Presupuesto).", icon: "file-pdf", color: "#6B7280" },
+  { cat: "workflow", id: "add_tag", label: "Agregar etiqueta", sub: "Añade un tag para segmentación.", icon: "tag", color: "#6B7280" },
+  { cat: "workflow", id: "remove_tag", label: "Quitar etiqueta", sub: "Elimina un tag específico.", icon: "tag-slash", color: "#6B7280" },
+  { cat: "workflow", id: "archive_deal", label: "Archivar", sub: "Mueve a la papelera o archivo histórico.", icon: "archive", color: "#6B7280" },
+
+  // CLIENTE INFO (6 Reglas)
+  { cat: "cliente_info", id: "upd_contact", label: "Actualizar contacto", sub: "Modifica email o teléfono del cliente.", icon: "user-edit", color: "#4B5563" },
+  { cat: "cliente_info", id: "upd_company", label: "Actualizar empresa", sub: "Modifica datos de la razón social.", icon: "building", color: "#4B5563" },
+  { cat: "cliente_info", id: "link_contact", label: "Vincular contacto", sub: "Une un deal con un contacto existente.", icon: "link", color: "#4B5563" },
+  { cat: "cliente_info", id: "validate_vat", label: "Validar NIT/RUT", sub: "Comprueba validez tributaria del cliente.", icon: "id-card", color: "#4B5563" },
+  { cat: "cliente_info", id: "scoring", label: "Lead Scoring", sub: "Suma puntos según el perfil del cliente.", icon: "trophy", color: "#4B5563" },
+  { cat: "cliente_info", id: "loyalty_program", label: "Programa de puntos", sub: "Añade puntos de fidelidad tras compra.", icon: "gift", color: "#4B5563" },
+
+  // TAREAS (8 Reglas)
+  { cat: "tareas", id: "create_task", label: "Crear tarea", sub: "Genera un pendiente para el responsable.", icon: "plus-square", color: "#10B981" },
+  { cat: "tareas", id: "complete_task", label: "Completar tarea", sub: "Marca como listo un pendiente abierto.", icon: "check-circle", color: "#10B981" },
+  { cat: "tareas", id: "task_checklist", label: "Añadir checklist", sub: "Agrega pasos a una tarea existente.", icon: "tasks", color: "#10B981" },
+  { cat: "tareas", id: "delegate_task", label: "Delegar tarea", sub: "Pasa el pendiente a otro compañero.", icon: "user-tag", color: "#10B981" },
+  { cat: "tareas", id: "task_dead", label: "Mover fecha límite", sub: "Aplasta el deadline de una tarea.", icon: "calendar-day", color: "#10B981" },
+  { cat: "tareas", id: "critical_task", label: "Marcar tarea crítica", sub: "Establece prioridad máxima.", icon: "fire", color: "#10B981" },
+  { cat: "tareas", id: "gen_subtask", label: "Crear subtarea", sub: "Crea un hijo de una tarea padre.", icon: "indent", color: "#10B981" },
+  { cat: "tareas", id: "task_reminder", label: "Recordatorio de tarea", sub: "Avisa al usuario 10 min antes.", icon: "bell", color: "#10B981" },
+
+  // DATOS (5 Reglas)
+  { cat: "datos", id: "save_history", label: "Bitácora externa", sub: "Escribe en una hoja de Google Sheets.", icon: "google-drive", color: "#F59E0B" },
+  { cat: "datos", id: "export_json", label: "Exportar JSON", sub: "Genera un archivo de datos para descarga.", icon: "file-code", color: "#F59E0B" },
+  { cat: "datos", id: "sync_db", label: "Sincronizar base externa", sub: "Actualiza SQL o NoSQL de terceros.", icon: "database", color: "#F59E0B" },
+  { cat: "datos", id: "data_clean", label: "Limpieza de datos", sub: "Estandariza mayúsculas y quita espacios.", icon: "broom", color: "#F59E0B" },
+  { cat: "datos", id: "backup_deal", label: "Copia de seguridad", sub: "Guarda snapshot del deal cifrado.", icon: "save", color: "#F59E0B" },
+
+  // OTROS (5 Reglas)
+  { cat: "otros", id: "run_script", label: "Ejecutar Script Custom", sub: "Llama a código personalizado JS/Python.", icon: "terminal", color: "#4B5563" },
+  { cat: "otros", id: "delay_wf", label: "Pausar flujo", sub: "Detiene el proceso por X minutos.", icon: "hourglass-half", color: "#4B5563" },
+  { cat: "otros", id: "random_split", label: "División aleatoria", sub: "Envía a ruta A o B para pruebas A/B.", icon: "random", color: "#4B5563" },
+  { cat: "otros", id: "loop_cond", label: "Loop condicional", sub: "Repite acciones mientras se cumpla algo.", icon: "undo-alt", color: "#4B5563" },
+  { cat: "otros", id: "external_trigger", label: "Disparador Externo", sub: "Espera una señal de una API propia.", icon: "satellite-dish", color: "#4B5563" },
 ];
 
 export const Automatizaciones = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t }) => {
-  const [wfs, setWfs] = useState([]);
+  const [tab, setTab] = useState("reglas");
+  const [pipelineId, setPipelineId] = useState(db.pipelines?.[0]?.id || "");
+  const [wfs, setWfs] = useState(Array.isArray(db.automatizaciones) ? db.automatizaciones : []);
+  const [showAdd, setShowAdd] = useState(false);
+  const [addStageId, setAddStageId] = useState(null);
+  const [catSel, setCatSel] = useState("comunicacion");
+  const [q, setQ] = useState("");
+  
+  // INSPECTOR STATE
+  const [editRule, setEditRule] = useState(null);
+  const [showFieldMenu, setShowFieldMenu] = useState(false);
+
+  // ─── COMPUTAR CAMPOS DINÁMICOS (ALINEADOS CON ESQUEMA REAL) ────────────────
+  const crmFields = [
+    { id: "titulo", label: "Título del lead / negocio", type: "text" }, // ALINEADO CON db.deals.titulo
+    { id: "valor", label: "Monto", type: "number" }, // ALINEADO CON db.deals.valor
+    { id: "prob", label: "Probabilidad (%)", type: "number" }, // ALINEADO CON db.deals.prob
+    { id: "fuente", label: "Fuente", type: "select" },
+    { id: "responsable", label: "Persona responsable", type: "user" },
+    { id: "fecha_cierre", label: "Fecha de cierre", type: "date" }, // ALINEADO CON db.deals.fecha_cierre
+    { id: "creado", label: "Fecha de creación", type: "date" },
+    { id: "modificado", label: "Fecha de modificación", type: "date" },
+    { id: "pipeline", label: "Pipeline", type: "select" },
+    ...(db.campos_personalizados || [])
+      .filter(f => f.entidad === 'deal')
+      .map(f => ({ id: f.id, label: f.nombre, type: f.tipo || "text" })),
+    { id: "cliente_nombre", label: "Nombre del contacto", type: "text" },
+    { id: "cliente_email", label: "Email del contacto", type: "text" },
+    { id: "cliente_tel", label: "Teléfono del contacto", type: "text" },
+    { id: "empresa_nombre", label: "Nombre de la empresa", type: "text" },
+    ...Object.keys(db.deals?.[0] || {}).filter(k => !["id", "org_id", "pipeline_id", "etapa_id", "config", "creado", "modificado", "titulo", "valor", "prob", "fecha_cierre", "responsable"].includes(k)).map(k => ({ id: k, label: k, type: "text" }))
+  ].filter((v, i, a) => a.findIndex(t => t.id === v.id) === i); // Evitar duplicados
 
   useEffect(() => {
-    if (db.automatizaciones) {
-      setWfs(db.automatizaciones);
-    }
+    if (Array.isArray(db.automatizaciones)) setWfs(db.automatizaciones);
   }, [db.automatizaciones]);
 
-  const [wfSel, setWfSel] = useState(null);
+  const pipeline = db.pipelines?.find(p => p.id === pipelineId) || db.pipelines?.[0];
+  const etapas = pipeline?.etapas || [];
+  const usuarios = db.usuariosApp || [];
 
-  useEffect(() => {
-    if (wfs.length > 0 && !wfSel) {
-      setWfSel(wfs[0].id);
+  const handleAgregarRegla = async (ruleId) => {
+    const ruleDef = ALL_RULES.find(r => r.id === ruleId);
+    if (!ruleDef) return;
+
+    const newRule = {
+      id: uuid(),
+      nombre: ruleDef.label,
+      etapa_id: addStageId,
+      pipeline_id: pipelineId,
+      org_id: db.usuario?.org_id,
+      tipo: ruleId,
+      config: { 
+        sub: ruleDef.sub,
+        ejecucion: "paralelo",
+        hora: "inmediatamente",
+        condiciones: [],
+        campos: [],
+        mensaje: "",
+        asunto: "",
+        destinatario: "responsable",
+        etapa_destino: "",
+        responsable_id: "",
+        titulo_tarea: "",
+        desc_tarea: ""
+      },
+      activo: true,
+    };
+    
+    setWfs(prev => [...prev, newRule]);
+    try {
+      await guardarEnSupa("automatizaciones", newRule);
+    } catch (err) { console.error("Error al guardar:", err); }
+    setShowAdd(false);
+  };
+
+  const handleUpdateRule = async (updated) => {
+    setWfs(prev => prev.map(w => w.id === updated.id ? updated : w));
+    try {
+      await guardarEnSupa("automatizaciones", updated);
+    } catch (err) { console.error("Error al actualizar:", err); }
+    setEditRule(null);
+  };
+
+  const handleEliminar = async (id) => {
+    setWfs(prev => prev.filter(w => w.id !== id));
+    await eliminarDeSupa("automatizaciones", id);
+  };
+
+  const addFieldToRule = (field) => {
+    const mode = showFieldMenu; // 'condicion' o 'campos'
+    if (mode === 'campos') {
+      const currentCampos = editRule.config?.campos || [];
+      if (currentCampos.find(c => c.id === field.id)) return setShowFieldMenu(false);
+      setEditRule({
+        ...editRule,
+        config: { ...editRule.config, campos: [...currentCampos, { ...field, value: "" }] }
+      });
+    } else if (mode === 'condicion') {
+      const currentConds = editRule.config?.condiciones || [];
+      setEditRule({
+        ...editRule,
+        config: { ...editRule.config, condiciones: [...currentConds, { id: uuid(), fieldId: field.id, label: field.label, op: "==", val: "" }] }
+      });
     }
-  }, [wfs]);
-  const [showForm, setShowForm] = useState(false);
-  const [fNombre, setFNombre] = useState("");
-  const [nodoSel, setNodoSel] = useState(null);
-  const [logs, setLogs] = useState([]);
-  const [running, setRunning] = useState(false);
-  const logRef = useRef(null);
-
-  // Local state for the node being edited to avoid hammering Supabase on every keystroke
-  const [localExtra, setLocalExtra] = useState("");
-  const editTimeoutRef = useRef(null);
-
-  const actual = wfs.find(w => w.id === wfSel);
-
-  // Helper para asegurar que nodos sea siempre un array (por si viene de la DB como string JSON)
-  const getNodos = (wf) => {
-    if (!wf || !wf.nodos) return [];
-    if (Array.isArray(wf.nodos)) return wf.nodos;
-    try { return JSON.parse(wf.nodos); } catch (e) { return []; }
+    setShowFieldMenu(false);
   };
 
-  const nodosActivos = getNodos(actual);
-
-  // Simulate log execution
-  const simularEjecucion = () => {
-    if (running) return;
-    setRunning(true);
-    setLogs([]);
-    let i = 0;
-    const interval = setInterval(() => {
-      if (i >= LOG_MSGS.length) { clearInterval(interval); setRunning(false); return; }
-      setLogs(p => [...p, { id: uid(), msg: LOG_MSGS[i], ts: new Date().toLocaleTimeString() }]);
-      i++;
-    }, 300);
-  };
-
-  useEffect(() => {
-    if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight;
-  }, [logs]);
-
-  const crearWf = async () => {
-    if (!fNombre.trim()) return;
-    const wf = { id: uuid(), nombre: fNombre, nodos: [{ id: uuid(), tipo: "trigger", ref: "deal_nuevo", extra: "" }], activo: false, stats: 0, org_id: db.usuario?.org_id };
-    await guardarEnSupa("automatizaciones", wf);
-    setWfSel(wf.id); setShowForm(false); setFNombre("");
-  };
-
-  const agregarNodo = async (tipo, ref) => {
-    if (!actual) return;
-    const updatedWf = { ...actual, nodos: [...actual.nodos, { id: uuid(), tipo, ref, extra: "" }] };
-    await guardarEnSupa("automatizaciones", updatedWf);
-    setShowAddNode(false);
-  };
-
-  const actNodo = async (nId, k, v) => {
-    const updatedWf = { ...actual, nodos: actual.nodos.map(n => n.id === nId ? { ...n, [k]: v } : n) };
-    await guardarEnSupa("automatizaciones", updatedWf);
-  };
-
-  const elimNodo = async (nId) => {
-    const updatedWf = { ...actual, nodos: actual.nodos.filter(n => n.id !== nId) };
-    await guardarEnSupa("automatizaciones", updatedWf);
-    setNodoSel(null);
-  };
-
-  const toggle = async (wId) => {
-    const wf = wfs.find(w => w.id === wId);
-    if (wf) {
-      await guardarEnSupa("automatizaciones", { ...wf, activo: !wf.activo });
-    }
-  };
-
-  const eliminarWf = async (wId) => {
-    if (!confirm("¿Eliminar este Flow por completo?")) return;
-    await eliminarDeSupa("automatizaciones", wId);
-    if (wfSel === wId) setWfSel(wfs.filter(w => w.id !== wId)[0]?.id || null);
-  };
-
-  const selNodo = nodosActivos?.find(n => n.id === nodoSel);
-  const isTrigSel = selNodo?.tipo === "trigger";
-  const catSel = isTrigSel ? TRIGGERS : (selNodo?.tipo === "condition" ? CONDITIONS : ACTIONS);
-  const defSel = selNodo ? (catSel?.[selNodo.ref] || Object.values(catSel || {})[0]) : null;
-
-  // Sync localExtra when selecting a new node
-  useEffect(() => {
-    setLocalExtra(selNodo?.extra || "");
-  }, [nodoSel]);
-
-  const handleExtraChange = (val) => {
-    setLocalExtra(val);
-    if (editTimeoutRef.current) clearTimeout(editTimeoutRef.current);
-    editTimeoutRef.current = setTimeout(() => {
-      actNodo(nodoSel, "extra", val);
-    }, 800);
-  };
+  const reglasPorEtapa = (eId) => wfs.filter(w => w && w.etapa_id === eId && w.pipeline_id === pipelineId);
 
   return (
-    <div style={{ display: "flex", gap: 20, height: "calc(100vh - 120px)", overflow: "hidden" }}>
+    <div style={{ display: "flex", flexDirection: "column", height: "calc(100vh - 120px)", background: "#F4F7FB", borderRadius: 16, overflow: "hidden", border: "1px solid #E0E6ED" }}>
+      
+      {/* HEADER BITRIX STYLE */}
+      <div style={{ background: "#FFF", padding: "0 24px", borderBottom: "1px solid #E0E6ED", flexShrink: 0 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", height: 60 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <div style={{ width: 32, height: 32, borderRadius: 8, background: T.teal, display: "flex", alignItems: "center", justifyContent: "center", color: "#FFF" }}>
+              <Ico k="refresh" size={18} />
+            </div>
+            <div style={{ fontSize: 18, fontWeight: 700, color: "#333" }}>{t("Reglas de automatización y disparadores")} <span style={{ color: "#999", fontSize: 13, fontWeight: 400 }}>{pipeline?.nombre}</span></div>
+          </div>
+          <div style={{ display: "flex", gap: 10 }}>
+            <Btn variant="secundario" size="sm" style={{ fontWeight: 600 }}>EXTENSIONES</Btn>
+            <Btn style={{ background: "#00B4FF", borderColor: "#00B4FF", fontWeight: 600 }} size="sm">MODO DE PRUEBA</Btn>
+          </div>
+        </div>
 
-      {/* ─── SIDEBAR WORKFLOWS ──── */}
-      <div style={{ width: 290, display: "flex", flexDirection: "column", gap: 14, flexShrink: 0 }}>
-        <EncabezadoSeccion title={t ? t("Automatizaciones") : "Automatizaciones"} sub={t ? t("Motor de Automatización") : "Motor de Automatización"} />
-        <Btn onClick={() => setShowForm(true)} full><Ico k="plus" size={14} /> {t ? t("Nuevo Flow") : "Nuevo Flow"}</Btn>
-
-        <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 8 }}>
-          {wfs.map(w => {
-            const act = wfSel === w.id;
-            return (
-              <Tarjeta key={w.id} onClick={() => { setWfSel(w.id); setNodoSel(null); }}
-                style={{ padding: "14px 16px", background: act ? "#0D1117" : T.bg1, border: `1px solid ${act ? T.teal : T.borderHi}`, cursor: "pointer", transition: "all .2s", boxShadow: act ? `0 0 0 1px ${T.teal}40, 0 4px 20px ${T.teal}15` : "none" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8, alignItems: "flex-start" }}>
-                  <div style={{ fontWeight: 800, color: act ? T.teal : T.white, fontSize: 13, lineHeight: 1.4 }}>{w.nombre}</div>
-                  <div style={{ width: 8, height: 8, borderRadius: "50%", flexShrink: 0, background: w.activo ? T.green : "#374151", boxShadow: w.activo ? `0 0 8px ${T.green}` : "none", marginTop: 4, marginLeft: 6 }} />
-                </div>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <div style={{ fontSize: 11, color: T.whiteDim, fontWeight: 600, display: "flex", alignItems: "center", gap: 4 }}>
-                    <Ico k="play" size={10} /> {w.stats} {t ? t("ejecuciones") : "ejecuciones"}
-                  </div>
-                  <div style={{ fontSize: 11, color: T.whiteDim }}>{w.nodos?.length || 0} {t ? t("nodos") : "nodos"}</div>
-                </div>
-              </Tarjeta>
-            );
-          })}
-          {wfs.length === 0 && <Vacio text={t ? t("Sin resultados") : "Sin automatizaciones aún"} />}
+        {/* TABS */}
+        <div style={{ display: "flex", gap: 30 }}>
+          {[
+            { id: "reglas", label: "Reglas de automatización" },
+            { id: "variables", label: "Variables" },
+            { id: "constantes", label: "Constantes" },
+            { id: "logs", label: "Registros de la prueba" }
+          ].map(m => (
+            <div key={m.id} onClick={() => setTab(m.id)} style={{ padding: "12px 0", fontSize: 14, fontWeight: tab === m.id ? 700 : 500, color: tab === m.id ? T.teal : "#666", borderBottom: `2.5px solid ${tab === m.id ? T.teal : "transparent"}`, cursor: "pointer", transition: "all .2s" }}>
+              {m.label}
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* ─── CANVAS AREA ──── */}
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 0, overflow: "hidden", borderRadius: 16, border: `1px solid ${T.borderHi}`, minWidth: 0 }}>
-
-        {actual ? (<>
-          {/* Topbar */}
-          <div style={{ padding: "14px 20px", background: "#0D1117", borderBottom: `1px solid #1F2937`, display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0, gap: 12, flexWrap: "wrap" }}>
-            <div>
-              <div style={{ fontSize: 16, fontWeight: 800, color: "#E5E7EB" }}>{actual.nombre}</div>
-              <div style={{ fontSize: 11, color: "#6B7280", marginTop: 2, fontFamily: "monospace" }}>flow_id: {actual.id} · {nodosActivos?.length || 0} {t ? t("nodos") : "nodos"} · Flow Engine v3</div>
-            </div>
-
-            {/* Pipeline Target Selector */}
-            <div style={{ display: "flex", alignItems: "center", gap: 8, background: "#111827", border: "1px solid #374151", borderRadius: 10, padding: "6px 12px" }}>
-              <Ico k="funnel" size={14} style={{ color: T.teal, flexShrink: 0 }} />
-              <span style={{ fontSize: 11, color: "#6B7280", fontWeight: 700, fontFamily: "monospace", whiteSpace: "nowrap" }}>{t ? t("Pipeline objetivo") : "Pipeline objetivo"}</span>
-              <select value={actual.pipeline_id || ""} onChange={async (e) => {
-                await guardarEnSupa("automatizaciones", { ...actual, pipeline_id: e.target.value });
-              }} style={{ background: "transparent", color: T.teal, border: "none", outline: "none", fontFamily: "monospace", fontSize: 13, fontWeight: 700, cursor: "pointer", maxWidth: 160 }}>
-                <option value="">— {t ? t("Todos los Pipelines") : "Todos los Pipelines"} —</option>
-                {(db?.pipelines || []).map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
-              </select>
-            </div>
-
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <Btn variant="fantasma" onClick={simularEjecucion} style={{ background: running ? "#065F46" : "#111827", border: `1px solid ${running ? T.green : "#374151"}`, color: running ? T.green : "#9CA3AF", fontSize: 12, fontFamily: "monospace" }}>
-                {running ? `⚡ ${t ? t("Ejecutando...") : "Ejecutando..."}` : `▶ ${t ? t("Ejecutar Prueba") : "Ejecutar Prueba"}`}
-              </Btn>
-              <span style={{ fontSize: 13, fontWeight: 700, color: actual.activo ? T.green : "#6B7280" }}>{actual.activo ? `● ${t ? t("En vivo") : "En vivo"}` : `○ ${t ? t("Pausado") : "Pausado"}`}</span>
-              <button onClick={() => toggle(actual.id)} style={{ width: 44, height: 24, borderRadius: 12, background: actual.activo ? T.green : "#374151", position: "relative", cursor: "pointer", border: "none" }}>
-                <div style={{ width: 18, height: 18, borderRadius: "50%", background: "#fff", position: "absolute", top: 3, left: actual.activo ? 23 : 3, transition: "left .2s" }} />
-              </button>
-              <div style={{ width: 1, height: 20, background: "#1F2937" }} />
-              <Btn variant="fantasma" onClick={() => eliminarWf(actual.id)}><Ico k="trash" size={15} style={{ color: "#EF4444" }} /></Btn>
-            </div>
+      {/* TOOLBAR */}
+      <div style={{ padding: "14px 24px", display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
+        <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+          <Btn size="sm" style={{ background: "#BBEB00", color: "#333", border: "none", fontWeight: 700 }}>CREAR</Btn>
+          <Sel value={pipelineId} onChange={e => setPipelineId(e.target.value)} style={{ width: 180, background: "#FFF", height: 34, padding: "0 10px", color: "#333" }}>
+            {db.pipelines?.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
+          </Sel>
+          <div style={{ position: "relative" }}>
+            <Ico k="search" size={14} style={{ position: "absolute", left: 10, top: 10, color: "#999" }} />
+            <Inp placeholder={t("buscar")} style={{ paddingLeft: 30, width: 240, height: 34, background: "#FFF", color: "#333" }} />
           </div>
-
-          {/* Canvas + Logs Row */}
-          <div style={{ flex: 1, display: "flex", minHeight: 0 }}>
-
-            {/* Canvas Grid */}
-            <div style={{ flex: 1, background: "#030712", backgroundImage: "radial-gradient(#1F2937 1.5px, transparent 1.5px)", backgroundSize: "28px 28px", overflowX: "auto", overflowY: "hidden", display: "flex", alignItems: "center", padding: "60px 60px", position: "relative", cursor: "crosshair" }}
-              onClick={() => setNodoSel(null)}>
-
-              {/* Bezier SVG layer */}
-              <svg style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", pointerEvents: "none", overflow: "visible" }}>
-                <defs>
-                  <filter id="glow">
-                    <feGaussianBlur stdDeviation="3" result="coloredBlur" />
-                    <feMerge><feMergeNode in="coloredBlur" /><feMergeNode in="SourceGraphic" /></feMerge>
-                  </filter>
-                </defs>
-                {nodosActivos?.map((n, i) => {
-                  if (i === (nodosActivos?.length || 0) - 1) return null;
-                  const nx = i * 380 + 66 + 300; // node width 300 + 60px connector
-                  const ny = "50%";
-                  const startX = 60 + i * 360 + 300;
-                  const endX = 60 + (i + 1) * 360;
-                  const midY = 200;
-                  const def = n?.ref ? (ALL_NODE_TYPES[n.ref] || Object.values(ALL_NODE_TYPES)[0]) : Object.values(ALL_NODE_TYPES)[0];
-                  return (
-                    <path key={i}
-                      d={`M ${startX} ${midY} C ${startX + 60} ${midY}, ${endX - 60} ${midY}, ${endX} ${midY}`}
-                      stroke={def.color}
-                      strokeWidth="2.5"
-                      fill="none"
-                      strokeDasharray="6 4"
-                      filter="url(#glow)"
-                      style={{ animation: "dashMove 1.5s linear infinite" }}
-                    />
-                  );
-                })}
-              </svg>
-
-              <style>{`
-                @keyframes dashMove { to { stroke-dashoffset: -20; } }
-                .node-card:hover { transform: scale(1.03) !important; }
-              `}</style>
-
-              {/* Nodes */}
-              <div style={{ display: "flex", alignItems: "center", zIndex: 5, position: "relative" }}>
-                {nodosActivos?.map((n, i) => {
-                  const def = n?.ref ? (ALL_NODE_TYPES[n.ref] || Object.values(ALL_NODE_TYPES)[0]) : Object.values(ALL_NODE_TYPES)[0];
-                  const isSel = nodoSel === n.id;
-                  const isTrig = n.tipo === "trigger";
-                  const isCond = n.tipo === "condition";
-                  const nodeColor = def.color;
-
-                  return (
-                    <div key={n.id} style={{ display: "flex", alignItems: "center" }}>
-                      {/* Node Card */}
-                      <div className="node-card"
-                        onClick={e => { e.stopPropagation(); setNodoSel(n.id); }}
-                        style={{
-                          width: 280, background: isSel ? "#111827" : "#0D1117",
-                          border: `1.5px solid ${isSel ? nodeColor : "#1F2937"}`,
-                          borderRadius: 14, cursor: "pointer", userSelect: "none",
-                          boxShadow: isSel ? `0 0 0 3px ${nodeColor}30, 0 8px 40px ${nodeColor}20` : "0 4px 24px rgba(0,0,0,0.6)",
-                          transition: "transform .2s, border-color .15s, box-shadow .15s",
-                        }}>
-
-                        {/* Node Header */}
-                        <div style={{ padding: "12px 16px", borderBottom: "1px solid #1F2937", display: "flex", gap: 10, alignItems: "center", borderTopLeftRadius: 12, borderTopRightRadius: 12, background: `${nodeColor}10` }}>
-                          <div style={{ width: 36, height: 36, borderRadius: 9, background: `${nodeColor}20`, border: `1px solid ${nodeColor}40`, display: "flex", alignItems: "center", justifyContent: "center", color: nodeColor, flexShrink: 0, boxShadow: `0 0 10px ${nodeColor}30` }}>
-                            <Ico k={def.icon} size={18} />
-                          </div>
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
-                              <span style={{ fontSize: 9, fontWeight: 800, color: nodeColor, fontFamily: "monospace", textTransform: "uppercase", background: `${nodeColor}15`, padding: "1px 6px", borderRadius: 4, border: `1px solid ${nodeColor}30` }}>
-                                {isTrig ? "TRIGGER" : isCond ? "CONDITION" : "ACTION"}
-                              </span>
-                              <span style={{ fontSize: 9, color: "#4B5563", fontFamily: "monospace" }}>{def.badge}</span>
-                            </div>
-                            <div style={{ fontSize: 13, fontWeight: 700, color: "#F9FAFB", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{def.label}</div>
-                          </div>
-                        </div>
-
-                        {/* Node Body */}
-                        <div style={{ padding: "12px 16px", background: "#0D1117", borderBottomLeftRadius: 12, borderBottomRightRadius: 12 }}>
-                          {n.extra ? (
-                            <div style={{ fontFamily: "monospace", fontSize: 11, color: nodeColor, background: `${nodeColor}10`, border: `1px solid ${nodeColor}20`, borderRadius: 6, padding: "6px 10px", wordBreak: "break-all" }}>
-                              {n.extra}
-                            </div>
-                          ) : (
-                            <div style={{ fontSize: 11, color: "#4B5563", fontStyle: "italic" }}>No config · click to edit</div>
-                          )}
-                          <div style={{ marginTop: 10, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                            <span style={{ fontSize: 10, color: "#374151", fontFamily: "monospace" }}>node_{i + 1}</span>
-                            {isSel && <span style={{ fontSize: 10, color: nodeColor, fontWeight: 700 }}>● selected</span>}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Connector */}
-                      <div style={{ width: 80, height: 2, background: `linear-gradient(90deg, ${def.color}80, transparent)`, position: "relative", display: "flex", alignItems: "center", justifyContent: "flex-end" }}>
-                        {i === (nodosActivos?.length || 0) - 1 && (
-                          <button onClick={e => { e.stopPropagation(); setShowAddNode(true); }}
-                            style={{ position: "absolute", right: 0, width: 32, height: 32, borderRadius: "50%", background: "#111827", color: "#4B5563", border: "2px dashed #374151", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "all .2s", zIndex: 10 }}
-                            onMouseEnter={e => { e.currentTarget.style.borderColor = T.teal; e.currentTarget.style.color = T.teal; e.currentTarget.style.boxShadow = `0 0 12px ${T.teal}40`; }}
-                            onMouseLeave={e => { e.currentTarget.style.borderColor = "#374151"; e.currentTarget.style.color = "#4B5563"; e.currentTarget.style.boxShadow = "none"; }}>
-                            <Ico k="plus" size={15} />
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* ─── INSPECTOR PANEL ──── */}
-            {nodoSel && selNodo && (
-              <div style={{ width: 320, background: "#0D1117", borderLeft: "1px solid #1F2937", display: "flex", flexDirection: "column", flexShrink: 0, animation: "slideInRight .25s ease-out" }}>
-                <div style={{ padding: "16px 20px", borderBottom: "1px solid #1F2937", background: "#111827", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <div>
-                    <div style={{ fontSize: 10, fontFamily: "monospace", color: "#6B7280", textTransform: "uppercase", letterSpacing: ".1em", marginBottom: 4 }}>Node Inspector</div>
-                    <div style={{ fontSize: 15, fontWeight: 700, color: defSel?.color || T.teal, display: "flex", alignItems: "center", gap: 8 }}>
-                      <Ico k={defSel?.icon || "code"} size={16} /> {defSel?.label}
-                    </div>
-                  </div>
-                  <Btn variant="fantasma" size="sm" onClick={() => setNodoSel(null)}><Ico k="x" size={15} /></Btn>
-                </div>
-
-                <div style={{ flex: 1, overflowY: "auto", padding: 20, display: "flex", flexDirection: "column", gap: 18 }}>
-                  <Campo label="Module / Event">
-                    <Sel value={selNodo.ref} onChange={e => actNodo(nodoSel, "ref", e.target.value)}
-                      style={{ fontFamily: "monospace", fontSize: 13, background: "#111827", color: "#E5E7EB", border: "1px solid #374151" }}>
-                      {Object.entries(catSel || {}).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
-                    </Sel>
-                  </Campo>
-
-                  <Campo label="Config / Payload">
-                    <Inp value={localExtra} onChange={e => handleExtraChange(e.target.value)}
-                      placeholder="e.g. template_id / webhook_url / condition..."
-                      style={{ fontFamily: "monospace", fontSize: 12, background: "#111827", color: "#10B981", border: "1px solid #374151" }}
-                      rows={3} />
-                  </Campo>
-
-                  {!isTrigSel && (
-                    <div>
-                      <div style={{ fontSize: 11, color: "#6B7280", fontFamily: "monospace", marginBottom: 8, textTransform: "uppercase", letterSpacing: ".08em" }}>Variable Map</div>
-                      <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                        {["{{deal.id}}", "{{deal.valor}}", "{{contact.name}}", "{{contact.email}}", "{{date.now}}", "{{form.data}}"].map(v => (
-                          <button key={v} onClick={() => handleExtraChange(localExtra + v)}
-                            style={{ fontFamily: "monospace", fontSize: 10, color: "#10B981", background: "#10B98115", border: "1px solid #10B98130", borderRadius: 4, padding: "3px 8px", cursor: "pointer" }}>
-                            {v}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {!isTrigSel && (
-                  <div style={{ padding: 16, borderTop: "1px solid #1F2937" }}>
-                    <Btn full variant="peligro" onClick={() => elimNodo(nodoSel)}>
-                      <Ico k="trash" size={14} /> Remove Node
-                    </Btn>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* ─── LOG CONSOLE ──── */}
-          <div style={{ height: 160, background: "#030712", borderTop: "1px solid #1F2937", display: "flex", flexDirection: "column", flexShrink: 0 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 16px", borderBottom: "1px solid #111827" }}>
-              <div style={{ fontFamily: "monospace", fontSize: 11, color: "#4B5563", display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ color: "#10B981" }}>●</span> Execution Console  {running && <span style={{ color: "#F59E0B", animation: "pulse 1s infinite" }}>▲ running...</span>}
-              </div>
-              <button onClick={() => setLogs([])} style={{ fontFamily: "monospace", fontSize: 10, color: "#374151", background: "transparent", border: "none", cursor: "pointer" }}>clear</button>
-            </div>
-            <div ref={logRef} style={{ flex: 1, overflowY: "auto", padding: "6px 16px", display: "flex", flexDirection: "column", gap: 3 }}>
-              {logs.length === 0 && (
-                <div style={{ fontFamily: "monospace", fontSize: 11, color: "#1F2937" }}>// Click "▶ Run Test" to simulate this flow execution</div>
-              )}
-              {logs.map(l => (
-                <div key={l.id} style={{ fontFamily: "monospace", fontSize: 11, color: l.msg.startsWith("✓") ? "#10B981" : l.msg.startsWith("←") ? "#6366F1" : "#9CA3AF", display: "flex", gap: 10 }}>
-                  <span style={{ color: "#374151", flexShrink: 0 }}>{l.ts}</span>
-                  <span>{l.msg}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-        </>) : (
-          <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", background: "#030712", backgroundImage: "radial-gradient(#1F2937 1.5px, transparent 1.5px)", backgroundSize: "28px 28px" }}>
-            <Vacio text="Select or create an automation flow to start building your workflow." />
-          </div>
-        )}
+        </div>
       </div>
 
-      {/* ─── ADD NODE MODAL ──── */}
-      <Modal open={showAddNode} onClose={() => setShowAddNode(false)} title="Add Node to Flow" width={560}>
-        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-          {[
-            { label: "Actions", cat: ACTIONS, tipo: "action" },
-            { label: "Conditions & Logic", cat: CONDITIONS, tipo: "condition" },
-          ].map(({ label, cat, tipo }) => (
-            <div key={label}>
-              <div style={{ fontSize: 11, fontWeight: 800, color: T.whiteDim, textTransform: "uppercase", letterSpacing: ".1em", marginBottom: 10 }}>{label}</div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                {Object.entries(cat).map(([k, v]) => (
-                  <button key={k} onClick={() => agregarNodo(tipo, k)}
-                    style={{ display: "flex", alignItems: "center", gap: 12, background: T.bg1, border: `1px solid ${T.borderHi}`, borderRadius: 10, padding: "12px 14px", cursor: "pointer", textAlign: "left", transition: "all .15s", fontFamily: "inherit" }}
-                    onMouseEnter={e => { e.currentTarget.style.borderColor = v.color; e.currentTarget.style.background = `${v.color}10`; }}
-                    onMouseLeave={e => { e.currentTarget.style.borderColor = T.borderHi; e.currentTarget.style.background = T.bg1; }}>
-                    <div style={{ width: 32, height: 32, borderRadius: 8, background: `${v.color}20`, color: v.color, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                      <Ico k={v.icon} size={16} />
-                    </div>
-                    <div>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: T.white }}>{v.label}</div>
-                      <div style={{ fontSize: 10, color: T.whiteDim, fontFamily: "monospace" }}>{v.badge}</div>
-                    </div>
-                  </button>
-                ))}
+      {/* STAGE BOARD */}
+      <div style={{ flex: 1, overflowX: "auto", overflowY: "hidden", display: "flex", padding: "0 24px 24px" }}>
+        <div style={{ display: "flex", gap: 12, height: "100%" }}>
+          {etapas.map((et, idx) => (
+            <div key={et.id} style={{ width: 220, display: "flex", flexDirection: "column", gap: 10 }}>
+              {/* STAGE HEADER BITRIX STYLE */}
+              <div style={{ 
+                background: et.color || "#DDD", 
+                padding: "10px 16px", 
+                color: "#FFF", 
+                fontSize: 12, 
+                fontWeight: 800, 
+                position: "relative",
+                clipPath: idx === 0 ? "polygon(0% 0%, 90% 0%, 100% 50%, 90% 100%, 0% 100%)" : "polygon(0% 0%, 90% 0%, 100% 50%, 90% 100%, 0% 100%, 10% 50%)",
+                marginRight: -10,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                textAlign: "center",
+                minHeight: 40,
+                textTransform: "uppercase",
+                letterSpacing: ".02em"
+              }}>
+                {et.nombre}
+              </div>
+
+              {/* ADD BUTTON */}
+              <div onClick={() => { setAddStageId(et.id); setShowAdd(true); }} style={{ 
+                height: 34, 
+                border: "1px dashed #C0C5D1", 
+                borderRadius: 6, 
+                display: "flex", 
+                alignItems: "center", 
+                justifyContent: "center", 
+                color: "#999", 
+                fontSize: 20, 
+                cursor: "pointer", 
+                background: "rgba(255,255,255,0.7)",
+                transition: "all .2s ease"
+              }} onMouseEnter={e => e.currentTarget.style.borderColor = T.teal}>
+                +
+              </div>
+
+              {/* COLUMN CONTENT */}
+              <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 10, padding: "4px 0" }}>
+                {reglasPorEtapa(et.id).map(r => {
+                   const def = ALL_RULES.find(dr => dr.id === r.tipo) || ALL_RULES[0];
+                   return (
+                    <Tarjeta key={r.id} style={{ background: "#FFF", border: "1px solid #E0E6ED", padding: 12, borderRadius: 8, boxShadow: "0 2px 4px rgba(0,0,0,0.05)", position: "relative" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 }}>
+                        <div style={{ flex: 1 }}>
+                           <div style={{ fontSize: 10, color: def.type === "trigger" ? "#F59E0B" : T.teal, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 2 }}>{def.type === "trigger" ? "Disparador" : (r.config?.hora === "inmediatamente" ? "inmediatamente" : `En ${r.config?.hora}`)}</div>
+                           <div style={{ fontSize: 13, fontWeight: 700, color: "#333", lineHeight: "1.2" }}>{r.nombre}</div>
+                        </div>
+                        <div onClick={() => setEditRule(r)} style={{ color: "#999", cursor: "pointer", paddingLeft: 8 }}><Ico k="edit" size={13} /></div>
+                      </div>
+                      <div style={{ fontSize: 11, color: "#999", lineHeight: "1.4", fontStyle: "italic" }}>{r.config?.sub || def.sub}</div>
+                      <div style={{ marginTop: 12, display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: 8, borderTop: "1px solid #F0F2F5" }}>
+                         <div onClick={() => setEditRule(r)} style={{ color: "#00B4FF", fontSize: 11, fontWeight: 600, cursor: "pointer" }}>cambiar</div>
+                         <div onClick={() => handleEliminar(r.id)} style={{ color: "#FF4D4D", fontSize: 11, fontWeight: 600, cursor: "pointer" }}>eliminar</div>
+                      </div>
+                    </Tarjeta>
+                   );
+                })}
               </div>
             </div>
           ))}
         </div>
-      </Modal>
+      </div>
 
-      {/* ─── NEW FLOW MODAL ──── */}
-      <Modal open={showForm} onClose={() => setShowForm(false)} title="New Automation Flow" width={440}>
-        <Campo label="Flow Name">
-          <Inp value={fNombre} onChange={e => setFNombre(e.target.value)} placeholder="e.g. Win → Notify Slack" style={{ fontSize: 15 }} />
-        </Campo>
-        <div style={{ display: "flex", gap: 12, justifyContent: "flex-end", marginTop: 24 }}>
-          <Btn variant="secundario" onClick={() => setShowForm(false)}>Cancel</Btn>
-          <Btn onClick={crearWf} disabled={!fNombre.trim()}>Create Flow</Btn>
+      {/* ADD RULE MODAL */}
+      <Modal open={showAdd} onClose={() => setShowAdd(false)} title={`Agregar regla a: ${etapas.find(e => e.id === addStageId)?.nombre}`} width={1000}>
+        <div style={{ display: "flex", height: 600, margin: "-22px" }}>
+          <div style={{ width: 300, background: "#F8FAFB", borderRight: "1px solid #E0E6ED", padding: "10px 0", overflowY: "auto", flexShrink: 0 }}>
+            <div style={{ padding: "10px 20px", marginBottom: 15 }}>
+               <Inp value={q} onChange={e => setQ(e.target.value)} placeholder="Buscar regla..." style={{ height: 36, fontSize: 13, background: "#FFF", color: "#333" }} />
+            </div>
+            {CATEGORIES.map(c => (
+              <div key={c.id} onClick={() => setCatSel(c.id)} style={{ padding: "12px 20px", display: "flex", alignItems: "center", gap: 12, cursor: "pointer", background: catSel === c.id ? "#FFF" : "transparent", color: catSel === c.id ? T.teal : "#666", borderLeft: `4px solid ${catSel === c.id ? T.teal : "transparent"}`, fontWeight: catSel === c.id ? 700 : 500, transition: "background .15s" }}>
+                <div style={{ color: catSel === c.id ? T.teal : "#999" }}><Ico k={c.icon} size={16} /></div>
+                <span style={{ fontSize: 13 }}>{c.label}</span>
+              </div>
+            ))}
+          </div>
+
+          <div style={{ flex: 1, padding: "30px 40px", overflowY: "auto", background: "#FFF" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+              {ALL_RULES.filter(r => (q ? (r.label.toLowerCase().includes(q.toLowerCase()) || r.sub.toLowerCase().includes(q.toLowerCase())) : r.cat === catSel)).map(r => (
+                <div key={r.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "20px 0", borderBottom: "1px solid #F3F5F7" }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
+                       <div style={{ color: r.color }}><Ico k={r.icon} size={16} /></div>
+                       <div style={{ fontSize: 15, fontWeight: 700, color: "#333" }}>{r.label}</div>
+                    </div>
+                    <div style={{ fontSize: 13, color: "#777" }}>{r.sub}</div>
+                  </div>
+                  <Btn onClick={() => handleAgregarRegla(r.id)} variant="secundario" size="sm" style={{ padding: "6px 16px", background: "#FFF", color: "#333", fontWeight: 700 }}>{t("Agregar")}</Btn>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </Modal>
+
+      {/* INSPECTOR MODAL */}
+      <Modal open={!!editRule} onClose={() => setEditRule(null)} title={<span style={{color: '#333'}}>{editRule?.nombre}</span>} width={700}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 24, padding: "10px 5px", color: "#333" }}>
+          
+          <div style={{ display: "flex", gap: 20, paddingBottom: 20, borderBottom: "1px solid #F0F2F5" }}>
+            <div style={{ flex: 1 }}>
+               <BitrixSelect 
+                  label="Ejecución" 
+                  value={editRule?.config?.ejecucion || "paralelo"} 
+                  options={[{id: "paralelo", label: "En paralelo"}, {id: "secuencial", label: "Secuencial"}]}
+                  onChange={v => setEditRule({...editRule, config: {...editRule.config, ejecucion: v}})}
+               />
+            </div>
+            <div style={{ flex: 1 }}>
+               <BitrixSelect 
+                  label="Hora" 
+                  value={editRule?.config?.hora || "inmediatamente"} 
+                  options={[{id: "inmediatamente", label: "Inmediatamente"}, {id: "1h", label: "En 1 hora"}, {id: "1d", label: "En 1 día"}]}
+                  onChange={v => setEditRule({...editRule, config: {...editRule.config, hora: v}})}
+               />
+            </div>
+          </div>
+
+          {/* CONDITIONS EDITOR */}
+          <div>
+             <div style={{ fontSize: 13, fontWeight: 700, color: "#333", marginBottom: 12 }}>Condición</div>
+             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {editRule?.config?.condiciones?.map((cond, i) => (
+                   <div key={cond.id} style={{ display: "flex", gap: 8, alignItems: "center", background: "#F8FAFB", padding: 10, borderRadius: 6, border: "1px solid #E0E6ED" }}>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: "#666", width: 120 }}>{cond.label}</div>
+                      <BitrixSelect 
+                        value={cond.op} 
+                        options={OPERATORS}
+                        onChange={v => {
+                           const newConds = [...editRule.config.condiciones];
+                           newConds[i].op = v;
+                           setEditRule({...editRule, config: {...editRule.config, condiciones: newConds}});
+                        }}
+                      />
+                      <Inp 
+                         value={cond.val} 
+                         onChange={e => {
+                            const newConds = [...editRule.config.condiciones];
+                            newConds[i].val = e.target.value;
+                            setEditRule({...editRule, config: {...editRule.config, condiciones: newConds}});
+                         }}
+                         placeholder="valor..."
+                         style={{ flex: 1, background: "#FFF", height: 28, fontSize: 12, border: "1px solid #DDD" }}
+                      />
+                      <div onClick={() => {
+                         const newConds = editRule.config.condiciones.filter(c => c.id !== cond.id);
+                         setEditRule({...editRule, config: {...editRule.config, condiciones: newConds}});
+                      }} style={{ color: "#FF4D4D", cursor: "pointer" }}><Ico k="trash" size={14} /></div>
+                   </div>
+                ))}
+                <span onClick={() => setShowFieldMenu("condicion")} style={{ color: "#00B4FF", fontSize: 13, cursor: "pointer", borderBottom: "1px dashed #00B4FF", width: "fit-content" }}>+ Agregar condición</span>
+             </div>
+          </div>
+
+          {/* SPECIFIC FIELDS PER RULE TYPE */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 20, borderTop: "1px solid #F0F2F5", paddingTop: 20 }}>
+            
+            {/* NOTIFICATIONS / COMMUNICATION */}
+            {(editRule?.tipo.includes("enviar") || editRule?.tipo === "notif_user" || editRule?.tipo === "send_chat_msg" || editRule?.tipo === "add_comment" || editRule?.tipo.includes("msg") || editRule?.tipo.includes("notif")) && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 15 }}>
+                <div style={{ fontSize: 13, fontWeight: 700 }}>Contenido de la notificación</div>
+                {editRule.tipo.includes("email") && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    <div style={{ fontSize: 12, color: "#999" }}>Asunto:</div>
+                    <Inp value={editRule.config?.asunto} onChange={e => setEditRule({...editRule, config: {...editRule.config, asunto: e.target.value}})} style={{ background: "#FFF", color: "#333", border: "1px solid #DDD" }} />
+                  </div>
+                )}
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  <div style={{ fontSize: 12, color: "#999" }}>Mensaje:</div>
+                  <textarea 
+                    value={editRule.config?.mensaje} 
+                    onChange={e => setEditRule({...editRule, config: {...editRule.config, mensaje: e.target.value}})}
+                    style={{ width: "100%", height: 100, borderRadius: 6, border: "1px solid #DDD", padding: 12, fontSize: 13, outline: "none", fontFamily: "inherit", resize: "none" }}
+                    placeholder="Escribe el mensaje aquí... usa {nombre} para variables"
+                  />
+                </div>
+                <BitrixSelect 
+                    label="Destinatario"
+                    value={editRule.config?.destinatario || "responsable"}
+                    options={[{id: "responsable", label: "Persona responsable"}, {id: "cliente", label: "Cliente (Contacto/Empresa)"}, {id: "todos", label: "Todos los involucrados"}]}
+                    onChange={v => setEditRule({...editRule, config: {...editRule.config, destinatario: v}})}
+                />
+              </div>
+            )}
+
+            {/* CHANGE STAGE */}
+            {(editRule?.tipo === "change_stage") && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 15 }}>
+                <div style={{ fontSize: 13, fontWeight: 700 }}>Mover a la etapa</div>
+                <BitrixSelect 
+                    label="Seleccionar etapa de destino"
+                    value={editRule.config?.etapa_destino || ""}
+                    options={etapas.map(e => ({ id: e.id, label: e.nombre }))}
+                    onChange={v => setEditRule({...editRule, config: {...editRule.config, etapa_destino: v}})}
+                />
+              </div>
+            )}
+
+            {/* CHANGE RESPONSIBLE */}
+            {(editRule?.tipo === "change_resp") && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 15 }}>
+                <div style={{ fontSize: 13, fontWeight: 700 }}>Nueva persona responsable</div>
+                <BitrixSelect 
+                    label="Seleccionar empleado"
+                    value={editRule.config?.responsable_id || ""}
+                    options={usuarios.map(u => ({ id: u.id, label: u.name || u.email }))}
+                    onChange={v => setEditRule({...editRule, config: {...editRule.config, responsable_id: v}})}
+                />
+              </div>
+            )}
+
+            {/* CREATE TASK */}
+            {(editRule?.tipo === "create_task") && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 15 }}>
+                <div style={{ fontSize: 13, fontWeight: 700 }}>Detalles de la tarea</div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  <div style={{ fontSize: 12, color: "#999" }}>Título:</div>
+                  <Inp value={editRule.config?.titulo_tarea} onChange={e => setEditRule({...editRule, config: {...editRule.config, titulo_tarea: e.target.value}})} style={{ background: "#FFF", color: "#333", border: "1px solid #DDD" }} />
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  <div style={{ fontSize: 12, color: "#999" }}>Descripción:</div>
+                  <textarea 
+                    value={editRule.config?.desc_tarea} 
+                    onChange={e => setEditRule({...editRule, config: {...editRule.config, desc_tarea: e.target.value}})}
+                    style={{ width: "100%", height: 80, borderRadius: 6, border: "1px solid #DDD", padding: 12, fontSize: 13, outline: "none", fontFamily: "inherit", resize: "none" }}
+                    placeholder="Descripción de la tarea..."
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* MODIFICATIONS / CUSTOM FIELDS */}
+            {(editRule?.tipo === "mod_item" || editRule?.tipo === "upd_contact" || editRule?.tipo === "upd_company") && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                <div style={{ fontSize: 13, fontWeight: 700 }}>Campos a modificar</div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    {editRule.config?.campos?.map((f, i) => (
+                      <div key={i} style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                        <div style={{ width: 140, fontSize: 12, fontWeight: 600, color: "#666" }}>{f.label}</div>
+                        <Inp 
+                            value={f.value} 
+                            onChange={e => {
+                              const newCampos = [...editRule.config.campos];
+                              newCampos[i].value = e.target.value;
+                              setEditRule({...editRule, config: {...editRule.config, campos: newCampos}});
+                            }}
+                            style={{ flex: 1, background: "#FFF", color: "#333", height: 32, border: "1px solid #DDD" }} 
+                        />
+                        <div style={{ color: "#FF4D4D", cursor: "pointer" }} onClick={() => {
+                            const newCampos = editRule.config.campos.filter((_, idx) => idx !== i);
+                            setEditRule({...editRule, config: {...editRule.config, campos: newCampos}});
+                        }}><Ico k="trash" size={14} /></div>
+                      </div>
+                    ))}
+                    <span onClick={() => setShowFieldMenu("campos")} style={{ color: "#00B4FF", fontSize: 13, cursor: "pointer", borderBottom: "1px dashed #00B4FF", width: "fit-content" }}>+ Seleccionar campo</span>
+                </div>
+              </div>
+            )}
+
+          </div>
+
+          {/* FIELD SELECTOR OVERLAY (DYNAMIC) */}
+          {showFieldMenu && (
+            <>
+              <div onClick={() => setShowFieldMenu(false)} style={{ position: "fixed", inset: 0, zIndex: 9998 }} />
+              <div style={{ position: "fixed", top: "20%", left: "30%", right: "30%", background: "#FFF", boxShadow: "0 10px 40px rgba(0,0,0,0.2)", borderRadius: 12, zIndex: 9999, border: "1px solid #DDD", maxHeight: "60vh", overflowY: "auto" }}>
+                 <div style={{ padding: 15, borderBottom: "1px solid #EEE", fontWeight: 700, fontSize: 14, display: "flex", justifyContent: "space-between" }}>
+                    Seleccionar campo de CRM
+                    <span onClick={() => setShowFieldMenu(false)} style={{ cursor: "pointer" }}><Ico k="x" size={14} /></span>
+                 </div>
+                 <div style={{ padding: 10 }}>
+                    <div style={{ fontSize: 11, color: "#999", marginBottom: 8, padding: "0 10px", fontWeight: 800 }}>CAMPOS DISPONIBLES (ESTÁNDAR + PERSONALIZADOS)</div>
+                    {crmFields.map(f => (
+                      <div key={f.id} onClick={() => addFieldToRule(f)} style={{ padding: "10px 15px", fontSize: 13, cursor: "pointer", borderRadius: 4 }} onMouseEnter={e => e.currentTarget.style.background = "#F5F9FF"}>
+                          {f.label} <span style={{ fontSize: 11, color: "#999" }}>({f.type})</span>
+                      </div>
+                    ))}
+                 </div>
+              </div>
+            </>
+          )}
+
+          <div style={{ marginTop: 20, display: "flex", gap: 12, borderTop: "1px solid #F0F2F5", paddingTop: 24 }}>
+             <Btn onClick={() => handleUpdateRule(editRule)} style={{ background: "#BBEB00", color: "#333", border: "none", padding: "10px 30px", fontSize: 13, fontWeight: 700, borderRadius: 4 }}>GUARDAR</Btn>
+             <Btn variant="secundario" onClick={() => setEditRule(null)} style={{ padding: "10px 30px", fontSize: 13, fontWeight: 700, borderRadius: 4, background: "#FFF", color: "#666", border: "1px solid #DDD" }}>CANCELAR</Btn>
+          </div>
+
+        </div>
+      </Modal>
+
+      <style>{`
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-thumb { background: #CBD5E1; borderRadius: 10px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        
+        select option {
+           background: #FFF !important;
+           color: #333 !important;
+        }
+      `}</style>
     </div>
   );
 };

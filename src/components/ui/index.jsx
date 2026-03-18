@@ -77,14 +77,14 @@ export const LocalInput = ({ value, onChange, onCommit, type = "text", ...props 
   };
 
   return (
-    <Inp 
-      type={type} 
-      value={internalVal} 
-      onChange={handleChange} 
-      onFocus={() => setIsFocused(true)} 
-      onBlur={handleBlur} 
+    <Inp
+      type={type}
+      value={internalVal}
+      onChange={handleChange}
+      onFocus={() => setIsFocused(true)}
+      onBlur={handleBlur}
       onKeyDown={handleKeyDown}
-      {...props} 
+      {...props}
     />
   );
 };
