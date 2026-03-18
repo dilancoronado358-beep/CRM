@@ -60,7 +60,7 @@ export function Login({ forceView }) {
     setSuccess('');
 
     const { error } = await sb.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}${window.location.pathname}#/recovery-confirm`,
+      redirectTo: window.location.origin + window.location.pathname + "#/recovery-confirm",
     });
 
     if (error) {

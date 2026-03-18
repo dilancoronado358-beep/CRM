@@ -330,7 +330,7 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
     if (confirm(`¿Enviar correo con enlace seguro de recuperación de contraseña a ${emailUsuario}?`)) {
       try {
         const { error } = await sb.auth.resetPasswordForEmail(emailUsuario, {
-          redirectTo: `${window.location.origin}${window.location.pathname}#/recovery-confirm`,
+          redirectTo: window.location.origin + window.location.pathname + "#/recovery-confirm",
         });
         if (error) throw error;
         alert(`Se han enviado las instrucciones al correo ${emailUsuario}`);

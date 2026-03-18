@@ -345,13 +345,29 @@ export default function App() {
   }
 
   // 2. Si es una redirección de recuperación de contraseña de Supabase
-  const isRecovering = hashURL.includes("type=recovery") || hashURL.includes("recovery-confirm");
+  const isRecovering = window.location.href.includes("type=recovery") ||
+    window.location.hash.includes("recovery-confirm") ||
+    window.location.search.includes("type=recovery");
+
   if (isRecovering) {
     return <Login forceView="new-password" />;
   }
 
   if (!session && !db.usuario) {
     return <Login />;
+  }
+
+  // 3. Bloqueo de carga: asegurar que todos los datos iniciales estén listos
+  if (!isAppReady) {
+    return (
+      <div style={{ display: "flex", flexDirection: "column", height: "100vh", width: "100vw", alignItems: "center", justifyContent: "center", background: T.bg0, color: T.white }}>
+        <div style={{ display: "flex", gap: 8, alignItems: "center", color: T.whiteDim, fontSize: 13, fontWeight: 500 }}>
+          <div style={{ width: 14, height: 14, border: `2px solid ${T.tealSoft}`, borderTopColor: T.teal, borderRadius: "50%", animation: "spin 1s linear infinite" }} />
+          Cargando CRM...
+        </div>
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      </div>
+    );
   }
 
   const lng = db.usuario?.idioma || "es";

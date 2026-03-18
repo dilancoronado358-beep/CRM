@@ -320,7 +320,7 @@ export function useSupaState() {
       }
 
       const { data, error } = await sb.from(tabla).upsert(payload).select();
-      
+
       if (error) {
         console.error(`🔴 Error en ${tabla}:`, error.message);
         // Alerta visual para el usuario en caso de error crítico
@@ -328,7 +328,7 @@ export function useSupaState() {
       } else {
         console.log(`🟢 Éxito en ${tabla}`);
         const confirmado = data?.[0] || payload;
-        
+
         setDb((d) => {
           const lista = Array.isArray(d[tabla]) ? d[tabla] : [];
           const idx = lista.findIndex((r) => r.id === confirmado.id);
@@ -360,5 +360,5 @@ export function useSupaState() {
     }
   };
 
-  return { db, setDb, session, estadoSupa, cargando, guardarEnSupa, eliminarDeSupa, recargar: cargarDeSupa };
+  return { db, setDb, session, estadoSupa, cargando, isAppReady, guardarEnSupa, eliminarDeSupa, recargar: cargarDeSupa };
 }
