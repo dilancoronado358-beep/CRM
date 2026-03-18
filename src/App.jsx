@@ -532,7 +532,14 @@ export default function App() {
       </div>
 
       {/* GLOBAL OMNIBAR */}
-      <SpotlightSearch db={db} open={spotlightOpen} onClose={() => setSpotlightOpen(false)} onNavigate={(m) => setModulo(m)} />
+      <SpotlightSearch 
+        db={db} 
+        open={spotlightOpen} 
+        onClose={() => setSpotlightOpen(false)} 
+        onNavigate={(m) => setModulo(m)}
+        onLogout={() => setShowLogoutConfirm(true)}
+        applyTheme={applyTheme}
+      />
 
       {/* NOTIFICACIONES MODERNAS (SONNER) - ULTRA MODERN GLASSMOPHISM */}
       <Toaster
