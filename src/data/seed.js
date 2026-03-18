@@ -100,4 +100,10 @@ export const SEMILLA = {
   campos_personalizados: [],
   api_settings: [],
   webhook_subscriptions: [],
+  notificaciones: [],
+  auditoria: [],
+  whatsapp_messages: [],
+  whatsapp_automations: [],
+  landing_pages: [],
+  formularios_publicos: [],
 };

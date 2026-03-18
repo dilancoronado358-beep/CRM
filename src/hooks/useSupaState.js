@@ -13,19 +13,12 @@ export const sb = createClient(SUPA_URL, SUPA_KEY);
 
 // Tablas que se sincronizan con Supabase
 const TABLAS_SUPA = [
-  "contactos",
-  "empresas",
-  "deals",
-  "actividades",
-  "tareas",
-  "emails",
-  "notas",
-  "usuario", "empresaConfigs", "usuariosApp", "productos", "contactos", "empresas",
-  "pipelines", "deals", "actividades", "tareas", "emails", "plantillasEmail",
-  "notas", "campos_personalizados", "whatsapp_automations", "whatsapp_messages",
-  "finanzas_gastos", "finanzas_comisiones", "notificaciones", "auditoria",
-  "api_settings", "webhook_subscriptions", "email_accounts",
-  "landing_pages", "formularios_publicos"
+  "contactos", "empresas", "deals", "actividades", "tareas", "emails", "notas",
+  "usuario", "empresaConfigs", "usuariosApp", "productos",
+  "pipelines", "plantillasEmail", "campos_personalizados",
+  "whatsapp_automations", "whatsapp_messages", "finanzas_gastos", "finanzas_comisiones",
+  "notificaciones", "auditoria", "api_settings", "webhook_subscriptions",
+  "email_accounts", "landing_pages", "formularios_publicos"
 ];
 
 /* ═══════════════════════════════════════════
@@ -189,11 +182,11 @@ export function useSupaState() {
       // Temporizador estricto de seguridad: máximo 2.5 segundos de pantalla de carga
       const timeoutFallback = setTimeout(() => {
         if (montado) {
-          console.warn("⚠️ Tiempo de carga excedido (2.5s). Forzando isAppReady a true.");
+          console.warn("⚠️ Tiempo de carga excedido (5s). Forzando isAppReady a true.");
           setCargando(false);
           setIsAppReady(true);
         }
-      }, 2500);
+      }, 5000);
 
       try {
         // 1. Obtener sesión actual
