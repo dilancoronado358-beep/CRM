@@ -290,12 +290,25 @@ export function useSupaState() {
           return prev;
         });
       })
-      .on('broadcast', { event: 'force_logout' }, (payload) => {
+      .on('broadcast', { event: 'force_logout' }, (data) => {
+        // La estructura de Supabase Broadcast suele poner el objeto enviado dentro de .payload o directamente en data
+        const payload = data.payload || data;
         console.log("🚨 Recibida señal de FORCE_LOGOUT:", payload);
-        localStorage.removeItem("crm_usuario_activo");
-        localStorage.removeItem("crm_theme");
-        sessionStorage.clear();
-        window.location.reload();
+
+        // EXTRA CRÍTICO: Verificar que el comando sea para ESTE usuario
+        // de lo contrario, ¡cerraríamos la sesión de todo el mundo en el CRM!
+        const miEmail = localStorage.getItem("crm_usuario_activo") ? JSON.parse(localStorage.getItem("crm_usuario_activo")).email : null;
+
+        if (payload.email && miEmail && payload.email.toLowerCase() === miEmail.toLowerCase()) {
+          console.warn("🔒 Cerrando sesión por comando global remoto...");
+          localStorage.removeItem("crm_usuario_activo");
+          localStorage.removeItem("crm_theme");
+          sessionStorage.clear();
+          // Desconectar explícitamente de Supabase Auth
+          sb.auth.signOut().then(() => {
+            window.location.reload();
+          });
+        }
       })
       .subscribe();
 

@@ -547,14 +547,22 @@ export default function App() {
         onClose={() => { setShowLogoutConfirm(false); setLogoutGlobal(false); }}
         onConfirm={async () => {
           try {
-            if (logoutGlobal) {
+            const userEmail = db.usuario?.email || session?.user?.email;
+            if (logoutGlobal && userEmail) {
               // Notificar a otros dispositivos para que cierren sesión inmediatamente
-              await sendBroadcast('force_logout', { email: db.usuario?.email, timestamp: Date.now() });
+              console.log("📤 Enviando señal de force_logout para:", userEmail);
+              await sendBroadcast('force_logout', {
+                email: userEmail,
+                timestamp: Date.now(),
+                origin: window.location.href
+              });
             }
+            // Ejecutar signOut global en Supabase
             await sb.auth.signOut({ scope: logoutGlobal ? 'global' : 'local' });
           } catch (err) {
             console.error("Error during logout:", err);
           } finally {
+            // Limpieza local inmediata
             localStorage.removeItem("crm_usuario_activo");
             localStorage.removeItem("crm_theme");
             sessionStorage.clear();
