@@ -941,15 +941,25 @@ async function refreshAccessToken(accountId) {
 
 // Sincronizar correos vía IMAP (Soporta XOAUTH2)
 async function syncEmails(accountId) {
-  try {
-    let { data: acc, error } = await supabase.from('email_accounts').select('*').eq('id', accountId).single();
-    if (error || !acc) return { error: "Cuenta no encontrada" };
+  const log = (msg) => {
+    try {
+      const t = new Date().toISOString();
+      require('fs').appendFileSync('server_log.txt', `[${t}] ${msg}\n`);
+    } catch(e){}
+    console.log(msg);
+  };
 
-    // Fallback de org_id si no existe en la cuenta (para cuentas viejas)
+  try {
+    log(`🚀 Iniciando sincronización para ${accountId}...`);
+    let { data: acc, error } = await supabase.from('email_accounts').select('*').eq('id', accountId).single();
+    if (error || !acc) { log(`❌ Cuenta no encontrada: ${accountId}`); return { error: "Cuenta no encontrada" }; }
+
     if (!acc.org_id && acc.user_id) {
+       log(`ℹ️ Buscando org_id para el usuario ${acc.user_id}...`);
       const { data: u } = await supabase.from('usuariosApp').select('org_id').eq('id', acc.user_id).single();
       if (u) acc.org_id = u.org_id;
     }
+    log(`📍 Org ID: ${acc.org_id}`);
 
     // Validar expiración si es OAuth
     let token = acc.access_token;
@@ -978,13 +988,14 @@ async function syncEmails(accountId) {
     const connection = await imaps.connect(config);
     await connection.openBox('INBOX');
 
-    const searchCriteria = ['UNSEEN'];
-    const fetchOptions = { bodies: ['HEADER', 'TEXT', ''], markSeen: true };
+    const searchCriteria = ['ALL']; // Cambiado de UNSEEN a ALL para ver si trae algo
+    const fetchOptions = { bodies: ['HEADER', 'TEXT', ''], markSeen: false };
 
     const messages = await connection.search(searchCriteria, fetchOptions);
-    console.log(`📩 [IMAP] ${messages.length} nuevos correos para ${acc.email}`);
+    console.log(`📩 [IMAP] ${messages.length} correos encontrados para ${acc.email}. Sincronizando los últimos 20...`);
 
-    for (const item of messages) {
+    const last20 = messages.slice(-20); // Solo los últimos 20 para probar
+    for (const item of last20) {
       const all = item.parts.find(part => part.which === '');
       const mail = await simpleParser(all.body);
       
@@ -1018,10 +1029,12 @@ async function syncEmails(accountId) {
       }, { onConflict: 'mensaje_id' });
     }
 
+    log(`📩 [IMAP] Sincronizados con éxito.`);
     connection.end();
     await supabase.from('email_accounts').update({ last_sync: new Date().toISOString() }).eq('id', accountId);
     return { success: true, count: messages.length };
   } catch (e) {
+    log(`❌ [IMAP Error]: ${e.message}`);
     console.error("❌ [IMAP Error]:", e.message);
     return { error: e.message };
   }
@@ -1029,15 +1042,24 @@ async function syncEmails(accountId) {
 
 // Sincronizar Calendario (Google / Microsoft)
 async function syncCalendar(accountId) {
-  try {
-    let { data: acc, error } = await supabase.from('email_accounts').select('*').eq('id', accountId).single();
-    if (error || !acc || !acc.access_token || !acc.sync_calendar) return;
+  const log = (msg) => {
+    try { require('fs').appendFileSync('server_log.txt', `[${new Date().toISOString()}] [CAL] ${msg}\n`); } catch(e){}
+    console.log(`[CAL] ${msg}`);
+  };
 
-    // Fallback de org_id si no existe en la cuenta (para cuentas viejas)
+  try {
+    log(`📅 Iniciando sincronización de calendario para ${accountId}...`);
+    let { data: acc, error } = await supabase.from('email_accounts').select('*').eq('id', accountId).single();
+    if (error || !acc || !acc.access_token || !acc.sync_calendar) {
+      log(`⚠️ Cuenta no elegible para calendario (o sin token)`);
+      return;
+    }
+
     if (!acc.org_id && acc.user_id) {
       const { data: u } = await supabase.from('usuariosApp').select('org_id').eq('id', acc.user_id).single();
       if (u) acc.org_id = u.org_id;
     }
+    log(`📍 Org ID: ${acc.org_id}`);
 
     // Validar expiración
     let token = acc.access_token;
