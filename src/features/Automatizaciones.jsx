@@ -5,36 +5,36 @@ import { Chip, Btn, Inp, Sel, Campo, Modal, Tarjeta, EncabezadoSeccion, Ico, Vac
 
 // ─── CATÁLOGO DE MÓDULOS ───────────────────────────────────────────────────────
 const TRIGGERS = {
-  deal_nuevo:     { label: "Deal Creado",          icon: "plus",       color: "#F59E0B", badge: "CRM" },
-  deal_ganado:    { label: "Deal Ganado",           icon: "star",       color: "#10B981", badge: "CRM" },
-  deal_perdido:   { label: "Deal Perdido",          icon: "x",          color: "#EF4444", badge: "CRM" },
-  contacto_nuevo: { label: "Nuevo Contacto",        icon: "user-plus",  color: "#8B5CF6", badge: "CRM" },
-  form_submit:    { label: "Formulario Enviado",    icon: "check",      color: "#06B6D4", badge: "Web" },
-  webhook_in:     { label: "Webhook Recibido",      icon: "code",       color: "#6366F1", badge: "API" },
-  schedule:       { label: "Temporizador",          icon: "clock",      color: "#EC4899", badge: "Timer" },
-  deal_sin_act:   { label: "Deal Sin Actividad",    icon: "clock",      color: "#F59E0B", badge: "Reminder" },
-  tarea_vencida:  { label: "Tarea Vencida",         icon: "alert",      color: "#EF4444", badge: "Reminder" },
-  cierre_cercano: { label: "Cierre Próximo",        icon: "calendar",   color: "#EC4899", badge: "Reminder" },
+  deal_nuevo: { label: "Deal Creado", icon: "plus", color: "#F59E0B", badge: "CRM" },
+  deal_ganado: { label: "Deal Ganado", icon: "star", color: "#10B981", badge: "CRM" },
+  deal_perdido: { label: "Deal Perdido", icon: "x", color: "#EF4444", badge: "CRM" },
+  contacto_nuevo: { label: "Nuevo Contacto", icon: "user-plus", color: "#8B5CF6", badge: "CRM" },
+  form_submit: { label: "Formulario Enviado", icon: "check", color: "#06B6D4", badge: "Web" },
+  webhook_in: { label: "Webhook Recibido", icon: "code", color: "#6366F1", badge: "API" },
+  schedule: { label: "Temporizador", icon: "clock", color: "#EC4899", badge: "Timer" },
+  deal_sin_act: { label: "Deal Sin Actividad", icon: "clock", color: "#F59E0B", badge: "Reminder" },
+  tarea_vencida: { label: "Tarea Vencida", icon: "alert", color: "#EF4444", badge: "Reminder" },
+  cierre_cercano: { label: "Cierre Próximo", icon: "calendar", color: "#EC4899", badge: "Reminder" },
 };
 
 const ACTIONS = {
-  enviar_email:   { label: "Enviar Email",           icon: "mail",       color: "#06B6D4", badge: "Email" },
-  crear_tarea:    { label: "Crear Tarea",            icon: "check",      color: "#10B981", badge: "CRM" },
-  webhook_out:    { label: "Llamar Webhook (POST)",  icon: "code",       color: "#6366F1", badge: "API" },
-  etiquetar:      { label: "Agregar Etiqueta",       icon: "tag",        color: "#8B5CF6", badge: "CRM" },
-  slack_notify:   { label: "Notif. Slack",           icon: "bell",       color: "#EC4899", badge: "Slack" },
-  update_field:   { label: "Actualizar Campo",       icon: "edit",       color: "#F59E0B", badge: "CRM" },
-  mover_etapa:    { label: "Mover a Etapa",          icon: "funnel",     color: "#14B8A6", badge: "CRM" },
-  crear_nota:     { label: "Crear Nota",             icon: "note",       color: "#6366F1", badge: "CRM" },
-  asignar_prop:   { label: "Asignar Propietario",    icon: "user",       color: "#8B5CF6", badge: "CRM" },
-  reminder_email: { label: "Recordatorio por Email", icon: "mail",       color: "#F59E0B", badge: "Reminder" },
+  enviar_email: { label: "Enviar Email", icon: "mail", color: "#06B6D4", badge: "Email" },
+  crear_tarea: { label: "Crear Tarea", icon: "check", color: "#10B981", badge: "CRM" },
+  webhook_out: { label: "Llamar Webhook (POST)", icon: "code", color: "#6366F1", badge: "API" },
+  etiquetar: { label: "Agregar Etiqueta", icon: "tag", color: "#8B5CF6", badge: "CRM" },
+  slack_notify: { label: "Notif. Slack", icon: "bell", color: "#EC4899", badge: "Slack" },
+  update_field: { label: "Actualizar Campo", icon: "edit", color: "#F59E0B", badge: "CRM" },
+  mover_etapa: { label: "Mover a Etapa", icon: "funnel", color: "#14B8A6", badge: "CRM" },
+  crear_nota: { label: "Crear Nota", icon: "note", color: "#6366F1", badge: "CRM" },
+  asignar_prop: { label: "Asignar Propietario", icon: "user", color: "#8B5CF6", badge: "CRM" },
+  reminder_email: { label: "Recordatorio por Email", icon: "mail", color: "#F59E0B", badge: "Reminder" },
 };
 
 const CONDITIONS = {
-  if_condition:   { label: "IF / Rama",            icon: "branch",     color: "#14B8A6", badge: "Logic" },
-  delay:          { label: "Esperar / Delay",      icon: "clock",      color: "#6B7280", badge: "Timer" },
-  filter:         { label: "Filtro / Detener",     icon: "filter",     color: "#EF4444", badge: "Logic" },
-  split:          { label: "División A/B",         icon: "branch",     color: "#8B5CF6", badge: "Logic" },
+  if_condition: { label: "IF / Rama", icon: "branch", color: "#14B8A6", badge: "Logic" },
+  delay: { label: "Esperar / Delay", icon: "clock", color: "#6B7280", badge: "Timer" },
+  filter: { label: "Filtro / Detener", icon: "filter", color: "#EF4444", badge: "Logic" },
+  split: { label: "División A/B", icon: "branch", color: "#8B5CF6", badge: "Logic" },
 };
 
 const ALL_NODE_TYPES = { ...TRIGGERS, ...ACTIONS, ...CONDITIONS };
@@ -64,7 +64,7 @@ export const Automatizaciones = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t }
   }, [db.automatizaciones]);
 
   const [wfSel, setWfSel] = useState(null);
-  
+
   useEffect(() => {
     if (wfs.length > 0 && !wfSel) {
       setWfSel(wfs[0].id);
@@ -97,41 +97,42 @@ export const Automatizaciones = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t }
     if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight;
   }, [logs]);
 
-  const crearWf = () => {
+  const crearWf = async () => {
     if (!fNombre.trim()) return;
-    const wf = { id: "wf" + uid(), nombre: fNombre, nodos: [{ id: "n1", tipo: "trigger", ref: "deal_nuevo", extra: "" }], activo: false, stats: 0 };
-    const nwfs = [wf, ...wfs];
-    setWfs(nwfs); setDb(d => ({ ...d, automatizaciones: nwfs }));
+    const wf = { id: "wf" + uid(), nombre: fNombre, nodos: [{ id: "n1", tipo: "trigger", ref: "deal_nuevo", extra: "" }], activo: false, stats: 0, org_id: db.usuario?.org_id };
+    await guardarEnSupa("automatizaciones", wf);
     setWfSel(wf.id); setShowForm(false); setFNombre("");
   };
 
-  const agregarNodo = (tipo, ref) => {
+  const agregarNodo = async (tipo, ref) => {
     if (!actual) return;
-    const nwfs = wfs.map(w => w.id === actual.id ? { ...w, nodos: [...w.nodos, { id: "n" + uid(), tipo, ref, extra: "" }] } : w);
-    setWfs(nwfs); setDb(d => ({ ...d, automatizaciones: nwfs }));
+    const updatedWf = { ...actual, nodos: [...actual.nodos, { id: "n" + uid(), tipo, ref, extra: "" }] };
+    await guardarEnSupa("automatizaciones", updatedWf);
     setShowAddNode(false);
   };
 
-  const actNodo = (nId, k, v) => {
-    const nwfs = wfs.map(w => w.id === actual?.id ? { ...w, nodos: w.nodos.map(n => n.id === nId ? { ...n, [k]: v } : n) } : w);
-    setWfs(nwfs); setDb(d => ({ ...d, automatizaciones: nwfs }));
+  const actNodo = async (nId, k, v) => {
+    const updatedWf = { ...actual, nodos: actual.nodos.map(n => n.id === nId ? { ...n, [k]: v } : n) };
+    await guardarEnSupa("automatizaciones", updatedWf);
   };
 
-  const elimNodo = (nId) => {
-    const nwfs = wfs.map(w => w.id === actual?.id ? { ...w, nodos: w.nodos.filter(n => n.id !== nId) } : w);
-    setWfs(nwfs); setDb(d => ({ ...d, automatizaciones: nwfs })); setNodoSel(null);
+  const elimNodo = async (nId) => {
+    const updatedWf = { ...actual, nodos: actual.nodos.filter(n => n.id !== nId) };
+    await guardarEnSupa("automatizaciones", updatedWf);
+    setNodoSel(null);
   };
 
-  const toggle = (wId) => {
-    const nwfs = wfs.map(w => w.id === wId ? { ...w, activo: !w.activo } : w);
-    setWfs(nwfs); setDb(d => ({ ...d, automatizaciones: nwfs }));
+  const toggle = async (wId) => {
+    const wf = wfs.find(w => w.id === wId);
+    if (wf) {
+      await guardarEnSupa("automatizaciones", { ...wf, activo: !wf.activo });
+    }
   };
 
-  const eliminarWf = (wId) => {
+  const eliminarWf = async (wId) => {
     if (!confirm("¿Eliminar este Flow por completo?")) return;
-    const nwfs = wfs.filter(w => w.id !== wId);
-    setWfs(nwfs); setDb(d => ({ ...d, automatizaciones: nwfs }));
-    if (wfSel === wId) setWfSel(nwfs[0]?.id || null);
+    await eliminarDeSupa("automatizaciones", wId);
+    if (wfSel === wId) setWfSel(wfs.filter(w => w.id !== wId)[0]?.id || null);
   };
 
   const selNodo = actual?.nodos.find(n => n.id === nodoSel);
@@ -185,9 +186,8 @@ export const Automatizaciones = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t }
             <div style={{ display: "flex", alignItems: "center", gap: 8, background: "#111827", border: "1px solid #374151", borderRadius: 10, padding: "6px 12px" }}>
               <Ico k="funnel" size={14} style={{ color: T.teal, flexShrink: 0 }} />
               <span style={{ fontSize: 11, color: "#6B7280", fontWeight: 700, fontFamily: "monospace", whiteSpace: "nowrap" }}>{t ? t("Pipeline objetivo") : "Pipeline objetivo"}</span>
-              <select value={actual.pipeline_id || ""} onChange={e => {
-                const nwfs = wfs.map(w => w.id === actual.id ? { ...w, pipeline_id: e.target.value } : w);
-                setWfs(nwfs); setDb(d => ({ ...d, automatizaciones: nwfs }));
+              <select value={actual.pipeline_id || ""} onChange={async (e) => {
+                await guardarEnSupa("automatizaciones", { ...actual, pipeline_id: e.target.value });
               }} style={{ background: "transparent", color: T.teal, border: "none", outline: "none", fontFamily: "monospace", fontSize: 13, fontWeight: 700, cursor: "pointer", maxWidth: 160 }}>
                 <option value="">— {t ? t("Todos los Pipelines") : "Todos los Pipelines"} —</option>
                 {(db?.pipelines || []).map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}

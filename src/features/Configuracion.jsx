@@ -83,8 +83,8 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
   // Efecto para escuchar eventos del WebSocket del Backend Local
   useEffect(() => {
     const protocol = window.location.protocol === "https:" ? "https:" : "http:";
-    const adminUrl = db.usuariosApp?.find(u => u.role === 'admin' && u.waServerUrl)?.waServerUrl;
-    const finalUrl = fWaUrl || adminUrl || `${protocol}//${window.location.hostname}:3001`;
+    const orgActual = db.organizacion?.find(o => o.id === db.usuario?.org_id);
+    const finalUrl = fWaUrl || orgActual?.wa_server_url || `${protocol}//${window.location.hostname}:3001`;
     socketRef.current = io(finalUrl, {
       transports: ['websocket'],
       autoConnect: true
@@ -111,20 +111,20 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
         socketRef.current.disconnect();
       }
     };
-  }, [fWaUrl]);
+  }, [fWaUrl, db.usuario?.org_id, db.organizacion]);
 
   // Efecto para sincronizar el estado del formulario con la DB cuando carga Supabase
   useEffect(() => {
-    // Solo cambiar si el campo local está vacío (primera carga) o si la DB tiene algo nuevo y el usuario no está escribiendo
-    if (db.usuario?.waServerUrl && !fWaUrl) {
-      setFWaUrl(db.usuario.waServerUrl);
+    const orgActual = db.organizacion?.find(o => o.id === db.usuario?.org_id);
+    if (orgActual?.wa_server_url && !fWaUrl) {
+      setFWaUrl(orgActual.wa_server_url);
     }
-  }, [db.usuario?.waServerUrl, fWaUrl]);
+  }, [db.usuario?.org_id, db.organizacion, fWaUrl]);
 
   const iniciarVinculacionWA = () => {
     const protocol = window.location.protocol === "https:" ? "https:" : "http:";
-    const adminUrl = db.usuariosApp?.find(u => u.role === 'admin' && u.waServerUrl)?.waServerUrl;
-    const finalUrl = fWaUrl || adminUrl || `${protocol}//${window.location.hostname}:3001`;
+    const orgActual = db.organizacion?.find(o => o.id === db.usuario?.org_id);
+    const finalUrl = fWaUrl || orgActual?.wa_server_url || `${protocol}//${window.location.hostname}:3001`;
 
     // Si ya existe un socket, desconectarlo antes de crear uno nuevo con la URL actualizada
     if (socketRef.current) {
@@ -277,17 +277,22 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
     alert("Configuración de recordatorios guardada.");
   };
 
-  const guardarEmpresa = () => {
-    // Guardar URL de WhatsApp en el usuario actual para que auto-sync lo suba a Supabase
+  const guardarEmpresa = async () => {
+    // Buscar la organización actual
+    const orgActual = db.organizacion?.find(o => o.id === db.usuario?.org_id);
+    if (!orgActual) return alert("No se pudo identificar la organización activa.");
+
+    const payloadOrg = { ...orgActual, nombre: fEmpresa, wa_server_url: fWaUrl };
+
+    // Guardar en Supabase (organizacion)
+    await guardarEnSupa("organizacion", payloadOrg);
+
     setDb(d => ({
       ...d,
-      empresaConfigs: { ...d.empresaConfigs, nombre: fEmpresa },
-      usuario: { ...d.usuario, waServerUrl: fWaUrl },
-      usuariosApp: (d.usuariosApp || []).map(u =>
-        u.email === d.usuario?.email ? { ...u, waServerUrl: fWaUrl } : u
-      )
+      organizacion: d.organizacion.map(o => o.id === orgActual.id ? payloadOrg : o),
+      empresaConfigs: { ...d.empresaConfigs, nombre: fEmpresa }
     }));
-    alert("¡Infraestructura sincronizada globalmente! ✅\n\nTodos tus usuarios y clientes ahora usarán esta URL automáticamente.");
+    alert("¡Infraestructura de organización sincronizada! ✅\n\nTodos los usuarios de esta empresa usarán ahora este Servidor de WhatsApp.");
   };
 
   const handleCrearUsuario = async () => {
@@ -436,6 +441,23 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
       }
     } catch (e) {
       alert("Error al procesar: " + e.message);
+    } finally {
+      setCargandoOrg(false);
+    }
+  };
+
+  const handleEliminarOrg = async (id, nombre) => {
+    if (id === '00000000-0000-0000-0000-000000000001') return alert("No se puede eliminar la organización principal del sistema.");
+    if (!confirm(`⚠️ CUIDADO: Estás a punto de borrar la organización "${nombre}" y TODOS sus datos (contactos, deals, etc). ¿Confirmas esta acción irreversible?`)) return;
+
+    setCargandoOrg(true);
+    try {
+      const { error } = await sb.from("organizacion").delete().eq("id", id);
+      if (error) throw error;
+      setDb(d => ({ ...d, organizacion: d.organizacion.filter(o => o.id !== id) }));
+      alert("Organización eliminada exitosamente.");
+    } catch (e) {
+      alert("Error al eliminar organización: " + e.message);
     } finally {
       setCargandoOrg(false);
     }
@@ -706,7 +728,9 @@ ALTER TABLE usuariosApp ADD COLUMN IF NOT EXISTS org_id UUID REFERENCES organiza
                           <Btn variant="fantasma" size="sm" onClick={() => (org.id === db.usuario?.org_id ? null : confirmSwitch(org.id))} style={{ color: org.id === db.usuario?.org_id ? T.green : T.whiteOff }}>
                             <Ico k={org.id === db.usuario?.org_id ? "check" : "lightning"} size={16} /> {org.id === db.usuario?.org_id ? "Actual" : "Usar"}
                           </Btn>
-                          <Btn variant="fantasma" size="sm" onClick={() => alert("Función de edición en desarrollo")}><Ico k="edit" size={16} /></Btn>
+                          <Btn variant="fantasma" size="sm" onClick={() => handleEliminarOrg(org.id, org.nombre)} style={{ color: T.red }} disabled={org.id === '00000000-0000-0000-0000-000000000001'}>
+                            <Ico k="trash" size={16} />
+                          </Btn>
                         </div>
                       </Celda>
                     </FilaTabla>
