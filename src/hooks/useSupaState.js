@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { createClient } from "@supabase/supabase-js";
 import { SEMILLA } from "../data/seed";
 import { applyTheme } from "../theme";
@@ -45,6 +45,7 @@ export function useSupaState() {
   const [cargando, setCargando] = useState(true);
   const [isAppReady, setIsAppReady] = useState(false);
   const [session, setSession] = useState(null);
+  const channelRef = useRef(null);
 
   const setDb = useCallback((next) => {
     setDbRaw((prev) => {
@@ -267,45 +268,41 @@ export function useSupaState() {
     });
 
     // ── SUPABASE REALTIME SINC (Escuchar cambios en vivo) ──────────────────
-    const canalRealtime = sb
+    channelRef.current = sb
       .channel('schema-db-changes')
       .on('postgres_changes', { event: '*', schema: 'public' }, (payload) => {
         const { eventType, table, new: record, old } = payload;
-
-        // Solo procesar tablas que estamos siguiendo
         if (!TABLAS_SUPA.includes(table)) return;
-
-        console.log(`⚡ Realtime [${table}]: ${eventType}`, record || old);
-
         setDbRaw(prev => {
           const lista = Array.isArray(prev[table]) ? prev[table] : [];
-
           if (eventType === 'INSERT' || eventType === 'UPDATE') {
             const idx = lista.findIndex(r => r.id === record.id);
-            // Si el registro ya existe e igual, no hacer nada para evitar loops
             if (idx >= 0 && JSON.stringify(lista[idx]) === JSON.stringify(record)) return prev;
-
             const nuevaLista = idx >= 0
               ? lista.map(r => r.id === record.id ? record : r)
               : [record, ...lista];
-
             return { ...prev, [table]: nuevaLista };
           }
-
           if (eventType === 'DELETE') {
             if (!lista.find(r => r.id === old.id)) return prev;
             return { ...prev, [table]: lista.filter(r => r.id !== old.id) };
           }
-
           return prev;
         });
+      })
+      .on('broadcast', { event: 'force_logout' }, (payload) => {
+        console.log("🚨 Recibida señal de FORCE_LOGOUT:", payload);
+        localStorage.removeItem("crm_usuario_activo");
+        localStorage.removeItem("crm_theme");
+        sessionStorage.clear();
+        window.location.reload();
       })
       .subscribe();
 
     return () => {
       montado = false;
       subscription.unsubscribe();
-      sb.removeChannel(canalRealtime);
+      if (channelRef.current) sb.removeChannel(channelRef.current);
     };
   }, [cargarDeSupa, setDb]);
 
@@ -360,5 +357,15 @@ export function useSupaState() {
     }
   };
 
-  return { db, setDb, session, estadoSupa, cargando, isAppReady, guardarEnSupa, eliminarDeSupa, recargar: cargarDeSupa };
+  const sendBroadcast = async (event, payload) => {
+    if (channelRef.current) {
+      return await channelRef.current.send({
+        type: 'broadcast',
+        event,
+        payload
+      });
+    }
+  };
+
+  return { db, setDb, session, estadoSupa, cargando, isAppReady, guardarEnSupa, eliminarDeSupa, sendBroadcast, recargar: cargarDeSupa };
 }

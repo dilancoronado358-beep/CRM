@@ -546,6 +546,10 @@ export default function App() {
         open={showLogoutConfirm}
         onClose={() => { setShowLogoutConfirm(false); setLogoutGlobal(false); }}
         onConfirm={async () => {
+          if (logoutGlobal) {
+            // Notificar a otros dispositivos para que cierren sesión inmediatamente
+            await sendBroadcast('force_logout', { email: db.usuario?.email, timestamp: Date.now() });
+          }
           await sb.auth.signOut({ scope: logoutGlobal ? 'global' : 'local' });
           localStorage.removeItem("crm_usuario_activo");
           localStorage.removeItem("crm_theme");
