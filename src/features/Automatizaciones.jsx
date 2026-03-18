@@ -83,6 +83,15 @@ export const Automatizaciones = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t }
 
   const actual = wfs.find(w => w.id === wfSel);
 
+  // Helper para asegurar que nodos sea siempre un array (por si viene de la DB como string JSON)
+  const getNodos = (wf) => {
+    if (!wf || !wf.nodos) return [];
+    if (Array.isArray(wf.nodos)) return wf.nodos;
+    try { return JSON.parse(wf.nodos); } catch (e) { return []; }
+  };
+
+  const nodosActivos = getNodos(actual);
+
   // Simulate log execution
   const simularEjecucion = () => {
     if (running) return;
@@ -138,7 +147,7 @@ export const Automatizaciones = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t }
     if (wfSel === wId) setWfSel(wfs.filter(w => w.id !== wId)[0]?.id || null);
   };
 
-  const selNodo = actual?.nodos?.find(n => n.id === nodoSel);
+  const selNodo = nodosActivos?.find(n => n.id === nodoSel);
   const isTrigSel = selNodo?.tipo === "trigger";
   const catSel = isTrigSel ? TRIGGERS : (selNodo?.tipo === "condition" ? CONDITIONS : ACTIONS);
   const defSel = selNodo ? (catSel?.[selNodo.ref] || Object.values(catSel || {})[0]) : null;
@@ -178,7 +187,7 @@ export const Automatizaciones = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t }
                   <div style={{ fontSize: 11, color: T.whiteDim, fontWeight: 600, display: "flex", alignItems: "center", gap: 4 }}>
                     <Ico k="play" size={10} /> {w.stats} {t ? t("ejecuciones") : "ejecuciones"}
                   </div>
-                  <div style={{ fontSize: 11, color: T.whiteDim }}>{w.nodos.length} {t ? t("nodos") : "nodos"}</div>
+                  <div style={{ fontSize: 11, color: T.whiteDim }}>{w.nodos?.length || 0} {t ? t("nodos") : "nodos"}</div>
                 </div>
               </Tarjeta>
             );
@@ -195,7 +204,7 @@ export const Automatizaciones = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t }
           <div style={{ padding: "14px 20px", background: "#0D1117", borderBottom: `1px solid #1F2937`, display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0, gap: 12, flexWrap: "wrap" }}>
             <div>
               <div style={{ fontSize: 16, fontWeight: 800, color: "#E5E7EB" }}>{actual.nombre}</div>
-              <div style={{ fontSize: 11, color: "#6B7280", marginTop: 2, fontFamily: "monospace" }}>flow_id: {actual.id} · {actual.nodos.length} {t ? t("nodos") : "nodos"} · Flow Engine v3</div>
+              <div style={{ fontSize: 11, color: "#6B7280", marginTop: 2, fontFamily: "monospace" }}>flow_id: {actual.id} · {nodosActivos?.length || 0} {t ? t("nodos") : "nodos"} · Flow Engine v3</div>
             </div>
 
             {/* Pipeline Target Selector */}
@@ -238,8 +247,8 @@ export const Automatizaciones = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t }
                     <feMerge><feMergeNode in="coloredBlur" /><feMergeNode in="SourceGraphic" /></feMerge>
                   </filter>
                 </defs>
-                {actual.nodos.map((n, i) => {
-                  if (i === actual.nodos.length - 1) return null;
+                {nodosActivos?.map((n, i) => {
+                  if (i === (nodosActivos?.length || 0) - 1) return null;
                   const nx = i * 380 + 66 + 300; // node width 300 + 60px connector
                   const ny = "50%";
                   const startX = 60 + i * 360 + 300;
@@ -267,7 +276,7 @@ export const Automatizaciones = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t }
 
               {/* Nodes */}
               <div style={{ display: "flex", alignItems: "center", zIndex: 5, position: "relative" }}>
-                {actual?.nodos?.map((n, i) => {
+                {nodosActivos?.map((n, i) => {
                   const def = n?.ref ? (ALL_NODE_TYPES[n.ref] || Object.values(ALL_NODE_TYPES)[0]) : Object.values(ALL_NODE_TYPES)[0];
                   const isSel = nodoSel === n.id;
                   const isTrig = n.tipo === "trigger";
@@ -321,7 +330,7 @@ export const Automatizaciones = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t }
 
                       {/* Connector */}
                       <div style={{ width: 80, height: 2, background: `linear-gradient(90deg, ${def.color}80, transparent)`, position: "relative", display: "flex", alignItems: "center", justifyContent: "flex-end" }}>
-                        {i === actual.nodos.length - 1 && (
+                        {i === (nodosActivos?.length || 0) - 1 && (
                           <button onClick={e => { e.stopPropagation(); setShowAddNode(true); }}
                             style={{ position: "absolute", right: 0, width: 32, height: 32, borderRadius: "50%", background: "#111827", color: "#4B5563", border: "2px dashed #374151", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "all .2s", zIndex: 10 }}
                             onMouseEnter={e => { e.currentTarget.style.borderColor = T.teal; e.currentTarget.style.color = T.teal; e.currentTarget.style.boxShadow = `0 0 12px ${T.teal}40`; }}
