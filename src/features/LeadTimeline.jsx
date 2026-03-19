@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { T } from "../theme";
-import { Ico, Btn } from "../components/ui";
+import { Ico, Btn, Inp } from "../components/ui";
 import { getApiUrl } from "../utils";
 import { createClient } from "@supabase/supabase-js";
 import { io } from "socket.io-client";
 import { sileo as toast } from "../utils/sileo";
+import axios from "axios";
 
 const SUPA_URL = "https://eoylgxwlhsmwqgadahvk.supabase.co";
 const SUPA_KEY = "sb_publishable_wKUbf7IFOoH4HIUayIAJdQ_Boj1jgZa";
@@ -190,21 +191,23 @@ export function LeadTimeline({ deal = {}, contacto = {}, db = {}, setDb, guardar
          if (deal?.id) filters.push(`deal_id.eq.${deal.id}`);
          if (contacto?.id) filters.push(`contacto_id.eq.${contacto.id}`);
 
-         const { data: emailData } = await qE.or(filters.join(',')).order('fecha', { ascending: false }).limit(40);
-         if (emailData) {
-           emailData.forEach(e => {
-             entries.push({
-               type: "email",
-               id: e.id,
-               body: e.cuerpo,
-               asunto: e.asunto,
-               timestamp: new Date(e.fecha).getTime() / 1000,
-               de: e.de,
-               para: e.para,
-               html: e.html,
-               adjuntos: e.adjuntos || []
+         if (filters.length > 0) {
+           const { data: emailData } = await qE.or(filters.join(',')).order('fecha', { ascending: false }).limit(40);
+           if (emailData) {
+             emailData.forEach(e => {
+               entries.push({
+                 type: "email",
+                 id: e.id,
+                 body: e.cuerpo,
+                 asunto: e.asunto,
+                 timestamp: (e.fecha ? new Date(e.fecha).getTime() / 1000 : Date.now() / 1000),
+                 de: e.de,
+                 para: e.para,
+                 html: e.html,
+                 adjuntos: e.adjuntos || []
+               });
              });
-           });
+           }
          }
        } catch (err) { console.warn("Error cargando emails en Timeline", err); }
     }
