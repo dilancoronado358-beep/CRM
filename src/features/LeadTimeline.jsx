@@ -16,10 +16,13 @@ export function LeadTimeline({ deal = {}, contacto = {}, db = {}, setDb, guardar
   const [filtro, setFiltro] = useState("all");
   const [comentario, setComentario] = useState("");
   const [waMsg, setWaMsg] = useState("");
+  const [emailSubject, setEmailSubject] = useState("");
+  const [emailBody, setEmailBody] = useState("");
   const [composerTab, setComposerTab] = useState("Comentario");
   const [previewFile, setPreviewFile] = useState(null); // { data, name, type }
 
   const [taskForm, setTaskForm] = useState({ titulo: "", prioridad: "media", vencimiento: "", asignado: db?.usuario?.name || "", descripcion: "" });
+  const [enviandoEmail, setEnviandoEmail] = useState(false);
   const socketRef = useRef(null);
   const scrollRef = useRef(null); // Ref para autoscroll del chat
   const chatBottomRef = useRef(null);
@@ -178,6 +181,34 @@ export function LeadTimeline({ deal = {}, contacto = {}, db = {}, setDb, guardar
       });
     });
 
+    // 7. Emails (Supabase)
+    if (contacto?.email || deal?.id || contacto?.id) {
+       try {
+         const qE = sb.from('emails').select('*');
+         const filters = [];
+         if (contacto?.email) filters.push(`de.eq.${contacto.email}`, `para.eq.${contacto.email}`);
+         if (deal?.id) filters.push(`deal_id.eq.${deal.id}`);
+         if (contacto?.id) filters.push(`contacto_id.eq.${contacto.id}`);
+
+         const { data: emailData } = await qE.or(filters.join(',')).order('fecha', { ascending: false }).limit(40);
+         if (emailData) {
+           emailData.forEach(e => {
+             entries.push({
+               type: "email",
+               id: e.id,
+               body: e.cuerpo,
+               asunto: e.asunto,
+               timestamp: new Date(e.fecha).getTime() / 1000,
+               de: e.de,
+               para: e.para,
+               html: e.html,
+               adjuntos: e.adjuntos || []
+             });
+           });
+         }
+       } catch (err) { console.warn("Error cargando emails en Timeline", err); }
+    }
+
     // FUSIONAR: Preservamos los locales (id que empiezan con local_)
     setItems(prev => {
       const locales = prev.filter(p => typeof p.id === 'string' && p.id.startsWith('local_'));
@@ -243,6 +274,35 @@ export function LeadTimeline({ deal = {}, contacto = {}, db = {}, setDb, guardar
 
     // Autoscroll
     setTimeout(() => chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
+  };
+
+  const handleSendEmail = async () => {
+    if (!emailBody.trim() || !contacto?.email) return toast.error("Cuerpo o destinatario vacío.");
+    
+    const acc = db.email_accounts?.[0];
+    if (!acc) return toast.error("Configura una cuenta de correo en Ajustes.");
+
+    setEnviandoEmail(true);
+    try {
+      const API_URL = getApiUrl(db);
+      await axios.post(`${API_URL}/api/email/send`, {
+        accountId: acc.id,
+        to: contacto.email,
+        subject: emailSubject || "(Sin asunto)",
+        body: emailBody,
+        dealId: deal?.id,
+        contactoId: contacto?.id
+      });
+
+      toast.success("Correo enviado correctamente ✅");
+      setEmailSubject("");
+      setEmailBody("");
+      cargarTimeline();
+    } catch (e) {
+      toast.error("Error al enviar email: " + (e.response?.data?.error || e.message));
+    } finally {
+      setEnviandoEmail(false);
+    }
   };
 
   const handleFileChange = async (e) => {
@@ -317,6 +377,7 @@ export function LeadTimeline({ deal = {}, contacto = {}, db = {}, setDb, guardar
     return items.filter(it => {
       if (filtro === "all") return true;
       if (filtro === "whatsapp") return it.type === "whatsapp";
+      if (filtro === "email") return it.type === "email";
       if (filtro === "notes") return it.type === "note" || it.type === "task";
       return true;
     });
@@ -381,17 +442,17 @@ export function LeadTimeline({ deal = {}, contacto = {}, db = {}, setDb, guardar
       {/* HEADER COMPOSER */}
       <div style={{ padding: "0 20px", borderBottom: `1px solid ${T.borderHi}`, background: T.bg1, flexShrink: 0 }}>
         <div style={{ display: "flex", gap: 24 }}>
-          {["Comentario", "WhatsApp", "Tarea"].map(t => (
+          {["Comentario", "WhatsApp", "Email", "Tarea"].map(t => (
             <button key={t}
               onClick={() => {
                 setComposerTab(t);
-                setFiltro(t === "WhatsApp" ? "whatsapp" : "all");
+                setFiltro(t === "WhatsApp" ? "whatsapp" : (t === "Email" ? "email" : "all"));
                 if (t === "WhatsApp") setTimeout(() => chatBottomRef.current?.scrollIntoView({ behavior: 'auto' }), 50);
               }}
               style={{
-                background: "none", border: "none", color: t === composerTab ? "#333" : "#666",
+                background: "none", border: "none", color: t === composerTab ? (t === "Email" ? T.teal : (t === "WhatsApp" ? "#25D366" : "#00bbd3")) : "#666",
                 fontWeight: 600, fontSize: 13, cursor: "pointer",
-                borderBottom: `3px solid ${t === composerTab ? (t === "WhatsApp" ? "#25D366" : "#00bbd3") : "transparent"}`,
+                borderBottom: `3px solid ${t === composerTab ? (t === "Email" ? T.teal : (t === "WhatsApp" ? "#25D366" : "#00bbd3")) : "transparent"}`,
                 padding: "16px 4px", position: "relative", top: 1
               }}>
               {t}
@@ -409,14 +470,26 @@ export function LeadTimeline({ deal = {}, contacto = {}, db = {}, setDb, guardar
               <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 10 }}><Btn onClick={handleAddComment} disabled={!comentario.trim()} size="sm" style={{ background: T.teal, color: "#000" }}>PUBLICAR</Btn></div>
             </div>
           )}
-          {composerTab === "Tarea" && (
-            <div style={{ background: "#fff", border: `1px solid #c6d2d6`, borderRadius: 8, padding: 12 }}>
-              <input value={taskForm.titulo} onChange={e => setTaskForm(p => ({ ...p, titulo: e.target.value }))} placeholder="¿Qué hay que hacer? *" style={{ width: "100%", padding: "8px 12px", border: "1px solid #d4dde1", borderRadius: 4, marginBottom: 8 }} />
-              <div style={{ display: "flex", gap: 8 }}>
-                <select value={taskForm.prioridad} onChange={e => setTaskForm(p => ({ ...p, prioridad: e.target.value }))} style={{ flex: 1, padding: 8, border: "1px solid #d4dde1", borderRadius: 4 }}><option value="alta">Alta</option><option value="media">Media</option><option value="baja">Baja</option></select>
-                <input type="date" value={taskForm.vencimiento} onChange={e => setTaskForm(p => ({ ...p, vencimiento: e.target.value }))} style={{ flex: 1, padding: 8, border: "1px solid #d4dde1", borderRadius: 4 }} />
+          {composerTab === "Email" && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              <Inp value={emailSubject} onChange={e => setEmailSubject(e.target.value)} placeholder="Asunto del correo..." style={{ background: T.bg1 }} />
+              <textarea value={emailBody} onChange={e => setEmailBody(e.target.value)} placeholder="Escribe tu mensaje por correo..." style={{ width: "100%", background: T.bg1, border: `1px solid ${T.borderHi}`, borderRadius: 10, padding: "12px 16px", fontSize: 14, minHeight: 100, outline: "none", resize: "vertical", color: T.white }} />
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span style={{ fontSize: 11, color: T.whiteDim }}>Para: <b style={{ color: T.white }}>{contacto?.email || "(Sin correo)"}</b></span>
+                <Btn onClick={handleSendEmail} disabled={enviandoEmail || !contacto?.email || !emailBody.trim()} size="sm" style={{ background: T.teal, color: "#000" }}>
+                  {enviandoEmail ? <Ico k="refresh" size={14} className="spin" /> : <Ico k="mail" size={14} />} ENVIAR EMAIL
+                </Btn>
               </div>
-              <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 8 }}><Btn onClick={handleAddTask} disabled={!taskForm.titulo.trim()} size="sm" style={{ background: "#7fb700", color: "#fff" }}>CREAR</Btn></div>
+            </div>
+          )}
+          {composerTab === "Tarea" && (
+            <div style={{ background: T.bg1, border: `1px solid ${T.borderHi}`, borderRadius: 12, padding: 16 }}>
+              <input value={taskForm.titulo} onChange={e => setTaskForm(p => ({ ...p, titulo: e.target.value }))} placeholder="¿Qué hay que hacer? *" style={{ width: "100%", background: "transparent", padding: "8px 0", border: "none", borderBottom: `1px solid ${T.borderHi}`, marginBottom: 12, color: T.white, outline: "none" }} />
+              <div style={{ display: "flex", gap: 12 }}>
+                <select value={taskForm.prioridad} onChange={e => setTaskForm(p => ({ ...p, prioridad: e.target.value }))} style={{ flex: 1, padding: 8, background: T.bg2, border: `1px solid ${T.borderHi}`, borderRadius: 8, color: T.white }}><option value="alta">Alta</option><option value="media">Media</option><option value="baja">Baja</option></select>
+                <input type="date" value={taskForm.vencimiento} onChange={e => setTaskForm(p => ({ ...p, vencimiento: e.target.value }))} style={{ flex: 1, padding: 8, background: T.bg2, border: `1px solid ${T.borderHi}`, borderRadius: 8, color: T.white }} />
+              </div>
+              <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 16 }}><Btn onClick={handleAddTask} disabled={!taskForm.titulo.trim()} size="sm" style={{ background: T.teal, color: "#000" }}>CREAR TAREA</Btn></div>
             </div>
           )}
         </div>
@@ -461,6 +534,7 @@ export function LeadTimeline({ deal = {}, contacto = {}, db = {}, setDb, guardar
               };
               const iconMap = {
                 whatsapp: "phone",
+                email: "mail",
                 note: "note",
                 audit: "history",
                 task: "check",
@@ -513,6 +587,17 @@ export function LeadTimeline({ deal = {}, contacto = {}, db = {}, setDb, guardar
                     <div style={{ fontSize: 14, color: it.type === "stage" ? T.purple : T.whiteOff, whiteSpace: "pre-wrap", lineHeight: 1.5, fontWeight: it.type === "stage" ? 700 : 500 }}>
                       {it.body || (it.hasMedia ? "📎 Archivo adjunto" : "")}
                     </div>
+                    {it.type === "email" && it.asunto && (
+                      <div style={{ marginTop: 8, fontSize: 13, fontWeight: 800, color: T.teal }}>
+                        Asunto: {it.asunto}
+                      </div>
+                    )}
+                    {it.type === "email" && (
+                      <div style={{ marginTop: 4, display: "flex", gap: 10, fontSize: 11, color: T.whiteDim }}>
+                        <span>De: {it.de}</span>
+                        <span>Para: {it.para}</span>
+                      </div>
+                    )}
                     {it.type === "task" && it.deadline && (
                       <div style={{ marginTop: 10, fontSize: 11, color: T.whiteDim, display: "flex", alignItems: "center", gap: 6, background: T.bg2, padding: "4px 10px", borderRadius: 6, border: `1px solid ${T.border}`, width: "fit-content" }}>
                         <Ico k="calendar" size={12} /> Límite: {it.deadline} {it.priority && <span style={{ color: it.priority === 'alta' ? T.red : T.teal }}>• {it.priority.toUpperCase()}</span>}
