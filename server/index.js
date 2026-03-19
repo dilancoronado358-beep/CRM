@@ -1004,13 +1004,13 @@ async function syncEmails(accountId) {
         log(`🔄 [IMAP] Token expirado para ${accountId}. Refrescando...`);
         token = await refreshAccessToken(accountId);
       }
-      
+
       if (!token) {
         log(`❌ [IMAP] No se pudo obtener token para ${accountId}`);
         delete syncingAccounts[accountId];
         return { error: "Authentication failed (expired token)" };
       }
-      
+
       config.imap.xoauth2 = Buffer.from(`user=${acc.email}\x01auth=Bearer ${token}\x01\x01`).toString('base64');
     } else {
       config.imap.password = acc.password_hash;
@@ -1045,10 +1045,10 @@ async function syncEmails(accountId) {
         const twoDaysAgo = new Date();
         twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
         const dateStr = twoDaysAgo.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
-        
+
         const searchCriteria = [['SINCE', dateStr]];
         const fetchOptions = { bodies: ['HEADER', 'TEXT', ''], struct: true, markSeen: false };
-        
+
         const results = await connection.search(searchCriteria, fetchOptions);
         const lastResults = (results || []).slice(-50);
         log(`📥 [IMAP] ${boxName}: Procesando ${lastResults.length} correos.`);
@@ -1073,10 +1073,10 @@ async function syncEmails(accountId) {
               for (const att of mail.attachments) {
                 const fileName = att.filename || `unnamed_${Date.now()}`;
                 const safeName = `${deterministicId}_${fileName.replace(/[^a-z0-9.]/gi, '_')}`;
-                
+
                 const { data: uploadData, error: upErr } = await supabase.storage
                   .from('email-attachments')
-                  .upload(safeName, att.content, { 
+                  .upload(safeName, att.content, {
                     contentType: att.contentType,
                     upsert: true
                   });
@@ -1222,8 +1222,8 @@ app.post('/api/email/send', async (req, res) => {
     }
 
     if (!acc.org_id && acc.user_id) {
-       const { data: u } = await supabase.from('usuariosApp').select('org_id').eq('id', acc.user_id).single();
-       if (u) acc.org_id = u.org_id;
+      const { data: u } = await supabase.from('usuariosApp').select('org_id').eq('id', acc.user_id).single();
+      if (u) acc.org_id = u.org_id;
     }
 
     let transporterConfig = {
@@ -1313,7 +1313,7 @@ app.get('/api/auth/google', (req, res) => {
   const host = req.get('host');
   const finalProto = (host.includes('localhost') || host.includes('127.0.0.1')) ? protocol : 'https';
   const redirect_uri = `${finalProto}://${host}/api/auth/google/callback`;
-  
+
   logFile(`🔗 [OAuth Google] Redirect URI generado: ${redirect_uri}`);
 
   const rootUrl = 'https://accounts.google.com/o/oauth2/v2/auth';
@@ -1515,13 +1515,12 @@ supabase
   .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'email_accounts' }, async (payload) => {
     const accId = payload.new.id;
     const now = Date.now();
-    
-    // Ignorar si se sincronizó hace menos de 60 segundos
-    if (lastSyncTime[accId] && (now - lastSyncTime[accId] < 60000)) {
-      // logFile(`⏳ [Realtime] Ignorando trigger para ${accId} (en cooldown).`);
+
+    // Ignorar si se sincronizó hace menos de 5 segundos (reducido para respuesta instantánea al botón)
+    if (lastSyncTime[accId] && (now - lastSyncTime[accId] < 5000)) {
       return;
     }
-    
+
     lastSyncTime[accId] = now;
     logFile(`🔔 [Realtime] Cambio detectado en cuenta ${accId}. disparando sync...`);
     await syncEmails(accId);
@@ -1543,10 +1542,8 @@ setInterval(async () => {
       await syncEmails(acc.id);
       if (acc.sync_calendar) await syncCalendar(acc.id);
     }
-  } else {
-    logFile(`ℹ️ [CRON] No se encontraron cuentas activas.`);
   }
-}, 2 * 60 * 1000);
+}, 30 * 1000); // Sync automático cada 30 segundos
 
 server.listen(process.env.PORT || 3001, () => {
   console.log(`Server CRM corriendo en puerto ${process.env.PORT || 3001}`);
