@@ -43,18 +43,20 @@ const LIMITS = {
 export function useSupaState() {
   // Estado local inicializado con SEMILLA como fallback temporal mientras carga Supabase
   const [db, setDbRaw] = useState(() => {
-    // Solo consultar localStorage para la sesión de usuario activo
+    // 1. Estado Base (Semilla expandida con todas las tablas como arrays para evitar crashes)
+    const base = { ...SEMILLA };
+    TABLAS_SUPA.forEach(t => { if (!base[t]) base[t] = []; });
+
     try {
       const raw = localStorage.getItem("crm_usuario_activo");
-      // Restaurar tema guardado
       const savedTheme = localStorage.getItem("crm_theme") || "dark";
       applyTheme(savedTheme);
       if (raw) {
         const usuario = JSON.parse(raw);
-        return { ...SEMILLA, usuario };
+        return { ...base, usuario };
       }
     } catch (e) { }
-    return SEMILLA;
+    return base;
   });
 
   const [estadoSupa, setEstadoSupa] = useState("conectando");
@@ -107,14 +109,14 @@ export function useSupaState() {
 
       // 1. Cargar CRÍTICAS primero
       const resCriticos = await fetchData(TABLAS_CRITICAS);
-      const estadoCritico = {};
+      const estadoInicial = {};
       TABLAS_CRITICAS.forEach((tabla, i) => {
         if (resCriticos[i].status === 'fulfilled') {
-          estadoCritico[tabla] = resCriticos[i].value.data;
+          // Garantizar que si la respuesta es null/undefined, sea [] para evitar crashes
+          estadoInicial[tabla] = resCriticos[i].value.data || [];
         }
       });
-
-      setDb(d => ({ ...d, ...estadoCritico }));
+      setDb(d => ({ ...d, ...estadoInicial }));
       setEstadoSupa("conectado");
       setIsAppReady(true); // APP lista tras las críticas
 
@@ -124,7 +126,8 @@ export function useSupaState() {
         const estadoFondo = {};
         TABLAS_FONDO.forEach((tabla, i) => {
           if (resFondo[i].status === 'fulfilled') {
-            estadoFondo[tabla] = resFondo[i].value.data;
+            // Garantizar que si la respuesta es null/undefined, sea [] para evitar crashes en .filter/.map
+            estadoFondo[tabla] = resFondo[i].value.data || [];
           }
         });
         setDb(d => ({ ...d, ...estadoFondo }));

@@ -28,7 +28,7 @@ export function DataHygiene({ db, setDb, guardarEnSupa, eliminarDeSupa, t }) {
     const validados = new Set();
     Object.entries(counts).forEach(([key, count]) => {
       if (count > 1) {
-        const matching = db.contactos.filter(c => {
+        const matching = (db.contactos || []).filter(c => {
           const tel = c.telefono ? String(c.telefono).replace(/\D/g, "") : "";
           const mail = c.email ? c.email.toLowerCase().trim() : "";
           return tel === key || mail === key;

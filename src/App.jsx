@@ -532,7 +532,9 @@ export default function App() {
         {/* TOPBAR */}
         <div style={{ height: 72, background: T.bg1, borderBottom: `1px solid ${T.border}`, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 32px", flexShrink: 0, boxShadow: "0 2px 10px rgba(0,0,0,0.02)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-            <div style={{ fontWeight: 800, fontSize: 20, color: T.white }}>{MODULOS.find(m => m.id === modulo)?.label}</div>
+            <div style={{ fontWeight: 800, fontSize: 20, color: T.white }}>
+              {MODULOS.find(m => m.id === modulo)?.label || t("Cargando...")}
+            </div>
             <IndSupa estado={estadoSupa} />
           </div>
           <div style={{ display: "flex", gap: 12, alignItems: "center" }}>

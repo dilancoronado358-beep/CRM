@@ -15,7 +15,7 @@ export const Deals = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) => {
   );
   
   const etapasActuales = fPL !== "todos" ? db.pipelines.find(p => p.id === fPL)?.etapas || [] : [];
-  const esGanado = d => db.pipelines.find(p => p.id === d.pipeline_id)?.etapas.find(e => e.id === d.etapa_id)?.es_ganado;
+  const esGanado = d => db.pipelines.find(p => p.id === d.pipeline_id)?.etapas?.find(e => e.id === d.etapa_id)?.es_ganado;
   
   const total = filtrados.reduce((s, d) => s + d.valor, 0);
   const ganados = filtrados.filter(esGanado);

@@ -106,4 +106,6 @@ export const SEMILLA = {
   whatsapp_automations: [],
   landing_pages: [],
   formularios_publicos: [],
+  organizacion: [],
+  documentos: [],
 };

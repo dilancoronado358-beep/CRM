@@ -205,7 +205,7 @@ export const Automatizaciones = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t }
     if (Array.isArray(db.automatizaciones)) setWfs(db.automatizaciones);
   }, [db.automatizaciones]);
 
-  const pipeline = db.pipelines?.find(p => p.id === pipelineId) || db.pipelines?.[0];
+  const pipeline = (db.pipelines || []).find(p => p.id === pipelineId) || (db.pipelines || [])[0];
   const etapas = pipeline?.etapas || [];
   const usuarios = db.usuariosApp || [];
 
