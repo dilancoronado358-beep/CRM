@@ -30,7 +30,9 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) => {
 
   const getApiUrl = () => {
     const orgActual = db.organizacion?.find(o => o.id === db.usuario?.org_id);
-    return orgActual?.wa_server_url || `http://${window.location.hostname}:3001`;
+    if (orgActual?.wa_server_url) return orgActual.wa_server_url;
+    const protocol = window.location.protocol;
+    return `${protocol}//${window.location.hostname}:3001`;
   };
 
   const enviarRealista = async () => {

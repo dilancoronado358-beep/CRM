@@ -1296,6 +1296,156 @@ app.post('/api/email/sync', async (req, res) => {
   res.json(result);
 });
 
+// ═══════════════════════════════════════════
+// NEW OAUTH FLOW (CUSTOM)
+// ═══════════════════════════════════════════
+
+app.get('/api/auth/google', (req, res) => {
+  const { userId, orgId } = req.query;
+  if (!userId) return res.status(400).send("Falta userId");
+
+  const rootUrl = 'https://accounts.google.com/o/oauth2/v2/auth';
+  const options = {
+    redirect_uri: `${req.protocol}://${req.get('host')}/api/auth/google/callback`,
+    client_id: process.env.GOOGLE_CLIENT_ID,
+    access_type: 'offline',
+    response_type: 'code',
+    prompt: 'consent',
+    scope: [
+      'https://www.googleapis.com/auth/userinfo.email',
+      'https://mail.google.com/',
+      'https://www.googleapis.com/auth/calendar.events'
+    ].join(' '),
+    state: JSON.stringify({ userId, orgId })
+  };
+
+  const qs = new URLSearchParams(options);
+  res.redirect(`${rootUrl}?${qs.toString()}`);
+});
+
+app.get('/api/auth/azure', (req, res) => {
+  const { userId, orgId } = req.query;
+  if (!userId) return res.status(400).send("Falta userId");
+
+  const rootUrl = 'https://login.microsoftonline.com/common/oauth2/v2.0/authorize';
+  const options = {
+    client_id: process.env.AZURE_CLIENT_ID,
+    response_type: 'code',
+    redirect_uri: `${req.protocol}://${req.get('host')}/api/auth/azure/callback`,
+    response_mode: 'query',
+    scope: 'offline_access Mail.Read Calendars.Read User.Read',
+    state: JSON.stringify({ userId, orgId })
+  };
+
+  const qs = new URLSearchParams(options);
+  res.redirect(`${rootUrl}?${qs.toString()}`);
+});
+
+app.get('/api/auth/azure/callback', async (req, res) => {
+  const { code, state } = req.query;
+  try {
+    const { userId, orgId } = JSON.parse(state || "{}");
+    const redirect_uri = `${req.protocol}://${req.get('host')}/api/auth/azure/callback`;
+
+    const { data: tokens } = await axios.post('https://login.microsoftonline.com/common/oauth2/v2.0/token', new URLSearchParams({
+      client_id: process.env.AZURE_CLIENT_ID,
+      client_secret: process.env.AZURE_CLIENT_SECRET,
+      code,
+      redirect_uri,
+      grant_type: 'authorization_code'
+    }));
+
+    const { data: profile } = await axios.get('https://graph.microsoft.com/v1.0/me', {
+      headers: { Authorization: `Bearer ${tokens.access_token}` }
+    });
+
+    const email = profile.mail || profile.userPrincipalName;
+    const accId = "acc_" + Buffer.from(email).toString('hex').slice(0, 16);
+
+    const payload = {
+      id: accId,
+      user_id: userId,
+      org_id: orgId || null,
+      email: email,
+      provider: 'azure',
+      access_token: tokens.access_token,
+      refresh_token: tokens.refresh_token,
+      expires_at: new Date(Date.now() + (tokens.expires_in * 1000)).toISOString(),
+      active: true,
+      sync_calendar: true
+    };
+
+    await supabase.from('email_accounts').upsert(payload, { onConflict: 'id' });
+    res.send("<html><body><h3>Conectado con éxito</h3><script>if(window.opener) window.opener.postMessage('oauth_success','*'); setTimeout(()=>window.close(),2000);</script></body></html>");
+  } catch (e) {
+    res.status(500).send("Error Azure OAuth: " + e.message);
+  }
+});
+
+app.get('/api/auth/google/callback', async (req, res) => {
+  const { code, state } = req.query;
+  if (!code) return res.status(400).send("Falta el código de autorización");
+
+  try {
+    const { userId, orgId } = JSON.parse(state || "{}");
+    const redirect_uri = `${req.protocol}://${req.get('host')}/api/auth/google/callback`;
+
+    // 1. Canjear código por tokens
+    const { data: tokens } = await axios.post('https://oauth2.googleapis.com/token', new URLSearchParams({
+      code,
+      client_id: process.env.GOOGLE_CLIENT_ID,
+      client_secret: process.env.GOOGLE_CLIENT_SECRET,
+      redirect_uri,
+      grant_type: 'authorization_code'
+    }));
+
+    // 2. Obtener email del usuario
+    const { data: profile } = await axios.get('https://www.googleapis.com/oauth2/v1/userinfo', {
+      headers: { Authorization: `Bearer ${tokens.access_token}` }
+    });
+
+    const email = profile.email;
+    const accId = "acc_" + Buffer.from(email).toString('hex').slice(0, 16);
+
+    // 3. Guardar en email_accounts
+    const payload = {
+      id: accId,
+      user_id: userId,
+      org_id: orgId || null,
+      email: email,
+      provider: 'google',
+      access_token: tokens.access_token,
+      refresh_token: tokens.refresh_token,
+      expires_at: new Date(Date.now() + (tokens.expires_in * 1000)).toISOString(),
+      active: true,
+      sync_calendar: true
+    };
+
+    const { error } = await supabase.from('email_accounts').upsert(payload, { onConflict: 'id' });
+    if (error) throw error;
+
+    logFile(`✅ [OAuth] Cuenta ${email} vinculada con éxito al usuario ${userId}`);
+
+    // 4. Redirigir al frontend (asumimos que vive en el mismo host o lo sacamos del state si fuera necesario)
+    // Por ahora, redirigimos a donde vino o un path relativo si es SPA
+    res.send(`
+      <html><body>
+        <h3>Conectado con éxito</h3>
+        <p>Ya puedes cerrar esta ventana y regresar al CRM.</p>
+        <script>
+          if (window.opener) {
+             window.opener.postMessage("oauth_success", "*");
+          }
+          setTimeout(() => window.close(), 2000);
+        </script>
+      </body></html>
+    `);
+  } catch (e) {
+    logFile(`❌ [OAuth Error]: ${e.message}`);
+    res.status(500).send("Error en el proceso de vinculación: " + e.message);
+  }
+});
+
 app.post('/api/email/test-connection', async (req, res) => {
   const { smtp_host, smtp_port, imap_host, imap_port, email, password_hash } = req.body;
   const results = { smtp: null, imap: null };

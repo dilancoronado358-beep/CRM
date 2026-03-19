@@ -12,6 +12,13 @@ import { io } from "socket.io-client";
 // (Se usa una ref dentro del componente)
 
 export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
+  const getApiUrl = () => {
+    const orgActual = db.organizacion?.find(o => o.id === db.usuario?.org_id);
+    if (orgActual?.wa_server_url) return orgActual.wa_server_url;
+    const protocol = window.location.protocol;
+    return `${protocol}//${window.location.hostname}:3001`;
+  };
+
   const [tab, setTab] = useState("perfil");
   const socketRef = useRef(null);
 
@@ -120,7 +127,7 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
   useEffect(() => {
     const orgActual = db.organizacion?.find(o => o.id === db.usuario?.org_id);
     const globalUrl = orgActual?.wa_server_url;
-    
+
     // Si la Org tiene una URL y nuestro estado local está vacío O es diferente al de la Org (despues de cargar)
     // Pero solo si no estamos editando activamente (un poco dificil de detectar sin ref o flag)
     // Por ahora, si es el arranque (fWaUrl vacío), poner el de la Org.
@@ -153,57 +160,31 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
     alert(`Intentando conectar a: ${finalUrl}\n\nEspera unos segundos para que aparezca el QR.`);
   };
 
-  // ── LÓGICA OAUTH EMAIL ──
+  // ── LÓGICA OAUTH EMAIL (REDIRECCIÓN A BACKEND) ──
   useEffect(() => {
-    // Escuchar si regresamos de un OAuth login
-    const handleOAuthReturn = async () => {
-      const { data: { session } } = await sb.auth.getSession();
-      if (session?.provider_token) {
-        console.log("🧩 OAuth Token detectado:", session.provider_name);
-        
-        const rawProvider = session.provider_name || session.user?.app_metadata?.provider || "google";
-        const provider = (rawProvider === "email") ? "azure" : rawProvider; // Normalizar Outlook
-        const accId = "acc_" + session.user.id + "_" + (provider || "custom");
-        const payload = {
-          id: accId,
-          user_id: session.user.id,
-          email: session.user.email,
-          provider: provider,
-          access_token: session.provider_token,
-          refresh_token: session.provider_refresh_token,
-          expires_at: new Date(Date.now() + (session.expires_in * 1000)).toISOString(),
-          org_id: db.usuario?.org_id || session.user.user_metadata?.org_id,
-          active: true,
-          sync_calendar: true
-        };
-
-        const { error } = await guardarEnSupa("email_accounts", payload);
-        if (!error) {
-          setDb(d => ({ ...d, email_accounts: [payload] }));
-          alert(`✅ ¡${session.provider_name.toUpperCase()} conectado con éxito!`);
-          // Limpiar la URL de los tokens por seguridad
-          window.history.replaceState({}, document.title, window.location.pathname);
-        }
+    const handleMessage = (e) => {
+      if (e.data === "oauth_success") {
+        alert("✅ Cuenta vinculada correctamente.");
+        // Recargar cuentas desde Supabase
+        sb.from("email_accounts").select("*").eq("user_id", db.usuario?.id)
+          .then(({ data }) => {
+            if (data) setDb(prev => ({ ...prev, email_accounts: data }));
+          });
       }
     };
-
-    handleOAuthReturn();
-  }, []);
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
+  }, [db.usuario?.id]);
 
   const handleConnectEmail = async (provider) => {
-    const { error } = await sb.auth.signInWithOAuth({
-      provider,
-      options: {
-        queryParams: {
-          access_type: 'offline',
-          prompt: 'consent',
-        },
-        scopes: provider === 'google' 
-          ? 'https://mail.google.com/ https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/userinfo.email' 
-          : 'offline_access Mail.Read Calendars.Read'
-      }
-    });
-    if (error) alert("Error al iniciar OAuth: " + error.message);
+    const API_URL = getApiUrl();
+    const userId = db.usuario?.id;
+    const orgId = db.usuario?.org_id;
+
+    if (!userId) return alert("Error: No se detectó sesión de usuario.");
+
+    const url = `${API_URL}/api/auth/${provider}?userId=${userId}&orgId=${orgId || ""}`;
+    window.open(url, "Conectar Email", "width=600,height=700");
   };
 
   const syncEmails = async (accountId) => {
@@ -472,15 +453,15 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
     if (!orgId) return alert("Error: No se encontró organización vinculada a tu cuenta.");
 
     if (!confirm("⚠️ ¿Deseas generar o rotar el secreto de API?")) return;
-    
+
     setCargandoApi(true);
     const newToken = "sk_dev_" + Math.random().toString(36).substring(2, 11) + Math.random().toString(36).substring(2, 11);
-    
-    const payload = { 
-      id: "api_cfg_" + orgId, 
-      api_token: newToken, 
+
+    const payload = {
+      id: "api_cfg_" + orgId,
+      api_token: newToken,
       org_id: orgId,
-      creado: new Date().toISOString() 
+      creado: new Date().toISOString()
     };
 
     try {
@@ -905,9 +886,14 @@ ALTER TABLE usuariosApp ADD COLUMN IF NOT EXISTS org_id UUID REFERENCES organiza
         )}
 
         {tab === "email" && (
-          <Tarjeta style={{ padding: 32 }}>
-            <div style={{ fontSize: 20, fontWeight: 800, color: T.white, marginBottom: 8, display: "flex", alignItems: "center", gap: 10 }}><Ico k="mail" size={24} style={{ color: T.teal }} /> Conexión de Correo & Calendario</div>
-            <div style={{ fontSize: 14, color: T.whiteDim, marginBottom: 32 }}>Sincroniza tus mensajes y citas con un solo clic. Sin configuraciones técnicas complicadas.</div>
+          <Tarjeta style={{ padding: 32, border: `1px solid ${T.tealSoft}` }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
+              <div>
+                <div style={{ fontSize: 20, fontWeight: 800, color: T.white, display: "flex", alignItems: "center", gap: 10 }}><Ico k="mail" size={24} style={{ color: T.teal }} /> Conexión de Correo v2.0</div>
+                <div style={{ fontSize: 13, color: T.whiteDim, marginTop: 4 }}>Conexión segura de Gmail y Outlook (Personal).</div>
+              </div>
+              <div style={{ padding: "4px 8px", background: T.teal + "20", color: T.teal, borderRadius: 6, fontSize: 10, fontWeight: 800 }}>SISTEMA V2 ACTIVO</div>
+            </div>
 
             {db.email_accounts?.filter(a => a.active)?.length > 0 ? (
               // VISTA DE CUENTA CONECTADA
@@ -953,7 +939,7 @@ ALTER TABLE usuariosApp ADD COLUMN IF NOT EXISTS org_id UUID REFERENCES organiza
               // VISTA DE SELECCION DE PROVEEDOR (NUEVA)
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
                 {/* GMAIL */}
-                <div 
+                <div
                   onClick={() => handleConnectEmail('google')}
                   style={{ cursor: "pointer", padding: 32, background: T.bg2, borderRadius: 16, border: `1px solid ${T.borderHi}`, textAlign: "center", transition: "all .2s", hover: { borderColor: T.teal } }}
                 >
@@ -963,7 +949,7 @@ ALTER TABLE usuariosApp ADD COLUMN IF NOT EXISTS org_id UUID REFERENCES organiza
                 </div>
 
                 {/* OUTLOOK */}
-                <div 
+                <div
                   onClick={() => handleConnectEmail('azure')}
                   style={{ cursor: "pointer", padding: 32, background: T.bg2, borderRadius: 16, border: `1px solid ${T.borderHi}`, textAlign: "center", transition: "all .2s" }}
                 >
@@ -972,7 +958,7 @@ ALTER TABLE usuariosApp ADD COLUMN IF NOT EXISTS org_id UUID REFERENCES organiza
                   <div style={{ fontSize: 12, color: T.whiteDim, marginTop: 8 }}>Sincronización de Correo y Calendario</div>
                 </div>
 
-                <div 
+                <div
                   onClick={() => setShowManualEmail(true)}
                   style={{ gridColumn: "span 2", cursor: "pointer", padding: 16, border: `1px dashed ${T.borderHi}`, borderRadius: 12, textAlign: "center", color: T.whiteDim, fontSize: 13 }}
                 >
@@ -983,20 +969,20 @@ ALTER TABLE usuariosApp ADD COLUMN IF NOT EXISTS org_id UUID REFERENCES organiza
 
             {/* MODAL MANUAL (PARA CASOS EXCEPCIONALES) */}
             <Modal open={showManualEmail} onClose={() => setShowManualEmail(false)} title="Configuración SMTP/IMAP Avanzada">
-               <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-                    <Campo label="Host SMTP"><Inp value={fEmail.smtp_host} onChange={e => setFEmail({...fEmail, smtp_host: e.target.value})} /></Campo>
-                    <Campo label="Puerto SMTP"><Inp value={fEmail.smtp_port} onChange={e => setFEmail({...fEmail, smtp_port: e.target.value})} /></Campo>
-                    <Campo label="Host IMAP"><Inp value={fEmail.imap_host} onChange={e => setFEmail({...fEmail, imap_host: e.target.value})} /></Campo>
-                    <Campo label="Puerto IMAP"><Inp value={fEmail.imap_port} onChange={e => setFEmail({...fEmail, imap_port: e.target.value})} /></Campo>
-                  </div>
-                  <Campo label="Email"><Inp value={fEmail.email} onChange={e => setFEmail({...fEmail, email: e.target.value})} /></Campo>
-                  <Campo label="Contraseña/App Token"><Inp type="password" value={fEmail.password_hash} onChange={e => setFEmail({...fEmail, password_hash: e.target.value})} /></Campo>
-                  <Btn onClick={async () => {
-                    await guardarEnSupa("email_accounts", {...fEmail, id: "acc_" + Date.now(), provider: 'custom'});
-                    setShowManualEmail(false);
-                  }} full>Guardar Configuración</Btn>
-               </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+                  <Campo label="Host SMTP"><Inp value={fEmail.smtp_host} onChange={e => setFEmail({ ...fEmail, smtp_host: e.target.value })} /></Campo>
+                  <Campo label="Puerto SMTP"><Inp value={fEmail.smtp_port} onChange={e => setFEmail({ ...fEmail, smtp_port: e.target.value })} /></Campo>
+                  <Campo label="Host IMAP"><Inp value={fEmail.imap_host} onChange={e => setFEmail({ ...fEmail, imap_host: e.target.value })} /></Campo>
+                  <Campo label="Puerto IMAP"><Inp value={fEmail.imap_port} onChange={e => setFEmail({ ...fEmail, imap_port: e.target.value })} /></Campo>
+                </div>
+                <Campo label="Email"><Inp value={fEmail.email} onChange={e => setFEmail({ ...fEmail, email: e.target.value })} /></Campo>
+                <Campo label="Contraseña/App Token"><Inp type="password" value={fEmail.password_hash} onChange={e => setFEmail({ ...fEmail, password_hash: e.target.value })} /></Campo>
+                <Btn onClick={async () => {
+                  await guardarEnSupa("email_accounts", { ...fEmail, id: "acc_" + Date.now(), provider: 'custom' });
+                  setShowManualEmail(false);
+                }} full>Guardar Configuración</Btn>
+              </div>
             </Modal>
           </Tarjeta>
         )}
@@ -1126,13 +1112,13 @@ ALTER TABLE usuariosApp ADD COLUMN IF NOT EXISTS org_id UUID REFERENCES organiza
                           <span>DIAGNÓSTICO:</span>
                           <span onClick={() => window.open(fWaUrl || orgActual?.wa_server_url, '_blank')} style={{ cursor: "pointer", textDecoration: "underline", color: T.amber }}>🔗 Burlar Seguridad ngrok</span>
                         </div>
-                      <div style={{ marginBottom: 4 }}>Conectando a: <b style={{ color: T.white }}>{fWaUrl || db.usuariosApp?.find(u => u.role === 'admin' && u.waServerUrl)?.waServerUrl || `http://${window.location.hostname}:3001`}</b></div>
+                        <div style={{ marginBottom: 4 }}>Conectando a: <b style={{ color: T.white }}>{fWaUrl || db.usuariosApp?.find(u => u.role === 'admin' && u.waServerUrl)?.waServerUrl || `http://${window.location.hostname}:3001`}</b></div>
 
-                      {testResult && (
-                        <div style={{ marginTop: 8, padding: 6, borderRadius: 4, background: testResult.success ? T.green + "20" : T.red + "20", color: testResult.success ? T.green : T.red, border: `1px solid ${testResult.success ? T.green : T.red}40` }}>
-                          {testResult.success ? "✅ " : "❌ "} {testResult.msg}
-                        </div>
-                      )}
+                        {testResult && (
+                          <div style={{ marginTop: 8, padding: 6, borderRadius: 4, background: testResult.success ? T.green + "20" : T.red + "20", color: testResult.success ? T.green : T.red, border: `1px solid ${testResult.success ? T.green : T.red}40` }}>
+                            {testResult.success ? "✅ " : "❌ "} {testResult.msg}
+                          </div>
+                        )}
 
                         {!fWaUrl && db.usuario.role === 'admin' && <div style={{ color: T.teal, marginTop: 4 }}>💡 Tip: URL gestionada por la organización.</div>}
                       </div>

@@ -108,6 +108,10 @@ export function useSupaState() {
           // Si estamos en un contexto de organización, filtrar tablas operativas
           if (oi && !["organizacion", "recordatorios"].includes(tabla)) {
             q = q.eq("org_id", oi);
+            // FILTRO PERSONAL PARA EMAILS
+            if (["emails", "email_accounts"].includes(tabla)) {
+              q = q.eq("user_id", db.usuario?.id);
+            }
           }
           return q;
         })
