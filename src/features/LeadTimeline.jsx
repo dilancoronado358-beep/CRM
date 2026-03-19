@@ -567,7 +567,7 @@ export function LeadTimeline({ deal = {}, contacto = {}, db = {}, setDb, guardar
                 </div>
 
                 {showCcBcc && (
-                  <div style={{ display: "flex", flexDirection: "column", gap: 6, animation: "fadeIn .2s" }}>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                     <Inp value={emailCc} onChange={e => setEmailCc(e.target.value)} placeholder="CC (Copia)" style={{ background: T.bg1, fontSize: 11 }} />
                     <Inp value={emailBcc} onChange={e => setEmailBcc(e.target.value)} placeholder="BCC (Copia oculta)" style={{ background: T.bg1, fontSize: 11 }} />
                   </div>
@@ -760,7 +760,12 @@ export function LeadTimeline({ deal = {}, contacto = {}, db = {}, setDb, guardar
             })}
           </div>
         ))}
-        {items.length === 0 && !loading && composerTab !== "WhatsApp" && <div style={{ textAlign: "center", padding: 40, color: "#999" }}>Sin actividad registrada.</div>}
+        {filteredItems.length === 0 && !loading && composerTab !== "WhatsApp" && (
+          <div style={{ textAlign: "center", padding: 60, color: T.whiteDim, fontSize: 13 }}>
+            <Ico k="inbox" size={32} style={{ marginBottom: 12, opacity: 0.3 }} />
+            <div>No hay {filtro === "email" ? "correos" : "actividad"} registrados para esta vista.</div>
+          </div>
+        )}
 
         {/* VISTA DE CHAT (Burbujas ascendentes) */}
         {composerTab === "WhatsApp" && (() => {
