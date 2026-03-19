@@ -1030,13 +1030,13 @@ async function syncEmails(accountId) {
       }
       return u;
     }).filter(u => !isNaN(parseInt(u)));
-    log(`📩 [IMAP] ${uids.length} correos detectados. Sincronizando los últimos 20...`);
+    log(`📩 [IMAP] ${uids.length} correos detectados. Sincronizando los últimos 50...`);
 
     let count = 0;
-    const last20Uids = uids.slice(-20);
-    if (last20Uids.length > 0) {
+    const last50Uids = uids.slice(-50);
+    if (last50Uids.length > 0) {
       const fetchOptions = { bodies: ['HEADER', 'TEXT', ''], markSeen: false };
-      const messages = await connection.search([['UID', last20Uids]], fetchOptions);
+      const messages = await connection.fetch(last50Uids, fetchOptions);
 
       for (const item of messages) {
         try {
@@ -1052,8 +1052,8 @@ async function syncEmails(accountId) {
             dealId = deal?.id;
           }
           const { error: insertErr } = await supabase.from('emails').upsert({
-            id: "em_" + Date.now() + "_" + msgId,
-            account_id: accountId, // This might still fail until SQL is run, but we will see the error now
+            cuenta_id: accountId,
+            account_id: accountId,
             user_id: acc.user_id,
             org_id: acc.org_id,
             carpeta: 'entrada',
@@ -1216,10 +1216,10 @@ app.post('/api/email/send', async (req, res) => {
     logFile(`✅ [SMTP] Email enviado! ID: ${info.messageId}`);
 
     // Guardar en 'enviados' con esquema corregido y org_id/user_id
-    const { error: insErr } = await supabase.from('emails').insert({
-      id: "em_sent_" + Date.now(),
-      cuenta_id: accountId, // Usando cuenta_id (alias para account_id en el nuevo esquema)
-      account_id: accountId, // Backup por si acaso
+    // Guardar en 'enviados' con upsert para evitar errores de clave duplicada (mensaje_id)
+    const { error: insErr } = await supabase.from('emails').upsert({
+      cuenta_id: accountId,
+      account_id: accountId,
       user_id: acc.user_id,
       org_id: acc.org_id,
       carpeta: 'enviados',
@@ -1230,7 +1230,7 @@ app.post('/api/email/send', async (req, res) => {
       fecha: new Date().toISOString(),
       leido: true,
       mensaje_id: info.messageId
-    });
+    }, { onConflict: 'mensaje_id' });
 
     if (insErr) {
       logFile(`⚠️ [SMTP] Email enviado pero falló persistencia: ${insErr.message}`);

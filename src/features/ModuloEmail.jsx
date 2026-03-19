@@ -28,6 +28,11 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) => {
     }, 1500);
   };
 
+  const getApiUrl = () => {
+    const orgActual = db.organizacion?.find(o => o.id === db.usuario?.org_id);
+    return orgActual?.wa_server_url || `http://${window.location.hostname}:3001`;
+  };
+
   const enviarRealista = async () => {
     if (!f.para.trim() || !f.cuerpo.trim()) return;
     const acc = db.email_accounts?.[0];
@@ -38,8 +43,7 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) => {
     setLogEnvio(["[SMTP] Iniciando handshake con " + host]);
 
     try {
-      // Usar la misma IP/Hostname que el frontend pero puerto 3001
-      const API_URL = `http://${window.location.hostname}:3001`;
+      const API_URL = getApiUrl();
       setLogEnvio(prev => [...prev, "[AUTH] Autenticando canal TLS/SSL... ok."]);
       
       const res = await axios.post(`${API_URL}/api/email/send`, {
@@ -61,7 +65,11 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) => {
     } catch (e) {
       const errorDetail = e.response?.data?.error || e.message;
       setLogEnvio(prev => [...prev, "❌ Error: " + errorDetail]);
-      console.error("Email send error:", e);
+      if (errorDetail.includes("Network Error")) {
+        alert("Error de Red: No se pudo conectar al servidor. Asegúrate de que ngrok esté activo y que la URL en Configuración > Infraestructura sea la correcta.");
+      } else {
+        alert("Error enviando: " + errorDetail);
+      }
       setTimeout(() => setSimulandoEnvio(false), 5000);
     }
   };
@@ -72,7 +80,7 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) => {
     if (!acc) return;
 
     try {
-      const API_URL = `http://${window.location.hostname}:3001`;
+      const API_URL = getApiUrl();
       await axios.post(`${API_URL}/api/email/send`, {
         accountId: acc.id,
         to: emailFocus.de,
@@ -83,7 +91,12 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) => {
       setRespuestaRapida("");
       // Opcional: Recargar emails para ver el enviado
     } catch (e) {
-      alert("❌ Error enviando respuesta: " + (e.response?.data?.error || e.message));
+      const errorDetail = e.response?.data?.error || e.message;
+      if (errorDetail.includes("Network Error")) {
+        alert("Error de Red: No se pudo enviar la respuesta. Revisa tu túnel ngrok en la pestaña de Infraestructura.");
+      } else {
+        alert("❌ Error enviando respuesta: " + errorDetail);
+      }
     }
   };
 

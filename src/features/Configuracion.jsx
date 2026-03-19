@@ -51,7 +51,7 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
   });
   const [probandoEmail, setProbandoEmail] = useState(false);
   const [fEmpresa, setFEmpresa] = useState(db.empresaConfigs?.nombre || "");
-  const [fWaUrl, setFWaUrl] = useState(db.usuario?.waServerUrl || "");
+  const [fWaUrl, setFWaUrl] = useState(""); // Se inicializará desde el useEffect con la Org
   const [showUserModal, setShowUserModal] = useState(false);
   const [recordatorios, setRecordatorios] = useState(db.recordatorios || {
     dealSinActividadDias: 7, dealCierraCercanoDias: 3,
@@ -118,10 +118,15 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
   // Efecto para sincronizar el estado del formulario con la DB cuando carga Supabase
   useEffect(() => {
     const orgActual = db.organizacion?.find(o => o.id === db.usuario?.org_id);
-    if (orgActual?.wa_server_url && !fWaUrl) {
-      setFWaUrl(orgActual.wa_server_url);
+    const globalUrl = orgActual?.wa_server_url;
+    
+    // Si la Org tiene una URL y nuestro estado local está vacío O es diferente al de la Org (despues de cargar)
+    // Pero solo si no estamos editando activamente (un poco dificil de detectar sin ref o flag)
+    // Por ahora, si es el arranque (fWaUrl vacío), poner el de la Org.
+    if (globalUrl && !fWaUrl) {
+      setFWaUrl(globalUrl);
     }
-  }, [db.usuario?.org_id, db.organizacion, fWaUrl]);
+  }, [db.usuario?.org_id, db.organizacion]);
 
   const iniciarVinculacionWA = () => {
     const protocol = window.location.protocol === "https:" ? "https:" : "http:";
