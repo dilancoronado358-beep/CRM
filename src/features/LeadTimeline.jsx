@@ -620,7 +620,7 @@ export function LeadTimeline({ deal = {}, contacto = {}, db = {}, setDb, guardar
                     Adjuntar archivos
                   </label>
                 </div>
-                <Btn onClick={handleSendEmail} disabled={enviandoEmail || !contacto?.email || !emailBody.trim()} size="sm" style={{ background: T.teal, color: "#000", padding: "8px 20px" }}>
+                <Btn onClick={handleSendEmail} disabled={enviandoEmail || !emailTo.trim() || !emailBody.trim()} size="sm" style={{ background: T.teal, color: "#000", padding: "8px 20px" }}>
                   {enviandoEmail ? <Ico k="refresh" size={16} className="spin" /> : <Ico k="paper-plane" size={16} />} ENVIAR EMAIL
                 </Btn>
               </div>
@@ -875,7 +875,7 @@ export function LeadTimeline({ deal = {}, contacto = {}, db = {}, setDb, guardar
                 placeholder={previewFile ? "Añadir comentario..." : "Escribe un mensaje..."}
                 style={{ flex: 1, background: "#fff", border: `1px solid #c6d2d6`, borderRadius: 8, padding: "10px 16px", fontSize: 14, minHeight: 44, maxHeight: 120, outline: "none", resize: "none" }}
               />
-              <Btn onClick={previewFile ? confirmSendMedia() : handleSendWA} disabled={(!waMsg.trim() && !previewFile) || !cleanPhone} style={{ width: 44, height: 44, borderRadius: "50%", background: "#25D366", color: "#fff", padding: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <Btn onClick={previewFile ? confirmSendMedia : handleSendWA} disabled={(!waMsg.trim() && !previewFile) || !cleanPhone} style={{ width: 44, height: 44, borderRadius: "50%", background: "#25D366", color: "#fff", padding: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <Ico k="paper-plane" size={18} style={{ marginLeft: -2 }} />
               </Btn>
             </div>
