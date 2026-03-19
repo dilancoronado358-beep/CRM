@@ -947,3 +947,318 @@
 [2026-03-19T05:28:26.800Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6414
 [2026-03-19T05:28:46.806Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6362
 [2026-03-19T05:29:06.823Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6358
+[2026-03-19T05:29:26.828Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6270
+[2026-03-19T05:29:35.864Z] 🔔 [Realtime] Cambio detectado en cuenta acc_082f9156-d329-4cd1-b4a4-974e86730cc2_google. disparando sync...
+[2026-03-19T05:29:35.865Z] 🚀 Iniciando sincronización para acc_082f9156-d329-4cd1-b4a4-974e86730cc2_google...
+[2026-03-19T05:29:36.033Z] 📍 Org ID: 00000000-0000-0000-0000-000000000001
+[2026-03-19T05:29:36.034Z] 📡 [IMAP] Conectando a imap.gmail.com:993...
+[2026-03-19T05:29:36.686Z] ✅ [IMAP] Conectado. Abriendo INBOX...
+[2026-03-19T05:29:39.814Z] 📩 [IMAP] 8445 correos detectados. Sincronizando los últimos 50...
+[2026-03-19T05:29:40.601Z] 📩 [IMAP] Sincronización finalizada con éxito (1 procesados).
+[2026-03-19T05:29:40.737Z] [CAL] 📅 Iniciando sincronización de calendario para acc_082f9156-d329-4cd1-b4a4-974e86730cc2_google...
+[2026-03-19T05:29:40.869Z] [CAL] 📍 Org ID: 00000000-0000-0000-0000-000000000001
+[2026-03-19T05:29:40.870Z] [CAL] 📅 [Calendar] Solicitando eventos a Google API...
+[2026-03-19T05:29:42.546Z] ✅ [Calendar] 10 eventos sincronizados.
+[2026-03-19T05:29:58.936Z] ⏱️ [CRON] Iniciando sync automático...
+[2026-03-19T05:29:59.183Z] ℹ️ [CRON] Se encontraron 1 cuentas activas para sincronizar.
+[2026-03-19T05:29:59.184Z] 🚀 Iniciando sincronización para acc_082f9156-d329-4cd1-b4a4-974e86730cc2_google...
+[2026-03-19T05:29:59.378Z] 📍 Org ID: 00000000-0000-0000-0000-000000000001
+[2026-03-19T05:29:59.378Z] 📡 [IMAP] Conectando a imap.gmail.com:993...
+[2026-03-19T05:30:00.025Z] ✅ [IMAP] Conectado. Abriendo INBOX...
+[2026-03-19T05:30:04.940Z] 📩 [IMAP] 8445 correos detectados. Sincronizando los últimos 50...
+[2026-03-19T05:30:05.600Z] 📩 [IMAP] Sincronización finalizada con éxito (1 procesados).
+[2026-03-19T05:30:05.803Z] [CAL] 📅 Iniciando sincronización de calendario para acc_082f9156-d329-4cd1-b4a4-974e86730cc2_google...
+[2026-03-19T05:30:05.940Z] [CAL] 📍 Org ID: 00000000-0000-0000-0000-000000000001
+[2026-03-19T05:30:05.940Z] [CAL] 📅 [Calendar] Solicitando eventos a Google API...
+[2026-03-19T05:30:07.636Z] ✅ [Calendar] 10 eventos sincronizados.
+[2026-03-19T05:30:37.530Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6238
+[2026-03-19T05:31:37.533Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6350
+[2026-03-19T05:38:45.059Z] 🚀 SERVER CRM INICIANDO...
+[2026-03-19T05:38:46.118Z] 📡 [Realtime Subscription Status]: SUBSCRIBED
+[2026-03-19T05:38:51.418Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6366
+[2026-03-19T05:39:51.194Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6442
+[2026-03-19T05:40:11.194Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6402
+[2026-03-19T05:40:31.208Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6370
+[2026-03-19T05:40:45.095Z] ⏱️ [CRON] Iniciando sync automático...
+[2026-03-19T05:40:45.386Z] ℹ️ [CRON] Se encontraron 1 cuentas activas para sincronizar.
+[2026-03-19T05:40:45.388Z] 🚀 Iniciando sincronización para acc_082f9156-d329-4cd1-b4a4-974e86730cc2_google...
+[2026-03-19T05:40:45.593Z] 📍 Org ID: 00000000-0000-0000-0000-000000000001
+[2026-03-19T05:40:45.594Z] 📡 [IMAP] Conectando a imap.gmail.com:993...
+[2026-03-19T05:40:46.261Z] ✅ [IMAP] Conectado. Abriendo INBOX...
+[2026-03-19T05:40:49.387Z] 📩 [IMAP] 8445 correos detectados. Sincronizando los últimos 50...
+[2026-03-19T05:40:50.414Z] 📩 [IMAP] Sincronización finalizada con éxito (1 procesados).
+[2026-03-19T05:40:50.594Z] [CAL] 📅 Iniciando sincronización de calendario para acc_082f9156-d329-4cd1-b4a4-974e86730cc2_google...
+[2026-03-19T05:40:50.754Z] [CAL] 📍 Org ID: 00000000-0000-0000-0000-000000000001
+[2026-03-19T05:40:50.755Z] [CAL] 📅 [Calendar] Solicitando eventos a Google API...
+[2026-03-19T05:40:50.850Z] 🔔 [Realtime] Cambio detectado en cuenta acc_082f9156-d329-4cd1-b4a4-974e86730cc2_google. disparando sync...
+[2026-03-19T05:40:50.851Z] 🚀 Iniciando sincronización para acc_082f9156-d329-4cd1-b4a4-974e86730cc2_google...
+[2026-03-19T05:40:51.033Z] 📍 Org ID: 00000000-0000-0000-0000-000000000001
+[2026-03-19T05:40:51.034Z] 📡 [IMAP] Conectando a imap.gmail.com:993...
+[2026-03-19T05:40:51.222Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6438
+[2026-03-19T05:40:51.596Z] ✅ [IMAP] Conectado. Abriendo INBOX...
+[2026-03-19T05:40:52.571Z] ✅ [Calendar] 10 eventos sincronizados.
+[2026-03-19T05:40:54.595Z] 📩 [IMAP] 8445 correos detectados. Sincronizando los últimos 50...
+[2026-03-19T05:40:55.385Z] 📩 [IMAP] Sincronización finalizada con éxito (1 procesados).
+[2026-03-19T05:40:55.536Z] [CAL] 📅 Iniciando sincronización de calendario para acc_082f9156-d329-4cd1-b4a4-974e86730cc2_google...
+[2026-03-19T05:40:55.669Z] [CAL] 📍 Org ID: 00000000-0000-0000-0000-000000000001
+[2026-03-19T05:40:55.670Z] [CAL] 📅 [Calendar] Solicitando eventos a Google API...
+[2026-03-19T05:40:57.212Z] ✅ [Calendar] 10 eventos sincronizados.
+[2026-03-19T05:41:11.235Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6390
+[2026-03-19T05:42:21.931Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6390
+[2026-03-19T05:42:45.096Z] ⏱️ [CRON] Iniciando sync automático...
+[2026-03-19T05:42:45.403Z] ℹ️ [CRON] Se encontraron 1 cuentas activas para sincronizar.
+[2026-03-19T05:42:45.404Z] 🚀 Iniciando sincronización para acc_082f9156-d329-4cd1-b4a4-974e86730cc2_google...
+[2026-03-19T05:42:45.689Z] 📍 Org ID: 00000000-0000-0000-0000-000000000001
+[2026-03-19T05:42:45.689Z] 📡 [IMAP] Conectando a imap.gmail.com:993...
+[2026-03-19T05:42:46.243Z] ❌ [IMAP Error]: Invalid credentials (Failure)
+[2026-03-19T05:42:46.253Z] [CAL] 📅 Iniciando sincronización de calendario para acc_082f9156-d329-4cd1-b4a4-974e86730cc2_google...
+[2026-03-19T05:42:46.493Z] [CAL] 📍 Org ID: 00000000-0000-0000-0000-000000000001
+[2026-03-19T05:42:46.494Z] [CAL] 📅 [Calendar] Solicitando eventos a Google API...
+[2026-03-19T05:42:46.760Z] ❌ [Calendar Error]: Request had invalid authentication credentials. Expected OAuth 2 access token, login cookie or other valid authentication credential. See https://developers.google.com/identity/sign-in/web/devconsole-project.
+[2026-03-19T05:43:21.932Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6338
+[2026-03-19T05:43:41.940Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6314
+[2026-03-19T05:43:45.121Z] 🚀 SERVER CRM INICIANDO...
+[2026-03-19T05:44:01.951Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6266
+[2026-03-19T05:44:12.560Z] 🚀 SERVER CRM INICIANDO...
+[2026-03-19T05:44:13.338Z] 📡 [Realtime Subscription Status]: SUBSCRIBED
+[2026-03-19T05:44:18.713Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6386
+[2026-03-19T05:45:18.506Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6338
+[2026-03-19T05:45:38.503Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6294
+[2026-03-19T05:45:58.515Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6306
+[2026-03-19T05:46:12.594Z] ⏱️ [CRON] Iniciando sync automático...
+[2026-03-19T05:46:12.875Z] ℹ️ [CRON] Se encontraron 1 cuentas activas para sincronizar.
+[2026-03-19T05:46:12.878Z] 🚀 Iniciando sincronización para acc_082f9156-d329-4cd1-b4a4-974e86730cc2_google...
+[2026-03-19T05:46:13.095Z] 📍 Org ID: 00000000-0000-0000-0000-000000000001
+[2026-03-19T05:46:13.096Z] 📡 [IMAP] Conectando a imap.gmail.com:993...
+[2026-03-19T05:46:13.645Z] ❌ [IMAP Error]: Invalid credentials (Failure)
+[2026-03-19T05:46:13.646Z] [CAL] 📅 Iniciando sincronización de calendario para acc_082f9156-d329-4cd1-b4a4-974e86730cc2_google...
+[2026-03-19T05:46:13.840Z] [CAL] 📍 Org ID: 00000000-0000-0000-0000-000000000001
+[2026-03-19T05:46:14.054Z] [CAL] 📅 [Calendar] Solicitando eventos a Google API...
+[2026-03-19T05:46:14.334Z] ❌ [Calendar Error]: Request had invalid authentication credentials. Expected OAuth 2 access token, login cookie or other valid authentication credential. See https://developers.google.com/identity/sign-in/web/devconsole-project.
+[2026-03-19T05:46:18.524Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6310
+[2026-03-19T05:46:38.532Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6258
+[2026-03-19T05:47:49.631Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6386
+[2026-03-19T05:48:12.608Z] ⏱️ [CRON] Iniciando sync automático...
+[2026-03-19T05:48:12.847Z] ℹ️ [CRON] Se encontraron 1 cuentas activas para sincronizar.
+[2026-03-19T05:48:12.847Z] 🚀 Iniciando sincronización para acc_082f9156-d329-4cd1-b4a4-974e86730cc2_google...
+[2026-03-19T05:48:13.057Z] 📍 Org ID: 00000000-0000-0000-0000-000000000001
+[2026-03-19T05:48:13.057Z] 📡 [IMAP] Conectando a imap.gmail.com:993...
+[2026-03-19T05:48:13.605Z] ❌ [IMAP Error]: Invalid credentials (Failure)
+[2026-03-19T05:48:13.606Z] [CAL] 📅 Iniciando sincronización de calendario para acc_082f9156-d329-4cd1-b4a4-974e86730cc2_google...
+[2026-03-19T05:48:13.769Z] [CAL] 📍 Org ID: 00000000-0000-0000-0000-000000000001
+[2026-03-19T05:48:13.769Z] [CAL] 📅 [Calendar] Solicitando eventos a Google API...
+[2026-03-19T05:48:13.956Z] ❌ [Calendar Error]: Request had invalid authentication credentials. Expected OAuth 2 access token, login cookie or other valid authentication credential. See https://developers.google.com/identity/sign-in/web/devconsole-project.
+[2026-03-19T05:48:49.643Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6358
+[2026-03-19T05:49:09.681Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6306
+[2026-03-19T05:49:29.676Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6286
+[2026-03-19T05:49:49.680Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6374
+[2026-03-19T05:50:09.691Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6346
+[2026-03-19T05:50:12.610Z] ⏱️ [CRON] Iniciando sync automático...
+[2026-03-19T05:50:13.064Z] ℹ️ [CRON] Se encontraron 1 cuentas activas para sincronizar.
+[2026-03-19T05:50:13.064Z] 🚀 Iniciando sincronización para acc_082f9156-d329-4cd1-b4a4-974e86730cc2_google...
+[2026-03-19T05:50:13.242Z] 📍 Org ID: 00000000-0000-0000-0000-000000000001
+[2026-03-19T05:50:13.244Z] 📡 [IMAP] Conectando a imap.gmail.com:993...
+[2026-03-19T05:50:13.809Z] ❌ [IMAP Error]: Invalid credentials (Failure)
+[2026-03-19T05:50:13.810Z] [CAL] 📅 Iniciando sincronización de calendario para acc_082f9156-d329-4cd1-b4a4-974e86730cc2_google...
+[2026-03-19T05:50:13.989Z] [CAL] 📍 Org ID: 00000000-0000-0000-0000-000000000001
+[2026-03-19T05:50:13.989Z] [CAL] 📅 [Calendar] Solicitando eventos a Google API...
+[2026-03-19T05:50:14.261Z] ❌ [Calendar Error]: Request had invalid authentication credentials. Expected OAuth 2 access token, login cookie or other valid authentication credential. See https://developers.google.com/identity/sign-in/web/devconsole-project.
+[2026-03-19T05:50:45.693Z] 🚀 SERVER CRM INICIANDO...
+[2026-03-19T05:50:46.530Z] 📡 [Realtime Subscription Status]: SUBSCRIBED
+[2026-03-19T05:50:52.603Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6326
+[2026-03-19T05:51:52.350Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6378
+[2026-03-19T05:52:12.361Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6390
+[2026-03-19T05:52:32.375Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6386
+[2026-03-19T05:52:45.718Z] ⏱️ [CRON] Iniciando sync automático...
+[2026-03-19T05:52:46.062Z] ℹ️ [CRON] Se encontraron 1 cuentas activas para sincronizar.
+[2026-03-19T05:52:46.065Z] Syncing for acc_082f9156-d329-4cd1-b4a4-974e86730cc2_google...
+[2026-03-19T05:52:46.219Z] 📍 Org ID: 00000000-0000-0000-0000-000000000001
+[2026-03-19T05:52:46.219Z] 📡 [IMAP] Conectando a imap.gmail.com:993...
+[2026-03-19T05:52:46.786Z] 🔄 [IMAP] Credenciales inválidas. Forzando refresco de token...
+[2026-03-19T05:52:47.402Z] ✅ [Refresh] Token renovado con éxito para acc_082f9156-d329-4cd1-b4a4-974e86730cc2_google
+[2026-03-19T05:52:47.598Z] 🔔 [Realtime] Cambio detectado en cuenta acc_082f9156-d329-4cd1-b4a4-974e86730cc2_google. disparando sync...
+[2026-03-19T05:52:47.598Z] Syncing for acc_082f9156-d329-4cd1-b4a4-974e86730cc2_google...
+[2026-03-19T05:52:47.752Z] 📍 Org ID: 00000000-0000-0000-0000-000000000001
+[2026-03-19T05:52:47.752Z] ⚠️ Ya hay una sincronización en marcha para acc_082f9156-d329-4cd1-b4a4-974e86730cc2_google.
+[2026-03-19T05:52:47.753Z] [CAL] 📅 Iniciando sincronización de calendario para acc_082f9156-d329-4cd1-b4a4-974e86730cc2_google...
+[2026-03-19T05:52:47.904Z] [CAL] 📍 Org ID: 00000000-0000-0000-0000-000000000001
+[2026-03-19T05:52:47.904Z] [CAL] 📅 [Calendar] Solicitando eventos a Google API...
+[2026-03-19T05:52:48.089Z] ✅ [IMAP] Conectado. Abriendo INBOX...
+[2026-03-19T05:52:49.546Z] ✅ [Calendar] 10 eventos sincronizados.
+[2026-03-19T05:52:52.373Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6246
+[2026-03-19T05:53:12.417Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6382
+[2026-03-19T05:54:22.112Z] 🚀 SERVER CRM INICIANDO...
+[2026-03-19T05:54:23.027Z] 📡 [Realtime Subscription Status]: SUBSCRIBED
+[2026-03-19T05:54:27.976Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6334
+[2026-03-19T05:55:27.860Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6326
+[2026-03-19T05:55:47.856Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6250
+[2026-03-19T05:56:07.887Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6338
+[2026-03-19T05:56:16.362Z] 🔔 [Realtime] Cambio detectado en cuenta acc_082f9156-d329-4cd1-b4a4-974e86730cc2_google. disparando sync...
+[2026-03-19T05:56:16.365Z] Syncing for acc_082f9156-d329-4cd1-b4a4-974e86730cc2_google...
+[2026-03-19T05:56:16.555Z] 📍 Org ID: 00000000-0000-0000-0000-000000000001
+[2026-03-19T05:56:16.556Z] 📡 [IMAP] Conectando a imap.gmail.com:993...
+[2026-03-19T05:56:17.171Z] ✅ [IMAP] Conectado. Abriendo INBOX...
+[2026-03-19T05:56:22.150Z] ⏱️ [CRON] Iniciando sync automático...
+[2026-03-19T05:56:22.347Z] ℹ️ [CRON] Se encontraron 1 cuentas activas para sincronizar.
+[2026-03-19T05:56:22.347Z] Syncing for acc_082f9156-d329-4cd1-b4a4-974e86730cc2_google...
+[2026-03-19T05:56:22.501Z] 📍 Org ID: 00000000-0000-0000-0000-000000000001
+[2026-03-19T05:56:22.502Z] ⚠️ Ya hay una sincronización en marcha para acc_082f9156-d329-4cd1-b4a4-974e86730cc2_google.
+[2026-03-19T05:56:22.502Z] [CAL] 📅 Iniciando sincronización de calendario para acc_082f9156-d329-4cd1-b4a4-974e86730cc2_google...
+[2026-03-19T05:56:22.657Z] [CAL] 📍 Org ID: 00000000-0000-0000-0000-000000000001
+[2026-03-19T05:56:22.657Z] [CAL] 📅 [Calendar] Solicitando eventos a Google API...
+[2026-03-19T05:56:24.357Z] ✅ [Calendar] 10 eventos sincronizados.
+[2026-03-19T05:56:27.861Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6286
+[2026-03-19T05:56:47.877Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6290
+[2026-03-19T05:57:20.849Z] 🚀 SERVER CRM INICIANDO...
+[2026-03-19T05:57:21.542Z] 📡 [Realtime Subscription Status]: SUBSCRIBED
+[2026-03-19T05:57:27.984Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6342
+[2026-03-19T05:58:27.705Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6314
+[2026-03-19T05:58:33.860Z] 📡 [Realtime Subscription Status]: CHANNEL_ERROR
+[2026-03-19T05:58:33.862Z] 📡 [Realtime Subscription Status]: CHANNEL_ERROR
+[2026-03-19T05:58:37.032Z] 📡 [Realtime Subscription Status]: SUBSCRIBED
+[2026-03-19T05:58:47.687Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6390
+[2026-03-19T05:59:07.693Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6362
+[2026-03-19T05:59:20.885Z] ⏱️ [CRON] Iniciando sync automático...
+[2026-03-19T05:59:21.065Z] ℹ️ [CRON] Se encontraron 1 cuentas activas para sincronizar.
+[2026-03-19T05:59:21.066Z] Syncing for acc_082f9156-d329-4cd1-b4a4-974e86730cc2_google...
+[2026-03-19T05:59:21.222Z] 📍 Org ID: 00000000-0000-0000-0000-000000000001
+[2026-03-19T05:59:21.222Z] 📡 [IMAP] Conectando a imap.gmail.com:993...
+[2026-03-19T05:59:21.918Z] ✅ [IMAP] Conectado. Abriendo INBOX...
+[2026-03-19T05:59:22.354Z] 📥 [IMAP] Buscando correos desde: Mar 17, 2026...
+[2026-03-19T05:59:23.930Z] 📥 [IMAP] Procesando 50 correos encontrados.
+[2026-03-19T05:59:23.964Z] 🔍 [IMAP] UID 42240: "Are you using image generation in Bolt.new yet?" (ID: em_3c313737333737363832303435302e32)
+[2026-03-19T05:59:24.334Z] ❌ [IMAP] Error upsert UID 42240: duplicate key value violates unique constraint "emails_mensaje_id_key"
+[2026-03-19T05:59:24.385Z] 🔍 [IMAP] UID 42241: "ACCESO CON EXITO" (ID: em_3c3230323630333137313935362e3632)
+[2026-03-19T05:59:24.689Z] 🔍 [IMAP] UID 42242: "TRANSFERENCIAS INTERBANCARIAS" (ID: em_3c3230323630333137313935362e3632)
+[2026-03-19T05:59:25.014Z] 🔍 [IMAP] UID 42243: "NOTIFICACION BANCO PICHINCHA" (ID: em_3c6b504562384f4e55546b4f63493571)
+[2026-03-19T05:59:25.305Z] 🔍 [IMAP] UID 42244: "NOTIFICACION BANCO PICHINCHA" (ID: em_3c7a634b766a6a2d6e5467325331376c)
+[2026-03-19T05:59:25.599Z] 🔍 [IMAP] UID 42245: "NOTIFICACIÓN BANCO PICHINCHA" (ID: em_3c3930363539363537362e3535303431)
+[2026-03-19T05:59:25.890Z] 🔍 [IMAP] UID 42246: "LIQUIDACION 70% DESCUENTO - ALMACENES DEPRATI" (ID: em_3c363937396332303236303331373230)
+[2026-03-19T05:59:26.175Z] 🔍 [IMAP] UID 42247: "Querido Dilan Coronado: Información importante" (ID: em_3c4f2d6a36746a694a547a6566467034)
+[2026-03-19T05:59:26.468Z] 🔍 [IMAP] UID 42248: "Mira vacantes de Puntonet S.A. y tus siguientes pasos" (ID: em_3c3437363235313639382e3231363133)
+[2026-03-19T05:59:26.752Z] 🔍 [IMAP] UID 42249: "Entrevista de trabajo: ¿por qué me descartaron si hice todo bien?" (ID: em_3c3830383238303237392e3230373537)
+[2026-03-19T05:59:27.024Z] 🔍 [IMAP] UID 42250: "NOTIFICACION BANCO PICHINCHA" (ID: em_3c6f6731674a63526652526d4e67566a)
+[2026-03-19T05:59:27.287Z] 🔍 [IMAP] UID 42251: "NOTIFICACION BANCO PICHINCHA" (ID: em_3c3536677464384479546d6d65746576)
+[2026-03-19T05:59:27.585Z] 🔍 [IMAP] UID 42252: "NOTIFICACIÓN BANCO PICHINCHA" (ID: em_3c323031343533393231372e34363731)
+[2026-03-19T05:59:27.697Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6346
+[2026-03-19T05:59:27.860Z] 🔍 [IMAP] UID 42253: "NOTIFICACIÓN BANCO PICHINCHA" (ID: em_3c3439383239303430372e3535383731)
+[2026-03-19T05:59:28.176Z] 🔍 [IMAP] UID 42254: "bele_2601 acaba de enviarte un mensaje" (ID: em_3c39396366333833382d393034342d34)
+[2026-03-19T05:59:28.441Z] 🔍 [IMAP] UID 42255: "Reset Your Password" (ID: em_3c65386631373539322d306633382d34)
+[2026-03-19T05:59:28.710Z] 🔍 [IMAP] UID 42256: "Reset Your Password" (ID: em_3c61383661626633642d366338332d34)
+[2026-03-19T05:59:28.986Z] 🔍 [IMAP] UID 42257: "💬 Dilan, conecta con Ramon Zambrano" (ID: em_3c3931303839373431362e3231393730)
+[2026-03-19T05:59:29.254Z] 🔍 [IMAP] UID 42258: "Transaccion rechazada por Fondos TD" (ID: em_3c3230323630333138303933302e3632)
+[2026-03-19T05:59:29.520Z] 🔍 [IMAP] UID 42259: "Transaccion rechazada por Fondos TD" (ID: em_3c3230323630333138303933302e3632)
+[2026-03-19T05:59:29.940Z] 🔍 [IMAP] UID 42260: "¡Cuánto tiempo! Haz un pedido y ahorra 30%." (ID: em_3c64663738656534612d346136332d33)
+[2026-03-19T05:59:30.272Z] 🔍 [IMAP] UID 42261: "¡Postúlate a Asistente Administrativo y otros 10 avisos...!" (ID: em_3c67686b657768313737333737333137)
+[2026-03-19T05:59:30.555Z] 🔍 [IMAP] UID 42262: "Nuevos puestos publicados en carrera.sonda.com" (ID: em_3c3735383935383132362e3231383834)
+[2026-03-19T05:59:30.821Z] 🔍 [IMAP] UID 42263: "Renueva tu sala HOY con el cuadro perfecto ¡Corre a Deprati! 🖼️✨" (ID: em_3c302e302e31462e3339442e31444342)
+[2026-03-19T05:59:31.121Z] 🔍 [IMAP] UID 42264: "SONDA - BR necesita personal para el puesto de Técnico Soporte 1A" (ID: em_3c3238333136303737302e3236333731)
+[2026-03-19T05:59:31.392Z] 🔍 [IMAP] UID 42265: "Conoce el nuevo espacio de Ciberseguridad 🔐" (ID: em_3c313737333835363336333639392e65)
+[2026-03-19T05:59:31.662Z] 🔍 [IMAP] UID 42266: "(Sin asunto)" (ID: em_3c43414a553461736f676b4353484531)
+[2026-03-19T05:59:31.923Z] ❌ [IMAP] Error upsert UID 42266: duplicate key value violates unique constraint "emails_mensaje_id_key"
+[2026-03-19T05:59:31.931Z] 🔍 [IMAP] UID 42267: "Es" (ID: em_3c43414a553461737141577652724868)
+[2026-03-19T05:59:32.198Z] ❌ [IMAP] Error upsert UID 42267: duplicate key value violates unique constraint "emails_mensaje_id_key"
+[2026-03-19T05:59:32.202Z] 🔍 [IMAP] UID 42268: "Alerta de seguridad" (ID: em_3c6a5a4a7a7a394a484d4e53725a7269)
+[2026-03-19T05:59:32.477Z] ❌ [IMAP] Error upsert UID 42268: duplicate key value violates unique constraint "emails_mensaje_id_key"
+[2026-03-19T05:59:32.491Z] 🔍 [IMAP] UID 42269: "NOTIFICACION BANCO PICHINCHA" (ID: em_3c442d4668426e735f545853374a3038)
+[2026-03-19T05:59:32.760Z] ❌ [IMAP] Error upsert UID 42269: duplicate key value violates unique constraint "emails_mensaje_id_key"
+[2026-03-19T05:59:32.766Z] 🔍 [IMAP] UID 42270: "NOTIFICACION BANCO PICHINCHA" (ID: em_3c497869735152554552756147667952)
+[2026-03-19T05:59:33.021Z] ❌ [IMAP] Error upsert UID 42270: duplicate key value violates unique constraint "emails_mensaje_id_key"
+[2026-03-19T05:59:33.041Z] 🔍 [IMAP] UID 42271: "NOTIFICACIÓN BANCO PICHINCHA" (ID: em_3c3931353033373737302e3537333736)
+[2026-03-19T05:59:33.343Z] 🔍 [IMAP] UID 42272: "Nuevos empleos similares a COORDINADOR DE AGENDAMIENTO - QUITO en Puntonet S.A." (ID: em_3c313835333836313238382e33363834)
+[2026-03-19T05:59:33.624Z] 🔍 [IMAP] UID 42273: "Dilan joshua: tienes $16 de ahorro  🥳" (ID: em_3c64633633303966612d373531632d33)
+[2026-03-19T05:59:33.901Z] 🔍 [IMAP] UID 42274: "NOTIFICACION BANCO PICHINCHA" (ID: em_3c486a4f634d336c6d522d6d3861756e)
+[2026-03-19T05:59:34.176Z] 🔍 [IMAP] UID 42275: "NOTIFICACIÓN BANCO PICHINCHA" (ID: em_3c313838353738343631342e35373739)
+[2026-03-19T05:59:34.448Z] 🔍 [IMAP] UID 42276: "We've found these for Ensign" (ID: em_3c42454b784c4b344253577970695843)
+[2026-03-19T05:59:34.735Z] 🔍 [IMAP] UID 42277: "Your Supabase Project adminpage is going to be paused." (ID: em_3c66303832363464302d643838312d34)
+[2026-03-19T05:59:34.999Z] 🔍 [IMAP] UID 42278: "Por favor, confirma lo antes posible." (ID: em_3c556a31706934685253544f516c4e4b)
+[2026-03-19T05:59:35.270Z] 🔍 [IMAP] UID 42279: "Manage your login options" (ID: em_3c6a597939747341315232367a454873)
+[2026-03-19T05:59:35.552Z] 🔍 [IMAP] UID 42280: "Your password has been updated" (ID: em_3c6b44664639686467534a7534637144)
+[2026-03-19T05:59:35.819Z] 🔍 [IMAP] UID 42281: "Ana Belen Orellana Jarrin de Puntonet S.A. ha publicado contenido" (ID: em_3c3833303033363131362e3230353534)
+[2026-03-19T05:59:36.082Z] 🔍 [IMAP] UID 42282: "Why Your Relationship Feels Harder Than It Should" (ID: em_3c30314b4d3157384b54523056574346)
+[2026-03-19T05:59:36.357Z] 🔍 [IMAP] UID 42283: "Antes $23,89. Ahora SOLO $1,78" (ID: em_3c5f4c4e655871504e517236434d2d5a)
+[2026-03-19T05:59:36.624Z] 🔍 [IMAP] UID 42284: "Transaccion rechazada por Fondos TD" (ID: em_3c3230323630333139303230352e3632)
+[2026-03-19T05:59:36.913Z] 🔍 [IMAP] UID 42285: "Alerta de seguridad" (ID: em_3c764556312d48774d385678334c6958)
+[2026-03-19T05:59:37.174Z] 🔍 [IMAP] UID 42286: "[dilancoronado358-beep/CRM] Possible valid secrets detected" (ID: em_3c7365637265742d7363616e6e696e67)
+[2026-03-19T05:59:37.447Z] 🔍 [IMAP] UID 42287: "[dilancoronado358-beep/CRM] Supabase Service Role JWT exposed on GitHub" (ID: em_3c32303236303331393033323535322e)
+[2026-03-19T05:59:37.711Z] 🔍 [IMAP] UID 42288: "(Sin asunto)" (ID: em_3c43414a5534617370395053792b7951)
+[2026-03-19T05:59:37.977Z] 🔍 [IMAP] UID 42289: "Test prueba" (ID: em_3c43414a553461737251374574374f45)
+[2026-03-19T05:59:38.231Z] 📩 [IMAP] Sincronización finalizada con éxito (44 procesados).
+[2026-03-19T05:59:38.363Z] [CAL] 📅 Iniciando sincronización de calendario para acc_082f9156-d329-4cd1-b4a4-974e86730cc2_google...
+[2026-03-19T05:59:38.463Z] 🔔 [Realtime] Cambio detectado en cuenta acc_082f9156-d329-4cd1-b4a4-974e86730cc2_google. disparando sync...
+[2026-03-19T05:59:38.463Z] Syncing for acc_082f9156-d329-4cd1-b4a4-974e86730cc2_google...
+[2026-03-19T05:59:38.497Z] [CAL] 📍 Org ID: 00000000-0000-0000-0000-000000000001
+[2026-03-19T05:59:38.498Z] [CAL] 📅 [Calendar] Solicitando eventos a Google API...
+[2026-03-19T05:59:38.592Z] 📍 Org ID: 00000000-0000-0000-0000-000000000001
+[2026-03-19T05:59:38.592Z] 📡 [IMAP] Conectando a imap.gmail.com:993...
+[2026-03-19T05:59:39.309Z] ✅ [IMAP] Conectado. Abriendo INBOX...
+[2026-03-19T05:59:39.670Z] 📥 [IMAP] Buscando correos desde: Mar 17, 2026...
+[2026-03-19T05:59:40.061Z] ✅ [Calendar] 10 eventos sincronizados.
+[2026-03-19T05:59:41.196Z] 📥 [IMAP] Procesando 50 correos encontrados.
+[2026-03-19T05:59:41.204Z] 🔍 [IMAP] UID 42240: "Are you using image generation in Bolt.new yet?" (ID: em_3c313737333737363832303435302e32)
+[2026-03-19T05:59:41.467Z] ❌ [IMAP] Error upsert UID 42240: duplicate key value violates unique constraint "emails_mensaje_id_key"
+[2026-03-19T05:59:41.476Z] 🔍 [IMAP] UID 42241: "ACCESO CON EXITO" (ID: em_3c3230323630333137313935362e3632)
+[2026-03-19T05:59:41.744Z] 🔍 [IMAP] UID 42242: "TRANSFERENCIAS INTERBANCARIAS" (ID: em_3c3230323630333137313935362e3632)
+[2026-03-19T05:59:42.006Z] 🔍 [IMAP] UID 42243: "NOTIFICACION BANCO PICHINCHA" (ID: em_3c6b504562384f4e55546b4f63493571)
+[2026-03-19T05:59:42.262Z] 🔍 [IMAP] UID 42244: "NOTIFICACION BANCO PICHINCHA" (ID: em_3c7a634b766a6a2d6e5467325331376c)
+[2026-03-19T05:59:42.526Z] 🔍 [IMAP] UID 42245: "NOTIFICACIÓN BANCO PICHINCHA" (ID: em_3c3930363539363537362e3535303431)
+[2026-03-19T05:59:42.841Z] 🔍 [IMAP] UID 42246: "LIQUIDACION 70% DESCUENTO - ALMACENES DEPRATI" (ID: em_3c363937396332303236303331373230)
+[2026-03-19T05:59:43.127Z] 🔍 [IMAP] UID 42247: "Querido Dilan Coronado: Información importante" (ID: em_3c4f2d6a36746a694a547a6566467034)
+[2026-03-19T05:59:43.411Z] 🔍 [IMAP] UID 42248: "Mira vacantes de Puntonet S.A. y tus siguientes pasos" (ID: em_3c3437363235313639382e3231363133)
+[2026-03-19T05:59:43.691Z] 🔍 [IMAP] UID 42249: "Entrevista de trabajo: ¿por qué me descartaron si hice todo bien?" (ID: em_3c3830383238303237392e3230373537)
+[2026-03-19T05:59:43.949Z] 🔍 [IMAP] UID 42250: "NOTIFICACION BANCO PICHINCHA" (ID: em_3c6f6731674a63526652526d4e67566a)
+[2026-03-19T05:59:44.205Z] 🔍 [IMAP] UID 42251: "NOTIFICACION BANCO PICHINCHA" (ID: em_3c3536677464384479546d6d65746576)
+[2026-03-19T05:59:44.465Z] 🔍 [IMAP] UID 42252: "NOTIFICACIÓN BANCO PICHINCHA" (ID: em_3c323031343533393231372e34363731)
+[2026-03-19T05:59:44.746Z] 🔍 [IMAP] UID 42253: "NOTIFICACIÓN BANCO PICHINCHA" (ID: em_3c3439383239303430372e3535383731)
+[2026-03-19T05:59:45.019Z] 🔍 [IMAP] UID 42254: "bele_2601 acaba de enviarte un mensaje" (ID: em_3c39396366333833382d393034342d34)
+[2026-03-19T05:59:45.288Z] 🔍 [IMAP] UID 42255: "Reset Your Password" (ID: em_3c65386631373539322d306633382d34)
+[2026-03-19T05:59:45.541Z] 🔍 [IMAP] UID 42256: "Reset Your Password" (ID: em_3c61383661626633642d366338332d34)
+[2026-03-19T05:59:45.799Z] 🔍 [IMAP] UID 42257: "💬 Dilan, conecta con Ramon Zambrano" (ID: em_3c3931303839373431362e3231393730)
+[2026-03-19T05:59:46.061Z] 🔍 [IMAP] UID 42258: "Transaccion rechazada por Fondos TD" (ID: em_3c3230323630333138303933302e3632)
+[2026-03-19T05:59:46.327Z] 🔍 [IMAP] UID 42259: "Transaccion rechazada por Fondos TD" (ID: em_3c3230323630333138303933302e3632)
+[2026-03-19T05:59:46.613Z] 🔍 [IMAP] UID 42260: "¡Cuánto tiempo! Haz un pedido y ahorra 30%." (ID: em_3c64663738656534612d346136332d33)
+[2026-03-19T05:59:46.899Z] 🔍 [IMAP] UID 42261: "¡Postúlate a Asistente Administrativo y otros 10 avisos...!" (ID: em_3c67686b657768313737333737333137)
+[2026-03-19T05:59:47.175Z] 🔍 [IMAP] UID 42262: "Nuevos puestos publicados en carrera.sonda.com" (ID: em_3c3735383935383132362e3231383834)
+[2026-03-19T05:59:47.449Z] 🔍 [IMAP] UID 42263: "Renueva tu sala HOY con el cuadro perfecto ¡Corre a Deprati! 🖼️✨" (ID: em_3c302e302e31462e3339442e31444342)
+[2026-03-19T05:59:47.702Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6382
+[2026-03-19T05:59:47.728Z] 🔍 [IMAP] UID 42264: "SONDA - BR necesita personal para el puesto de Técnico Soporte 1A" (ID: em_3c3238333136303737302e3236333731)
+[2026-03-19T05:59:47.990Z] 🔍 [IMAP] UID 42265: "Conoce el nuevo espacio de Ciberseguridad 🔐" (ID: em_3c313737333835363336333639392e65)
+[2026-03-19T05:59:48.257Z] 🔍 [IMAP] UID 42266: "(Sin asunto)" (ID: em_3c43414a553461736f676b4353484531)
+[2026-03-19T05:59:48.508Z] ❌ [IMAP] Error upsert UID 42266: duplicate key value violates unique constraint "emails_mensaje_id_key"
+[2026-03-19T05:59:48.510Z] 🔍 [IMAP] UID 42267: "Es" (ID: em_3c43414a553461737141577652724868)
+[2026-03-19T05:59:48.758Z] ❌ [IMAP] Error upsert UID 42267: duplicate key value violates unique constraint "emails_mensaje_id_key"
+[2026-03-19T05:59:48.761Z] 🔍 [IMAP] UID 42268: "Alerta de seguridad" (ID: em_3c6a5a4a7a7a394a484d4e53725a7269)
+[2026-03-19T05:59:49.024Z] ❌ [IMAP] Error upsert UID 42268: duplicate key value violates unique constraint "emails_mensaje_id_key"
+[2026-03-19T05:59:49.028Z] 🔍 [IMAP] UID 42269: "NOTIFICACION BANCO PICHINCHA" (ID: em_3c442d4668426e735f545853374a3038)
+[2026-03-19T05:59:49.283Z] ❌ [IMAP] Error upsert UID 42269: duplicate key value violates unique constraint "emails_mensaje_id_key"
+[2026-03-19T05:59:49.286Z] 🔍 [IMAP] UID 42270: "NOTIFICACION BANCO PICHINCHA" (ID: em_3c497869735152554552756147667952)
+[2026-03-19T05:59:49.550Z] ❌ [IMAP] Error upsert UID 42270: duplicate key value violates unique constraint "emails_mensaje_id_key"
+[2026-03-19T05:59:49.568Z] 🔍 [IMAP] UID 42271: "NOTIFICACIÓN BANCO PICHINCHA" (ID: em_3c3931353033373737302e3537333736)
+[2026-03-19T05:59:49.843Z] 🔍 [IMAP] UID 42272: "Nuevos empleos similares a COORDINADOR DE AGENDAMIENTO - QUITO en Puntonet S.A." (ID: em_3c313835333836313238382e33363834)
+[2026-03-19T05:59:50.121Z] 🔍 [IMAP] UID 42273: "Dilan joshua: tienes $16 de ahorro  🥳" (ID: em_3c64633633303966612d373531632d33)
+[2026-03-19T05:59:50.383Z] 🔍 [IMAP] UID 42274: "NOTIFICACION BANCO PICHINCHA" (ID: em_3c486a4f634d336c6d522d6d3861756e)
+[2026-03-19T05:59:50.668Z] 🔍 [IMAP] UID 42275: "NOTIFICACIÓN BANCO PICHINCHA" (ID: em_3c313838353738343631342e35373739)
+[2026-03-19T05:59:50.993Z] 🔍 [IMAP] UID 42276: "We've found these for Ensign" (ID: em_3c42454b784c4b344253577970695843)
+[2026-03-19T05:59:51.278Z] 🔍 [IMAP] UID 42277: "Your Supabase Project adminpage is going to be paused." (ID: em_3c66303832363464302d643838312d34)
+[2026-03-19T05:59:51.544Z] 🔍 [IMAP] UID 42278: "Por favor, confirma lo antes posible." (ID: em_3c556a31706934685253544f516c4e4b)
+[2026-03-19T05:59:51.808Z] 🔍 [IMAP] UID 42279: "Manage your login options" (ID: em_3c6a597939747341315232367a454873)
+[2026-03-19T05:59:52.064Z] 🔍 [IMAP] UID 42280: "Your password has been updated" (ID: em_3c6b44664639686467534a7534637144)
+[2026-03-19T05:59:52.329Z] 🔍 [IMAP] UID 42281: "Ana Belen Orellana Jarrin de Puntonet S.A. ha publicado contenido" (ID: em_3c3833303033363131362e3230353534)
+[2026-03-19T05:59:52.589Z] 🔍 [IMAP] UID 42282: "Why Your Relationship Feels Harder Than It Should" (ID: em_3c30314b4d3157384b54523056574346)
+[2026-03-19T05:59:52.851Z] 🔍 [IMAP] UID 42283: "Antes $23,89. Ahora SOLO $1,78" (ID: em_3c5f4c4e655871504e517236434d2d5a)
+[2026-03-19T05:59:53.112Z] 🔍 [IMAP] UID 42284: "Transaccion rechazada por Fondos TD" (ID: em_3c3230323630333139303230352e3632)
+[2026-03-19T05:59:53.365Z] 🔍 [IMAP] UID 42285: "Alerta de seguridad" (ID: em_3c764556312d48774d385678334c6958)
+[2026-03-19T05:59:53.623Z] 🔍 [IMAP] UID 42286: "[dilancoronado358-beep/CRM] Possible valid secrets detected" (ID: em_3c7365637265742d7363616e6e696e67)
+[2026-03-19T05:59:53.883Z] 🔍 [IMAP] UID 42287: "[dilancoronado358-beep/CRM] Supabase Service Role JWT exposed on GitHub" (ID: em_3c32303236303331393033323535322e)
+[2026-03-19T05:59:54.143Z] 🔍 [IMAP] UID 42288: "(Sin asunto)" (ID: em_3c43414a5534617370395053792b7951)
+[2026-03-19T05:59:54.409Z] 🔍 [IMAP] UID 42289: "Test prueba" (ID: em_3c43414a553461737251374574374f45)
+[2026-03-19T05:59:54.667Z] 📩 [IMAP] Sincronización finalizada con éxito (44 procesados).
+[2026-03-19T05:59:54.796Z] [CAL] 📅 Iniciando sincronización de calendario para acc_082f9156-d329-4cd1-b4a4-974e86730cc2_google...
+[2026-03-19T05:59:54.923Z] [CAL] 📍 Org ID: 00000000-0000-0000-0000-000000000001
+[2026-03-19T05:59:54.923Z] [CAL] 📅 [Calendar] Solicitando eventos a Google API...
+[2026-03-19T05:59:56.461Z] ✅ [Calendar] 10 eventos sincronizados.
+[2026-03-19T06:00:58.547Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6382
+[2026-03-19T06:01:12.344Z] 🚀 SERVER CRM INICIANDO...
+[2026-03-19T06:01:13.346Z] 📡 [Realtime Subscription Status]: SUBSCRIBED
+[2026-03-19T06:01:18.344Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6322
+[2026-03-19T06:02:18.194Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6310

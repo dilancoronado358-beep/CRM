@@ -964,17 +964,14 @@ async function refreshAccessToken(accountId) {
 // Sincronizar correos vía IMAP (Soporta XOAUTH2)
 async function syncEmails(accountId) {
   const log = (msg) => {
-    try { require('fs').appendFileSync('server_log.txt', `[${new Date().toISOString()}] ${msg}\n`); } catch(e){}
+    try { require('fs').appendFileSync('server_log.txt', `[${new Date().toISOString()}] ${msg}\n`); } catch (e) { }
     console.log(msg);
   };
 
   try {
-    log(`🚀 Iniciando sincronización para ${accountId}...`);
+    log(`Syncing for ${accountId}...`);
     let { data: acc, error } = await supabase.from('email_accounts').select('*').eq('id', accountId).single();
-    if (error || !acc || !acc.active) {
-      log(`⚠️ Cuenta no encontrada o inactiva: ${accountId}`);
-      return { error: "Account not found or inactive" };
-    }
+    if (error || !acc || !acc.active) return { error: "Account not found or inactive" };
 
     if (!acc.org_id && acc.user_id) {
       const { data: u } = await supabase.from('usuariosApp').select('org_id').eq('id', acc.user_id).single();
@@ -1019,67 +1016,90 @@ async function syncEmails(accountId) {
     }
 
     log(`📡 [IMAP] Conectando a ${config.imap.host}:${config.imap.port}...`);
-    const connection = await imaps.connect(config);
+    let connection;
+    try {
+      connection = await imaps.connect(config);
+    } catch (err) {
+      if ((err.message.includes('Invalid credentials') || err.message.includes('Failure')) && acc.access_token) {
+        log(`🔄 [IMAP] Credenciales inválidas. Forzando refresco de token...`);
+        const newToken = await refreshAccessToken(accountId);
+        if (newToken) {
+          config.imap.xoauth2 = Buffer.from(`user=${acc.email}\x01auth=Bearer ${newToken}\x01\x01`).toString('base64');
+          connection = await imaps.connect(config);
+        } else throw err;
+      } else throw err;
+    }
+
     log(`✅ [IMAP] Conectado. Abriendo INBOX...`);
     await connection.openBox('INBOX');
 
-    // Buscar solo los UIDs para evitar saturación
-    const rawUids = await connection.search(['ALL'], {});
-    const uids = rawUids.map(u => {
-      if (typeof u === 'number') return u;
-      if (typeof u === 'string') return parseInt(u);
-      if (typeof u === 'object' && u !== null) {
-        return u.attributes?.uid || u.uid || u.seqNo || u.seq || parseInt(u.toString());
-      }
-      return u;
-    }).filter(u => !isNaN(parseInt(u)));
-    log(`📩 [IMAP] ${uids.length} correos detectados. Sincronizando los últimos 50...`);
+    // Buscar solo de los últimos 2 días para velocidad
+    const twoDaysAgo = new Date();
+    twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+    const dateStr = twoDaysAgo.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
+    
+    log(`📥 [IMAP] Buscando correos desde: ${dateStr}...`);
+    const searchCriteria = [['SINCE', dateStr]];
+    const fetchOptions = { bodies: ['HEADER', 'TEXT', ''], struct: true, markSeen: false };
+    
+    const results = await connection.search(searchCriteria, fetchOptions);
+    const lastResults = (results || []).slice(-50);
+    log(`📥 [IMAP] Procesando ${lastResults.length} correos encontrados.`);
 
     let count = 0;
-    const last50Uids = uids.slice(-50);
-    if (last50Uids.length > 0) {
-      const fetchOptions = { bodies: ['HEADER', 'TEXT', ''], markSeen: false };
-      const messages = await connection.search([['UID', last50Uids]], fetchOptions);
-
-      for (const item of messages) {
-        try {
-          const all = item.parts.find(part => part.which === '');
-          const mail = await simpleParser(all.body);
-          const msgId = item.attributes.uid.toString();
-          const fromEmail = mail.from?.value?.[0]?.address || "";
-
-          const { data: contacto } = await supabase.from('contactos').select('id').eq('email', fromEmail).maybeSingle();
-          let dealId = null;
-          if (contacto) {
-            const { data: deal } = await supabase.from('deals').select('id').eq('contacto_id', contacto.id).order('creado', { ascending: false }).limit(1).maybeSingle();
-            dealId = deal?.id;
-          }
-          const { error: insertErr } = await supabase.from('emails').upsert({
-            id: "em_" + accountId + "_" + msgId,
-            account_id: accountId,
-            user_id: acc.user_id,
-            org_id: acc.org_id,
-            carpeta: 'entrada',
-            de: fromEmail,
-            para: acc.email,
-            asunto: mail.subject,
-            cuerpo: mail.text,
-            html: mail.html,
-            fecha: mail.date || new Date().toISOString(),
-            leido: false,
-            mensaje_id: mail.messageId || msgId,
-            contacto_id: contacto?.id || null, // Aligning with snake_case which we will enforce in SQL
-            deal_id: dealId || null
-          }, { onConflict: 'mensaje_id' });
-
-          if (insertErr) {
-            log(`❌ [IMAP Error] Fallo al guardar email ${msgId}: ${insertErr.message}`);
-          } else {
-            count++;
-          }
-        } catch (msgErr) {
-          log(`⚠️ Error procesando mensaje IMAP: ${msgErr.message}`);
+    for (const item of lastResults) {
+      try {
+        const headerPart = item.parts.find(p => p.which === 'HEADER');
+        const fullPart = item.parts.find(p => p.which === '');
+        
+        const rawContent = fullPart ? fullPart.body : (headerPart ? headerPart.body : null);
+        if (!rawContent) {
+          log(`⚠️ [IMAP] Saltando UID ${item.attributes.uid} por falta de contenido.`);
+          continue;
         }
+
+        const mail = await simpleParser(String(rawContent));
+        
+        const msgUid = item.attributes.uid.toString();
+        const fromEmail = mail.from?.value?.[0]?.address || "";
+        const subject = mail.subject || '(Sin asunto)';
+        const messageIdHeader = mail.messageId || `no-id-${Date.now()}-${msgUid}`;
+        
+        const deterministicId = "em_" + Buffer.from(messageIdHeader).toString('hex').slice(0, 32);
+
+        log(`🔍 [IMAP] UID ${msgUid}: "${subject}" (ID: ${deterministicId})`);
+
+        const { data: contacto } = await supabase.from('contactos').select('id').eq('email', fromEmail).maybeSingle();
+        let dealId = null;
+        if (contacto) {
+          const { data: deal } = await supabase.from('deals').select('id').eq('contacto_id', contacto.id).order('creado', { ascending: false }).limit(1).maybeSingle();
+          dealId = deal?.id;
+        }
+
+        const { error: insertErr } = await supabase.from('emails').upsert({
+          id: deterministicId,
+          user_id: acc.user_id,
+          org_id: acc.org_id,
+          account_id: accountId,
+          de: fromEmail,
+          para: mail.to?.value?.[0]?.address || acc.email,
+          asunto: subject,
+          fecha: mail.date ? mail.date.toISOString() : new Date().toISOString(),
+          cuerpo: mail.text || mail.html || "",
+          leido: false,
+          carpeta: 'entrada',
+          mensaje_id: messageIdHeader,
+          deal_id: dealId,
+          contacto_id: contacto?.id
+        }, { onConflict: 'id' });
+
+        if (!insertErr) {
+          count++;
+        } else {
+          log(`❌ [IMAP] Error upsert UID ${msgUid}: ${insertErr.message}`);
+        }
+      } catch (msgErr) {
+        log(`⚠️ [IMAP] Error procesando UID ${item.attributes.uid}: ${msgErr.message}`);
       }
     }
 
