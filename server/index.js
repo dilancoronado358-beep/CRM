@@ -1212,7 +1212,7 @@ async function syncCalendar(accountId) {
 
 // Endpoints Email
 app.post('/api/email/send', async (req, res) => {
-  const { accountId, to, subject, body, html } = req.body;
+  const { accountId, to, subject, body, html, attachments } = req.body;
   logFile(`📤 [SMTP] Petición de envío desde cuenta ${accountId} para ${to}`);
   try {
     const { data: acc, error } = await supabase.from('email_accounts').select('*').eq('id', accountId).single();
@@ -1254,7 +1254,11 @@ app.post('/api/email/send', async (req, res) => {
       to,
       subject,
       text: body,
-      html: html || body.replace(/\n/g, '<br>')
+      html: html || body.replace(/\n/g, '<br>'),
+      attachments: (attachments || []).map(a => ({
+        filename: a.name,
+        path: a.url
+      }))
     });
 
     logFile(`✅ [SMTP] Email enviado! ID: ${info.messageId}`);
@@ -1275,7 +1279,7 @@ app.post('/api/email/send', async (req, res) => {
       fecha: new Date().toISOString(),
       leido: true,
       mensaje_id: info.messageId,
-      adjuntos: [] // Inicialmente vacío si se envía desde aquí sin adjuntos complejos
+      adjuntos: attachments || []
     }, { onConflict: 'id' });
 
     if (insErr) {

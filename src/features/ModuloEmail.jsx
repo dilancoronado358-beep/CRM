@@ -12,6 +12,8 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) => {
   const [respuestaRapida, setRespuestaRapida] = useState("");
   const [simulandoEnvio, setSimulandoEnvio] = useState(false);
   const [logEnvio, setLogEnvio] = useState([]);
+  const [adjuntosSubiendo, setAdjuntosSubiendo] = useState(false);
+  const [adjuntosLocal, setAdjuntosLocal] = useState([]); // { name, url, type, size }
 
   const s = k => e => setF(p => ({ ...p, [k]: e.target.value }));
 
@@ -52,7 +54,8 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) => {
         accountId: acc.id,
         to: f.para,
         subject: f.asunto || "Sin asunto",
-        body: f.cuerpo
+        body: f.cuerpo,
+        attachments: adjuntosLocal
       }, {
         headers: { 'ngrok-skip-browser-warning': 'true' }
       });
@@ -75,8 +78,9 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) => {
           carpeta: 'enviados',
           leido: true
         };
-        setDb(prev => ({ ...prev, emails: [nuevoEnviado, ...prev.emails] }));
+        setDb(prev => ({ ...prev, emails: [{ ...nuevoEnviado, adjuntos: adjuntosLocal }, ...prev.emails] }));
         setF({ para: "", asunto: "", cuerpo: "", cc: "", bcc: "", plantillaId: "" });
+        setAdjuntosLocal([]);
       }, 1000);
     } catch (e) {
       const errorDetail = e.response?.data?.error || e.message;
@@ -101,7 +105,8 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) => {
         accountId: acc.id,
         to: emailFocus.de,
         subject: emailFocus.asunto.startsWith("Re:") ? emailFocus.asunto : `Re: ${emailFocus.asunto}`,
-        body: respuestaRapida
+        body: respuestaRapida,
+        attachments: adjuntosLocal
       }, {
         headers: { 'ngrok-skip-browser-warning': 'true' }
       });
@@ -119,8 +124,9 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) => {
         carpeta: 'enviados',
         leido: true
       };
-      setDb(prev => ({ ...prev, emails: [nuevaRpta, ...prev.emails] }));
+      setDb(prev => ({ ...prev, emails: [{ ...nuevaRpta, adjuntos: adjuntosLocal }, ...prev.emails] }));
       setRespuestaRapida("");
+      setAdjuntosLocal([]);
     } catch (e) {
       const errorDetail = e.response?.data?.error || e.message;
       if (errorDetail.includes("Network Error")) {
@@ -146,6 +152,42 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) => {
     setDb(d => ({ ...d, emails: d.emails.filter(e => e.id !== id) }));
     await eliminarDeSupa("emails", id);
     if (emailFocus?.id === id) setEmailFocus(null);
+  };
+
+  const handleFileChange = async (e) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    setAdjuntosSubiendo(true);
+    const nuevosAdjuntos = [...adjuntosLocal];
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const safeName = `att_${Date.now()}_${file.name.replace(/[^a-z0-9.]/gi, '_')}`;
+      
+      try {
+        const { data, error } = await sb.storage
+          .from('email-attachments')
+          .upload(safeName, file, { upsert: true });
+
+        if (error) throw error;
+
+        const { data: { publicUrl } } = sb.storage.from('email-attachments').getPublicUrl(safeName);
+        nuevosAdjuntos.push({ name: file.name, url: publicUrl, type: file.type, size: file.size });
+        toast.success(`Archivo ${file.name} subido.`);
+      } catch (err) {
+        console.error("Error subiendo adjunto:", err.message);
+        toast.error(`Error subiendo ${file.name}`);
+      }
+    }
+
+    setAdjuntosLocal(nuevosAdjuntos);
+    setAdjuntosSubiendo(false);
+    e.target.value = ""; // Reset input
+  };
+
+  const quitarAdjunto = (index) => {
+    setAdjuntosLocal(prev => prev.filter((_, i) => i !== index));
   };
 
   const marcarLeido = async id => {
@@ -294,7 +336,13 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) => {
                 placeholder="Respuesta rápida (Cmd+Enter para enviar)..." 
                 style={{ flex: 1, borderRadius: 20, paddingLeft: 20 }} 
               />
-              <Btn onClick={enviarRespuesta} disabled={!respuestaRapida.trim()} style={{ borderRadius: 20, padding: "8px 20px" }}>
+              <div style={{ position: "relative" }}>
+                 <input type="file" multiple id="email-reply-attach-input" style={{ display: "none" }} onChange={handleFileChange} />
+                 <label htmlFor="email-reply-attach-input">
+                   <Ico k="paperclip" size={16} style={{ cursor: "pointer", marginTop: 8, color: adjuntosSubiendo ? T.whiteDim : T.white }} />
+                 </label>
+              </div>
+              <Btn onClick={enviarRespuesta} disabled={!respuestaRapida.trim() || adjuntosSubiendo} style={{ borderRadius: 20, padding: "8px 20px" }}>
                 <Ico k="send" size={14} /> Enviar
               </Btn>
             </div>
@@ -353,10 +401,29 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) => {
             <textarea value={f.cuerpo} onChange={s("cuerpo")} placeholder="Escribe tu mensaje aquí..." style={{ border: "none", borderBottomLeftRadius: 10, borderBottomRightRadius: 10, outline: "none", background: T.bg1, color: T.white, padding: 24, fontSize: 15, fontFamily: "inherit", minHeight: 300, resize: "vertical", lineHeight: 1.6 }} />
 
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 24px", background: T.bg2, borderTop: `1px solid ${T.borderHi}` }}>
-              <div style={{ fontSize: 11, color: T.whiteDim }}><Ico k="trash" size={14} style={{ cursor: "pointer", marginRight: 16 }} onClick={() => setShowRedactar(false)} /><Ico k="calendar" size={14} style={{ cursor: "pointer" }} /></div>
+              <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                <div style={{ position: "relative" }}>
+                   <input type="file" multiple id="email-attach-input" style={{ display: "none" }} onChange={handleFileChange} />
+                   <label htmlFor="email-attach-input">
+                     <Ico k="paperclip" size={16} style={{ cursor: "pointer", color: adjuntosSubiendo ? T.whiteDim : T.white }} />
+                   </label>
+                </div>
+                <Ico k="trash" size={14} style={{ cursor: "pointer", color: T.whiteDim }} onClick={() => { setShowRedactar(false); setAdjuntosLocal([]); }} />
+                
+                {/* Visualizador de adjuntos cargados */}
+                <div style={{ display: "flex", gap: 8, overflowX: "auto", maxWidth: 300 }}>
+                  {adjuntosLocal.map((at, i) => (
+                    <div key={i} style={{ display: "flex", alignItems: "center", gap: 4, background: T.bg3, padding: "4px 8px", borderRadius: 4, fontSize: 10, color: T.white }}>
+                      <span style={{ maxWidth: 80, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{at.name}</span>
+                      <Ico k="x" size={10} style={{ cursor: "pointer" }} onClick={() => quitarAdjunto(i)} />
+                    </div>
+                  ))}
+                  {adjuntosSubiendo && <span style={{ fontSize: 10, color: T.teal, animation: "pulse 1s infinite" }}>Subiendo...</span>}
+                </div>
+              </div>
               <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                 <span style={{ fontSize: 11, color: T.whiteDim, fontWeight: 600 }}>Cmd + Enter para enviar</span>
-                <Btn onClick={enviarRealista} disabled={!f.para.trim() || !f.cuerpo.trim()} style={{ borderRadius: 20, padding: "8px 24px" }}><Ico k="send" size={14} style={{ marginRight: 6 }} /> Enviar</Btn>
+                <Btn onClick={enviarRealista} disabled={!f.para.trim() || !f.cuerpo.trim() || adjuntosSubiendo} style={{ borderRadius: 20, padding: "8px 24px" }}><Ico k="send" size={14} style={{ marginRight: 6 }} /> Enviar</Btn>
               </div>
             </div>
           </div>
