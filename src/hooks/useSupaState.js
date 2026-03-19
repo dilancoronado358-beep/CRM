@@ -3,6 +3,10 @@ import { createClient } from "@supabase/supabase-js";
 import { SEMILLA } from "../data/seed";
 import { applyTheme } from "../theme";
 import { sileo as toast } from "../utils/sileo";
+import { io } from "socket.io-client";
+import { getApiUrl } from "../utils";
+
+const socket = io("http://localhost:3001"); // Local fallback
 
 /* ═══════════════════════════════════════════
    SUPABASE
@@ -336,6 +340,11 @@ export function useSupaState() {
       } else {
         console.log(`🟢 Éxito en ${tabla}`);
         const confirmado = data?.[0] || payload;
+
+        // Si es un deal, notificar al motor de workflows vía Socket (Fallback si Realtime está OFF)
+        if (tabla === "deals" && confirmado.id) {
+          socket.emit('workflow_trigger', { dealId: confirmado.id, etapaId: confirmado.etapa_id });
+        }
 
         setDb((d) => {
           const lista = Array.isArray(d[tabla]) ? d[tabla] : [];

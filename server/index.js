@@ -222,7 +222,31 @@ async function loadAutoRules() {
 loadAutoRules();
 
 io.on('connection', (socket) => {
-  console.log('Cliente Web CRM conectado');
+  console.log('🔌 Nuevo cliente socket conectado:', socket.id);
+
+  // Fallback: Disparar workflow manualmente desde el frontend
+  socket.on('workflow_trigger', async (data) => {
+    const { dealId, etapaId } = data;
+    logFile(`🔌 [Socket] Recibido workflow_trigger para deal ${dealId} -> Etapa ${etapaId}`);
+
+    const { data: deal, error: dealErr } = await supabase.from('deals').select('*').eq('id', dealId).single();
+    if (!dealErr && deal) {
+      const { data: rules, error: rulesErr } = await supabase
+        .from('automatizaciones')
+        .select('*')
+        .eq('etapa_id', etapaId || deal.etapa_id)
+        .eq('activo', true);
+
+      if (!rulesErr && rules && rules.length > 0) {
+        logFile(`⚙️ [Socket Workflow] ${rules.length} reglas encontradas.`);
+        for (const rule of rules) {
+          if (evaluateConditions(rule.config || {}, deal)) {
+            await executeRuleAction(rule, deal);
+          }
+        }
+      }
+    }
+  });
 
   socket.on('get_whatsapp_status', () => {
     if (clientReady) {
@@ -1544,6 +1568,121 @@ setInterval(async () => {
     }
   }
 }, 30 * 1000); // Sync automático cada 30 segundos
+
+/* ═══════════════════════════════════════════
+   PHASE 44: WORKFLOW ENGINE (AUTOMATIONS)
+   ═══════════════════════════════════════════ */
+
+// Evaluar si un deal cumple las condiciones de una regla
+function evaluateConditions(ruleConfig, deal) {
+  if (!ruleConfig.condiciones || ruleConfig.condiciones.length === 0) return true;
+
+  return ruleConfig.condiciones.every(cond => {
+    const dealValue = deal[cond.fieldId];
+    const targetValue = cond.val;
+
+    switch (cond.op) {
+      case '==': return String(dealValue) === String(targetValue);
+      case '!=': return String(dealValue) !== String(targetValue);
+      case 'contiene': return String(dealValue || "").toLowerCase().includes(String(targetValue || "").toLowerCase());
+      case 'no_contiene': return !String(dealValue || "").toLowerCase().includes(String(targetValue || "").toLowerCase());
+      case '>': return Number(dealValue) > Number(targetValue);
+      case '<': return Number(dealValue) < Number(targetValue);
+      case 'set': return dealValue !== null && dealValue !== undefined && dealValue !== '';
+      case 'not_set': return dealValue === null || dealValue === undefined || dealValue === '';
+      default: return true;
+    }
+  });
+}
+
+// Ejecutar una acción de automatización
+async function executeRuleAction(rule, deal) {
+  const { config, tipo } = rule;
+  logFile(`🤖 [Workflow] Ejecutando "${rule.nombre}" para deal ${deal.id} (Tipo: ${tipo})`);
+
+  try {
+    switch (tipo) {
+      case 'change_stage':
+        if (config.etapa_destino) {
+          await supabase.from('deals').update({ etapa_id: config.etapa_destino }).eq('id', deal.id);
+          logFile(`✅ [Workflow] Etapa cambiada a ${config.etapa_destino}`);
+        }
+        break;
+
+      case 'create_task':
+        await supabase.from('tareas').insert({
+          titulo: config.titulo_tarea || "Tarea automática",
+          descripcion: config.desc_tarea || "",
+          user_id: deal.user_id,
+          org_id: deal.org_id,
+          estado: 'pendiente',
+          prioridad: 'media',
+          vencimiento: new Date(Date.now() + 86400000).toISOString().split('T')[0]
+        });
+        logFile(`✅ [Workflow] Tarea creada: ${config.titulo_tarea}`);
+        break;
+
+      case 'notif_user':
+        await supabase.from('notificaciones').insert({
+          user_id: deal.user_id,
+          org_id: deal.org_id,
+          titulo: rule.nombre,
+          mensaje: config.mensaje || "Se activó una automatización",
+          leida: false,
+          tipo: 'sistema'
+        });
+        io.emit('nueva_notificacion', { user_id: deal.user_id });
+        logFile(`✅ [Workflow] Notificación enviada al usuario`);
+        break;
+
+      case 'enviar_email':
+        const { data: accounts } = await supabase.from('email_accounts').select('*').eq('user_id', deal.user_id).eq('active', true).limit(1);
+        if (accounts && accounts[0]) {
+          const acc = accounts[0];
+          logFile(`📧 [Workflow] Intentando enviar email automático desde ${acc.email} para deal ${deal.id}`);
+        }
+        break;
+
+      default:
+        logFile(`⚠️ [Workflow] Tipo de acción no soportado: ${tipo}`);
+    }
+  } catch (err) {
+    logFile(`❌ [Workflow Error] Error ejecutando ${rule.nombre}: ${err.message}`);
+  }
+}
+
+// Listener de tiempo real para DEALS
+supabase
+  .channel('workflow_engine')
+  .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'deals' }, async (payload) => {
+    logFile(`🔔 [Realtime] Cambio detectado en tabla 'deals'`);
+    const oldDeal = payload.old;
+    const newDeal = payload.new;
+
+    if (oldDeal && newDeal && oldDeal.etapa_id !== newDeal.etapa_id) {
+      logFile(`🔔 [Workflow] Cambio de etapa en deal ${newDeal.id}: ${oldDeal.etapa_id} -> ${newDeal.etapa_id}`);
+
+      const { data: rules, error } = await supabase
+        .from('automatizaciones')
+        .select('*')
+        .eq('etapa_id', newDeal.etapa_id)
+        .eq('activo', true);
+
+      if (!error && rules && rules.length > 0) {
+        logFile(`⚙️ [Workflow] ${rules.length} reglas encontradas.`);
+        for (const rule of rules) {
+          if (evaluateConditions(rule.config || {}, newDeal)) {
+            await executeRuleAction(rule, newDeal);
+          } else {
+            logFile(`⏭️ [Workflow] Condiciones no cumplidas para rule: ${rule.nombre}`);
+          }
+        }
+      }
+    } else {
+      logFile(`ℹ️ [Workflow] Update recibido pero no hay cambio de etapa o falta payload (Old: ${!!oldDeal}, New: ${!!newDeal})`);
+    }
+  })
+  .subscribe();
 
 server.listen(process.env.PORT || 3001, () => {
   console.log(`Server CRM corriendo en puerto ${process.env.PORT || 3001}`);
