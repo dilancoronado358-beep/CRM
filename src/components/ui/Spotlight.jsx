@@ -10,6 +10,7 @@ export const SpotlightSearch = ({ db, open, onClose, onNavigate, onLogout, apply
 
   useEffect(() => {
     if (open) {
+      console.log("🔍 [DEBUG] Abriendo SpotlightSearch");
       setQ("");
       setSel(0);
       setTimeout(() => inputRef.current?.focus(), 100);

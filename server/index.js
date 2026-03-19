@@ -12,11 +12,23 @@ require('dotenv').config({ path: path.join(__dirname, '.env') });
 const nodemailer = require('nodemailer');
 const imaps = require('imap-simple');
 const { simpleParser } = require('mailparser');
+const logFile = (msg) => {
+  try {
+    const t = new Date().toISOString();
+    require('fs').appendFileSync('server_log.txt', `[${t}] ${msg}\n`);
+  } catch (e) { }
+  console.log(msg);
+};
+
+logFile("🚀 SERVER CRM INICIANDO...");
 
 // Configuración Supabase (Copiada del frontend para conveniencia)
 const SUPA_URL = process.env.SUPA_URL || "https://eoylgxwlhsmwqgadahvk.supabase.co";
 const SUPA_KEY = process.env.SUPA_KEY || "sb_publishable_wKUbf7IFOoH4HIUayIAJdQ_Boj1jgZa";
-const supabase = createClient(SUPA_URL, SUPA_KEY);
+const supabase = createClient(process.env.SUPA_URL, process.env.SUPA_KEY);
+
+// Bloqueo global de sincronización por cuenta
+const syncingAccounts = {};
 
 // Configuración AI
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
@@ -103,7 +115,7 @@ app.get('/api/v1/deals', authenticateApi, async (req, res) => {
 // Crear Lead desde externo (ej: Formulario propio o Zapier)
 app.post('/api/v1/leads', authenticateApi, async (req, res) => {
   const { nombre, email, telefono, titulo_deal, valor } = req.body;
-  
+
   if (!nombre || !telefono) {
     return res.status(400).json({ error: "Nombre y teléfono son obligatorios." });
   }
@@ -942,20 +954,23 @@ async function refreshAccessToken(accountId) {
 // Sincronizar correos vía IMAP (Soporta XOAUTH2)
 async function syncEmails(accountId) {
   const log = (msg) => {
-    try {
-      const t = new Date().toISOString();
-      require('fs').appendFileSync('server_log.txt', `[${t}] ${msg}\n`);
-    } catch(e){}
+    try { require('fs').appendFileSync('server_log.txt', `[${new Date().toISOString()}] ${msg}\n`); } catch (e) { }
     console.log(msg);
   };
 
   try {
+    if (syncingAccounts[accountId]) {
+      console.log(`ℹ️ [Sync] Sincronización ya en curso para ${accountId}. Omitiendo.`);
+      return { error: "Sincronización en curso" };
+    }
+    syncingAccounts[accountId] = true;
+
     log(`🚀 Iniciando sincronización para ${accountId}...`);
     let { data: acc, error } = await supabase.from('email_accounts').select('*').eq('id', accountId).single();
     if (error || !acc) { log(`❌ Cuenta no encontrada: ${accountId}`); return { error: "Cuenta no encontrada" }; }
 
     if (!acc.org_id && acc.user_id) {
-       log(`ℹ️ Buscando org_id para el usuario ${acc.user_id}...`);
+      log(`ℹ️ Buscando org_id para el usuario ${acc.user_id}...`);
       const { data: u } = await supabase.from('usuariosApp').select('org_id').eq('id', acc.user_id).single();
       if (u) acc.org_id = u.org_id;
     }
@@ -968,82 +983,98 @@ async function syncEmails(accountId) {
       if (!token) return { error: "No se pudo refrescar el token de acceso." };
     }
 
+    const provider = acc.provider || (acc.email.includes('gmail') ? 'google' : 'azure');
     const config = {
       imap: {
         user: acc.email,
-        host: acc.imap_host || (acc.provider === 'google' ? 'imap.gmail.com' : 'outlook.office365.com'),
+        host: acc.imap_host || (provider === 'google' ? 'imap.gmail.com' : 'outlook.office365.com'),
         port: acc.imap_port || 993,
         tls: true,
-        authTimeout: 5000
+        tlsOptions: { rejectUnauthorized: false }, // Bypass para el error de certificado self-signed
+        authTimeout: 10000,
+        connTimeout: 10000
       }
     };
 
     if (token) {
-      // Formato XOAUTH2 para node-imap
       config.imap.xoauth2 = Buffer.from(`user=${acc.email}\x01auth=Bearer ${token}\x01\x01`).toString('base64');
     } else {
       config.imap.password = acc.password_hash;
     }
 
+    log(`📡 [IMAP] Conectando a ${config.imap.host}:${config.imap.port}...`);
     const connection = await imaps.connect(config);
+    log(`✅ [IMAP] Conectado. Abriendo INBOX...`);
     await connection.openBox('INBOX');
 
-    const searchCriteria = ['ALL']; // Cambiado de UNSEEN a ALL para ver si trae algo
-    const fetchOptions = { bodies: ['HEADER', 'TEXT', ''], markSeen: false };
+    // Buscar solo los UIDs para evitar saturación
+    const uids = await connection.search(['ALL'], {});
+    log(`📩 [IMAP] ${uids.length} correos detectados. Sincronizando los últimos 20...`);
 
-    const messages = await connection.search(searchCriteria, fetchOptions);
-    console.log(`📩 [IMAP] ${messages.length} correos encontrados para ${acc.email}. Sincronizando los últimos 20...`);
+    let count = 0;
+    const last20Uids = uids.slice(-20);
+    if (last20Uids.length > 0) {
+      const fetchOptions = { bodies: ['HEADER', 'TEXT', ''], markSeen: false };
+      // Sintaxis correcta para búsqueda por UID en imap-simple/node-imap
+      const messages = await connection.search([['UID', last20Uids]], fetchOptions);
 
-    const last20 = messages.slice(-20); // Solo los últimos 20 para probar
-    for (const item of last20) {
-      const all = item.parts.find(part => part.which === '');
-      const mail = await simpleParser(all.body);
-      
-      const msgId = item.attributes.uid.toString();
-      const fromEmail = mail.from?.value?.[0]?.address || "";
-      
-      // Intentar vincular con contacto existente
-      const { data: contacto } = await supabase.from('contactos').select('id').eq('email', fromEmail).maybeSingle();
-      let dealId = null;
-      if (contacto) {
-        const { data: deal } = await supabase.from('deals').select('id').eq('contacto_id', contacto.id).order('creado', { ascending: false }).limit(1).maybeSingle();
-        dealId = deal?.id;
+      for (const item of messages) {
+        try {
+          const all = item.parts.find(part => part.which === '');
+          const mail = await simpleParser(all.body);
+
+          const msgId = item.attributes.uid.toString();
+          const fromEmail = mail.from?.value?.[0]?.address || "";
+
+          const { data: contacto } = await supabase.from('contactos').select('id').eq('email', fromEmail).maybeSingle();
+          let dealId = null;
+          if (contacto) {
+            const { data: deal } = await supabase.from('deals').select('id').eq('contacto_id', contacto.id).order('creado', { ascending: false }).limit(1).maybeSingle();
+            dealId = deal?.id;
+          }
+
+          await supabase.from('emails').upsert({
+            id: "em_" + Date.now() + "_" + msgId,
+            account_id: accountId,
+            user_id: acc.user_id,
+            org_id: acc.org_id,
+            carpeta: 'entrada',
+            de: fromEmail,
+            para: acc.email,
+            asunto: mail.subject,
+            cuerpo: mail.text,
+            html: mail.html,
+            fecha: mail.date || new Date().toISOString(),
+            leido: false,
+            mensaje_id: mail.messageId || msgId,
+            contacto_id: contacto?.id || null,
+            deal_id: dealId || null
+          }, { onConflict: 'mensaje_id' });
+          count++;
+        } catch (msgErr) {
+          log(`⚠️ Error procesando mensaje: ${msgErr.message}`);
+        }
       }
-
-      await supabase.from('emails').upsert({
-        id: "em_" + Date.now() + "_" + msgId,
-        account_id: accountId,
-        user_id: acc.user_id, // INCLUIR USER_ID PARA VISIBILIDAD
-        org_id: acc.org_id, // INCLUIR ORG_ID PARA VISIBILIDAD
-        carpeta: 'entrada',
-        de: fromEmail,
-        para: acc.email,
-        asunto: mail.subject,
-        cuerpo: mail.text,
-        html: mail.html,
-        fecha: mail.date || new Date().toISOString(),
-        leido: false,
-        mensaje_id: mail.messageId || msgId,
-        contacto_id: contacto?.id || null,
-        deal_id: dealId || null
-      }, { onConflict: 'mensaje_id' });
     }
 
-    log(`📩 [IMAP] Sincronizados con éxito.`);
+    log(`📩 [IMAP] Sincronización finalizada con éxito (${count} procesados).`);
     connection.end();
     await supabase.from('email_accounts').update({ last_sync: new Date().toISOString() }).eq('id', accountId);
-    return { success: true, count: messages.length };
+    return { success: true, count };
   } catch (e) {
     log(`❌ [IMAP Error]: ${e.message}`);
     console.error("❌ [IMAP Error]:", e.message);
     return { error: e.message };
+  } finally {
+    // Liberar bloqueo al terminar
+    delete syncingAccounts[accountId];
   }
 }
 
 // Sincronizar Calendario (Google / Microsoft)
 async function syncCalendar(accountId) {
   const log = (msg) => {
-    try { require('fs').appendFileSync('server_log.txt', `[${new Date().toISOString()}] [CAL] ${msg}\n`); } catch(e){}
+    try { require('fs').appendFileSync('server_log.txt', `[${new Date().toISOString()}] [CAL] ${msg}\n`); } catch (e) { }
     console.log(`[CAL] ${msg}`);
   };
 
@@ -1068,13 +1099,13 @@ async function syncCalendar(accountId) {
       if (!token) return;
     }
 
-    console.log(`📅 [Calendar] Sincronizando eventos para ${acc.email}...`);
+    log(`📅 [Calendar] Solicitando eventos a Google API...`);
     let events = [];
-
-    if (acc.provider === 'google') {
+    if ((acc.provider || 'google') === 'google') {
       const res = await axios.get("https://www.googleapis.com/calendar/v3/calendars/primary/events", {
         headers: { Authorization: `Bearer ${token}` },
-        params: { timeMin: new Date().toISOString(), maxResults: 10, singleEvents: true, orderBy: 'startTime' }
+        params: { timeMin: new Date().toISOString(), maxResults: 10, singleEvents: true, orderBy: 'startTime' },
+        timeout: 10000
       });
       events = (res.data.items || []).map(e => ({
         id: "cal_g_" + e.id,
@@ -1106,9 +1137,9 @@ async function syncCalendar(accountId) {
         asignado: 'Sincronizado'
       }, { onConflict: 'id' });
     }
-    console.log(`✅ [Calendar] ${events.length} eventos sincronizados.`);
+    logFile(`✅ [Calendar] ${events.length} eventos sincronizados.`);
   } catch (e) {
-    console.error("❌ [Calendar Error]:", e.response?.data || e.message);
+    logFile(`❌ [Calendar Error]: ${e.response?.data?.error?.message || e.message}`);
   }
 }
 
@@ -1221,23 +1252,30 @@ app.post('/api/email/test-connection', async (req, res) => {
 // Listener en tiempo real para disparar sincronización desde el frontend sin depender del puerto 3001
 supabase
   .channel('email_sync_triggers')
-  .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'email_accounts' }, (payload) => {
-    console.log(`🔔 [Realtime] Cambio detectado en cuenta ${payload.new.id}. disparando sync...`);
-    syncEmails(payload.new.id);
-    if (payload.new.sync_calendar) syncCalendar(payload.new.id);
+  .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'email_accounts' }, async (payload) => {
+    logFile(`🔔 [Realtime] Cambio detectado en cuenta ${payload.new.id}. disparando sync...`);
+    await syncEmails(payload.new.id);
+    if (payload.new.sync_calendar) await syncCalendar(payload.new.id);
   })
-  .subscribe();
+  .subscribe((status) => {
+    logFile(`📡 [Realtime Subscription Status]: ${status}`);
+  });
 
 // Sync automático cada 2 minutos (reducido para mejor experiencia)
 setInterval(async () => {
-    console.log("⏱️ [CRON] Iniciando sync automático...");
-    const { data: accounts } = await supabase.from('email_accounts').select('id, sync_calendar').eq('active', true);
-    if (accounts) {
-        for (const acc of accounts) {
-            syncEmails(acc.id);
-            if (acc.sync_calendar) syncCalendar(acc.id);
-        }
+  logFile("⏱️ [CRON] Iniciando sync automático...");
+  const { data: accounts, error } = await supabase.from('email_accounts').select('id, sync_calendar').eq('active', true);
+  if (error) logFile(`❌ Error al buscar cuentas: ${error.message}`);
+
+  if (accounts) {
+    logFile(`ℹ️ [CRON] Se encontraron ${accounts.length} cuentas activas para sincronizar.`);
+    for (const acc of accounts) {
+      await syncEmails(acc.id);
+      if (acc.sync_calendar) await syncCalendar(acc.id);
     }
+  } else {
+    logFile(`ℹ️ [CRON] No se encontraron cuentas activas.`);
+  }
 }, 2 * 60 * 1000);
 
 server.listen(process.env.PORT || 3001, () => {

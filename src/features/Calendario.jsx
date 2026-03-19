@@ -5,6 +5,7 @@ import { T } from "../theme";
 import { money } from "../utils";
 import { Btn, Tarjeta, Celda, Chip, EncabezadoSeccion, Ico } from "../components/ui";
 import axios from "axios";
+import { sb } from "../hooks/useSupaState";
 
 export const Calendario = ({ db }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -117,7 +118,8 @@ export const Calendario = ({ db }) => {
               if (!acc) return alert("Conecta tu cuenta en Configuración primero.");
               try {
                 // Trigger vía Realtime (modificando la DB)
-                await sb.from('email_accounts').update({ last_sync: new Date().toISOString() }).eq('id', acc.id);
+                const { sb: supabase } = await import("../hooks/useSupaState");
+                await supabase.from('email_accounts').update({ last_sync: new Date().toISOString() }).eq('id', acc.id);
                 alert("✅ Solicitud de sincronización enviada.");
               } catch (e) { alert("Error al sincronizar: " + e.message); }
             }}><Ico k="refresh" size={14} /> Sincronizar</Btn>

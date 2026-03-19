@@ -155,12 +155,13 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
       if (session?.provider_token) {
         console.log("🧩 OAuth Token detectado:", session.provider_name);
         
-        const accId = "acc_" + session.user.id + "_" + session.provider_name;
+        const provider = session.user.app_metadata.provider || session.provider_name || "google";
+        const accId = "acc_" + session.user.id + "_" + provider;
         const payload = {
           id: accId,
           user_id: session.user.id,
           email: session.user.email,
-          provider: session.provider_name,
+          provider: provider,
           access_token: session.provider_token,
           refresh_token: session.provider_refresh_token,
           expires_at: new Date(Date.now() + (session.expires_in * 1000)).toISOString(),
@@ -191,8 +192,8 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
           prompt: 'consent',
         },
         scopes: provider === 'google' 
-          ? 'https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/userinfo.email' 
-          : 'Mail.Read Calendars.Read'
+          ? 'https://mail.google.com/ https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/userinfo.email' 
+          : 'offline_access Mail.Read Calendars.Read'
       }
     });
     if (error) alert("Error al iniciar OAuth: " + error.message);

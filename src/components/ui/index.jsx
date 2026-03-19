@@ -105,6 +105,7 @@ export const Campo = ({ label, children, col = 1, style = {} }) => (
 );
 
 export const Modal = ({ open, onClose, title, children, width = 640 }) => {
+  if (open) console.log("🔘 [DEBUG] Abriendo Modal:", title);
   if (!open) return null;
   return (
     <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(17,24,39,.6)", backdropFilter: "blur(4px)", zIndex: 9000, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
