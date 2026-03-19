@@ -208,9 +208,9 @@ export function useSupaState() {
           uLocal = userRow;
           if (fetchError) console.warn("Supabase user fetch error:", fetchError);
           if (uLocal && montado) {
-            if (uLocal.temaActivo) {
-              applyTheme(uLocal.temaActivo);
-              localStorage.setItem("crm_theme", uLocal.temaActivo);
+            if (uLocal.tema) {
+              applyTheme(uLocal.tema);
+              localStorage.setItem("crm_theme", uLocal.tema);
             }
             setDb((d) => {
               const mapped = {
@@ -220,7 +220,7 @@ export function useSupaState() {
                 avatar: uLocal.avatar || "U",
                 whatsappAccess: uLocal.whatsappAccess || false,
                 profilePic: uLocal.profilePic || null,
-                temaActivo: uLocal.temaActivo || null,
+                tema: uLocal.tema || null,
                 waServerUrl: uLocal.waServerUrl || null,
                 activo: uLocal.activo !== false,
                 id: uLocal.id, // IMPORTANTE: Guardar el ID para poder actualizar el perfil
