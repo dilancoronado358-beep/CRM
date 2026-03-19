@@ -954,49 +954,46 @@ async function refreshAccessToken(accountId) {
 // Sincronizar correos vía IMAP (Soporta XOAUTH2)
 async function syncEmails(accountId) {
   const log = (msg) => {
-    try { require('fs').appendFileSync('server_log.txt', `[${new Date().toISOString()}] ${msg}\n`); } catch (e) { }
+    try { require('fs').appendFileSync('server_log.txt', `[${new Date().toISOString()}] ${msg}\n`); } catch(e){}
     console.log(msg);
   };
 
   try {
-    if (syncingAccounts[accountId]) {
-      console.log(`ℹ️ [Sync] Sincronización ya en curso para ${accountId}. Omitiendo.`);
-      return { error: "Sincronización en curso" };
-    }
-    syncingAccounts[accountId] = true;
-
     log(`🚀 Iniciando sincronización para ${accountId}...`);
     let { data: acc, error } = await supabase.from('email_accounts').select('*').eq('id', accountId).single();
-    if (error || !acc) { log(`❌ Cuenta no encontrada: ${accountId}`); return { error: "Cuenta no encontrada" }; }
+    if (error || !acc || !acc.active) {
+      log(`⚠️ Cuenta no encontrada o inactiva: ${accountId}`);
+      return { error: "Account not found or inactive" };
+    }
 
     if (!acc.org_id && acc.user_id) {
-      log(`ℹ️ Buscando org_id para el usuario ${acc.user_id}...`);
       const { data: u } = await supabase.from('usuariosApp').select('org_id').eq('id', acc.user_id).single();
       if (u) acc.org_id = u.org_id;
     }
     log(`📍 Org ID: ${acc.org_id}`);
 
-    // Validar expiración si es OAuth
-    let token = acc.access_token;
-    if (acc.access_token && acc.expires_at && new Date(acc.expires_at) <= new Date()) {
-      token = await refreshAccessToken(accountId);
-      if (!token) return { error: "No se pudo refrescar el token de acceso." };
+    if (syncingAccounts[accountId]) {
+      log(`⚠️ Ya hay una sincronización en marcha para ${accountId}.`);
+      return { success: false, error: "Sync in progress" };
     }
+    syncingAccounts[accountId] = true;
 
-    const provider = acc.provider || (acc.email.includes('gmail') ? 'google' : 'azure');
     const config = {
       imap: {
         user: acc.email,
-        host: acc.imap_host || (provider === 'google' ? 'imap.gmail.com' : 'outlook.office365.com'),
+        host: acc.imap_host || (acc.provider === 'google' ? 'imap.gmail.com' : 'outlook.office365.com'),
         port: acc.imap_port || 993,
         tls: true,
-        tlsOptions: { rejectUnauthorized: false }, // Bypass para el error de certificado self-signed
-        authTimeout: 10000,
-        connTimeout: 10000
+        tlsOptions: { rejectUnauthorized: false },
+        authTimeout: 10000
       }
     };
 
-    if (token) {
+    if (acc.access_token) {
+      let token = acc.access_token;
+      if (acc.expires_at && new Date(acc.expires_at) <= new Date()) {
+        token = await refreshAccessToken(accountId);
+      }
       config.imap.xoauth2 = Buffer.from(`user=${acc.email}\x01auth=Bearer ${token}\x01\x01`).toString('base64');
     } else {
       config.imap.password = acc.password_hash;
@@ -1008,21 +1005,27 @@ async function syncEmails(accountId) {
     await connection.openBox('INBOX');
 
     // Buscar solo los UIDs para evitar saturación
-    const uids = await connection.search(['ALL'], {});
+    const rawUids = await connection.search(['ALL'], {});
+    const uids = rawUids.map(u => {
+      if (typeof u === 'number') return u;
+      if (typeof u === 'string') return parseInt(u);
+      if (typeof u === 'object' && u !== null) {
+        return u.attributes?.uid || u.uid || u.seqNo || u.seq || parseInt(u.toString());
+      }
+      return u;
+    }).filter(u => !isNaN(parseInt(u)));
     log(`📩 [IMAP] ${uids.length} correos detectados. Sincronizando los últimos 20...`);
 
     let count = 0;
     const last20Uids = uids.slice(-20);
     if (last20Uids.length > 0) {
       const fetchOptions = { bodies: ['HEADER', 'TEXT', ''], markSeen: false };
-      // Sintaxis correcta para búsqueda por UID en imap-simple/node-imap
       const messages = await connection.search([['UID', last20Uids]], fetchOptions);
 
       for (const item of messages) {
         try {
           const all = item.parts.find(part => part.which === '');
           const mail = await simpleParser(all.body);
-
           const msgId = item.attributes.uid.toString();
           const fromEmail = mail.from?.value?.[0]?.address || "";
 
@@ -1032,7 +1035,6 @@ async function syncEmails(accountId) {
             const { data: deal } = await supabase.from('deals').select('id').eq('contacto_id', contacto.id).order('creado', { ascending: false }).limit(1).maybeSingle();
             dealId = deal?.id;
           }
-
           await supabase.from('emails').upsert({
             id: "em_" + Date.now() + "_" + msgId,
             account_id: accountId,
@@ -1050,6 +1052,7 @@ async function syncEmails(accountId) {
             contacto_id: contacto?.id || null,
             deal_id: dealId || null
           }, { onConflict: 'mensaje_id' });
+
           count++;
         } catch (msgErr) {
           log(`⚠️ Error procesando mensaje: ${msgErr.message}`);

@@ -155,8 +155,9 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
       if (session?.provider_token) {
         console.log("🧩 OAuth Token detectado:", session.provider_name);
         
-        const provider = session.user.app_metadata.provider || session.provider_name || "google";
-        const accId = "acc_" + session.user.id + "_" + provider;
+        const rawProvider = session.provider_name || session.user?.app_metadata?.provider || "google";
+        const provider = (rawProvider === "email") ? "azure" : rawProvider; // Normalizar Outlook
+        const accId = "acc_" + session.user.id + "_" + (provider || "custom");
         const payload = {
           id: accId,
           user_id: session.user.id,
