@@ -1534,30 +1534,6 @@ app.post('/api/email/test-connection', async (req, res) => {
   res.json(results);
 });
 
-// Listener en tiempo real para disparar sincronización desde el frontend sin depender del puerto 3001
-// Debounce simple para el sync en tiempo real (evitar bucle con last_sync)
-const lastSyncTime = {};
-
-supabase
-  .channel('email_sync_triggers')
-  .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'email_accounts' }, async (payload) => {
-    const accId = payload.new.id;
-    const now = Date.now();
-
-    // Ignorar si se sincronizó hace menos de 5 segundos (reducido para respuesta instantánea al botón)
-    if (lastSyncTime[accId] && (now - lastSyncTime[accId] < 5000)) {
-      return;
-    }
-
-    lastSyncTime[accId] = now;
-    logFile(`🔔 [Realtime] Cambio detectado en cuenta ${accId}. disparando sync...`);
-    await syncEmails(accId);
-    if (payload.new.sync_calendar) await syncCalendar(accId);
-  })
-  .subscribe((status) => {
-    logFile(`📡 [Realtime Subscription Status]: ${status}`);
-  });
-
 // Sync automático cada 2 minutos (reducido para mejor experiencia)
 setInterval(async () => {
   logFile("⏱️ [CRON] Iniciando sync automático...");
