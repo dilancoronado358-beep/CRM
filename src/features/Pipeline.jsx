@@ -8,6 +8,310 @@ import { Cotizaciones } from "./Cotizaciones";
 
 import { executeRules } from "../automationRunner";
 
+const calculateLeadScore = (db, deal) => {
+  let score = 0;
+  if (!db || !deal) return 0;
+  const contacto = db.contactos?.find(c => c.id === deal.contacto_id);
+  
+  if (deal.valor > 0) score += 20;
+  if (contacto?.telefono) score += 15;
+  if (contacto?.email) score += 10;
+  if (deal.empresa_id || deal.empresa) score += 15;
+  
+  const acts = (db.actividades || []).filter(a => a.deal_id === deal.id);
+  if (acts.length > 0) score += 20;
+  if (acts.length > 2) score += 10;
+  
+  const waMsgs = (db.whatsapp_messages || []).filter(m => m.deal_id === deal.id);
+  if (waMsgs.length > 0) score += 10;
+  
+  return Math.min(100, score);
+};
+
+const FormDeal = ({ db, setDb, f, setF, editDeal, onGuardar, onCancelar, guardarEnSupa, ejecutarAutomaciones, setModulo, setShowConfigCampos }) => {
+  const customFieldsDef = db.campos_personalizados || [];
+  const [leadTab, setLeadTab] = useState("timeline"); // timeline, info, tareas, whatsapp, cotizacion, historial
+  const [dragActive, setDragActive] = useState(false);
+
+  const plActual = db.pipelines.find(p => p.id === f.pipeline_id);
+  const stages = plActual?.etapas || [];
+  const currentEtIdx = stages.findIndex(s => s.id === f.etapa_id);
+
+  const handleDrop = e => {
+    e.preventDefault(); setDragActive(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      const nuevos = Array.from(e.dataTransfer.files).map(file => ({
+        id: "f" + uid(), nombre: file.name, size: (file.size / 1024).toFixed(1) + " KB", tipo: file.type.includes("image") ? "img" : "doc", url: file.type.includes("image") ? URL.createObjectURL(file) : null
+      }));
+      setF(p => ({ ...p, archivos: [...(p.archivos || []), ...nuevos] }));
+    }
+  };
+
+  const quitarArchivo = id => setF(p => ({ ...p, archivos: p.archivos.filter(a => a.id !== id) }));
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 24, minHeight: 600 }}>
+      {/* STAGE SELECTOR (BITRIX STYLE) */}
+      <div style={{ display: "flex", width: "100%", gap: 4, paddingBottom: 10 }}>
+        {stages.map((st, idx) => {
+          const isActive = st.id === f.etapa_id;
+          const isPast = idx < currentEtIdx;
+
+          let bg = "#eef2f4";
+          let color = "#666";
+          let borderColor = "#d4dde1";
+
+          if (isActive) {
+            bg = st.color || T.teal;
+            color = "#fff";
+            borderColor = st.color || T.teal;
+          } else if (isPast) {
+            bg = (st.color || T.teal) + "30";
+            color = st.color || T.teal;
+            borderColor = (st.color || T.teal) + "60";
+          }
+
+          return (
+            <div
+              key={st.id}
+              onClick={async () => {
+                const nextF = { ...f, etapa_id: st.id, prob: st.probabilidad };
+                setF(nextF);
+                if (editDeal) {
+                  await guardarEnSupa("deals", { ...editDeal, ...nextF });
+                  if (st.id !== f.etapa_id) await ejecutarAutomaciones(editDeal, st.id);
+                }
+              }}
+              style={{
+                flex: 1, height: 32, display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: 11, fontWeight: 700, cursor: "pointer", background: bg, color: color,
+                border: `1px solid ${borderColor}`, borderRadius: 4, transition: "all .2s",
+                textAlign: "center", padding: "0 4px", textTransform: "uppercase", letterSpacing: ".02em",
+                boxShadow: isActive ? `0 2px 8px ${bg}40` : "none"
+              }}
+            >
+              {st.nombre}
+            </div>
+          );
+        })}
+      </div>
+
+      <div style={{ display: "flex", gap: 12, borderBottom: `1px solid ${T.borderHi}`, paddingBottom: 16 }}>
+        {["timeline", "whatsapp", "cotizacion", "finanzas", "historial"].map(tabKey => (
+          <Btn key={tabKey} variant={leadTab === tabKey ? "primario" : "fantasma"} size="sm" onClick={() => setLeadTab(tabKey)}>
+            <Ico k={tabKey === "timeline" ? "lightning" : tabKey === "whatsapp" ? "phone" : tabKey === "cotizacion" ? "dollar" : tabKey === "finanzas" ? "trend" : "history"} size={14} /> 
+            {tabKey.charAt(0).toUpperCase() + tabKey.slice(1)}
+          </Btn>
+        ))}
+      </div>
+
+      <div style={{ display: "flex", gap: 32 }}>
+        {/* COLUMNA IZQUIERDA: INFORMACIÓN Y CAMPOS */}
+        <div style={{ width: 440, display: "flex", flexDirection: "column", gap: 20, flexShrink: 0 }}>
+          <div style={{ background: T.bg1, border: `1px solid ${T.border}`, borderRadius: 16, padding: 24 }}>
+            <Campo label="Título del Deal *" style={{ marginBottom: 20 }}>
+              <LocalInput value={f.titulo} onCommit={v => {
+                const nf = { ...f, titulo: v };
+                setF(nf);
+                if (editDeal) guardarEnSupa("deals", { ...editDeal, ...nf });
+              }} placeholder="ej. Acme — Plan Enterprise" style={{ fontSize: 16, fontWeight: 800 }} />
+            </Campo>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 20 }}>
+              <Campo label="Monto ($)">
+                <LocalInput type="number" value={f.valor} onCommit={v => {
+                  const nf = { ...f, valor: v };
+                  setF(nf);
+                  if (editDeal) guardarEnSupa("deals", { ...editDeal, ...nf });
+                }} style={{ fontWeight: 800, color: T.green }} />
+              </Campo>
+              <Campo label="Probabilidad (%)">
+                <LocalInput type="number" value={f.prob} onCommit={v => {
+                  const nf = { ...f, prob: v };
+                  setF(nf);
+                  if (editDeal) guardarEnSupa("deals", { ...editDeal, ...nf });
+                }} style={{ fontWeight: 800 }} />
+              </Campo>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              <Campo label="Pipeline"><Sel value={f.pipeline_id} onChange={async e => {
+                const plId = e.target.value;
+                const pl = db.pipelines.find(p => p.id === plId);
+                const nextF = { ...f, pipeline_id: plId, etapa_id: pl?.etapas[0]?.id || "" };
+                setF(nextF);
+                if (editDeal) {
+                  await guardarEnSupa("deals", { ...editDeal, ...nextF });
+                  if (editDeal.etapa_id !== (pl?.etapas[0]?.id || "")) await ejecutarAutomaciones(editDeal, pl?.etapas[0]?.id || "");
+                }
+              }}>{db.pipelines.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}</Sel></Campo>
+              
+              <Campo label="Etapa"><Sel value={f.etapa_id} onChange={async e => {
+                const val = e.target.value;
+                const nextF = { ...f, etapa_id: val };
+                setF(nextF);
+                if (editDeal) {
+                  await guardarEnSupa("deals", { ...editDeal, ...nextF });
+                  if (val !== f.etapa_id) await ejecutarAutomaciones(editDeal, val);
+                }
+              }}>{plActual?.etapas.map(e => <option key={e.id} value={e.id}>{e.nombre}</option>)}</Sel></Campo>
+
+              <Campo label="Contacto Asociado"><Sel value={f.contacto_id} onChange={async e => {
+                const val = e.target.value;
+                const nextF = { ...f, contacto_id: val };
+                setF(nextF);
+                if (editDeal) await guardarEnSupa("deals", { ...editDeal, ...nextF });
+              }}><option value="">— Ninguno —</option>{db.contactos.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}</Sel></Campo>
+
+              <Campo label="Empresa (B2B)"><Sel value={f.empresa_id} onChange={async e => {
+                const val = e.target.value;
+                const nextF = { ...f, empresa_id: val };
+                setF(nextF);
+                if (editDeal) await guardarEnSupa("deals", { ...editDeal, ...nextF });
+              }}><option value="">— Ninguna —</option>{db.empresas.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}</Sel></Campo>
+
+              <Campo label="Responsable"><Sel value={f.responsable} onChange={async e => {
+                const val = e.target.value;
+                const nextF = { ...f, responsable: val };
+                setF(nextF);
+                if (editDeal) await guardarEnSupa("deals", { ...editDeal, ...nextF });
+              }}>{db.usuariosApp?.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}</Sel></Campo>
+            </div>
+
+            {/* Lead Scoring Breakdown */}
+            <div style={{ background: `linear-gradient(135deg, ${T.bg1}, ${T.bg2})`, border: `1px solid ${T.teal}30`, borderRadius: 16, padding: 18, marginTop: 20 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <div style={{ fontSize: 18 }}>{calculateLeadScore(db, f) >= 80 ? "🔥" : "📊"}</div>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: T.white }}>Lead Intelligence Score</span>
+                </div>
+                <div style={{ fontSize: 24, fontWeight: 900, color: T.teal }}>{calculateLeadScore(db, f)}<span style={{ fontSize: 12, color: T.whiteDim }}>/100</span></div>
+              </div>
+              <Barra value={calculateLeadScore(db, f)} color={T.teal} height={6} />
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 12 }}>
+                {[
+                  { l: "Perfil Completo", v: (db.contactos.find(c => c.id === f.contacto_id)?.telefono && f.valor > 0), p: "+35" },
+                  { l: "Empresa B2B", v: !!f.empresa_id || !!f.empresa, p: "+15" },
+                  { l: "Actividad", v: (db.actividades || []).some(a => a.deal_id === editDeal?.id), p: "+30" },
+                  { l: "Interacción WA", v: (db.whatsapp_messages || []).some(m => m.deal_id === editDeal?.id), p: "+20" }
+                ].map((it, i) => (
+                  <div key={i} style={{ fontSize: 10, color: it.v ? T.white : T.whiteDim, display: "flex", alignItems: "center", gap: 5 }}>
+                    <div style={{ width: 6, height: 6, borderRadius: "50%", background: it.v ? T.green : T.whiteDim + "30" }} />
+                    {it.l} <span style={{ color: it.v ? T.green : T.whiteDim, fontWeight: 700 }}>{it.p}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div style={{ background: T.bg1, border: `1px solid ${T.border}`, borderRadius: 16, padding: 24 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+              <span style={{ fontSize: 11, fontWeight: 700, color: T.whiteDim, textTransform: "uppercase" }}>Campos Personalizados</span>
+              <Btn variant="fantasma" size="sm" onClick={() => setShowConfigCampos(true)}><Ico k="plus" size={12} /> Configurar</Btn>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              {customFieldsDef.map(cf => {
+                const val = f.custom_fields?.[cf.id] || "";
+                const handleChange = (v) => setF(prev => ({ ...prev, custom_fields: { ...(prev.custom_fields || {}), [cf.id]: v } }));
+                const handleBlur = async () => { if (editDeal) await guardarEnSupa("deals", { ...editDeal, custom_fields: f.custom_fields }); };
+
+                return (
+                  <Campo key={cf.id} label={cf.nombre}>
+                    {cf.tipo === "lista" ? (
+                      <Sel value={val} onChange={e => handleChange(e.target.value)} onBlur={handleBlur}>
+                        <option value="">— Seleccionar —</option>
+                        {cf.opciones?.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                      </Sel>
+                    ) : cf.tipo === "fecha" ? (
+                      <LocalInput type="date" value={val} onCommit={v => { handleChange(v); handleBlur(); }} />
+                    ) : cf.tipo === "dinero" ? (
+                      <div style={{ position: "relative" }}>
+                        <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: T.green }}>$</span>
+                        <LocalInput type="number" value={val} onCommit={v => { handleChange(v); handleBlur(); }} style={{ paddingLeft: 24 }} />
+                      </div>
+                    ) : (
+                      <LocalInput value={val} onCommit={v => { handleChange(v); handleBlur(); }} placeholder={`Ingresar ${cf.nombre.toLowerCase()}...`} />
+                    )}
+                  </Campo>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Archivos / Attachments */}
+          <div style={{ background: T.bg1, border: `2px dashed ${dragActive ? T.teal : T.border}`, borderRadius: 16, padding: 24, textAlign: "center" }}
+            onDragOver={e => { e.preventDefault(); setDragActive(true); }}
+            onDragLeave={() => setDragActive(false)}
+            onDrop={handleDrop}
+          >
+            <Ico k="upload" size={24} style={{ color: T.whiteDim, marginBottom: 12 }} />
+            <div style={{ fontSize: 13, color: T.white, fontWeight: 700 }}>Documentos y Archivos</div>
+            <div style={{ fontSize: 11, color: T.whiteDim, marginTop: 4 }}>Arrastra archivos aquí para subirlos al deal</div>
+            
+            <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 8 }}>
+              {(f.archivos || []).map(a => (
+                <div key={a.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: T.bg2, padding: "8px 12px", borderRadius: 8, border: `1px solid ${T.border}` }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, overflow: "hidden" }}>
+                    <Ico k={a.tipo === "img" ? "image" : "file"} size={14} style={{ color: T.teal }} />
+                    <span style={{ fontSize: 12, color: T.whiteOff, whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden" }}>{a.nombre}</span>
+                  </div>
+                  <Btn variant="fantasma" size="xs" onClick={() => quitarArchivo(a.id)} style={{ color: T.red }}><Ico k="trash" size={12} /></Btn>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div style={{ display: "flex", gap: 12 }}>
+            <Btn variant="secundario" onClick={onCancelar} full>Cerrar</Btn>
+            <Btn onClick={() => onGuardar(f)} full style={{ background: T.teal, color: "#000" }}>Guardar Deal</Btn>
+          </div>
+        </div>
+
+        <div style={{ flex: 1.2, borderLeft: `1px solid ${T.borderHi}`, minHeight: "65vh" }}>
+          {leadTab === "timeline" && (
+            <LeadTimeline
+              deal={editDeal}
+              contacto={db.contactos.find(c => c.id === f.contacto_id) || {}}
+              db={db}
+              setDb={setDb}
+              guardarEnSupa={guardarEnSupa}
+              setModulo={setModulo}
+            />
+          )}
+          {leadTab === "cotizacion" && <Cotizaciones db={db} deal={editDeal} onCerrar={() => setLeadTab("timeline")} guardarEnSupa={guardarEnSupa} />}
+          {leadTab === "finanzas" && (
+            <div style={{ padding: 24, display: "flex", flexDirection: "column", gap: 20 }}>
+              <div style={{ fontSize: 18, fontWeight: 800, color: T.white }}>Resumen Financiero</div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+                 <div style={{ background: T.bg2, padding: 16, borderRadius: 12, border: `1px solid ${T.borderHi}` }}>
+                   <div style={{ fontSize: 11, color: T.whiteDim }}>VALOR BRUTO</div>
+                   <div style={{ fontSize: 20, fontWeight: 800, color: T.teal }}>{money(editDeal?.valor || 0)}</div>
+                 </div>
+                 <div style={{ background: T.bg2, padding: 16, borderRadius: 12, border: `1px solid ${T.borderHi}` }}>
+                   <div style={{ fontSize: 11, color: T.whiteDim }}>GASTOS</div>
+                   <div style={{ fontSize: 20, fontWeight: 800, color: T.red }}>{money((db.finanzas_gastos || []).filter(g => g.deal_id === editDeal?.id).reduce((acc, g) => acc + g.monto, 0))}</div>
+                 </div>
+              </div>
+            </div>
+          )}
+          {leadTab === "historial" && (
+            <div style={{ padding: 20 }}>
+              {(db.auditoria || []).filter(a => a.entidad_id === editDeal?.id).sort((a,b) => new Date(b.creado) - new Date(a.creado)).map(a => (
+                <div key={a.id} style={{ padding: "12px 16px", borderBottom: `1px solid ${T.borderHi}`, display: "flex", gap: 12 }}>
+                  <div style={{ width: 8, height: 8, borderRadius: "50%", background: T.teal, marginTop: 4 }} />
+                  <div style={{ flex: 1, fontSize: 13, color: T.white }}>
+                    <strong>{a.usuario_nombre}</strong> cambió {a.campo} a <span style={{ color: T.teal }}>{a.valor_nuevo}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModulo }) => {
   const [plActivo, setPlActivo] = useState(db.pipelines[0]?.id || "");
   const [tab, setTab] = useState("kanban");
@@ -36,25 +340,7 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
   const [fEmpresa, setFEmpresa] = useState("todas");
   const [showFiltros, setShowFiltros] = useState(false);
 
-  const calculateLeadScore = (deal) => {
-    let score = 0;
-    const contacto = db.contactos.find(c => c.id === deal.contacto_id);
-    const empresa = db.empresas.find(e => e.id === deal.empresa_id);
-    
-    if (deal.valor > 0) score += 20;
-    if (contacto?.telefono) score += 15;
-    if (contacto?.email) score += 10;
-    if (deal.empresa_id || deal.empresa) score += 15;
-    
-    const acts = (db.actividades || []).filter(a => a.deal_id === deal.id);
-    if (acts.length > 0) score += 20;
-    if (acts.length > 2) score += 10;
-    
-    const waMsgs = (db.whatsapp_messages || []).filter(m => m.deal_id === deal.id);
-    if (waMsgs.length > 0) score += 10;
-    
-    return Math.min(100, score);
-  };
+// MOVE OUTSIDE LATER
 
   const getDealStatus = (deal) => {
     const acts = (db.actividades || []).filter(a => a.deal_id === deal.id);
@@ -203,363 +489,7 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
     setShowNuevaEt(false); setNuevaEt({ nombre: "", color: T.teal, probabilidad: 50 });
   };
 
-  const FormDeal = ({ init = {}, onGuardar, onCancelar }) => {
-    const customFieldsDef = db.campos_personalizados || [];
-
-    // El estado f y setF y el useEffect ya viven en Pipeline (ver arriba).
-    // FormDeal accede a ellos desde el closure.
-
-    const s = k => e => {
-      const val = e.target.value;
-      setF(prev => ({ ...prev, [k]: val }));
-    };
-
-    const guardarCambios = async () => {
-      if (editDeal) {
-        await guardarEnSupa("deals", { ...editDeal, ...f });
-      }
-    };
-
-    const plActual = db.pipelines.find(p => p.id === f.pipeline_id);
-
-    const handleDrop = e => {
-      e.preventDefault(); setDragActive(false);
-      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-        const nuevos = Array.from(e.dataTransfer.files).map(file => ({
-          id: "f" + uid(), nombre: file.name, size: (file.size / 1024).toFixed(1) + " KB", tipo: file.type.includes("image") ? "img" : "doc", url: file.type.includes("image") ? URL.createObjectURL(file) : null
-        }));
-        setF(p => ({ ...p, archivos: [...(p.archivos || []), ...nuevos] }));
-      }
-    };
-
-    const quitarArchivo = id => setF(p => ({ ...p, archivos: p.archivos.filter(a => a.id !== id) }));
-
-    const [leadTab, setLeadTab] = useState("timeline"); // timeline, info, tareas, whatsapp, cotizacion, historial
-    
-    const stages = plActual?.etapas || [];
-    const currentEtIdx = stages.findIndex(s => s.id === f.etapa_id);
-
-    return (
-      <div style={{ display: "flex", flexDirection: "column", gap: 24, minHeight: 600 }}>
-        {/* STAGE SELECTOR (BITRIX STYLE) */}
-        <div style={{ display: "flex", width: "100%", gap: 4, paddingBottom: 10 }}>
-          {stages.map((st, idx) => {
-            const isActive = st.id === f.etapa_id;
-            const isPast = idx < currentEtIdx;
-            const isFuture = idx > currentEtIdx;
-
-            let bg = "#eef2f4";
-            let color = "#666";
-            let borderColor = "#d4dde1";
-
-            if (isActive) {
-              bg = st.color || T.teal;
-              color = "#fff";
-              borderColor = st.color || T.teal;
-            } else if (isPast) {
-              bg = (st.color || T.teal) + "30";
-              color = st.color || T.teal;
-              borderColor = (st.color || T.teal) + "60";
-            }
-
-            return (
-              <div
-                key={st.id}
-                onClick={async () => {
-                  const nextF = { ...f, etapa_id: st.id, prob: st.probabilidad };
-                  setF(nextF);
-                  if (editDeal) {
-                    await guardarEnSupa("deals", { ...editDeal, ...nextF });
-                    if (st.id !== f.etapa_id) await ejecutarAutomaciones(editDeal, st.id);
-                  }
-                }}
-                style={{
-                  flex: 1,
-                  height: 32,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 11,
-                  fontWeight: 700,
-                  cursor: "pointer",
-                  background: bg,
-                  color: color,
-                  border: `1px solid ${borderColor}`,
-                  borderRadius: 4,
-                  transition: "all .2s",
-                  textAlign: "center",
-                  padding: "0 4px",
-                  textTransform: "uppercase",
-                  letterSpacing: ".02em",
-                  boxShadow: isActive ? `0 2px 8px ${bg}40` : "none"
-                }}
-                onMouseEnter={e => { if (!isActive) e.currentTarget.style.borderColor = st.color || T.teal; }}
-                onMouseLeave={e => { if (!isActive) e.currentTarget.style.borderColor = borderColor; }}
-              >
-                {st.nombre}
-              </div>
-            );
-          })}
-        </div>
-
-        <div style={{ display: "flex", gap: 12, borderBottom: `1px solid ${T.borderHi}`, paddingBottom: 16 }}>
-          <Btn variant={leadTab === "timeline" ? "primario" : "fantasma"} size="sm" onClick={() => setLeadTab("timeline")}><Ico k="lightning" size={14} /> Timeline</Btn>
-          <Btn variant={leadTab === "whatsapp" ? "primario" : "fantasma"} size="sm" onClick={() => setLeadTab("whatsapp")}><Ico k="phone" size={14} /> WhatsApp</Btn>
-          <Btn variant={leadTab === "cotizacion" ? "primario" : "fantasma"} size="sm" onClick={() => setLeadTab("cotizacion")}><Ico k="dollar" size={14} /> Cotización</Btn>
-          <Btn variant={leadTab === "finanzas" ? "primario" : "fantasma"} size="sm" onClick={() => setLeadTab("finanzas")}><Ico k="trend" size={14} /> Finanzas</Btn>
-          <Btn variant={leadTab === "historial" ? "primario" : "fantasma"} size="sm" onClick={() => setLeadTab("historial")}><Ico k="history" size={14} /> Historial</Btn>
-        </div>
-
-        <div style={{ display: "flex", gap: 32 }}>
-          {/* COLUMNA IZQUIERDA: INFORMACIÓN Y CAMPOS */}
-          <div style={{ width: 440, display: "flex", flexDirection: "column", gap: 20, flexShrink: 0 }}>
-            <div style={{ background: T.bg1, border: `1px solid ${T.border}`, borderRadius: 16, padding: 24 }}>
-              <Campo label="Título del Deal *" style={{ marginBottom: 20 }}>
-                <LocalInput value={f.titulo} onCommit={v => {
-                  const nf = { ...f, titulo: v };
-                  setF(nf);
-                  if (editDeal) guardarEnSupa("deals", { ...editDeal, ...nf });
-                }} placeholder="ej. Acme — Plan Enterprise" style={{ fontSize: 16, fontWeight: 800 }} />
-              </Campo>
-
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 20 }}>
-                <Campo label="Monto ($)">
-                  <LocalInput type="number" value={f.valor} onCommit={v => {
-                    const nf = { ...f, valor: v };
-                    setF(nf);
-                    if (editDeal) guardarEnSupa("deals", { ...editDeal, ...nf });
-                  }} style={{ fontWeight: 800, color: T.green }} />
-                </Campo>
-                <Campo label="Probabilidad (%)">
-                  <LocalInput type="number" value={f.prob} onCommit={v => {
-                    const nf = { ...f, prob: v };
-                    setF(nf);
-                    if (editDeal) guardarEnSupa("deals", { ...editDeal, ...nf });
-                  }} style={{ fontWeight: 800 }} />
-                </Campo>
-              </div>
-
-              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                <Campo label="Pipeline"><Sel value={f.pipeline_id} onChange={async e => {
-                  const plId = e.target.value;
-                  const pl = db.pipelines.find(p => p.id === plId);
-                  const nextF = { ...f, pipeline_id: plId, etapa_id: pl?.etapas[0]?.id || "" };
-                  setF(nextF);
-                  if (editDeal) {
-                    await guardarEnSupa("deals", { ...editDeal, ...nextF });
-                    if (editDeal.etapa_id !== (pl?.etapas[0]?.id || "")) {
-                      await ejecutarAutomaciones(editDeal, pl?.etapas[0]?.id || "");
-                    }
-                  }
-                }}>{db.pipelines.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}</Sel></Campo>
-                <Campo label="Etapa"><Sel value={f.etapa_id} onChange={async e => {
-                  const val = e.target.value;
-                  const nextF = { ...f, etapa_id: val };
-                  setF(nextF);
-                  if (editDeal) {
-                    await guardarEnSupa("deals", { ...editDeal, ...nextF });
-                    if (val !== f.etapa_id) await ejecutarAutomaciones(editDeal, val);
-                  }
-                }}>{plActual?.etapas.map(e => <option key={e.id} value={e.id}>{e.nombre}</option>)}</Sel></Campo>
-                <Campo label="Contacto Asociado"><Sel value={f.contacto_id} onChange={async e => {
-                  const val = e.target.value;
-                  const nextF = { ...f, contacto_id: val };
-                  setF(nextF);
-                  if (editDeal) await guardarEnSupa("deals", { ...editDeal, ...nextF });
-                }}><option value="">— Ninguno —</option>{db.contactos.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}</Sel></Campo>
-                <Campo label="Empresa (B2B)"><Sel value={f.empresa_id} onChange={async e => {
-                  const val = e.target.value;
-                  const nextF = { ...f, empresa_id: val };
-                  setF(nextF);
-                  if (editDeal) await guardarEnSupa("deals", { ...editDeal, ...nextF });
-                }}><option value="">— Ninguna —</option>{db.empresas.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}</Sel></Campo>
-                <Campo label="Fecha de Cierre"><LocalInput type="date" value={f.fecha_cierre} onCommit={v => {
-                  const nf = { ...f, fecha_cierre: v };
-                  setF(nf);
-                  if (editDeal) guardarEnSupa("deals", { ...editDeal, ...nf });
-                }} /></Campo>
-                <Campo label="Responsable">
-                  <Sel value={f.responsable} onChange={async e => {
-                    const val = e.target.value;
-                    const nextF = { ...f, responsable: val };
-                    setF(nextF);
-                    if (editDeal) await guardarEnSupa("deals", { ...editDeal, ...nextF });
-                  }}>
-                    {db.usuariosApp?.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
-                  </Sel>
-                </Campo>
-              </div>
-
-              {/* Lead Scoring Breakdown */}
-              <div style={{ background: `linear-gradient(135deg, ${T.bg1}, ${T.bg2})`, border: `1px solid ${T.teal}30`, borderRadius: 16, padding: 18, marginBottom: 20 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <div style={{ fontSize: 18 }}>{calculateLeadScore(f) >= 80 ? "🔥" : "📊"}</div>
-                    <span style={{ fontSize: 12, fontWeight: 700, color: T.white }}>Lead Intelligence Score</span>
-                  </div>
-                  <div style={{ fontSize: 24, fontWeight: 900, color: calculateLeadScore(f) >= 80 ? T.amber : T.teal }}>{calculateLeadScore(f)}<span style={{ fontSize: 12, color: T.whiteDim, fontWeight: 500 }}>/100</span></div>
-                </div>
-                <Barra value={calculateLeadScore(f)} color={calculateLeadScore(f) >= 80 ? T.amber : T.teal} height={6} />
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 12 }}>
-                  {[
-                    { l: "Perfil Completo", v: (db.contactos.find(c => c.id === f.contacto_id)?.telefono && f.valor > 0), p: "+35" },
-                    { l: "Empresa B2B", v: !!f.empresa_id || !!f.empresa, p: "+15" },
-                    { l: "Actividad", v: (db.actividades || []).some(a => a.deal_id === editDeal?.id), p: "+30" },
-                    { l: "Interacción WA", v: (db.whatsapp_messages || []).some(m => m.deal_id === editDeal?.id), p: "+20" }
-                  ].map((it, i) => (
-                    <div key={i} style={{ fontSize: 10, color: it.v ? T.white : T.whiteDim, display: "flex", alignItems: "center", gap: 5 }}>
-                      <div style={{ width: 6, height: 6, borderRadius: "50%", background: it.v ? T.green : T.whiteDim + "30" }} />
-                      {it.l} <span style={{ color: it.v ? T.green : T.whiteDim, fontWeight: 700 }}>{it.p}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            <div style={{ background: T.bg1, border: `1px solid ${T.border}`, borderRadius: 16, padding: 24 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-                <span style={{ fontSize: 11, fontWeight: 700, color: T.whiteDim, textTransform: "uppercase" }}>Campos Personalizados</span>
-                <Btn variant="fantasma" size="sm" onClick={() => setShowConfigCampos(true)}><Ico k="plus" size={12} /> Configurar</Btn>
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                {customFieldsDef.map(cf => {
-                  const val = f.custom_fields?.[cf.id] || "";
-
-                  // Actualiza solo el estado local para fluidez total al escribir
-                  const handleChange = (v) => {
-                    setF(prev => ({ ...prev, custom_fields: { ...(prev.custom_fields || {}), [cf.id]: v } }));
-                  };
-
-                  // Guarda en Supabase solo al salir del campo (onBlur)
-                  const handleBlur = async () => {
-                    if (editDeal) {
-                      await guardarEnSupa("deals", { ...editDeal, custom_fields: f.custom_fields });
-                    }
-                  };
-
-                  return (
-                    <Campo key={cf.id} label={cf.nombre}>
-                      {cf.tipo === "lista" ? (
-                        <Sel value={val} onChange={e => handleChange(e.target.value)} onBlur={handleBlur}>
-                          <option value="">— Seleccionar —</option>
-                          {cf.opciones?.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                        </Sel>
-                      ) : cf.tipo === "fecha" ? (
-                        <LocalInput type="date" value={val} onCommit={v => { handleChange(v); handleBlur(); }} />
-                      ) : cf.tipo === "dinero" ? (
-                        <div style={{ position: "relative" }}>
-                          <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: T.green, fontWeight: 800 }}>$</span>
-                          <LocalInput type="number" value={val} onCommit={v => { handleChange(v); handleBlur(); }} style={{ paddingLeft: 24, color: T.green, fontWeight: 700 }} />
-                        </div>
-                      ) : cf.tipo === "numero" ? (
-                        <LocalInput type="number" value={val} onCommit={v => { handleChange(v); handleBlur(); }} />
-                      ) : cf.tipo === "si_no" ? (
-                        <Sel value={val} onChange={e => handleChange(e.target.value)} onBlur={handleBlur}>
-                          <option value="">— Seleccionar —</option>
-                          <option value="Si">Sí</option>
-                          <option value="No">No</option>
-                        </Sel>
-                      ) : (
-                        <LocalInput value={val} onCommit={v => { handleChange(v); handleBlur(); }} placeholder={`Ingresar ${cf.nombre.toLowerCase()}...`} />
-                      )}
-                    </Campo>
-                  );
-                })}
-                {customFieldsDef.length === 0 && <div style={{ fontSize: 11, color: T.whiteDim, textAlign: "center", fontStyle: "italic" }}>No hay campos adicionales configurados.</div>}
-              </div>
-            </div>
-
-            <div style={{ display: "flex", gap: 12 }}>
-              <Btn variant="secundario" onClick={onCancelar} full>Cerrar</Btn>
-              <Btn onClick={() => { if (!f.titulo.trim()) return; onGuardar({ ...f, valor: +f.valor, prob: +f.prob, etiquetas: f.etiquetas.split(",").map(t => t.trim()).filter(Boolean) }); }} full style={{ background: T.teal, color: "#000" }}>Guardar Deal</Btn>
-            </div>
-          </div>
-
-          {/* SECCIÓN DERECHA: TIMELINE / WHATSAPP / COTIZACIONES */}
-          <div style={{ flex: 1.2, borderLeft: `1px solid ${T.borderHi}`, minHeight: "65vh" }}>
-            {leadTab === "timeline" && (
-              <LeadTimeline
-                deal={editDeal}
-                contacto={db.contactos.find(c => c.id === f.contacto_id) || {}}
-                db={db}
-                setDb={setDb}
-                guardarEnSupa={guardarEnSupa}
-                setModulo={setModulo}
-              />
-            )}
-            {leadTab === "cotizacion" && (
-              <Cotizaciones 
-                db={db} 
-                deal={editDeal} 
-                onCerrar={() => setLeadTab("timeline")} 
-                guardarEnSupa={guardarEnSupa} 
-              />
-            )}
-            {leadTab === "finanzas" && (
-              <div style={{ padding: 24, display: "flex", flexDirection: "column", gap: 20 }}>
-                <div style={{ fontSize: 18, fontWeight: 800, color: T.white }}>Resumen Financiero del Deal</div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-                  <div style={{ background: T.bg2, padding: 16, borderRadius: 12, border: `1px solid ${T.borderHi}` }}>
-                    <div style={{ fontSize: 11, color: T.whiteDim }}>VALOR BRUTO</div>
-                    <div style={{ fontSize: 20, fontWeight: 800, color: T.teal }}>{money(editDeal.valor)}</div>
-                  </div>
-                  <div style={{ background: T.bg2, padding: 16, borderRadius: 12, border: `1px solid ${T.borderHi}` }}>
-                    <div style={{ fontSize: 11, color: T.whiteDim }}>COMISIÓN (PROYECTADA)</div>
-                    <div style={{ fontSize: 20, fontWeight: 800, color: T.amber }}>{money(editDeal.valor * 0.05)}</div>
-                  </div>
-                </div>
-                
-                <Tarjeta title="Gastos Asociados" style={{ padding: 16 }}>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                    {(db.finanzas_gastos || []).filter(g => g.deal_id === editDeal.id).map(g => (
-                      <div key={g.id} style={{ display: "flex", justifyContent: "space-between", fontSize: 13, background: T.bg1, padding: 10, borderRadius: 8 }}>
-                        <span style={{ color: T.whiteOff }}>{g.descripcion || g.categoria}</span>
-                        <span style={{ color: T.red, fontWeight: 700 }}>-{money(g.monto)}</span>
-                      </div>
-                    ))}
-                    {(db.finanzas_gastos || []).filter(g => g.deal_id === editDeal.id).length === 0 && <div style={{ fontSize: 11, color: T.whiteDim, fontStyle: "italic" }}>No hay gastos registrados para este deal.</div>}
-                  </div>
-                </Tarjeta>
-                <Btn variant="secundario" onClick={() => setModulo({ id: "finanzas" })} full><Ico k="cog" size={14} /> Gestionar en Módulo de Finanzas</Btn>
-              </div>
-            )}
-            {leadTab === "whatsapp" && (
-              <div style={{ padding: 40, color: T.whiteDim, textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: 20 }}>
-                <div style={{ width: 64, height: 64, borderRadius: "50%", background: T.teal + "10", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <Ico k="phone" size={32} style={{ color: T.teal }} />
-                </div>
-                <div>
-                  <div style={{ fontWeight: 800, color: T.white, fontSize: 16 }}>WhatsApp Integrado</div>
-                  <div style={{ fontSize: 13, marginTop: 8, maxWidth: 300 }}>La mensajería de WhatsApp móvil está sincronizada en tu <strong>Timeline</strong> principal para mayor comodidad.</div>
-                </div>
-              </div>
-            )}
-            {leadTab === "historial" && (
-              <div style={{ padding: 20 }}>
-                {(db.auditoria || [])
-                  .filter(a => a.entidad_id === editDeal.id)
-                  .sort((a,b) => new Date(b.creado) - new Date(a.creado))
-                  .map(a => (
-                    <div key={a.id} style={{ padding: "12px 16px", borderBottom: `1px solid ${T.borderHi}`, display: "flex", gap: 12 }}>
-                      <div style={{ width: 8, height: 8, borderRadius: "50%", background: T.teal, marginTop: 4 }} />
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: 13, color: T.white }}>
-                          <strong>{a.usuario_nombre}</strong> cambió <strong>{a.campo}</strong> de <span style={{ color: T.whiteDim }}>"{a.valor_anterior || 'vacío'}"</span> a <span style={{ color: T.teal }}>"{a.valor_nuevo}"</span>
-                        </div>
-                        <div style={{ fontSize: 11, color: T.whiteDim, marginTop: 4 }}>{new Date(a.creado).toLocaleString()}</div>
-                      </div>
-                    </div>
-                  ))}
-                {(!db.auditoria || db.auditoria.filter(a => a.entidad_id === editDeal.id).length === 0) && (
-                  <div style={{ padding: 40, textAlign: "center", color: T.whiteDim }}>No hay historial registrado para este negocio.</div>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  };
+// MOVE OUTSIDE LATER
 
   const guardarDeal = async (form) => {
     if (editDeal) {
@@ -1139,7 +1069,19 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
       </Modal>
 
       <Modal open={showDealForm} onClose={() => { setShowDealForm(false); setEditDeal(null); }} title={editDeal ? "Editar Deal" : "Nuevo Deal"} width={editDeal ? 1300 : 720}>
-        <FormDeal init={editDeal || (preEtapa ? { pipeline_id: plActivo, etapa_id: preEtapa } : { pipeline_id: plActivo, etapa_id: pipeline?.etapas[0]?.id })} onGuardar={guardarDeal} onCancelar={() => { setShowDealForm(false); setEditDeal(null); }} />
+        <FormDeal 
+          db={db}
+          setDb={setDb}
+          f={f}
+          setF={setF}
+          editDeal={editDeal}
+          onGuardar={guardarDeal}
+          onCancelar={() => { setShowDealForm(false); setEditDeal(null); }}
+          guardarEnSupa={guardarEnSupa}
+          ejecutarAutomaciones={ejecutarAutomaciones}
+          setModulo={setModulo}
+          setShowConfigCampos={setShowConfigCampos}
+        />
       </Modal>
       {/* CONFIGURACIÓN DE CAMPOS PERSONALIZADOS */}
       <Modal open={showConfigCampos} onClose={() => setShowConfigCampos(false)} title="Configurar Campos Globales" width={500}>
