@@ -19,7 +19,7 @@ export function LeadTimeline({ deal = {}, contacto = {}, db = {}, setDb, guardar
   const [waMsg, setWaMsg] = useState("");
   const [emailSubject, setEmailSubject] = useState("");
   const [emailBody, setEmailBody] = useState("");
-  const [emailTo, setEmailTo] = useState("");
+  const [emailTo, setEmailTo] = useState(contacto?.email || "");
   const [emailCc, setEmailCc] = useState("");
   const [emailBcc, setEmailBcc] = useState("");
   const [emailAttachments, setEmailAttachments] = useState([]);
@@ -509,7 +509,10 @@ export function LeadTimeline({ deal = {}, contacto = {}, db = {}, setDb, guardar
         <div style={{ display: "flex", gap: 24 }}>
           {["Comentario", "WhatsApp", "Email", "Tarea"].map(t => (
             <button key={t}
-              onClick={() => {
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.info("Tab switch to:", t);
                 setComposerTab(t);
                 setFiltro(t === "WhatsApp" ? "whatsapp" : (t === "Email" ? "email" : "all"));
                 if (t === "WhatsApp") setTimeout(() => chatBottomRef.current?.scrollIntoView({ behavior: 'auto' }), 50);
