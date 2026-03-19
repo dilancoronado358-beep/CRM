@@ -571,7 +571,11 @@ export default function App() {
             localStorage.removeItem("crm_usuario_activo");
             localStorage.removeItem("crm_theme");
             sessionStorage.clear();
-            window.location.reload();
+            // Cerrar sesión
+            sileo.success("Sesión cerrada correctamente");
+            setTimeout(() => {
+              window.location.reload();
+            }, 800);
           }
         }}
         title="¿Cerrar sesión?"
