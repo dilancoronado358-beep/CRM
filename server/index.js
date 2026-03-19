@@ -1055,6 +1055,7 @@ async function syncEmails(accountId) {
             dealId = deal?.id;
           }
           const { error: insertErr } = await supabase.from('emails').upsert({
+            id: "em_" + accountId + "_" + msgId,
             account_id: accountId,
             user_id: acc.user_id,
             org_id: acc.org_id,
@@ -1220,6 +1221,7 @@ app.post('/api/email/send', async (req, res) => {
     // Guardar en 'enviados' con esquema corregido y org_id/user_id
     // Guardar en 'enviados' con upsert para evitar errores de clave duplicada (mensaje_id)
     const { error: insErr } = await supabase.from('emails').upsert({
+      id: "em_sent_" + Date.now(),
       account_id: accountId,
       user_id: acc.user_id,
       org_id: acc.org_id,
