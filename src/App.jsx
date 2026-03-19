@@ -447,11 +447,14 @@ export default function App() {
     { id: "formularios", label: t("Form Builder"), role: t("Captación Leads"), comp: Formularios },
     { id: "websites", label: t("Landing Pages"), role: t("Captación Leads"), comp: Websites },
   ].filter(m => {
-    // Si no requiere permisos de whatsapp, pasa directo
+    // 1. Permisos Administrativos (adminOnly)
+    if (m.adminOnly && db.usuario?.role !== "admin") return false;
+
+    // 2. Permisos WhatsApp (reqWhatsApp)
     if (!m.reqWhatsApp) return true;
-    // Si es whatsapp, solo mostrar si es ADMIN o si tiene el check de whatsappAccess true
     if (db.usuario?.role === "admin") return true;
     if (db.usuario?.whatsappAccess === true) return true;
+    
     return false;
   });
 
@@ -489,7 +492,14 @@ export default function App() {
               <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                 {mods.map(m => {
                   const act = modulo === m.id;
-                  const icons = { dashboard: "board", pipeline: "funnel", deals: "dollar", contactos: "users", empresas: "building", actividades: "lightning", tareas: "check", catalogo: "grid", email: "mail", whatsapp: "phone", telegram: "paper-plane", instagram: "camera", facebook: "users", plantillas: "template", calendario: "calendar", documentos: "note", workflows: "var", notas: "note", reportes: "chart", config: "cog", formularios: "template", websites: "link", playbook: "book", email_sequences: "mail" };
+                  const icons = { 
+                    dashboard: "board", pipeline: "funnel", deals: "dollar", contactos: "users", empresas: "building", 
+                    actividades: "lightning", tareas: "check", catalogo: "grid", email: "mail", whatsapp: "phone", 
+                    telegram: "paper-plane", instagram: "camera", facebook: "users", plantillas: "template", 
+                    calendario: "calendar", documentos: "note", workflows: "var", notas: "note", reportes: "chart", 
+                    config: "cog", formularios: "template", websites: "link", playbook: "book", email_sequences: "mail",
+                    hygiene: "hygiene", finanzas: "credit-card"
+                  };
                   return (
                     <button key={m.id} onClick={() => setModulo(m.id)} title={!menuAbierto ? m.label : undefined}
                       style={{ display: "flex", alignItems: "center", gap: 12, padding: menuAbierto ? "10px 14px" : "12px", width: "100%", border: "none", background: act ? T.tealSoft : "transparent", color: act ? T.teal : T.whiteOff, borderRadius: 8, cursor: "pointer", transition: "all .15s", fontFamily: "inherit", fontWeight: act ? 700 : 500, justifyContent: menuAbierto ? "flex-start" : "center" }}
