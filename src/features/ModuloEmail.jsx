@@ -6,7 +6,7 @@ import axios from "axios";
 import { sileo as toast } from "../utils/sileo";
 import { sb } from "../hooks/useSupaState";
 
-export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) => {
+export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa, cargandoFondo }) => {
   const [carpeta, setCarpeta] = useState("entrada");
   const [showRedactar, setShowRedactar] = useState(false);
   const [emailFocus, setEmailFocus] = useState(null);
@@ -183,7 +183,12 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) => {
         </div>
 
         <div style={{ flex: 1, overflowY: "auto", padding: "12px" }}>
-          {msgs.length === 0 ? <Vacio text="No hay mensajes" /> : msgs.map(e => (
+          {cargandoFondo && msgs.length === 0 ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {[1, 2, 3, 4, 5].map(i => <div key={i} style={{ height: 100, background: "rgba(255,255,255,0.03)", borderRadius: 16, animation: "pulse 1.5s infinite" }} />)}
+              <style>{`@keyframes pulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 0.2; } }`}</style>
+            </div>
+          ) : msgs.length === 0 ? <Vacio text="No hay mensajes" /> : msgs.map(e => (
             <div key={e.id} onClick={() => { setEmailFocus(e); marcarLeido(e.id); }}
               style={{ position: "relative", padding: "16px 20px", borderRadius: 16, marginBottom: 4, cursor: "pointer", background: emailFocus?.id === e.id ? "rgba(255,255,255,0.06)" : "transparent", transition: "all 0.2s" }}
               onMouseEnter={e => { if (emailFocus?.id !== e.id) e.currentTarget.style.background = "rgba(255,255,255,0.02)"; }}

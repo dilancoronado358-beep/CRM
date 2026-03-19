@@ -235,7 +235,7 @@ const DICT = {
 
 
 export default function App() {
-  const { db, setDb, session, estadoSupa, cargando, isAppReady, guardarEnSupa, eliminarDeSupa, sendBroadcast } = useSupaState();
+  const { db, setDb, session, estadoSupa, cargando, cargandoFondo, isAppReady, guardarEnSupa, eliminarDeSupa, sendBroadcast } = useSupaState();
   const [modulo, setModulo] = useState("dashboard");
   const [menuAbierto, setMenuAbierto] = useState(true);
   const [spotlightOpen, setSpotlightOpen] = useState(false);
@@ -462,7 +462,7 @@ export default function App() {
   const grp = MODULOS.reduce((acc, m) => { (acc[m.role] = acc[m.role] || []).push(m); return acc; }, {});
   const ModuloActivo = MODULOS.find(m => m.id === modulo)?.comp || Dashboard;
 
-  const propsModulo = { db, setDb, guardarEnSupa, eliminarDeSupa, t, setModulo };
+  const propsModulo = { db, setDb, guardarEnSupa, eliminarDeSupa, t, setModulo, cargandoFondo };
 
   return (
     <div style={{ display: "flex", height: "100vh", background: T.bg0, color: T.white }}>

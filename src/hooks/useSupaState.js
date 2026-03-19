@@ -61,6 +61,7 @@ export function useSupaState() {
 
   const [estadoSupa, setEstadoSupa] = useState("conectando");
   const [cargando, setCargando] = useState(true);
+  const [cargandoFondo, setCargandoFondo] = useState(true);
   const [isAppReady, setIsAppReady] = useState(false);
   const [session, setSession] = useState(null);
   const channelRef = useRef(null);
@@ -131,6 +132,7 @@ export function useSupaState() {
           }
         });
         setDb(d => ({ ...d, ...estadoFondo }));
+        setCargandoFondo(false);
         console.log("✅ Carga de fondo completada.");
       }, 500);
 
@@ -394,5 +396,5 @@ export function useSupaState() {
     }
   };
 
-  return { db, setDb, session, estadoSupa, cargando, isAppReady, guardarEnSupa, eliminarDeSupa, sendBroadcast, recargar: cargarDeSupa };
+  return { db, setDb, session, estadoSupa, cargando, cargandoFondo, isAppReady, guardarEnSupa, eliminarDeSupa, sendBroadcast, recargar: cargarDeSupa };
 }
