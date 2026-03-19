@@ -71,7 +71,7 @@ export function LeadTimeline({ deal = {}, contacto = {}, db = {}, setDb, guardar
 
   useEffect(() => {
     cargarTimeline();
-  }, [telefono, deal?.id, deal?.notas, db?.tareas]);
+  }, [telefono, deal?.id, deal?.notas, (db?.tareas || []).length, (db?.actividades || []).length, (db?.auditoria || []).length]);
 
   const cargarTimeline = async () => {
     setLoading(true);
