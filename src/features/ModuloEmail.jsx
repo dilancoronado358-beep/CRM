@@ -9,6 +9,7 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) => {
   const [showRedactar, setShowRedactar] = useState(false);
   const [emailFocus, setEmailFocus] = useState(null);
   const [f, setF] = useState({ para: "", asunto: "", cuerpo: "", cc: "", bcc: "", plantillaId: "" });
+  const [respuestaRapida, setRespuestaRapida] = useState("");
   const [simulandoEnvio, setSimulandoEnvio] = useState(false);
   const [logEnvio, setLogEnvio] = useState([]);
 
@@ -33,9 +34,11 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) => {
     if (!acc) { alert("Configura tu cuenta de correo en la pestaña de Configuración."); return; }
 
     setSimulandoEnvio(true);
-    setLogEnvio(["[SMTP] Iniciando handshake con " + acc.smtp_host]);
+    const host = acc.smtp_host || (acc.provider === 'google' ? 'smtp.gmail.com' : 'smtp.office365.com');
+    setLogEnvio(["[SMTP] Iniciando handshake con " + host]);
 
     try {
+      // Usar la misma IP/Hostname que el frontend pero puerto 3001
       const API_URL = `http://${window.location.hostname}:3001`;
       setLogEnvio(prev => [...prev, "[AUTH] Autenticando canal TLS/SSL... ok."]);
       
@@ -56,8 +59,31 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) => {
         setF({ para: "", asunto: "", cuerpo: "", cc: "", bcc: "", plantillaId: "" });
       }, 1000);
     } catch (e) {
-      setLogEnvio(prev => [...prev, "❌ Error: " + e.message]);
-      setTimeout(() => setSimulandoEnvio(false), 3000);
+      const errorDetail = e.response?.data?.error || e.message;
+      setLogEnvio(prev => [...prev, "❌ Error: " + errorDetail]);
+      console.error("Email send error:", e);
+      setTimeout(() => setSimulandoEnvio(false), 5000);
+    }
+  };
+
+  const enviarRespuesta = async () => {
+    if (!respuestaRapida.trim() || !emailFocus) return;
+    const acc = db.email_accounts?.[0];
+    if (!acc) return;
+
+    try {
+      const API_URL = `http://${window.location.hostname}:3001`;
+      await axios.post(`${API_URL}/api/email/send`, {
+        accountId: acc.id,
+        to: emailFocus.de,
+        subject: emailFocus.asunto.startsWith("Re:") ? emailFocus.asunto : `Re: ${emailFocus.asunto}`,
+        body: respuestaRapida
+      });
+      alert("✅ Respuesta enviada.");
+      setRespuestaRapida("");
+      // Opcional: Recargar emails para ver el enviado
+    } catch (e) {
+      alert("❌ Error enviando respuesta: " + (e.response?.data?.error || e.message));
     }
   };
 
@@ -184,8 +210,16 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) => {
 
             {/* Acción Rápida Lector */}
             <div style={{ padding: "16px 24px", borderTop: `1px solid ${T.borderHi}`, background: T.bg1, display: "flex", gap: 12 }}>
-              <Inp placeholder="Respuesta rápida (Cmd+Enter para enviar)..." style={{ flex: 1, borderRadius: 20, paddingLeft: 20 }} />
-              <Btn style={{ borderRadius: 20, padding: "8px 20px" }}><Ico k="send" size={14} /> Enviar</Btn>
+              <Inp 
+                value={respuestaRapida}
+                onChange={e => setRespuestaRapida(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter' && e.metaKey) enviarRespuesta(); }}
+                placeholder="Respuesta rápida (Cmd+Enter para enviar)..." 
+                style={{ flex: 1, borderRadius: 20, paddingLeft: 20 }} 
+              />
+              <Btn onClick={enviarRespuesta} disabled={!respuestaRapida.trim()} style={{ borderRadius: 20, padding: "8px 20px" }}>
+                <Ico k="send" size={14} /> Enviar
+              </Btn>
             </div>
           </div>
         )}

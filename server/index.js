@@ -1169,18 +1169,26 @@ async function syncCalendar(accountId) {
 // Endpoints Email
 app.post('/api/email/send', async (req, res) => {
   const { accountId, to, subject, body, html } = req.body;
+  logFile(`📤 [SMTP] Petición de envío desde cuenta ${accountId} para ${to}`);
   try {
     const { data: acc, error } = await supabase.from('email_accounts').select('*').eq('id', accountId).single();
-    if (error || !acc) throw new Error("Cuenta no configurada");
+    if (error || !acc) {
+      logFile(`❌ [SMTP] Cuenta ${accountId} no encontrada.`);
+      throw new Error("Cuenta no configurada");
+    }
+
+    if (!acc.org_id && acc.user_id) {
+       const { data: u } = await supabase.from('usuariosApp').select('org_id').eq('id', acc.user_id).single();
+       if (u) acc.org_id = u.org_id;
+    }
 
     let transporterConfig = {
       host: acc.smtp_host || (acc.provider === 'google' ? 'smtp.gmail.com' : 'smtp.office365.com'),
       port: acc.smtp_port || (acc.provider === 'google' ? 465 : 587),
-      secure: acc.smtp_port === 465 || acc.provider === 'google',
+      secure: (acc.smtp_port === 465) || (acc.provider === 'google'),
     };
 
     if (acc.access_token) {
-      // Validar expiración antes de enviar
       let token = acc.access_token;
       if (acc.expires_at && new Date(acc.expires_at) <= new Date()) {
         token = await refreshAccessToken(accountId);
@@ -1195,6 +1203,7 @@ app.post('/api/email/send', async (req, res) => {
     }
 
     const transporter = nodemailer.createTransport(transporterConfig);
+    logFile(`📡 [SMTP] Conectando a ${transporterConfig.host}:${transporterConfig.port}...`);
 
     const info = await transporter.sendMail({
       from: `"${acc.email}" <${acc.email}>`,
@@ -1204,21 +1213,32 @@ app.post('/api/email/send', async (req, res) => {
       html: html || body.replace(/\n/g, '<br>')
     });
 
-    // Guardar en 'enviados'
-    await supabase.from('emails').insert({
+    logFile(`✅ [SMTP] Email enviado! ID: ${info.messageId}`);
+
+    // Guardar en 'enviados' con esquema corregido y org_id/user_id
+    const { error: insErr } = await supabase.from('emails').insert({
       id: "em_sent_" + Date.now(),
-      account_id: accountId,
+      cuenta_id: accountId, // Usando cuenta_id (alias para account_id en el nuevo esquema)
+      account_id: accountId, // Backup por si acaso
+      user_id: acc.user_id,
+      org_id: acc.org_id,
       carpeta: 'enviados',
       de: acc.email,
       para: to,
       asunto: subject,
       cuerpo: body,
       fecha: new Date().toISOString(),
-      leido: true
+      leido: true,
+      mensaje_id: info.messageId
     });
+
+    if (insErr) {
+      logFile(`⚠️ [SMTP] Email enviado pero falló persistencia: ${insErr.message}`);
+    }
 
     res.json({ success: true, messageId: info.messageId });
   } catch (e) {
+    logFile(`❌ [SMTP Error]: ${e.message}`);
     res.status(500).json({ error: e.message });
   }
 });
