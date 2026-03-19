@@ -438,15 +438,18 @@ whatsappClient.on('qr', async (qr) => {
   try {
     const qrDataUrl = await qrcode.toDataURL(qr);
     latestQRUrl = qrDataUrl;
+    logFile(`✨ [WhatsApp] QR Generado y Guardado. Longitud: ${qrDataUrl.length}`);
     io.emit('whatsapp_qr', qrDataUrl);
   } catch (err) {
+    logFile(`❌ [WhatsApp QR Error]: ${err.message}`);
     console.error('Error generando QR Code base64', err);
   }
 });
 
 whatsappClient.on('ready', () => {
-  console.log('Cliente de WhatsApp Listooo!');
+  logFile('✅ [WhatsApp] Cliente de WhatsApp Listooo!');
   clientReady = true;
+  latestQRUrl = ""; // Limpiar QR
   io.emit('whatsapp_ready');
 });
 
@@ -1036,7 +1039,7 @@ async function syncEmails(accountId) {
     const last50Uids = uids.slice(-50);
     if (last50Uids.length > 0) {
       const fetchOptions = { bodies: ['HEADER', 'TEXT', ''], markSeen: false };
-      const messages = await connection.fetch(last50Uids, fetchOptions);
+      const messages = await connection.search([['UID', last50Uids]], fetchOptions);
 
       for (const item of messages) {
         try {
@@ -1052,7 +1055,6 @@ async function syncEmails(accountId) {
             dealId = deal?.id;
           }
           const { error: insertErr } = await supabase.from('emails').upsert({
-            cuenta_id: accountId,
             account_id: accountId,
             user_id: acc.user_id,
             org_id: acc.org_id,
@@ -1218,7 +1220,6 @@ app.post('/api/email/send', async (req, res) => {
     // Guardar en 'enviados' con esquema corregido y org_id/user_id
     // Guardar en 'enviados' con upsert para evitar errores de clave duplicada (mensaje_id)
     const { error: insErr } = await supabase.from('emails').upsert({
-      cuenta_id: accountId,
       account_id: accountId,
       user_id: acc.user_id,
       org_id: acc.org_id,
