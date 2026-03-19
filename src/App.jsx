@@ -242,13 +242,6 @@ export default function App() {
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [logoutGlobal, setLogoutGlobal] = useState(false);
 
-  // NOTIFICACIONES TOAST
-  const [notis, setNotis] = useState([]);
-  const addNoti = (n) => {
-    const id = Date.now();
-    setNotis(prev => [...prev, { ...n, id }]);
-    setTimeout(() => setNotis(prev => prev.filter(x => x.id !== id)), 5000);
-  };
 
   // SOCKET GLOBAL PARA NOTIFICACIONES
   useEffect(() => {
@@ -277,10 +270,9 @@ export default function App() {
     if (tareasHoy.length > 0) {
       const yaNotificado = sessionStorage.getItem(`noti_tareas_${hoy}`);
       if (!yaNotificado) {
-        addNoti({
+        sileo.info({
           title: "Tareas para hoy",
-          body: `Tienes ${tareasHoy.length} tareas pendientes para el día de hoy.`,
-          color: T.amber
+          description: `Tienes ${tareasHoy.length} tareas pendientes para el día de hoy.`,
         });
         sessionStorage.setItem(`noti_tareas_${hoy}`, "true");
       }
@@ -545,7 +537,7 @@ export default function App() {
       />
 
       {/* NOTIFICACIONES MODERNAS (SILEO) - PHYSICS BASED GOOEY TOASTS */}
-      <Toaster position="top-right" theme="dark" />
+      <Toaster position="top-center" theme="dark" />
 
       <ConfirmModal
         open={showLogoutConfirm}
