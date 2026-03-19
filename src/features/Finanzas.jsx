@@ -91,7 +91,7 @@ export const Finanzas = ({ db, guardarEnSupa, eliminarDeSupa }) => {
                 <div key={c.id} style={{ padding: 16, background: T.bg2, borderRadius: 12, border: `1px solid ${T.borderHi}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <div>
                     <div style={{ fontWeight: 800, color: T.white }}>{vendedor?.name || "Vendedor"}</div>
-                    <div style={{ fontSize: 11, color: T.whiteDim }}>Deal: {db.deals?.find(d => d.id === c.deal_id)?.name || "N/A"}</div>
+                    <div style={{ fontSize: 11, color: T.whiteDim }}>Deal: {db.deals?.find(d => d.id === c.deal_id)?.titulo || "N/A"}</div>
                   </div>
                   <div style={{ textAlign: "right" }}>
                     <div style={{ fontWeight: 800, color: T.amber }}>{money(c.monto)}</div>
@@ -112,7 +112,7 @@ export const Finanzas = ({ db, guardarEnSupa, eliminarDeSupa }) => {
               <label style={{ fontSize: 11, fontWeight: 700, color: T.whiteDim }}>VINCULAR A NEGOCIO (OPCIONAL)</label>
               <Sel value={fGasto.deal_id} onChange={e => setFGasto({...fGasto, deal_id: e.target.value})}>
                 <option value="">Gasto General (Sin Deal)</option>
-                {deals.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+                {deals.map(d => <option key={d.id} value={d.id}>{d.titulo || d.name || d.id}</option>)}
               </Sel>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>

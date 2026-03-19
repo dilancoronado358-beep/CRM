@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSupaState, sb } from "./hooks/useSupaState";
 import { T, applyTheme } from "./theme";
 import { getApiUrl } from "./utils";
@@ -243,6 +243,7 @@ export default function App() {
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [logoutGlobal, setLogoutGlobal] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
+  const socketRef = useRef(null);
 
 
   // SOCKET GLOBAL PARA NOTIFICACIONES
@@ -257,12 +258,14 @@ export default function App() {
         });
       }
     });
+    socketRef.current = socket;
+
     // Listener para disparar workflows desde useSupaState (CustomEvent Fallback)
     const handleSupaDealUpdate = (e) => {
       const { dealId, etapaId } = e.detail;
-      if (socket && socket.connected) {
+      if (socketRef.current && socketRef.current.connected) {
         console.log(`🔌 [App Socket] Emitiendo workflow_trigger para ${dealId}`);
-        socket.emit('workflow_trigger', { dealId, etapaId });
+        socketRef.current.emit('workflow_trigger', { dealId, etapaId });
       }
     };
     window.addEventListener('supa-deal-updated', handleSupaDealUpdate);

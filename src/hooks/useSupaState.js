@@ -335,21 +335,25 @@ export function useSupaState() {
         return { data: null, error };
       } else {
         console.log(`🟢 Éxito en ${tabla}`);
-        const confirmado = data?.[0] || payload;
+        const confirmado = data?.[0];
 
-        // Disparar evento para que App.jsx lo capture y mande por Socket (Workflow Fallback)
-        if (tabla === "deals" && confirmado.id) {
+        if (confirmado && tabla === 'deals') {
+          // 🚀 DISPARAR WORKFLOW (Fallback Socket.IO via App.jsx)
           window.dispatchEvent(new CustomEvent('supa-deal-updated', { 
             detail: { dealId: confirmado.id, etapaId: confirmado.etapa_id } 
           }));
         }
+        
+        // Si Supabase no devuelve un registro (ej. upsert sin .select() o error silencioso),
+        // usamos el payload original para actualizar el estado local.
+        const registroParaEstado = confirmado || payload;
 
         setDb((d) => {
           const lista = Array.isArray(d[tabla]) ? d[tabla] : [];
-          const idx = lista.findIndex((r) => r.id === confirmado.id);
+          const idx = lista.findIndex((r) => r.id === registroParaEstado.id);
           const nueva = idx >= 0
-            ? lista.map((r) => (r.id === confirmado.id ? { ...r, ...confirmado } : r))
-            : [confirmado, ...lista];
+            ? lista.map((r) => (r.id === registroParaEstado.id ? { ...r, ...registroParaEstado } : r))
+            : [registroParaEstado, ...lista];
           return { ...d, [tabla]: nueva };
         });
         return { data: confirmado, error: null };

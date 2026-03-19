@@ -20,19 +20,19 @@ export const Reportes = (props) => {
   const s = k => e => setFiltros(p => ({ ...p, [k]: e.target.value }));
 
   // Filtrado de Datos
-  const pl = pipelines.find(p => p.id === filtros.pipeline_id);
-  const deals = db.deals.filter(d =>
+  const pl = pipelines.find(p => p.id === filtros.pipeline_id) || pipelines[0];
+  const deals = (db.deals || []).filter(d =>
     d.pipeline_id === filtros.pipeline_id &&
     (filtros.responsable === "todos" || d.responsable === filtros.responsable)
   );
 
   const totalValor = deals.reduce((s, d) => s + (d.valor || 0), 0);
-  const ganados = deals.filter(d => pl?.etapas.find(e => e.id === d.etapa_id)?.es_ganado);
-  const perdidos = deals.filter(d => pl?.etapas.find(e => e.id === d.etapa_id)?.es_perdido);
-  const activos = deals.filter(d => !pl?.etapas.find(e => e.id === d.etapa_id)?.es_ganado && !pl?.etapas.find(e => e.id === d.etapa_id)?.es_perdido);
+  const ganados = deals.filter(d => pl?.etapas?.find(e => e.id === d.etapa_id)?.es_ganado);
+  const perdidos = deals.filter(d => pl?.etapas?.find(e => e.id === d.etapa_id)?.es_perdido);
+  const activos = deals.filter(d => !pl?.etapas?.find(e => e.id === d.etapa_id)?.es_ganado && !pl?.etapas?.find(e => e.id === d.etapa_id)?.es_perdido);
   const valGanados = ganados.reduce((s, d) => s + (d.valor || 0), 0);
 
-  const statsFuente = db.contactos.reduce((acc, c) => { acc[c.fuente || "Sin Fuente"] = (acc[c.fuente || "Sin Fuente"] || 0) + 1; return acc; }, {});
+  const statsFuente = (db.contactos || []).reduce((acc, c) => { acc[c.fuente || "Sin Fuente"] = (acc[c.fuente || "Sin Fuente"] || 0) + 1; return acc; }, {});
   const dataFuentes = Object.keys(statsFuente).map(k => ({ name: k, value: statsFuente[k] })).sort((a, b) => b.value - a.value);
 
   const dataPipeline = [

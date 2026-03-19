@@ -52,7 +52,7 @@ export const Dashboard = ({ db, t = s => s }) => {
     if (!plFiltro && db.pipelines.length > 0) {
       // Intentar buscar el primer pipeline que tenga algún deal
       const withDeals = db.pipelines.find(p => db.deals.some(d => d.pipeline_id === p.id));
-      setPlFiltro(withDeals ? withDeals.id : db.pipelines[0].id);
+      setPlFiltro(withDeals ? withDeals.id : db.pipelines[0]?.id || "");
     }
   }, [db.pipelines, plFiltro, db.deals]);
 
