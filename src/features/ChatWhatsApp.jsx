@@ -3,6 +3,7 @@ import { T } from "../theme";
 import { Btn, Inp, Tarjeta, Celda, Chip, Ico, Modal } from "../components/ui";
 import { io } from "socket.io-client";
 import { useSupaState } from "../hooks/useSupaState";
+import { sileo as toast } from "../utils/sileo";
 
 export function ChatWhatsApp({ db, setDb, guardarEnSupa, eliminarDeSupa, t }) {
   const [waConnected, setWaConnected] = useState(false);
@@ -261,7 +262,7 @@ export function ChatWhatsApp({ db, setDb, guardarEnSupa, eliminarDeSupa, t }) {
 
     // Validar el peso (ej. max 16MB)
     if (file.size > 16 * 1024 * 1024) {
-      alert("El archivo excede el límite de 16MB.");
+      toast.error("El archivo excede el límite de 16MB.");
       return;
     }
 
@@ -317,9 +318,9 @@ export function ChatWhatsApp({ db, setDb, guardarEnSupa, eliminarDeSupa, t }) {
     if (socketRef.current) {
       console.log("📤 Enviando reglas al servidor:", reglas);
       socketRef.current.emit('whatsapp_update_rules', reglas);
-      alert("¡Configuración enviada! El bot se ha actualizado con " + reglas.length + " reglas.");
+      toast.success("¡Configuración enviada! El bot se ha actualizado con " + reglas.length + " reglas.");
     } else {
-      alert("❌ No hay conexión con el servidor de WhatsApp.");
+      toast.error("❌ No hay conexión con el servidor de WhatsApp.");
     }
   };
 
@@ -330,7 +331,7 @@ export function ChatWhatsApp({ db, setDb, guardarEnSupa, eliminarDeSupa, t }) {
       contactos: prev.contactos.map(c => c.id === contactoID ? { ...c, telefono: phone } : c)
     }));
     setShowVincularModal(false);
-    alert("✅ Contacto vinculado correctamente.");
+    toast.success("✅ Contacto vinculado correctamente.");
   };
 
   if (!waConnected && !waQR) {

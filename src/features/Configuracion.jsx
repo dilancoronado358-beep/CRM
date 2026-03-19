@@ -4,6 +4,7 @@ import { Btn, Inp, Sel, Campo, Tarjeta, EncabezadoSeccion, Celda, CabeceraTabla,
 import { fdtm, uid } from "../utils";
 import { sb } from "../hooks/useSupaState";
 import axios from "axios";
+import { sileo } from "../utils/sileo";
 
 // Importamos el cliente de web sockets para comunicarse con el bot local
 import { io } from "socket.io-client";
@@ -28,7 +29,7 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
   const handleProfilePicChange = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 5 * 1024 * 1024) { alert("La foto no debe superar 5MB."); return; }
+    if (file.size > 5 * 1024 * 1024) { sileo.error("La foto no debe superar 5MB."); return; }
     const reader = new FileReader();
     reader.onload = (ev) => {
       const b64 = ev.target.result;
@@ -157,14 +158,14 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
     socketRef.current.on('whatsapp_ready', () => { setWaConnected(true); setWaQR(""); });
 
     socketRef.current.emit('get_whatsapp_status');
-    alert(`Intentando conectar a: ${finalUrl}\n\nEspera unos segundos para que aparezca el QR.`);
+    sileo.info({ title: "Conectando...", description: `Intentando conectar a: ${finalUrl}\n\nEspera unos segundos para que aparezca el QR.` });
   };
 
   // ── LÓGICA OAUTH EMAIL (REDIRECCIÓN A BACKEND) ──
   useEffect(() => {
     const handleMessage = (e) => {
       if (e.data === "oauth_success") {
-        alert("✅ Cuenta vinculada correctamente.");
+        sileo.success("✅ Cuenta vinculada correctamente.");
         // Recargar cuentas desde Supabase
         sb.from("email_accounts").select("*").eq("user_id", db.usuario?.id)
           .then(({ data }) => {
@@ -181,7 +182,7 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
     const userId = db.usuario?.id;
     const orgId = db.usuario?.org_id;
 
-    if (!userId) return alert("Error: No se detectó sesión de usuario.");
+    if (!userId) return sileo.error("Error: No se detectó sesión de usuario.");
 
     const url = `${API_URL}/api/auth/${provider}?userId=${userId}&orgId=${orgId || ""}`;
     window.open(url, "Conectar Email", "width=600,height=700");
@@ -194,9 +195,9 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
       if (!acc) return;
       // Actualizamos last_sync para disparar el listener Realtime del servidor
       await guardarEnSupa("email_accounts", { ...acc, last_sync: new Date().toISOString() });
-      alert("✅ Señal de sincronización enviada. Los correos deberían aparecer en 1 minuto.");
+      sileo.success("✅ Señal de sincronización enviada. Los correos deberían aparecer en 1 minuto.");
     } catch (e) {
-      alert("Error al solicitar sync: " + e.message);
+      sileo.error("Error al solicitar sync: " + e.message);
     } finally {
       setProbandoEmail(false);
     }
@@ -274,17 +275,17 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
       }
     } catch (e) { console.warn("Auth update err:", e.message); }
 
-    alert("Perfil actualizado correctamente ✅");
+    sileo.success("Perfil actualizado correctamente ✨");
   };
 
 
   const cambiarPassword = async () => {
     if (!fPassword.nueva || fPassword.nueva !== fPassword.confirmar) {
-      alert("Las contraseñas no coinciden o están vacías.");
+      sileo.error("Las contraseñas no coinciden o están vacías.");
       return;
     }
     if (fPassword.nueva.length < 6) {
-      alert("La contraseña debe tener al menos 6 caracteres.");
+      sileo.error("La contraseña debe tener al menos 6 caracteres.");
       return;
     }
 
@@ -301,10 +302,10 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
         )
       }));
 
-      alert("Contraseña actualizada exitosamente.");
+      sileo.success("Contraseña actualizada exitosamente.");
       setFPassword({ nueva: "", confirmar: "" });
     } catch (err) {
-      alert("Error al cambiar la clave: " + err.message);
+      sileo.error("Error al cambiar la clave: " + err.message);
     } finally {
       setCargandoPass(false);
     }
@@ -312,7 +313,7 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
 
   const guardarEmail = () => {
     setDb(d => ({ ...d, cuentaEmail: { ...fEmail, conectado: true } }));
-    alert("Configuración SMTP/IMAP guardada. Handshake TLS OK.");
+    sileo.success("Configuración SMTP/IMAP guardada. Handshake TLS OK.");
   };
 
   const cambiarTema = (themeId) => {
@@ -331,13 +332,13 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
 
   const guardarRecordatorios = () => {
     setDb(d => ({ ...d, recordatorios }));
-    alert("Configuración de recordatorios guardada.");
+    sileo.success("Configuración de recordatorios guardada.");
   };
 
   const guardarEmpresa = async () => {
     // Buscar la organización actual
     const orgActual = db.organizacion?.find(o => o.id === db.usuario?.org_id);
-    if (!orgActual) return alert("No se pudo identificar la organización activa.");
+    if (!orgActual) return sileo.error("No se pudo identificar la organización activa.");
 
     const payloadOrg = { ...orgActual, nombre: fEmpresa, wa_server_url: fWaUrl };
 
@@ -349,7 +350,7 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
       organizacion: d.organizacion.map(o => o.id === orgActual.id ? payloadOrg : o),
       empresaConfigs: { ...d.empresaConfigs, nombre: fEmpresa }
     }));
-    alert("¡Infraestructura de organización sincronizada! ✅\n\nTodos los usuarios de esta empresa usarán ahora este Servidor de WhatsApp.");
+    sileo.success({ title: "¡Infraestructura sincronizada!", description: "Todos los usuarios de esta empresa usarán ahora este Servidor de WhatsApp." });
   };
 
   const handleCrearUsuario = async () => {
@@ -368,7 +369,7 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
       });
       if (error) {
         if (error.message.includes("rate limit exceeded")) {
-          alert("🛑 Supabase ha bloqueado temporalmente el envío de emails por seguridad (Rate Limit).\n\nPara solucionar esto:\n1. Ve a tu panel de Supabase.\n2. Ve a Authentication -> Providers -> Email.\n3. Aumenta el 'Email Rate Limit' o desactiva la confirmación de email temporalmente.");
+      sileo.error({ title: "🛑 Email Rate Limit", description: "Supabase ha bloqueado temporalmente el envío por seguridad. Revisa la configuración de Authentication -> Providers -> Email." });
           return;
         }
         throw error;
@@ -390,11 +391,11 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
 
       setDb(d => ({ ...d, usuariosApp: [...(d.usuariosApp || []), newUser] }));
 
-      alert("Usuario provisionado exitosamente en el sistema.");
+      sileo.success("Usuario provisionado exitosamente en el sistema.");
       setShowUserModal(false);
       setFNuevoUser({ name: "", email: "", password: "", role: "ventas" });
     } catch (err) {
-      alert("Error creando usuario: " + err.message);
+      sileo.error("Error creando usuario: " + err.message);
     } finally {
       setCargandoUser(false);
     }
@@ -407,28 +408,28 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
           redirectTo: window.location.origin + window.location.pathname + "#/recovery-confirm",
         });
         if (error) throw error;
-        alert(`Se han enviado las instrucciones al correo ${emailUsuario}`);
+        sileo.success(`Se han enviado las instrucciones al correo ${emailUsuario}`);
       } catch (err) {
-        alert("No se pudo enviar el correo de recuperación: " + err.message);
+        sileo.error("No se pudo enviar el correo de recuperación: " + err.message);
       }
     }
   };
 
   const handleEliminarUsuario = async (userId, userEmail) => {
     if (userEmail === db.usuario?.email) {
-      alert("No puedes eliminar tu propio usuario de administrador mientras estás logueado.");
+      sileo.error("No puedes eliminar tu propio usuario de administrador mientras estás logueado.");
       return;
     }
 
     if (confirm(`⚠️ ALERTA: Estás a punto de revocar el acceso a ${userEmail}. ¿Continuar?`)) {
       setDb(d => ({ ...d, usuariosApp: d.usuariosApp.filter(u => u.id !== userId) }));
-      alert("Usuario eliminado del directorio IAM. \n(Nota: Por seguridad, la cuenta subyacente de Supabase requiere borrado manual desde el Dashboard oficial API).");
+      sileo.success("Usuario eliminado del directorio IAM. \n(Nota: Por seguridad, la cuenta subyacente de Supabase requiere borrado manual desde el Dashboard oficial API).");
     }
   };
 
   const handleChangeRole = (userId, userEmail, newRole) => {
     if (userEmail === db.usuario?.email) {
-      alert("No puedes cambiar tu propio rol de administrador activo por razones de seguridad.");
+      sileo.error("No puedes cambiar tu propio rol de administrador activo por razones de seguridad.");
       return;
     }
 
@@ -450,7 +451,7 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
   // ── LÓGICA API & WEBHOOKS ──
   const rotateApiToken = async () => {
     const orgId = db.usuario?.org_id;
-    if (!orgId) return alert("Error: No se encontró organización vinculada a tu cuenta.");
+    if (!orgId) return sileo.error("Error: No se encontró organización vinculada a tu cuenta.");
 
     if (!confirm("⚠️ ¿Deseas generar o rotar el secreto de API?")) return;
 
@@ -467,15 +468,15 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
     try {
       const { error } = await guardarEnSupa("api_settings", payload);
       if (error) {
-        alert("Error de Supabase: " + error.message);
+        sileo.error("Error de Supabase: " + error.message);
       } else {
         // En lugar de setDb manual, dejamos que Supabase Realtime o el retorno de guardarEnSupa actualice db.api_settings
         // pero para feedback inmediato lo forzamos localmente:
         setDb(d => ({ ...d, api_settings: [payload] }));
-        alert("✅ Token generado exitosamente!");
+        sileo.success("✅ Token generado exitosamente!");
       }
     } catch (e) {
-      alert("Error crítico: " + e.message);
+      sileo.error("Error crítico: " + e.message);
     } finally {
       setCargandoApi(false);
     }
@@ -484,11 +485,11 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
   const copiarToken = () => {
     const token = db.api_settings?.[0]?.api_token || "";
     navigator.clipboard.writeText(token);
-    alert("Token copiado al portapapeles 📋");
+    sileo.success("Token copiado al portapapeles 📋");
   };
 
   const registrarWebhook = async () => {
-    if (!fWebhook.url.startsWith("http")) return alert("Ingresa una URL de webhook válida (https://...)");
+    if (!fWebhook.url.startsWith("http")) return sileo.error("Ingresa una URL de webhook válida (https://...)");
     const nuevo = { ...fWebhook, id: "wh_" + uid(), creado: new Date().toISOString(), activo: true };
     await guardarEnSupa("webhook_subscriptions", nuevo);
     setDb(d => ({ ...d, webhook_subscriptions: [...(d.webhook_subscriptions || []), nuevo] }));
@@ -503,7 +504,7 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
   };
 
   const handleCrearOrg = async () => {
-    if (!fOrg.nombre || !fOrg.slug) return alert("Completa todos los campos");
+    if (!fOrg.nombre || !fOrg.slug) return sileo.error("Completa todos los campos");
     setCargandoOrg(true);
     // Usar crypto.randomUUID() para asegurar formato UUID válido en Supabase
     const nuevaId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : uid();
@@ -515,17 +516,17 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
       } else {
         setShowOrgModal(false);
         setFOrg({ nombre: "", slug: "" });
-        alert("Organización creada exitosamente ✅");
+        sileo.success("Organización creada exitosamente ✅");
       }
     } catch (e) {
-      alert("Error al procesar: " + e.message);
+      sileo.error("Error al procesar: " + e.message);
     } finally {
       setCargandoOrg(false);
     }
   };
 
   const handleEliminarOrg = async (id, nombre) => {
-    if (id === '00000000-0000-0000-0000-000000000001') return alert("No se puede eliminar la organización principal del sistema.");
+    if (id === '00000000-0000-0000-0000-000000000001') return sileo.error("No se puede eliminar la organización principal del sistema.");
     if (!confirm(`⚠️ CUIDADO: Estás a punto de borrar la organización "${nombre}" y TODOS sus datos (contactos, deals, etc). ¿Confirmas esta acción irreversible?`)) return;
 
     setCargandoOrg(true);
@@ -533,9 +534,9 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
       const { error } = await sb.from("organizacion").delete().eq("id", id);
       if (error) throw error;
       setDb(d => ({ ...d, organizacion: d.organizacion.filter(o => o.id !== id) }));
-      alert("Organización eliminada exitosamente.");
+      sileo.success("Organización eliminada exitosamente.");
     } catch (e) {
-      alert("Error al eliminar organización: " + e.message);
+      sileo.error("Error al eliminar organización: " + e.message);
     } finally {
       setCargandoOrg(false);
     }
@@ -552,7 +553,7 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
         window.location.reload();
       }
     } catch (e) {
-      alert("Error al cambiar organización: " + e.message);
+      sileo.error("Error al cambiar organización: " + e.message);
     } finally {
       setShowSwitchModal(false);
     }
@@ -786,7 +787,7 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
 ALTER TABLE usuariosApp ADD COLUMN IF NOT EXISTS org_id UUID REFERENCES organizacion(id);
 -- ... (ejecutar script completo enviado por el asistente)`;
                   navigator.clipboard.writeText(sql);
-                  alert("Script SQL parcial copiado. Por favor usa el script completo proporcionado en el chat.");
+                  sileo.info("Script SQL parcial copiado. Por favor usa el script completo proporcionado en el chat.");
                 }}>Copiar Script SQL Base</Btn>
               </div>
             )}
@@ -1162,7 +1163,7 @@ ALTER TABLE usuariosApp ADD COLUMN IF NOT EXISTS org_id UUID REFERENCES organiza
                     <div style={{ fontSize: 13, color: T.whiteDim, marginBottom: 20 }}>Conecta tu Bot de Telegram (botfather) permitiendo la interacción automatizada y el onboarding de usuarios por medio del código QR oficial.</div>
                   </div>
                   <div style={{ display: "flex", gap: 12 }}>
-                    <Btn variant="secundario" onClick={() => alert("Mostrando QR de Telegram... Escanea usando tu móvil")} style={{ color: "#0088cc", borderColor: "#0088cc" }}><Ico k="lock" size={14} /> Vincular con QR</Btn>
+                    <Btn variant="secundario" onClick={() => sileo.info("Mostrando QR de Telegram... Escanea usando tu móvil")} style={{ color: "#0088cc", borderColor: "#0088cc" }}><Ico k="lock" size={14} /> Vincular con QR</Btn>
                   </div>
                 </div>
               </div>
@@ -1184,7 +1185,7 @@ ALTER TABLE usuariosApp ADD COLUMN IF NOT EXISTS org_id UUID REFERENCES organiza
                     <div style={{ fontSize: 13, color: T.whiteDim, marginBottom: 20 }}>Atiende a los clientes que responden a tus historias o te envían mensajes directos desde el CRM. Requiere cuenta de creador/empresa.</div>
                   </div>
                   <div style={{ display: "flex", gap: 12 }}>
-                    <Btn variant="secundario" style={{ color: "#cc2366", borderColor: "#cc2366" }} onClick={() => alert("Mostrando Instagram Nametag/QR...")}><Ico k="lock" size={14} /> Vincular con QR</Btn>
+                    <Btn variant="secundario" style={{ color: "#cc2366", borderColor: "#cc2366" }} onClick={() => sileo.info("Mostrando Instagram Nametag/QR...")}><Ico k="lock" size={14} /> Vincular con QR</Btn>
                   </div>
                 </div>
               </div>

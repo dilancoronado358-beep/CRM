@@ -41,7 +41,7 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) => {
   const enviarRealista = async () => {
     if (!f.para.trim() || !f.cuerpo.trim()) return;
     const acc = db.email_accounts?.[0];
-    if (!acc) { alert("Configura tu cuenta de correo en la pestaña de Configuración."); return; }
+    if (!acc) { toast.error("Configura tu cuenta de correo en la pestaña de Configuración."); return; }
 
     setSimulandoEnvio(true);
     const host = acc.smtp_host || (acc.provider === 'google' ? 'smtp.gmail.com' : 'smtp.office365.com');
@@ -87,9 +87,9 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) => {
       const errorDetail = e.response?.data?.error || e.message;
       setLogEnvio(prev => [...prev, "❌ Error: " + errorDetail]);
       if (errorDetail.includes("Network Error")) {
-        alert("Error de Red: No se pudo conectar al servidor. Asegúrate de que ngrok esté activo y que la URL en Configuración > Infraestructura sea la correcta.");
+        toast.error({ title: "Error de Red", description: "No se pudo conectar al servidor. Asegúrate de que ngrok esté activo y la URL sea correcta." });
       } else {
-        alert("Error enviando: " + errorDetail);
+        toast.error("Error enviando: " + errorDetail);
       }
       setTimeout(() => setSimulandoEnvio(false), 5000);
     }
@@ -112,7 +112,7 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) => {
         headers: { 'ngrok-skip-browser-warning': 'true' }
       });
 
-      alert("✅ Respuesta enviada.");
+      toast.success("✅ Respuesta enviada.");
       
       // Actualización inmediata local
       const nuevaRpta = {
@@ -131,9 +131,9 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) => {
     } catch (e) {
       const errorDetail = e.response?.data?.error || e.message;
       if (errorDetail.includes("Network Error")) {
-        alert("Error de Red: No se pudo enviar la respuesta. Revisa tu túnel ngrok en la pestaña de Infraestructura.");
+        toast.error({ title: "Error de Red", description: "No se pudo enviar la respuesta. Revisa tu túnel ngrok." });
       } else {
-        alert("❌ Error enviando respuesta: " + errorDetail);
+        toast.error("❌ Error enviando respuesta: " + errorDetail);
       }
     }
   };
@@ -143,7 +143,7 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) => {
     if (!acc) return;
     try {
       await guardarEnSupa("email_accounts", { ...acc, last_sync: new Date().toISOString() });
-      alert("✅ Sincronización solicitada.");
+      toast.success("✅ Sincronización solicitada.");
     } catch (e) {
       console.error("Sync error", e);
     }

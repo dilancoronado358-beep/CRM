@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { T } from "../theme";
 import { Ico, Btn, Tarjeta, EncabezadoSeccion, Chip } from "../components/ui";
+import { sileo } from "../utils/sileo";
 
 export function DataHygiene({ db, setDb, guardarEnSupa, eliminarDeSupa, t }) {
   const [loading, setLoading] = useState(false);
@@ -62,7 +63,7 @@ export function DataHygiene({ db, setDb, guardarEnSupa, eliminarDeSupa, t }) {
         // Eliminar el contacto obsoleto
         await eliminarDeSupa("contactos", obs.id);
       }
-      alert("Fusión completada con éxito.");
+      sileo.success("Fusión completada con éxito.");
     } catch (e) {
       console.error("Error fusionando:", e);
     }

@@ -6,7 +6,7 @@ import { sb } from "../hooks/useSupaState";
 import { FormularioPublico } from "./FormularioPublico";
 import { sileo as toast } from "../utils/sileo";
 
-const BASE_URL = "https://crm.ensing.lat";
+const BASE_URL = window.location.origin;
 
 const ALL_BLOCKS = [
   { id: "hero", title: "Hero Section", icon: "star", desc: "Título principal y CTA" },
@@ -267,7 +267,7 @@ export const Websites = ({ db, guardarEnSupa, eliminarDeSupa }) => {
   const copyLink = (pg) => {
     const url = `${BASE_URL}/#/sites/${pg.id}`;
     navigator.clipboard?.writeText(url);
-    toast.success("Link copiado", { description: url });
+    toast.success("Link copiado al portapapeles");
   };
 
   // Inline editors per block type
@@ -663,7 +663,17 @@ export const Websites = ({ db, guardarEnSupa, eliminarDeSupa }) => {
           <div style={{ height: 40, background: T.bg1, borderBottom: `1px solid ${T.borderHi}`, display: "flex", alignItems: "center", padding: "0 14px", gap: 8, flexShrink: 0 }}>
             <div style={{ display: "flex", gap: 5 }}>{["#EF4444", "#F59E0B", "#10B981"].map((c, i) => <div key={i} style={{ width: 10, height: 10, borderRadius: "50%", background: c }} />)}</div>
             <div style={{ flex: 1, background: T.bg2, height: 24, borderRadius: 6, display: "flex", alignItems: "center", padding: "0 10px", fontSize: 10, color: T.whiteDim, maxWidth: 380, margin: "0 auto", gap: 4, border: `1px solid ${T.borderHi}` }}>
-              <Ico k="lock" size={8} /> {BASE_URL}/#/sites/{activo.slug}
+              <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 4, overflow: "hidden" }}>
+                <Ico k="lock" size={8} /> 
+                <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{BASE_URL}/#/sites/{activo.slug}</span>
+              </div>
+              <button 
+                onClick={() => copyLink(activo)}
+                style={{ background: "none", border: "none", color: T.teal, cursor: "pointer", display: "flex", alignItems: "center", padding: "0 4px" }}
+                title="Copiar Link"
+              >
+                <Ico k="copy" size={10} />
+              </button>
             </div>
             <Btn size="sm" onClick={() => copyLink(activo)} style={{ fontSize: 10 }}>🔗 Link</Btn>
             <Btn size="sm" onClick={() => window.open(`${BASE_URL}/#/sites/${activo.id}`, "_blank")} style={{ fontSize: 10 }}>↗ Ver</Btn>

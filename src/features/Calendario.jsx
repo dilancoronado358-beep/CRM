@@ -4,6 +4,7 @@ import { es } from "date-fns/locale";
 import { T } from "../theme";
 import { money } from "../utils";
 import { Btn, Tarjeta, Celda, Chip, EncabezadoSeccion, Ico } from "../components/ui";
+import { sileo as toast } from "../utils/sileo";
 import axios from "axios";
 import { sb } from "../hooks/useSupaState";
 
@@ -115,13 +116,13 @@ export const Calendario = ({ db }) => {
             </div>
             <Btn variant="secundario" onClick={async () => {
               const acc = db.email_accounts?.find(a => a.active);
-              if (!acc) return alert("Conecta tu cuenta en Configuración primero.");
+              if (!acc) return toast.error("Conecta tu cuenta en Configuración primero.");
               try {
                 // Trigger vía Realtime (modificando la DB)
                 const { sb: supabase } = await import("../hooks/useSupaState");
                 await supabase.from('email_accounts').update({ last_sync: new Date().toISOString() }).eq('id', acc.id);
-                alert("✅ Solicitud de sincronización enviada.");
-              } catch (e) { alert("Error al sincronizar: " + e.message); }
+                toast.success("✅ Solicitud de sincronización enviada.");
+              } catch (e) { toast.error("Error al sincronizar: " + e.message); }
             }}><Ico k="refresh" size={14} /> Sincronizar</Btn>
             <Btn><Ico k="plus" size={14} />Nueva Cita</Btn>
           </div>

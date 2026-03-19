@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { T } from "../theme";
 import { money, uid, fdate } from "../utils";
 import { Btn, Ico, Tarjeta, Modal, Inp, Sel, EncabezadoSeccion, KPI } from "../components/ui";
+import { sileo } from "../utils/sileo";
 
 export const Finanzas = ({ db, guardarEnSupa, eliminarDeSupa }) => {
   const [showGastoModal, setShowGastoModal] = useState(false);
@@ -28,7 +29,7 @@ export const Finanzas = ({ db, guardarEnSupa, eliminarDeSupa }) => {
   const margenNeto = totalVentas - totalGastos - totalComisiones;
 
   const handleGuardarGasto = async () => {
-    if (!fGasto.monto) return alert("Por favor, ingresa un monto válido.");
+    if (!fGasto.monto) return sileo.error("Por favor, ingresa un monto válido.");
     
     // Preparar payload: deal_id vacío debe ser null para evitar errores de FK
     const payload = { 

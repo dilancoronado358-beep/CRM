@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { sileo as toast } from "../utils/sileo";
 import { createClient } from "@supabase/supabase-js";
 
 const SUPA_URL = "https://eoylgxwlhsmwqgadahvk.supabase.co";
@@ -71,7 +72,7 @@ export const FormularioPublico = ({ formId, embed = false }) => {
     const currentFields = paginas[paso] || [];
     for (const campo of currentFields) {
       if (campo.req && !values[campo.id]?.trim()) {
-        alert(`El campo "${campo.etiqueta}" es obligatorio.`);
+        toast.error(`El campo "${campo.etiqueta}" es obligatorio.`);
         return;
       }
     }

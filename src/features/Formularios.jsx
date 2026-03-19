@@ -38,7 +38,7 @@ const DEFAULT_FORM = () => ({
   ],
 });
 
-const BASE_URL = "https://crm.ensing.lat";
+const BASE_URL = window.location.origin;
 
 export const Formularios = ({ db, guardarEnSupa, eliminarDeSupa }) => {
   const pipelines = db.pipelines || [];
@@ -358,7 +358,17 @@ export const Formularios = ({ db, guardarEnSupa, eliminarDeSupa }) => {
         <div style={{ height: 40, background: T.bg1, borderBottom: `1px solid ${T.borderHi}`, display: "flex", alignItems: "center", padding: "0 14px", gap: 8, flexShrink: 0 }}>
           <div style={{ display: "flex", gap: 5 }}>{["#EF4444", "#F59E0B", "#10B981"].map((c, i) => <div key={i} style={{ width: 10, height: 10, borderRadius: "50%", background: c }} />)}</div>
           <div style={{ flex: 1, background: T.bg2, height: 22, borderRadius: 6, display: "flex", alignItems: "center", padding: "0 10px", fontSize: 10, color: T.whiteDim, maxWidth: 350, margin: "0 auto", gap: 4, border: `1px solid ${T.borderHi}` }}>
-            <Ico k="lock" size={8} /> {BASE_URL}/#/f/{activo?.id}
+            <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 4, overflow: "hidden" }}>
+              <Ico k="lock" size={8} /> 
+              <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{BASE_URL}/#/f/{activo?.id}</span>
+            </div>
+            <button 
+              onClick={() => { navigator.clipboard.writeText(`${BASE_URL}/#/f/${activo?.id}`); toast.success("Copiado"); }}
+              style={{ background: "none", border: "none", color: T.teal, cursor: "pointer", display: "flex", alignItems: "center", padding: "0 4px" }}
+              title="Copiar Link"
+            >
+              <Ico k="copy" size={10} />
+            </button>
           </div>
           <Btn size="sm" onClick={() => activo && window.open(`${BASE_URL}/#/f/${activo.id}`, "_blank")} style={{ fontSize: 10 }}>↗ Ver Real</Btn>
         </div>

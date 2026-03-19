@@ -3,6 +3,7 @@ import { T } from "../theme";
 import { Ico, Btn } from "../components/ui";
 import { createClient } from "@supabase/supabase-js";
 import { io } from "socket.io-client";
+import { sileo as toast } from "../utils/sileo";
 
 const SUPA_URL = "https://eoylgxwlhsmwqgadahvk.supabase.co";
 const SUPA_KEY = "sb_publishable_wKUbf7IFOoH4HIUayIAJdQ_Boj1jgZa";
@@ -224,7 +225,7 @@ export function LeadTimeline({ deal = {}, contacto = {}, db = {}, setDb, guardar
 
   const handleSendWA = () => {
     if (!waMsg.trim() || !telefono) return;
-    if (!socketRef.current) return alert("WhatsApp no conectado");
+    if (!socketRef.current) return toast.error("WhatsApp no conectado");
 
     const nuevoMsg = {
       type: "whatsapp",
