@@ -2589,3 +2589,14 @@
 [2026-03-19T06:50:05.851Z] 🚀 SERVER CRM INICIANDO...
 [2026-03-19T06:50:06.984Z] 📡 [Realtime Subscription Status]: SUBSCRIBED
 [2026-03-19T06:50:12.755Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6318
+[2026-03-19T06:51:12.560Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6342
+[2026-03-19T06:51:32.549Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6346
+[2026-03-19T06:51:52.563Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6406
+[2026-03-19T06:52:05.890Z] ⏱️ [CRON] Iniciando sync automático...
+[2026-03-19T06:52:06.066Z] ℹ️ [CRON] Se encontraron 0 cuentas activas para sincronizar.
+[2026-03-19T06:52:12.568Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6358
+[2026-03-19T06:52:32.578Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6238
+[2026-03-19T06:53:43.362Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6342
+[2026-03-19T06:53:52.418Z] 🚀 SERVER CRM INICIANDO...
+[2026-03-19T06:53:53.243Z] 📡 [Realtime Subscription Status]: SUBSCRIBED
+[2026-03-19T06:53:58.443Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6342

@@ -1304,9 +1304,12 @@ app.get('/api/auth/google', (req, res) => {
   const { userId, orgId } = req.query;
   if (!userId) return res.status(400).send("Falta userId");
 
+  const redirect_uri = `${req.protocol}://${req.get('host')}/api/auth/google/callback`;
+  logFile(`🔗 [OAuth Google] Redirect URI generado: ${redirect_uri}`);
+
   const rootUrl = 'https://accounts.google.com/o/oauth2/v2/auth';
   const options = {
-    redirect_uri: `${req.protocol}://${req.get('host')}/api/auth/google/callback`,
+    redirect_uri,
     client_id: process.env.GOOGLE_CLIENT_ID,
     access_type: 'offline',
     response_type: 'code',
@@ -1327,11 +1330,14 @@ app.get('/api/auth/azure', (req, res) => {
   const { userId, orgId } = req.query;
   if (!userId) return res.status(400).send("Falta userId");
 
+  const redirect_uri = `${req.protocol}://${req.get('host')}/api/auth/azure/callback`;
+  logFile(`🔗 [OAuth Azure] Redirect URI generado: ${redirect_uri}`);
+
   const rootUrl = 'https://login.microsoftonline.com/common/oauth2/v2.0/authorize';
   const options = {
     client_id: process.env.AZURE_CLIENT_ID,
     response_type: 'code',
-    redirect_uri: `${req.protocol}://${req.get('host')}/api/auth/azure/callback`,
+    redirect_uri,
     response_mode: 'query',
     scope: 'offline_access Mail.Read Calendars.Read User.Read',
     state: JSON.stringify({ userId, orgId })
