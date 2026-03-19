@@ -19,7 +19,14 @@ export function LeadTimeline({ deal = {}, contacto = {}, db = {}, setDb, guardar
   const [waMsg, setWaMsg] = useState("");
   const [emailSubject, setEmailSubject] = useState("");
   const [emailBody, setEmailBody] = useState("");
+  const [emailCc, setEmailCc] = useState("");
+  const [emailBcc, setEmailBcc] = useState("");
+  const [emailAttachments, setEmailAttachments] = useState([]);
+  const [emailAccountId, setEmailAccountId] = useState(db.email_accounts?.[0]?.id || "");
+  const [subiendoAdjunto, setSubiendoAdjunto] = useState(false);
+  const [showCcBcc, setShowCcBcc] = useState(false);
   const [composerTab, setComposerTab] = useState("Comentario");
+  const [emailExpandido, setEmailExpandido] = useState(null); // ID del correo expandido
   const [previewFile, setPreviewFile] = useState(null); // { data, name, type }
 
   const [taskForm, setTaskForm] = useState({ titulo: "", prioridad: "media", vencimiento: "", asignado: db?.usuario?.name || "", descripcion: "" });
@@ -279,20 +286,29 @@ export function LeadTimeline({ deal = {}, contacto = {}, db = {}, setDb, guardar
     setTimeout(() => chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
   };
 
+  useEffect(() => {
+    if (!emailAccountId && db.email_accounts?.length > 0) {
+      setEmailAccountId(db.email_accounts[0].id);
+    }
+  }, [db.email_accounts]);
+
   const handleSendEmail = async () => {
     if (!emailBody.trim() || !contacto?.email) return toast.error("Cuerpo o destinatario vacío.");
     
-    const acc = db.email_accounts?.[0];
-    if (!acc) return toast.error("Configura una cuenta de correo en Ajustes.");
+    const accId = emailAccountId || db.email_accounts?.[0]?.id;
+    if (!accId) return toast.error("No hay cuenta vinculada");
 
     setEnviandoEmail(true);
     try {
       const API_URL = getApiUrl(db);
       await axios.post(`${API_URL}/api/email/send`, {
-        accountId: acc.id,
+        accountId: accId,
         to: contacto.email,
+        cc: emailCc,
+        bcc: emailBcc,
         subject: emailSubject || "(Sin asunto)",
         body: emailBody,
+        attachments: emailAttachments,
         dealId: deal?.id,
         contactoId: contacto?.id
       });
@@ -300,12 +316,50 @@ export function LeadTimeline({ deal = {}, contacto = {}, db = {}, setDb, guardar
       toast.success("Correo enviado correctamente ✅");
       setEmailSubject("");
       setEmailBody("");
+      setEmailCc("");
+      setEmailBcc("");
+      setEmailAttachments([]);
       cargarTimeline();
     } catch (e) {
       toast.error("Error al enviar email: " + (e.response?.data?.error || e.message));
     } finally {
       setEnviandoEmail(false);
     }
+  };
+
+  const aplicarPlantilla = (id) => {
+    const tpl = db.plantillasEmail?.find(p => p.id === id);
+    if (tpl) {
+      setEmailSubject(tpl.asunto || "");
+      setEmailBody(tpl.cuerpo || "");
+    }
+  };
+
+  const handleFileChangeEmail = async (e) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    setSubiendoAdjunto(true);
+    const nuevos = [...emailAttachments];
+    for (let i = 0; i < files.length; i++) {
+      const f = files[i];
+      const safeName = `att_${Date.now()}_${f.name.replace(/[^a-z0-9.]/gi, '_')}`;
+      try {
+        const { data, error } = await sb.storage.from('email-attachments').upload(safeName, f);
+        if (error) throw error;
+        const { data: { publicUrl } } = sb.storage.from('email-attachments').getPublicUrl(safeName);
+        nuevos.push({ name: f.name, url: publicUrl, type: f.type, size: f.size });
+      } catch (err) { 
+        console.error(err);
+        toast.error("Error subiendo " + f.name); 
+      }
+    }
+    setEmailAttachments(nuevos);
+    setSubiendoAdjunto(false);
+    e.target.value = "";
+  };
+
+  const eliminarAdjuntoEmail = (idx) => {
+    setEmailAttachments(prev => prev.filter((_, i) => i !== idx));
   };
 
   const handleFileChange = async (e) => {
@@ -475,12 +529,86 @@ export function LeadTimeline({ deal = {}, contacto = {}, db = {}, setDb, guardar
           )}
           {composerTab === "Email" && (
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {/* SELECT ACCOUNT & TEMPLATE */}
+              <div style={{ display: "flex", gap: 8 }}>
+                <div style={{ flex: 1, position: "relative" }}>
+                   {db.email_accounts?.length > 1 ? (
+                     <select 
+                       value={emailAccountId} 
+                       onChange={(e) => setEmailAccountId(e.target.value)}
+                       style={{ width: "100%", background: T.bg1, border: `1px solid ${T.borderHi}`, borderRadius: 8, padding: "8px 12px", fontSize: 11, color: T.white, outline: "none" }}
+                     >
+                        {db.email_accounts.map(a => <option key={a.id} value={a.id}>De: {a.email}</option>)}
+                     </select>
+                   ) : (
+                     <div style={{ background: T.bg1, border: `1px solid ${T.borderHi}`, borderRadius: 8, padding: "8px 12px", fontSize: 11, color: T.whiteDim }}>
+                       De: <b style={{ color: T.white, marginLeft: 4 }}>{db.email_accounts?.[0]?.email || "Sin cuenta vinculada"}</b>
+                     </div>
+                   )}
+                </div>
+                <select 
+                  onChange={(e) => aplicarPlantilla(e.target.value)} 
+                  style={{ width: 140, background: T.bg1, border: `1px solid ${T.borderHi}`, borderRadius: 8, padding: "8px 10px", fontSize: 11, color: T.white, outline: "none" }}
+                >
+                  <option value="">— Plantilla —</option>
+                  {(db.plantillasEmail || []).map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
+                </select>
+              </div>
+
+              {/* TO / CC / BCC */}
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <div style={{ flex: 1, background: T.bg1, border: `1px solid ${T.borderHi}`, borderRadius: 8, padding: "8px 12px", fontSize: 12, color: T.white }}>
+                    Para: <b>{contacto?.email || "(Sin correo)"}</b>
+                  </div>
+                  <button onClick={() => setShowCcBcc(!showCcBcc)} style={{ background: "none", border: "none", color: T.teal, fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+                    {showCcBcc ? "Ocultar CC" : "+ CC/BCC"}
+                  </button>
+                </div>
+
+                {showCcBcc && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6, animation: "fadeIn .2s" }}>
+                    <Inp value={emailCc} onChange={e => setEmailCc(e.target.value)} placeholder="CC (Copia)" style={{ background: T.bg1, fontSize: 11 }} />
+                    <Inp value={emailBcc} onChange={e => setEmailBcc(e.target.value)} placeholder="BCC (Copia oculta)" style={{ background: T.bg1, fontSize: 11 }} />
+                  </div>
+                )}
+              </div>
+
               <Inp value={emailSubject} onChange={e => setEmailSubject(e.target.value)} placeholder="Asunto del correo..." style={{ background: T.bg1 }} />
-              <textarea value={emailBody} onChange={e => setEmailBody(e.target.value)} placeholder="Escribe tu mensaje por correo..." style={{ width: "100%", background: T.bg1, border: `1px solid ${T.borderHi}`, borderRadius: 10, padding: "12px 16px", fontSize: 14, minHeight: 100, outline: "none", resize: "vertical", color: T.white }} />
+              
+              <div style={{ position: "relative" }}>
+                <textarea 
+                  value={emailBody} 
+                  onChange={e => setEmailBody(e.target.value)} 
+                  placeholder="Escribe tu mensaje por correo..." 
+                  style={{ width: "100%", background: T.bg1, border: `1px solid ${T.borderHi}`, borderRadius: 10, padding: "12px 16px", fontSize: 14, minHeight: 140, outline: "none", resize: "vertical", color: T.white, lineHeight: 1.5 }} 
+                />
+              </div>
+
+              {/* ATTACHMENTS LIST */}
+              {emailAttachments.length > 0 && (
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                  {emailAttachments.map((a, idx) => (
+                    <div key={idx} style={{ background: T.bg2, border: `1px solid ${T.borderHi}`, borderRadius: 6, padding: "4px 8px", fontSize: 10, color: T.white, display: "flex", alignItems: "center", gap: 6 }}>
+                      <Ico k="paperclip" size={10} /> {a.name}
+                      <button onClick={() => eliminarAdjuntoEmail(idx)} style={{ background: "none", border: "none", color: T.red, cursor: "pointer", display: "flex", alignItems: "center" }}>
+                        <Ico k="x" size={12} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <span style={{ fontSize: 11, color: T.whiteDim }}>Para: <b style={{ color: T.white }}>{contacto?.email || "(Sin correo)"}</b></span>
-                <Btn onClick={handleSendEmail} disabled={enviandoEmail || !contacto?.email || !emailBody.trim()} size="sm" style={{ background: T.teal, color: "#000" }}>
-                  {enviandoEmail ? <Ico k="refresh" size={14} className="spin" /> : <Ico k="mail" size={14} />} ENVIAR EMAIL
+                <div style={{ display: "flex", gap: 8 }}>
+                  <input type="file" multiple id="attach-email" style={{ display: "none" }} onChange={handleFileChangeEmail} />
+                  <label htmlFor="attach-email" style={{ cursor: "pointer", display: "flex", alignItems: "center", gap: 6, color: T.whiteDim, fontSize: 12, fontWeight: 600 }}>
+                    {subiendoAdjunto ? <Ico k="refresh" size={16} className="spin" /> : <Ico k="paperclip" size={16} />} 
+                    Adjuntar archivos
+                  </label>
+                </div>
+                <Btn onClick={handleSendEmail} disabled={enviandoEmail || !contacto?.email || !emailBody.trim()} size="sm" style={{ background: T.teal, color: "#000", padding: "8px 20px" }}>
+                  {enviandoEmail ? <Ico k="refresh" size={16} className="spin" /> : <Ico k="paper-plane" size={16} />} ENVIAR EMAIL
                 </Btn>
               </div>
             </div>
@@ -571,14 +699,17 @@ export function LeadTimeline({ deal = {}, contacto = {}, db = {}, setDb, guardar
                     borderRadius: 14, 
                     padding: "14px 18px",
                     boxShadow: "0 4px 15px rgba(0,0,0,0.05)",
-                    transition: "all .2s"
+                    transition: "all .2s",
+                    cursor: it.type === 'email' ? 'pointer' : 'default'
                   }}
+                  onClick={() => it.type === 'email' ? setEmailExpandido(emailExpandido === it.id ? null : it.id) : null}
                   onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,255,255,0.06)"; e.currentTarget.style.transform = "translateX(4px)"; }}
                   onMouseLeave={e => { e.currentTarget.style.background = "rgba(255,255,255,0.03)"; e.currentTarget.style.transform = "none"; }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                         <span style={{ fontSize: 10, fontWeight: 900, color: colors[it.type], textTransform: "uppercase", letterSpacing: ".05em" }}>{it.type}</span>
                         {it.user && <span style={{ fontSize: 10, color: T.whiteDim }}>• {it.user}</span>}
+                        {it.type === 'email' && <Ico k={emailExpandido === it.id ? "chevron-up" : "chevron-down"} size={10} style={{ color: T.teal }} />}
                       </div>
                       <div style={{ fontSize: 10, color: T.whiteDim, fontWeight: 600 }}>{new Date((it.timestamp || 0) * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
                     </div>
@@ -588,17 +719,34 @@ export function LeadTimeline({ deal = {}, contacto = {}, db = {}, setDb, guardar
                       </div>
                     )}
                     <div style={{ fontSize: 14, color: it.type === "stage" ? T.purple : T.whiteOff, whiteSpace: "pre-wrap", lineHeight: 1.5, fontWeight: it.type === "stage" ? 700 : 500 }}>
-                      {it.body || (it.hasMedia ? "📎 Archivo adjunto" : "")}
+                      {it.type === 'email' && emailExpandido === it.id ? (
+                        <div style={{ overflowX: "auto" }} dangerouslySetInnerHTML={{ __html: it.html || it.body?.replace(/\n/g, '<br>') }} />
+                      ) : (
+                        it.body?.length > 150 ? it.body.substring(0, 150) + "..." : it.body || (it.hasMedia ? "📎 Archivo adjunto" : "")
+                      )}
                     </div>
-                    {it.type === "email" && it.asunto && (
+
+                    {it.type === 'email' && it.asunto && (
                       <div style={{ marginTop: 8, fontSize: 13, fontWeight: 800, color: T.teal }}>
                         Asunto: {it.asunto}
                       </div>
                     )}
-                    {it.type === "email" && (
-                      <div style={{ marginTop: 4, display: "flex", gap: 10, fontSize: 11, color: T.whiteDim }}>
+                    {it.type === 'email' && (
+                      <div style={{ marginTop: 4, display: "flex", flexWrap: "wrap", gap: 10, fontSize: 11, color: T.whiteDim }}>
                         <span>De: {it.de}</span>
                         <span>Para: {it.para}</span>
+                      </div>
+                    )}
+
+                    {/* EXPANDED ATTACHMENTS */}
+                    {it.type === 'email' && emailExpandido === it.id && it.adjuntos?.length > 0 && (
+                      <div style={{ marginTop: 12, pt: 12, borderTop: `1px solid ${T.borderHi}`, display: "flex", flexDirection: "column", gap: 6 }}>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: T.whiteDim }}>ADJUNTOS:</div>
+                        {it.adjuntos.map((a, i) => (
+                           <a key={i} href={a.url} target="_blank" rel="noreferrer" style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", background: "rgba(255,255,255,0.05)", borderRadius: 8, color: T.teal, fontSize: 12, textDecoration: "none" }}>
+                             <Ico k="paperclip" size={14} /> {a.name}
+                           </a>
+                        ))}
                       </div>
                     )}
                     {it.type === "task" && it.deadline && (
