@@ -62,6 +62,18 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) => {
         setShowRedactar(false);
         setSimulandoEnvio(false);
         setLogEnvio([]);
+        // Actualización inmediata para UX
+        const nuevoEnviado = {
+          id: "em_sent_" + Date.now(),
+          de: acc.email,
+          para: f.para,
+          asunto: f.asunto || "Sin asunto",
+          cuerpo: f.cuerpo,
+          fecha: new Date().toISOString(),
+          carpeta: 'enviados',
+          leido: true
+        };
+        setDb(prev => ({ ...prev, emails: [nuevoEnviado, ...prev.emails] }));
         setF({ para: "", asunto: "", cuerpo: "", cc: "", bcc: "", plantillaId: "" });
       }, 1000);
     } catch (e) {
@@ -91,9 +103,22 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) => {
       }, {
         headers: { 'ngrok-skip-browser-warning': 'true' }
       });
+
       alert("✅ Respuesta enviada.");
+      
+      // Actualización inmediata local
+      const nuevaRpta = {
+        id: "em_reply_" + Date.now(),
+        de: acc.email,
+        para: emailFocus.de,
+        asunto: emailFocus.asunto.startsWith("Re:") ? emailFocus.asunto : `Re: ${emailFocus.asunto}`,
+        cuerpo: respuestaRapida,
+        fecha: new Date().toISOString(),
+        carpeta: 'enviados',
+        leido: true
+      };
+      setDb(prev => ({ ...prev, emails: [nuevaRpta, ...prev.emails] }));
       setRespuestaRapida("");
-      // Opcional: Recargar emails para ver el enviado
     } catch (e) {
       const errorDetail = e.response?.data?.error || e.message;
       if (errorDetail.includes("Network Error")) {
@@ -221,8 +246,41 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) => {
             </div>
 
             {/* Cuerpo Lector */}
-            <div style={{ padding: "32px 24px", flex: 1, overflowY: "auto", fontSize: 15, color: T.white, lineHeight: 1.7, whiteSpace: "pre-wrap", fontFamily: "inherit" }}>
-              {emailFocus.cuerpo}
+            <div style={{ padding: "32px 24px", flex: 1, overflowY: "auto", fontSize: 15, color: T.white, lineHeight: 1.7, fontFamily: "inherit" }}>
+              {emailFocus.html ? (
+                <div 
+                  dangerouslySetInnerHTML={{ __html: emailFocus.html }} 
+                  style={{ background: "#fff", color: "#000", padding: 20, borderRadius: 8, overflowX: "auto" }}
+                />
+              ) : (
+                <div style={{ whiteSpace: "pre-wrap" }}>{emailFocus.cuerpo}</div>
+              )}
+
+              {/* Adjuntos */}
+              {emailFocus.adjuntos && emailFocus.adjuntos.length > 0 && (
+                <div style={{ marginTop: 32, borderTop: `1px solid ${T.borderHi}`, paddingTop: 20 }}>
+                  <div style={{ fontSize: 12, fontWeight: 800, color: T.whiteDim, marginBottom: 12, display: "flex", alignItems: "center", gap: 6 }}>
+                    <Ico k="paperclip" size={14} /> ADJUNTOS ({emailFocus.adjuntos.length})
+                  </div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
+                    {emailFocus.adjuntos.map((at, i) => (
+                      <a key={i} href={at.url} target="_blank" rel="noreferrer" style={{ textDecoration: "none", width: 140 }}>
+                        <div style={{ background: T.bg2, borderRadius: 8, padding: 8, border: `1px solid ${T.borderHi}`, transition: "transform .2s" }}>
+                          {at.type?.startsWith("image/") ? (
+                            <img src={at.url} alt={at.name} style={{ width: "100%", height: 80, objectFit: "cover", borderRadius: 4, marginBottom: 8 }} />
+                          ) : (
+                            <div style={{ height: 80, display: "flex", alignItems: "center", justifyContent: "center", background: T.bg3, borderRadius: 4, marginBottom: 8 }}>
+                              <Ico k="file" size={32} style={{ color: T.whiteDim }} />
+                            </div>
+                          )}
+                          <div style={{ fontSize: 11, color: T.white, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontWeight: 600 }}>{at.name}</div>
+                          <div style={{ fontSize: 10, color: T.whiteDim }}>{(at.size / 1024).toFixed(1)} KB</div>
+                        </div>
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Acción Rápida Lector */}

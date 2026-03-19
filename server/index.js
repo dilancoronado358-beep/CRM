@@ -1030,83 +1030,103 @@ async function syncEmails(accountId) {
       } else throw err;
     }
 
-    log(`✅ [IMAP] Conectado. Abriendo INBOX...`);
-    await connection.openBox('INBOX');
+    const boxesToSync = ['INBOX'];
+    if (acc.provider === 'google') boxesToSync.push('[Gmail]/Enviados');
+    else if (acc.provider === 'azure') boxesToSync.push('Sent Items');
 
-    // Buscar solo de los últimos 2 días para velocidad
-    const twoDaysAgo = new Date();
-    twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
-    const dateStr = twoDaysAgo.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
-    
-    log(`📥 [IMAP] Buscando correos desde: ${dateStr}...`);
-    const searchCriteria = [['SINCE', dateStr]];
-    const fetchOptions = { bodies: ['HEADER', 'TEXT', ''], struct: true, markSeen: false };
-    
-    const results = await connection.search(searchCriteria, fetchOptions);
-    const lastResults = (results || []).slice(-50);
-    log(`📥 [IMAP] Procesando ${lastResults.length} correos encontrados.`);
+    let totalCount = 0;
 
-    let count = 0;
-    for (const item of lastResults) {
+    for (const boxName of boxesToSync) {
       try {
-        const headerPart = item.parts.find(p => p.which === 'HEADER');
-        const fullPart = item.parts.find(p => p.which === '');
+        log(`📂 [IMAP] Abriendo carpeta: ${boxName}...`);
+        await connection.openBox(boxName);
+
+        const twoDaysAgo = new Date();
+        twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+        const dateStr = twoDaysAgo.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
         
-        const rawContent = fullPart ? fullPart.body : (headerPart ? headerPart.body : null);
-        if (!rawContent) {
-          log(`⚠️ [IMAP] Saltando UID ${item.attributes.uid} por falta de contenido.`);
-          continue;
-        }
-
-        const mail = await simpleParser(String(rawContent));
+        const searchCriteria = [['SINCE', dateStr]];
+        const fetchOptions = { bodies: ['HEADER', 'TEXT', ''], struct: true, markSeen: false };
         
-        const msgUid = item.attributes.uid.toString();
-        const fromEmail = mail.from?.value?.[0]?.address || "";
-        const subject = mail.subject || '(Sin asunto)';
-        const messageIdHeader = mail.messageId || `no-id-${Date.now()}-${msgUid}`;
-        
-        const deterministicId = "em_" + Buffer.from(messageIdHeader).toString('hex').slice(0, 32);
+        const results = await connection.search(searchCriteria, fetchOptions);
+        const lastResults = (results || []).slice(-50);
+        log(`📥 [IMAP] ${boxName}: Procesando ${lastResults.length} correos.`);
 
-        log(`🔍 [IMAP] UID ${msgUid}: "${subject}" (ID: ${deterministicId})`);
+        for (const item of lastResults) {
+          try {
+            const headerPart = item.parts.find(p => p.which === 'HEADER');
+            const fullPart = item.parts.find(p => p.which === '');
+            const rawContent = fullPart ? fullPart.body : (headerPart ? headerPart.body : null);
+            if (!rawContent) continue;
 
-        const { data: contacto } = await supabase.from('contactos').select('id').eq('email', fromEmail).maybeSingle();
-        let dealId = null;
-        if (contacto) {
-          const { data: deal } = await supabase.from('deals').select('id').eq('contacto_id', contacto.id).order('creado', { ascending: false }).limit(1).maybeSingle();
-          dealId = deal?.id;
+            const mail = await simpleParser(String(rawContent));
+            const msgUid = item.attributes.uid.toString();
+            const fromEmail = mail.from?.value?.[0]?.address || "";
+            const subject = mail.subject || '(Sin asunto)';
+            const messageIdHeader = mail.messageId || `no-id-${Date.now()}-${msgUid}`;
+            const deterministicId = "em_" + Buffer.from(messageIdHeader).toString('hex').slice(0, 32);
+
+            // Procesar Adjuntos
+            const adjuntos = [];
+            if (mail.attachments && mail.attachments.length > 0) {
+              for (const att of mail.attachments) {
+                const fileName = att.filename || `unnamed_${Date.now()}`;
+                const safeName = `${deterministicId}_${fileName.replace(/[^a-z0-9.]/gi, '_')}`;
+                
+                const { data: uploadData, error: upErr } = await supabase.storage
+                  .from('email-attachments')
+                  .upload(safeName, att.content, { 
+                    contentType: att.contentType,
+                    upsert: true
+                  });
+
+                if (!upErr) {
+                  const { data: { publicUrl } } = supabase.storage.from('email-attachments').getPublicUrl(safeName);
+                  adjuntos.push({ name: fileName, url: publicUrl, type: att.contentType, size: att.size });
+                }
+              }
+            }
+
+            const { data: contacto } = await supabase.from('contactos').select('id').eq('email', fromEmail).maybeSingle();
+            let dealId = null;
+            if (contacto) {
+              const { data: deal } = await supabase.from('deals').select('id').eq('contacto_id', contacto.id).order('creado', { ascending: false }).limit(1).maybeSingle();
+              dealId = deal?.id;
+            }
+
+            const { error: insertErr } = await supabase.from('emails').upsert({
+              id: deterministicId,
+              user_id: acc.user_id,
+              org_id: acc.org_id,
+              account_id: accountId,
+              de: fromEmail,
+              para: mail.to?.value?.[0]?.address || acc.email,
+              asunto: subject,
+              fecha: mail.date ? mail.date.toISOString() : new Date().toISOString(),
+              cuerpo: mail.text || "",
+              html: mail.html || "",
+              leido: boxName !== 'INBOX',
+              carpeta: boxName === 'INBOX' ? 'entrada' : 'enviados',
+              mensaje_id: messageIdHeader,
+              deal_id: dealId,
+              contacto_id: contacto?.id,
+              adjuntos: adjuntos
+            }, { onConflict: 'id' });
+
+            if (!insertErr) totalCount++;
+          } catch (msgErr) {
+            log(`⚠️ [IMAP] Error msg UID ${item.attributes?.uid}: ${msgErr.message}`);
+          }
         }
-
-        const { error: insertErr } = await supabase.from('emails').upsert({
-          id: deterministicId,
-          user_id: acc.user_id,
-          org_id: acc.org_id,
-          account_id: accountId,
-          de: fromEmail,
-          para: mail.to?.value?.[0]?.address || acc.email,
-          asunto: subject,
-          fecha: mail.date ? mail.date.toISOString() : new Date().toISOString(),
-          cuerpo: mail.text || mail.html || "",
-          leido: false,
-          carpeta: 'entrada',
-          mensaje_id: messageIdHeader,
-          deal_id: dealId,
-          contacto_id: contacto?.id
-        }, { onConflict: 'id' });
-
-        if (!insertErr) {
-          count++;
-        } else {
-          log(`❌ [IMAP] Error upsert UID ${msgUid}: ${insertErr.message}`);
-        }
-      } catch (msgErr) {
-        log(`⚠️ [IMAP] Error procesando UID ${item.attributes.uid}: ${msgErr.message}`);
+      } catch (boxErr) {
+        log(`⚠️ [IMAP] Error abriendo/procesando ${boxName}: ${boxErr.message}`);
       }
     }
 
-    log(`📩 [IMAP] Sincronización finalizada con éxito (${count} procesados).`);
+    log(`📩 [IMAP] Sincronización total finalizada (${totalCount} procesados).`);
     connection.end();
     await supabase.from('email_accounts').update({ last_sync: new Date().toISOString() }).eq('id', accountId);
-    return { success: true, count };
+    return { success: true, count: totalCount };
   } catch (e) {
     log(`❌ [IMAP Error]: ${e.message}`);
     console.error("❌ [IMAP Error]:", e.message);
@@ -1238,10 +1258,10 @@ app.post('/api/email/send', async (req, res) => {
 
     logFile(`✅ [SMTP] Email enviado! ID: ${info.messageId}`);
 
-    // Guardar en 'enviados' con esquema corregido y org_id/user_id
-    // Guardar en 'enviados' con upsert para evitar errores de clave duplicada (mensaje_id)
+    const deterministicId = "em_" + Buffer.from(info.messageId).toString('hex').slice(0, 32);
+
     const { error: insErr } = await supabase.from('emails').upsert({
-      id: "em_sent_" + Date.now(),
+      id: deterministicId,
       account_id: accountId,
       user_id: acc.user_id,
       org_id: acc.org_id,
@@ -1250,10 +1270,12 @@ app.post('/api/email/send', async (req, res) => {
       para: to,
       asunto: subject,
       cuerpo: body,
+      html: html || body.replace(/\n/g, '<br>'),
       fecha: new Date().toISOString(),
       leido: true,
-      mensaje_id: info.messageId
-    }, { onConflict: 'mensaje_id' });
+      mensaje_id: info.messageId,
+      adjuntos: [] // Inicialmente vacío si se envía desde aquí sin adjuntos complejos
+    }, { onConflict: 'id' });
 
     if (insErr) {
       logFile(`⚠️ [SMTP] Email enviado pero falló persistencia: ${insErr.message}`);
