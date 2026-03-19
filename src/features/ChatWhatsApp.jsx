@@ -12,6 +12,7 @@ export function ChatWhatsApp({ db, setDb, guardarEnSupa, eliminarDeSupa, t }) {
   const socketRef = useRef(null);
 
   const WA_SERVER_URL = getApiUrl(db);
+  const orgUrl = db.organizacion?.find(o => o.id === db.usuario?.org_id)?.wa_server_url;
 
   const [chats, setChats] = useState([]);
   const [activeChatId, setActiveChatId] = useState(null);
