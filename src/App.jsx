@@ -545,7 +545,7 @@ export default function App() {
       />
 
       {/* NOTIFICACIONES MODERNAS (SILEO) - PHYSICS BASED GOOEY TOASTS */}
-      <Toaster position="top-right" />
+      <Toaster position="top-right" theme="dark" />
 
       <ConfirmModal
         open={showLogoutConfirm}

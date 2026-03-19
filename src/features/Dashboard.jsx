@@ -67,7 +67,7 @@ export const Dashboard = ({ db, t = s => s }) => {
         gridColumn: `span ${span}`,
         minHeight: height || "auto",
         position: "relative",
-        animation: "fadeIn .4s ease"
+        // animation: "fadeIn .4s ease" // Deshabilitado para evitar parpadeo en re-renders
       }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div style={{ fontWeight: 800, fontSize: 16, color: T.white, display: "flex", alignItems: "center", gap: 10 }}>
@@ -273,7 +273,7 @@ export const Dashboard = ({ db, t = s => s }) => {
 
       {/* KPI Row */}
       {widgets.kpis && (
-        <div style={{ display: "flex", gap: 12, flexWrap: "wrap", animation: "fadeIn .3s ease" }}>
+        <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
           <KPI label={t("Pipeline Activo")} value={money(activos.reduce((s, d) => s + d.valor, 0))} sub={`${activos.length} oportunidades`} color={T.teal} icon="funnel" />
           <KPI label={t("Total Ganado")} value={money(ganados.reduce((s, d) => s + d.valor, 0))} sub={`${ganados.length} deals cerrados`} color={T.green} icon="trend" />
           <KPI label={t("Tasa de Conversión")} value={`${conv}%`} sub="total histórico" color={T.amber} icon="chart" />
