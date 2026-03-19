@@ -939,14 +939,21 @@ async function refreshAccessToken(accountId) {
     const res = await axios.post(url, new URLSearchParams(body));
     const { access_token, expires_in } = res.data;
 
+    if (!access_token) {
+      logFile(`❌ [Refresh] No se recibió access_token para ${accountId}`);
+      return null;
+    }
+
     const updates = {
       access_token,
       expires_at: new Date(Date.now() + (expires_in * 1000)).toISOString()
     };
     await supabase.from('email_accounts').update(updates).eq('id', accountId);
+    logFile(`✅ [Refresh] Token renovado con éxito para ${accountId}`);
     return access_token;
   } catch (e) {
-    console.error(`❌ Error refrescando token:`, e.response?.data || e.message);
+    const errorMsg = e.response?.data ? JSON.stringify(e.response.data) : e.message;
+    logFile(`❌ Error refrescando token para ${accountId}: ${errorMsg}`);
     return null;
   }
 }
@@ -991,9 +998,18 @@ async function syncEmails(accountId) {
 
     if (acc.access_token) {
       let token = acc.access_token;
-      if (acc.expires_at && new Date(acc.expires_at) <= new Date()) {
+      const isExpired = !acc.expires_at || new Date(acc.expires_at) <= new Date();
+      if (isExpired) {
+        log(`🔄 [IMAP] Token expirado para ${accountId}. Refrescando...`);
         token = await refreshAccessToken(accountId);
       }
+      
+      if (!token) {
+        log(`❌ [IMAP] No se pudo obtener token para ${accountId}`);
+        delete syncingAccounts[accountId];
+        return { error: "Authentication failed (expired token)" };
+      }
+      
       config.imap.xoauth2 = Buffer.from(`user=${acc.email}\x01auth=Bearer ${token}\x01\x01`).toString('base64');
     } else {
       config.imap.password = acc.password_hash;
@@ -1035,9 +1051,9 @@ async function syncEmails(accountId) {
             const { data: deal } = await supabase.from('deals').select('id').eq('contacto_id', contacto.id).order('creado', { ascending: false }).limit(1).maybeSingle();
             dealId = deal?.id;
           }
-          await supabase.from('emails').upsert({
+          const { error: insertErr } = await supabase.from('emails').upsert({
             id: "em_" + Date.now() + "_" + msgId,
-            account_id: accountId,
+            account_id: accountId, // This might still fail until SQL is run, but we will see the error now
             user_id: acc.user_id,
             org_id: acc.org_id,
             carpeta: 'entrada',
@@ -1049,13 +1065,17 @@ async function syncEmails(accountId) {
             fecha: mail.date || new Date().toISOString(),
             leido: false,
             mensaje_id: mail.messageId || msgId,
-            contacto_id: contacto?.id || null,
+            contacto_id: contacto?.id || null, // Aligning with snake_case which we will enforce in SQL
             deal_id: dealId || null
           }, { onConflict: 'mensaje_id' });
 
-          count++;
+          if (insertErr) {
+            log(`❌ [IMAP Error] Fallo al guardar email ${msgId}: ${insertErr.message}`);
+          } else {
+            count++;
+          }
         } catch (msgErr) {
-          log(`⚠️ Error procesando mensaje: ${msgErr.message}`);
+          log(`⚠️ Error procesando mensaje IMAP: ${msgErr.message}`);
         }
       }
     }
@@ -1253,12 +1273,25 @@ app.post('/api/email/test-connection', async (req, res) => {
 });
 
 // Listener en tiempo real para disparar sincronización desde el frontend sin depender del puerto 3001
+// Debounce simple para el sync en tiempo real (evitar bucle con last_sync)
+const lastSyncTime = {};
+
 supabase
   .channel('email_sync_triggers')
   .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'email_accounts' }, async (payload) => {
-    logFile(`🔔 [Realtime] Cambio detectado en cuenta ${payload.new.id}. disparando sync...`);
-    await syncEmails(payload.new.id);
-    if (payload.new.sync_calendar) await syncCalendar(payload.new.id);
+    const accId = payload.new.id;
+    const now = Date.now();
+    
+    // Ignorar si se sincronizó hace menos de 60 segundos
+    if (lastSyncTime[accId] && (now - lastSyncTime[accId] < 60000)) {
+      // logFile(`⏳ [Realtime] Ignorando trigger para ${accId} (en cooldown).`);
+      return;
+    }
+    
+    lastSyncTime[accId] = now;
+    logFile(`🔔 [Realtime] Cambio detectado en cuenta ${accId}. disparando sync...`);
+    await syncEmails(accId);
+    if (payload.new.sync_calendar) await syncCalendar(accId);
   })
   .subscribe((status) => {
     logFile(`📡 [Realtime Subscription Status]: ${status}`);
