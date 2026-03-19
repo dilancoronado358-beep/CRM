@@ -3,7 +3,7 @@ import { T } from "../theme";
 import { uid, uuid } from "../utils";
 import { Btn, Inp, Tarjeta, EncabezadoSeccion, Ico, Sel, Modal, Campo, ConfirmModal } from "../components/ui";
 import { sb } from "../hooks/useSupaState";
-import { toast } from "sonner";
+import { sileo as toast } from "../utils/sileo";
 
 const FIELD_TYPES = [
   { value: "text", label: "Texto Corto" },

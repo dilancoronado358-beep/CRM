@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { T } from "../../theme";
 import { Av, Chip, Ico } from "./index";
-import { toast } from "sonner";
+import { sileo as toast } from "../../utils/sileo";
 
 export const SpotlightSearch = ({ db, open, onClose, onNavigate, onLogout, applyTheme }) => {
   const [q, setQ] = useState("");

@@ -4,7 +4,9 @@ import { T, applyTheme } from "./theme";
 
 import { Av, Btn, ControlSegmentado, IndSupa, Ico, SpotlightSearch, ConfirmModal } from "./components/ui";
 import { io } from "socket.io-client";
-import { Toaster, toast } from "sonner";
+import { Toaster } from "sileo";
+import "sileo/styles.css";
+import { sileo } from "./utils/sileo";
 
 // Features
 import { Dashboard } from "./features/Dashboard";
@@ -256,7 +258,8 @@ export default function App() {
 
     socket.on("whatsapp_message", (msg) => {
       if (!msg.fromMe) {
-        toast.info("Nuevo WhatsApp", {
+        sileo.info({
+          title: "Nuevo WhatsApp",
           description: msg.body.length > 50 ? msg.body.slice(0, 50) + "..." : msg.body,
         });
       }
@@ -541,24 +544,8 @@ export default function App() {
         applyTheme={applyTheme}
       />
 
-      {/* NOTIFICACIONES MODERNAS (SONNER) - ULTRA MODERN GLASSMOPHISM */}
-      <Toaster
-        richColors
-        position="top-right"
-        toastOptions={{
-          style: {
-            background: 'rgba(15, 23, 42, 0.7)',
-            backdropFilter: 'blur(12px) saturate(180%)',
-            border: '1px solid rgba(255, 255, 255, 0.12)',
-            color: '#fff',
-            borderRadius: '16px',
-            boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
-            fontSize: '14px',
-            padding: '16px',
-            fontWeight: 500
-          },
-        }}
-      />
+      {/* NOTIFICACIONES MODERNAS (SILEO) - PHYSICS BASED GOOEY TOASTS */}
+      <Toaster position="top-right" />
 
       <ConfirmModal
         open={showLogoutConfirm}

@@ -4,7 +4,7 @@ import { uid, uuid } from "../utils";
 import { Btn, Inp, Modal, Ico, Campo, ConfirmModal } from "../components/ui";
 import { sb } from "../hooks/useSupaState";
 import { FormularioPublico } from "./FormularioPublico";
-import { toast } from "sonner";
+import { sileo as toast } from "../utils/sileo";
 
 const BASE_URL = "https://crm.ensing.lat";
 

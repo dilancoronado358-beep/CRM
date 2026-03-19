@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { createClient } from "@supabase/supabase-js";
 import { SEMILLA } from "../data/seed";
 import { applyTheme } from "../theme";
-import { toast } from "sonner";
+import { sileo as toast } from "../utils/sileo";
 
 /* ═══════════════════════════════════════════
    SUPABASE

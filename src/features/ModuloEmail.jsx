@@ -3,6 +3,7 @@ import { T } from "../theme";
 import { uid, fdtm, fdate } from "../utils";
 import { Av, Chip, Btn, Inp, Sel, Campo, Modal, Tarjeta, Vacio, ControlSegmentado, Ico } from "../components/ui";
 import axios from "axios";
+import { sileo as toast } from "../utils/sileo";
 
 export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) => {
   const [carpeta, setCarpeta] = useState("entrada");
@@ -202,26 +203,30 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) => {
   const msgs = db.emails.filter(e => e.carpeta === carpeta).sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
 
   return (
-    <div style={{ display: "flex", gap: 24, height: "calc(100vh - 120px)" }}>
-      {/* SIDEBAR EMAIL ULTRA */}
-      <div style={{ width: 240, display: "flex", flexDirection: "column", gap: 8, flexShrink: 0 }}>
-        <button onClick={() => setShowRedactar(true)} style={{ marginBottom: 16, background: T.tealGlow, color: T.teal, border: `1px solid ${T.tealSoft}`, padding: "12px 16px", borderRadius: 10, fontWeight: 800, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, transition: "all .2s", boxShadow: `0 4px 15px ${T.teal}20` }}>
-          <Ico k="edit" size={16} /> NUEVO CORREO (C)
+    <div style={{ display: "flex", gap: 24, height: "calc(100vh - 120px)", padding: "0 10px" }}>
+      {/* SIDEBAR EMAIL ULTRA - GLASS STYLE */}
+      <div style={{ width: 250, display: "flex", flexDirection: "column", gap: 6, flexShrink: 0, background: "rgba(255,255,255,0.02)", backdropFilter: "blur(10px)", borderRadius: 20, padding: 12, border: `1px solid ${T.whiteFade}15` }}>
+        <button onClick={() => setShowRedactar(true)} 
+          style={{ width: "100%", marginBottom: 20, background: T.teal, color: "#fff", border: "none", padding: "14px", borderRadius: 14, fontWeight: 900, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 10, transition: "all .3s cubic-bezier(0.4, 0, 0.2, 1)", boxShadow: `0 8px 25px ${T.teal}40`, transform: "translateY(0)" }}
+          onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = `0 12px 30px ${T.teal}60`; }}
+          onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = `0 8px 25px ${T.teal}40`; }}
+        >
+          <Ico k="edit" size={18} /> REDACTAR
         </button>
 
         <div style={{ fontSize: 11, fontWeight: 800, color: T.whiteDim, textTransform: "uppercase", letterSpacing: ".1em", padding: "10px 14px", marginTop: 8 }}>Favoritos</div>
         {[
-          { id: "entrada", label: "Bandeja Entrada", icon: "inbox" },
-          { id: "enviados", label: "Enviados", icon: "send" },
-          { id: "borradores", label: "Borradores", icon: "note" }
+          { id: "entrada", label: "Inbox", icon: "inbox" },
+          { id: "enviados", label: "Sent", icon: "send" },
+          { id: "borradores", label: "Drafts", icon: "note" }
         ].map(c => {
           const count = c.id === "entrada" ? db.emails.filter(e => e.carpeta === "entrada" && !e.leido).length : 0;
           const act = carpeta === c.id;
           return (
             <button key={c.id} onClick={() => { setCarpeta(c.id); setEmailFocus(null); }}
-              style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", borderRadius: 8, border: "none", background: act ? T.bg2 : "transparent", color: act ? T.white : T.whiteOff, fontWeight: act ? 800 : 600, cursor: "pointer", transition: "all .15s", fontFamily: "inherit" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}><Ico k={c.icon} size={15} style={{ color: act ? T.teal : T.whiteDim }} />{c.label}</div>
-              {count > 0 && <span style={{ background: T.teal, color: "#fff", borderRadius: 12, padding: "2px 8px", fontSize: 10, fontWeight: 800 }}>{count}</span>}
+              style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 16px", borderRadius: 12, border: "none", background: act ? "rgba(255,255,255,0.06)" : "transparent", color: act ? T.white : T.whiteFade, fontWeight: act ? 800 : 600, cursor: "pointer", transition: "all .2s", fontFamily: "inherit", textAlign: "left" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}><Ico k={c.icon} size={16} style={{ color: act ? T.teal : T.whiteFade, opacity: act ? 1 : 0.6 }} />{c.label}</div>
+              {count > 0 && <span style={{ background: T.teal, color: "#fff", borderRadius: 8, padding: "2px 6px", fontSize: 10, fontWeight: 900, boxShadow: `0 0 10px ${T.teal}50` }}>{count}</span>}
             </button>
           );
         })}
@@ -248,18 +253,22 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) => {
             </div>
           </div>
 
-          <div style={{ flex: 1, overflowY: "auto", background: T.bg1 }}>
+          <div style={{ flex: 1, overflowY: "auto", background: "transparent", padding: "10px 14px" }}>
             {msgs.length === 0 ? <Vacio text="Carpeta vacía." /> : msgs.map(e => (
-              <div key={e.id} onClick={() => { setEmailFocus(e); marcarLeido(e.id); }} style={{ padding: "16px 20px", borderBottom: `1px solid ${T.borderHi}`, cursor: "pointer", background: emailFocus?.id === e.id ? T.bg2 : (!e.leido && carpeta === "entrada" ? T.teal + "08" : "transparent"), transition: "background .15s", position: "relative" }}>
-                {!e.leido && carpeta === "entrada" && <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 3, background: T.teal }} />}
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, alignItems: "center" }}>
-                  <div style={{ fontSize: 14, fontWeight: !e.leido && carpeta === "entrada" ? 800 : 600, color: !e.leido && carpeta === "entrada" ? T.white : T.whiteOff, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              <div key={e.id} onClick={() => { setEmailFocus(e); marcarLeido(e.id); }} 
+                style={{ padding: "14px 18px", borderRadius: 14, marginBottom: 4, cursor: "pointer", background: emailFocus?.id === e.id ? "rgba(255,255,255,0.06)" : "transparent", border: `1px solid ${emailFocus?.id === e.id ? T.whiteFade + '20' : 'transparent'}`, transition: "all .2s cubic-bezier(0.16, 1, 0.3, 1)", position: "relative" }}
+                onMouseEnter={e => { if (emailFocus?.id !== e.id) e.currentTarget.style.background = "rgba(255,255,255,0.03)"; }}
+                onMouseLeave={e => { if (emailFocus?.id !== e.id) e.currentTarget.style.background = "transparent"; }}
+              >
+                {!e.leido && carpeta === "entrada" && <div style={{ position: "absolute", left: 6, top: "50%", transform: "translateY(-50%)", width: 6, height: 6, borderRadius: "50%", background: T.teal, boxShadow: `0 0 10px ${T.teal}` }} />}
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4, alignItems: "center" }}>
+                  <div style={{ fontSize: 13, fontWeight: !e.leido && carpeta === "entrada" ? 900 : 600, color: !e.leido && carpeta === "entrada" ? T.white : T.whiteOff, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>
                     {carpeta === "entrada" ? e.de : e.para}
                   </div>
-                  <div style={{ fontSize: 11, color: T.whiteDim, flexShrink: 0, fontWeight: 600 }}>{fdate(e.fecha)}</div>
+                  <div style={{ fontSize: 11, color: T.whiteDim, flexShrink: 0, fontWeight: 600, opacity: 0.7 }}>{fdate(e.fecha)}</div>
                 </div>
-                <div style={{ fontSize: 13, fontWeight: !e.leido && carpeta === "entrada" ? 700 : 500, color: T.white, marginBottom: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{e.asunto}</div>
-                <div style={{ fontSize: 12, color: T.whiteDim, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{e.cuerpo}</div>
+                <div style={{ fontSize: 13, fontWeight: !e.leido && carpeta === "entrada" ? 700 : 500, color: T.white, marginBottom: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{e.asunto}</div>
+                <div style={{ fontSize: 12, color: T.whiteDim, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", opacity: 0.6 }}>{e.cuerpo}</div>
               </div>
             ))}
           </div>
@@ -269,35 +278,35 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) => {
         {emailFocus && (
           <div style={{ flex: 1, display: "flex", flexDirection: "column", background: T.bg1, minWidth: 400 }}>
             {/* Cabecera Lector */}
-            <div style={{ padding: "24px", borderBottom: `1px solid ${T.borderHi}`, display: "flex", flexDirection: "column", gap: 16 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                <div style={{ fontSize: 24, fontWeight: 800, color: T.white, lineHeight: 1.2 }}>{emailFocus.asunto || "(Sin asunto)"}</div>
-                <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
-                  <Btn variant="fantasma" size="sm" onClick={() => setEmailFocus(null)}><Ico k="x" size={16} /></Btn>
-                  <Btn variant="fantasma" size="sm" onClick={() => eliminar(emailFocus.id)}><Ico k="trash" size={16} style={{ color: T.red }} /></Btn>
+            <div style={{ padding: "32px", display: "flex", flexDirection: "column", gap: 24 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 20 }}>
+                <div style={{ fontSize: 28, fontWeight: 900, color: T.white, lineHeight: 1.1, letterSpacing: "-0.02em" }}>{emailFocus.asunto || "(Sin asunto)"}</div>
+                <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+                  <Btn variant="fantasma" size="sm" onClick={() => setEmailFocus(null)} style={{ background: "rgba(255,255,255,0.05)", borderRadius: 10 }}><Ico k="x" size={18} /></Btn>
+                  <Btn variant="fantasma" size="sm" onClick={() => eliminar(emailFocus.id)} style={{ background: "rgba(239,68,68,0.1)", borderRadius: 10 }}><Ico k="trash" size={18} style={{ color: T.red }} /></Btn>
                 </div>
               </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 12, background: T.bg2, padding: "12px 16px", borderRadius: 10 }}>
-                <Av text={carpeta === "entrada" ? emailFocus.de : emailFocus.para} color={T.teal} size={40} fs={14} />
+              <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                <Av text={carpeta === "entrada" ? emailFocus.de : emailFocus.para} color={T.teal} size={48} fs={16} style={{ boxShadow: `0 4px 15px ${T.teal}30` }} />
                 <div style={{ flex: 1 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <div style={{ fontSize: 14, fontWeight: 800, color: T.white }}>{carpeta === "entrada" ? emailFocus.de : db.usuario?.name}</div>
-                    <div style={{ fontSize: 11, color: T.whiteDim, fontWeight: 600 }}>{fdtm(emailFocus.fecha)}</div>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 2 }}>
+                    <div style={{ fontSize: 15, fontWeight: 800, color: T.white }}>{carpeta === "entrada" ? emailFocus.de : db.usuario?.name}</div>
+                    <div style={{ fontSize: 12, color: T.whiteFade, fontWeight: 600 }}>{fdtm(emailFocus.fecha)}</div>
                   </div>
-                  <div style={{ fontSize: 12, color: T.whiteDim }}>Para: <span style={{ color: T.whiteOff }}>{carpeta === "entrada" ? "Mí" : emailFocus.para}</span></div>
+                  <div style={{ fontSize: 13, color: T.whiteDim }}>Para: <span style={{ color: T.whiteOff, fontWeight: 600 }}>{carpeta === "entrada" ? "Mí" : emailFocus.para}</span></div>
                 </div>
               </div>
             </div>
 
             {/* Cuerpo Lector */}
-            <div style={{ padding: "32px 24px", flex: 1, overflowY: "auto", fontSize: 15, color: T.white, lineHeight: 1.7, fontFamily: "inherit" }}>
+            <div style={{ padding: "0 32px 32px", flex: 1, overflowY: "auto", fontSize: 16, color: T.whiteOff, lineHeight: 1.8, fontFamily: "inherit" }}>
               {emailFocus.html ? (
                 <div 
                   dangerouslySetInnerHTML={{ __html: emailFocus.html }} 
-                  style={{ background: "#fff", color: "#000", padding: 20, borderRadius: 8, overflowX: "auto" }}
+                  style={{ background: "#fff", color: "#111", padding: "32px", borderRadius: 16, overflowX: "auto", boxShadow: "0 10px 40px rgba(0,0,0,0.1)" }}
                 />
               ) : (
-                <div style={{ whiteSpace: "pre-wrap" }}>{emailFocus.cuerpo}</div>
+                <div style={{ whiteSpace: "pre-wrap", background: "rgba(255,255,255,0.02)", padding: 24, borderRadius: 16, border: `1px solid ${T.whiteFade}10` }}>{emailFocus.cuerpo}</div>
               )}
 
               {/* Adjuntos */}
@@ -398,9 +407,9 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) => {
               </div>
             </div>
 
-            <textarea value={f.cuerpo} onChange={s("cuerpo")} placeholder="Escribe tu mensaje aquí..." style={{ border: "none", borderBottomLeftRadius: 10, borderBottomRightRadius: 10, outline: "none", background: T.bg1, color: T.white, padding: 24, fontSize: 15, fontFamily: "inherit", minHeight: 300, resize: "vertical", lineHeight: 1.6 }} />
+            <textarea value={f.cuerpo} onChange={s("cuerpo")} placeholder="Escribe tu mensaje aquí..." style={{ border: "none", outline: "none", background: "rgba(255,255,255,0.02)", color: T.white, padding: "32px", fontSize: 16, fontFamily: "inherit", minHeight: 350, resize: "none", lineHeight: 1.8 }} />
 
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 24px", background: T.bg2, borderTop: `1px solid ${T.borderHi}` }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "20px 32px", background: "rgba(0,0,0,0.2)", borderTop: `1px solid ${T.whiteFade}10`, borderBottomLeftRadius: 20, borderBottomRightRadius: 20 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
                 <div style={{ position: "relative" }}>
                    <input type="file" multiple id="email-attach-input" style={{ display: "none" }} onChange={handleFileChange} />
