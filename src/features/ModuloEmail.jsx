@@ -51,6 +51,8 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) => {
         to: f.para,
         subject: f.asunto || "Sin asunto",
         body: f.cuerpo
+      }, {
+        headers: { 'ngrok-skip-browser-warning': 'true' }
       });
 
       setLogEnvio(prev => [...prev, `[SEND] Transmitiendo payload cifrado...`]);
@@ -86,6 +88,8 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) => {
         to: emailFocus.de,
         subject: emailFocus.asunto.startsWith("Re:") ? emailFocus.asunto : `Re: ${emailFocus.asunto}`,
         body: respuestaRapida
+      }, {
+        headers: { 'ngrok-skip-browser-warning': 'true' }
       });
       alert("✅ Respuesta enviada.");
       setRespuestaRapida("");

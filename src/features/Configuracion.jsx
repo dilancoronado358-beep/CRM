@@ -89,6 +89,7 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
     const finalUrl = fWaUrl || orgActual?.wa_server_url || `${protocol}//${window.location.hostname}:3001`;
     socketRef.current = io(finalUrl, {
       transports: ['websocket'],
+      extraHeaders: { "ngrok-skip-browser-warning": "true" },
       autoConnect: true
     });
     const socket = socketRef.current;
