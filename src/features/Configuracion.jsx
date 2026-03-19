@@ -164,7 +164,7 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
   }, [db.usuario?.id]);
 
   const handleConnectEmail = async (provider) => {
-    const API_URL = getApiUrl();
+    const API_URL = getApiUrl(db);
     const userId = db.usuario?.id;
     const orgId = db.usuario?.org_id;
 
