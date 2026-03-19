@@ -14,7 +14,7 @@ export const sb = createClient(SUPA_URL, SUPA_KEY);
 // Tablas que se sincronizan con Supabase
 // Tablas críticas para el arranque inmediato
 const TABLAS_CRITICAS = [
-  "usuario", "organizacion", "pipelines", "contactos", "deals", "tareas", "empresaConfigs", "usuariosApp"
+  "organizacion", "pipelines", "contactos", "deals", "tareas", "empresaConfigs", "usuariosApp"
 ];
 
 // Tablas que pueden cargarse en segundo plano (histórico/pesadas)
@@ -140,7 +140,7 @@ export function useSupaState() {
     } finally {
       setCargando(false);
     }
-  }, [setDb, db.usuario?.id, db.usuario?.org_id]);
+  }, [setDb, session?.user?.id, db.usuario?.org_id]);
 
   // ── Sembrar datos iniciales de seed.js en Supabase ────────────────────────
   const sembrarDatos = async () => {
