@@ -19,6 +19,7 @@ export function LeadTimeline({ deal = {}, contacto = {}, db = {}, setDb, guardar
   const [waMsg, setWaMsg] = useState("");
   const [emailSubject, setEmailSubject] = useState("");
   const [emailBody, setEmailBody] = useState("");
+  const [emailTo, setEmailTo] = useState("");
   const [emailCc, setEmailCc] = useState("");
   const [emailBcc, setEmailBcc] = useState("");
   const [emailAttachments, setEmailAttachments] = useState([]);
@@ -292,8 +293,14 @@ export function LeadTimeline({ deal = {}, contacto = {}, db = {}, setDb, guardar
     }
   }, [db.email_accounts]);
 
+  useEffect(() => {
+    if (contacto?.email) {
+      setEmailTo(contacto.email);
+    }
+  }, [contacto?.email]);
+
   const handleSendEmail = async () => {
-    if (!emailBody.trim() || !contacto?.email) return toast.error("Cuerpo o destinatario vacío.");
+    if (!emailBody.trim() || !emailTo.trim()) return toast.error("Cuerpo o destinatario vacío.");
     
     const accId = emailAccountId || db.email_accounts?.[0]?.id;
     if (!accId) return toast.error("No hay cuenta vinculada");
@@ -303,7 +310,7 @@ export function LeadTimeline({ deal = {}, contacto = {}, db = {}, setDb, guardar
       const API_URL = getApiUrl(db);
       await axios.post(`${API_URL}/api/email/send`, {
         accountId: accId,
-        to: contacto.email,
+        to: emailTo || contacto?.email,
         cc: emailCc,
         bcc: emailBcc,
         subject: emailSubject || "(Sin asunto)",
@@ -319,6 +326,7 @@ export function LeadTimeline({ deal = {}, contacto = {}, db = {}, setDb, guardar
       setEmailCc("");
       setEmailBcc("");
       setEmailAttachments([]);
+      setEmailTo(contacto?.email || "");
       cargarTimeline();
     } catch (e) {
       toast.error("Error al enviar email: " + (e.response?.data?.error || e.message));
@@ -558,8 +566,13 @@ export function LeadTimeline({ deal = {}, contacto = {}, db = {}, setDb, guardar
               {/* TO / CC / BCC */}
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <div style={{ flex: 1, background: T.bg1, border: `1px solid ${T.borderHi}`, borderRadius: 8, padding: "8px 12px", fontSize: 12, color: T.white }}>
-                    Para: <b>{contacto?.email || "(Sin correo)"}</b>
+                  <div style={{ flex: 1 }}>
+                    <Inp 
+                      value={emailTo} 
+                      onChange={e => setEmailTo(e.target.value)} 
+                      placeholder="Para (ej: mail1@test.com, mail2@test.com)" 
+                      style={{ background: T.bg1, fontSize: 12, fontWeight: 700 }} 
+                    />
                   </div>
                   <button onClick={() => setShowCcBcc(!showCcBcc)} style={{ background: "none", border: "none", color: T.teal, fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
                     {showCcBcc ? "Ocultar CC" : "+ CC/BCC"}
