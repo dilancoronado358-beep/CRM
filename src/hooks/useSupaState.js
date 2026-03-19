@@ -12,14 +12,30 @@ const SUPA_KEY = "sb_publishable_wKUbf7IFOoH4HIUayIAJdQ_Boj1jgZa";
 export const sb = createClient(SUPA_URL, SUPA_KEY);
 
 // Tablas que se sincronizan con Supabase
-const TABLAS_SUPA = [
-  "contactos", "empresas", "deals", "actividades", "tareas", "emails", "notas",
-  "usuario", "empresaConfigs", "usuariosApp", "productos",
-  "pipelines", "plantillasEmail", "campos_personalizados", "automatizaciones",
+// Tablas críticas para el arranque inmediato
+const TABLAS_CRITICAS = [
+  "usuario", "organizacion", "pipelines", "contactos", "deals", "tareas", "empresaConfigs", "usuariosApp"
+];
+
+// Tablas que pueden cargarse en segundo plano (histórico/pesadas)
+const TABLAS_FONDO = [
+  "actividades", "emails", "email_accounts", "notas", "productos",
+  "plantillasEmail", "campos_personalizados", "automatizaciones",
   "whatsapp_automations", "whatsapp_messages", "finanzas_gastos", "finanzas_comisiones",
   "notificaciones", "auditoria", "api_settings", "webhook_subscriptions",
-  "email_accounts", "landing_pages", "formularios_publicos", "organizacion"
+  "landing_pages", "formularios_publicos"
 ];
+
+const TABLAS_SUPA = [...TABLAS_CRITICAS, ...TABLAS_FONDO];
+
+// Límites para evitar sobrecarga de datos históricos
+const LIMITS = {
+  auditoria: 50,
+  actividades: 100,
+  whatsapp_messages: 100,
+  notificaciones: 50,
+  emails: 100
+};
 
 /* ═══════════════════════════════════════════
    HOOK: ESTADO EXCLUSIVAMENTE SUPABASE
@@ -69,77 +85,59 @@ export function useSupaState() {
   }, []);
 
 
-  // ── Cargar todos los datos desde Supabase ──────────────────────────────────
+  // ── Cargar datos desde Supabase con prioridad ─────────────────────────────
   const cargarDeSupa = useCallback(async (orgIdForzado) => {
     try {
       setCargando(true);
       const oi = orgIdForzado || db.usuario?.org_id;
-      console.log(`📡 [cargarDeSupa] Contexto: ${oi || "GLOBAL"} | Tablas: ${TABLAS_SUPA.length}`);
+      console.log(`📡 [cargarDeSupa] Iniciando carga priorizada...`);
 
-      const resultados = await Promise.all(
-        TABLAS_SUPA.map((tabla) => {
+      const fetchData = async (tablas) => {
+        const promesas = tablas.map((tabla) => {
           let q = sb.from(tabla).select("*");
-          // Si estamos en un contexto de organización, filtrar tablas operativas
           if (oi && !["organizacion", "recordatorios"].includes(tabla)) {
             q = q.eq("org_id", oi);
-            // FILTRO PERSONAL PARA EMAILS
-            if (["emails", "email_accounts"].includes(tabla)) {
-              q = q.eq("user_id", db.usuario?.id);
-            }
+            if (["emails", "email_accounts"].includes(tabla)) q = q.eq("user_id", db.usuario?.id);
           }
+          if (LIMITS[tabla]) q = q.order('creado_at', { ascending: false }).limit(LIMITS[tabla]);
           return q;
-        })
-      );
+        });
+        return await Promise.allSettled(promesas);
+      };
 
-      const nuevoEstado = {};
-      TABLAS_SUPA.forEach((tabla, i) => {
-        const { data, error } = resultados[i];
-        if (error) {
-          console.error(`❌ Error cargando tabla '${tabla}':`, error.message, error.code, error.hint);
-        } else {
-          console.log(`✅ Tabla '${tabla}': ${data?.length || 0} registros`);
-          nuevoEstado[tabla] = data;
+      // 1. Cargar CRÍTICAS primero
+      const resCriticos = await fetchData(TABLAS_CRITICAS);
+      const estadoCritico = {};
+      TABLAS_CRITICAS.forEach((tabla, i) => {
+        if (resCriticos[i].status === 'fulfilled') {
+          estadoCritico[tabla] = resCriticos[i].value.data;
         }
       });
 
-      // Si las tablas principales están vacías, NO sembramos automáticamente
-      // para evitar que el arranque demore +10 segundos y sobrescriba el estado vacío del usuario.
-      /*
-      const necesitaSeed = !nuevoEstado.contactos?.length && !nuevoEstado.deals?.length;
-      if (necesitaSeed) {
-        console.log("Tablas vacías detectadas. Sembrando datos iniciales en Supabase...");
-        await sembrarDatos();
-        // Volver a cargar tras sembrar
-        const segundaVuelta = await Promise.all(
-          TABLAS_SUPA.map((tabla) => sb.from(tabla).select("*"))
-        );
-        TABLAS_SUPA.forEach((tabla, i) => {
-          const { data, error } = segundaVuelta[i];
-          if (!error && data && data.length > 0) {
-            nuevoEstado[tabla] = data;
+      setDb(d => ({ ...d, ...estadoCritico }));
+      setEstadoSupa("conectado");
+      setIsAppReady(true); // APP lista tras las críticas
+
+      // 2. Cargar FONDO después (sin bloquear la UI)
+      setTimeout(async () => {
+        const resFondo = await fetchData(TABLAS_FONDO);
+        const estadoFondo = {};
+        TABLAS_FONDO.forEach((tabla, i) => {
+          if (resFondo[i].status === 'fulfilled') {
+            estadoFondo[tabla] = resFondo[i].value.data;
           }
         });
-      }
-      */
+        setDb(d => ({ ...d, ...estadoFondo }));
+        console.log("✅ Carga de fondo completada.");
+      }, 500);
 
-      // Aplicar datos de Supabase al estado (manteniendo usuario actual)
-      setDb((d) => ({
-        ...SEMILLA,
-        ...nuevoEstado,
-        usuario: d.usuario, // Conservar sesión activa
-        empresaConfigs: d.empresaConfigs || SEMILLA.empresaConfigs,
-        cuentaEmail: d.cuentaEmail || SEMILLA.cuentaEmail,
-        recordatorios: d.recordatorios || SEMILLA.recordatorios,
-      }));
-
-      setEstadoSupa("conectado");
     } catch (e) {
-      console.error("Error cargando de Supabase:", e.message);
+      console.error("Error en cargarDeSupa:", e.message);
       setEstadoSupa("error");
     } finally {
       setCargando(false);
     }
-  }, [setDb]);
+  }, [setDb, db.usuario?.id, db.usuario?.org_id]);
 
   // ── Sembrar datos iniciales de seed.js en Supabase ────────────────────────
   const sembrarDatos = async () => {
