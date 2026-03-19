@@ -63,33 +63,7 @@ export function useSupaState() {
         } catch (e) { }
       }
 
-      // ── Auto-sync: detectar cambios en tablas de Supabase ─────────────────
-      TABLAS_SUPA.forEach((tabla) => {
-        const anterior = prev[tabla];
-        const nuevo = v[tabla];
-        if (!Array.isArray(nuevo) || nuevo === anterior) return;
-
-        // Upsert registros nuevos o modificados
-        const mapaAnterior = new Map((anterior || []).map((r) => [r.id, JSON.stringify(r)]));
-        const cambiados = nuevo.filter((r) => mapaAnterior.get(r.id) !== JSON.stringify(r));
-        if (cambiados.length > 0) {
-          sb.from(tabla).upsert(cambiados).then(({ error }) => {
-            if (error) console.error(`❌ Sync upsert '${tabla}':`, error.message);
-            else console.log(`☁️ Sync '${tabla}': ${cambiados.length} registro(s) guardado(s)`);
-          });
-        }
-
-        // Eliminar registros borrados
-        const idsNuevos = new Set(nuevo.map((r) => r.id));
-        const eliminados = (anterior || []).filter((r) => !idsNuevos.has(r.id));
-        eliminados.forEach((r) => {
-          sb.from(tabla).delete().eq("id", r.id).then(({ error }) => {
-            if (error) console.error(`❌ Sync delete '${tabla}':`, error.message);
-            else console.log(`🗑️ Sync '${tabla}': registro ${r.id} eliminado`);
-          });
-        });
-      });
-
+      // Auto-sync is disabled for safety. Use guardarEnSupa for modifications to Supabase.
       return v;
     });
   }, []);

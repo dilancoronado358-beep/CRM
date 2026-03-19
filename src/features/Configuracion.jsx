@@ -33,14 +33,9 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
     const reader = new FileReader();
     reader.onload = (ev) => {
       const b64 = ev.target.result;
-      // Actualizar usuario Y usuariosApp en un solo llamado para que auto-sync lo guarde en Supabase
-      setDb(d => ({
-        ...d,
-        usuario: { ...d.usuario, profilePic: b64 },
-        usuariosApp: (d.usuariosApp || []).map(u =>
-          u.email === d.usuario?.email ? { ...u, profilePic: b64 } : u
-        )
-      }));
+      const updatedUser = { ...db.usuario, profilePic: b64 };
+      guardarEnSupa("usuariosApp", updatedUser);
+      setDb(d => ({ ...d, usuario: updatedUser }));
     };
     reader.readAsDataURL(file);
     e.target.value = null;
@@ -253,16 +248,11 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
   const guardarPerfil = async () => {
     const newAvatar = fPerfil.name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
 
-    // Actualizar en un solo setDb para que auto-sync detecte el cambio en usuariosApp
-    setDb(d => {
-      const usuarioActualizado = { ...d.usuario, ...fPerfil, avatar: newAvatar };
-      const usuariosAppActualizada = (d.usuariosApp || []).map(u =>
-        u.email === d.usuario?.email
-          ? { ...u, name: fPerfil.name, email: fPerfil.email, avatar: newAvatar, profilePic: d.usuario?.profilePic || null }
-          : u
-      );
-      return { ...d, usuario: usuarioActualizado, usuariosApp: usuariosAppActualizada };
-    });
+    const usuarioActualizado = { ...db.usuario, ...fPerfil, avatar: newAvatar };
+    const { error } = await guardarEnSupa("usuariosApp", usuarioActualizado);
+    if (!error) {
+       setDb(d => ({ ...d, usuario: usuarioActualizado }));
+    }
 
     // Actualizar email/nombre en Supabase Auth si cambiaron
     try {
@@ -319,14 +309,9 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
   const cambiarTema = (themeId) => {
     applyTheme(themeId);
     localStorage.setItem("crm_theme", themeId);
-    // Guardar en usuario Y en usuariosApp para que persista en Supabase
-    setDb(d => ({
-      ...d,
-      usuario: { ...d.usuario, tema: themeId },
-      usuariosApp: (d.usuariosApp || []).map(u =>
-        u.email === d.usuario?.email ? { ...u, tema: themeId } : u
-      )
-    }));
+    const updatedUser = { ...db.usuario, tema: themeId };
+    guardarEnSupa("usuariosApp", updatedUser);
+    setDb(d => ({ ...d, usuario: updatedUser }));
   };
 
 
@@ -354,6 +339,11 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
   };
 
   const handleCrearUsuario = async () => {
+    if (fNuevoUser.email.toLowerCase() === db.usuario?.email.toLowerCase()) {
+      sileo.error("No puedes provisionar un usuario con tu mismo correo administrativo.");
+      setCargandoUser(false);
+      return;
+    }
     setCargandoUser(true);
     try {
       const { data, error } = await sb.auth.signUp({
@@ -422,7 +412,7 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
     }
 
     if (confirm(`⚠️ ALERTA: Estás a punto de revocar el acceso a ${userEmail}. ¿Continuar?`)) {
-      setDb(d => ({ ...d, usuariosApp: d.usuariosApp.filter(u => u.id !== userId) }));
+      await eliminarDeSupa("usuariosApp", userId);
       sileo.success("Usuario eliminado del directorio IAM. \n(Nota: Por seguridad, la cuenta subyacente de Supabase requiere borrado manual desde el Dashboard oficial API).");
     }
   };
@@ -434,18 +424,18 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
     }
 
     if (confirm(`¿Estás seguro de cambiar el nivel de acceso de ${userEmail} a ${newRole.toUpperCase()}?`)) {
-      setDb(d => ({
-        ...d,
-        usuariosApp: d.usuariosApp.map(u => u.id === userId ? { ...u, role: newRole } : u)
-      }));
+      const u = db.usuariosApp.find(x => x.id === userId);
+      if (u) {
+        guardarEnSupa("usuariosApp", { ...u, role: newRole });
+      }
     }
   };
 
   const handleToggleWhatsApp = (userId) => {
-    setDb(d => ({
-      ...d,
-      usuariosApp: d.usuariosApp.map(u => u.id === userId ? { ...u, whatsappAccess: !u.whatsappAccess } : u)
-    }));
+    const u = db.usuariosApp.find(x => x.id === userId);
+    if (u) {
+      guardarEnSupa("usuariosApp", { ...u, whatsappAccess: !u.whatsappAccess });
+    }
   };
 
   // ── LÓGICA API & WEBHOOKS ──

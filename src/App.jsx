@@ -241,6 +241,7 @@ export default function App() {
   const [hashURL, setHashURL] = useState(window.location.hash);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [logoutGlobal, setLogoutGlobal] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
 
 
   // SOCKET GLOBAL PARA NOTIFICACIONES
@@ -358,6 +359,24 @@ export default function App() {
 
   if (isRecovering) {
     return <Login forceView="new-password" />;
+  }
+
+  if (loggingOut) {
+    return (
+      <div style={{ display: "flex", flexDirection: "column", height: "100vh", width: "100vw", alignItems: "center", justifyContent: "center", background: T.bg0, color: T.white }}>
+        <div style={{ width: 48, height: 48, borderRadius: 12, background: T.red + "20", display: "flex", alignItems: "center", justifyContent: "center", border: `1px solid ${T.red}40`, marginBottom: 24 }}>
+          <Ico k="lock" size={28} style={{ color: T.red }} />
+        </div>
+        <div style={{ fontWeight: 800, fontSize: 24, letterSpacing: "-.02em", marginBottom: 16 }}>
+          CERRANDO SE<span style={{ color: T.red }}>SIÓN</span>
+        </div>
+        <div style={{ display: "flex", gap: 8, alignItems: "center", color: T.whiteDim, fontSize: 13, fontWeight: 500 }}>
+          <div style={{ width: 14, height: 14, border: `2px solid ${T.red}20`, borderTopColor: T.red, borderRadius: "50%", animation: "spin 1s linear infinite" }} />
+          Sincronizando y saliendo de forma segura...
+        </div>
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      </div>
+    );
   }
 
   if (!session && !db.usuario) {
@@ -543,31 +562,25 @@ export default function App() {
         open={showLogoutConfirm}
         onClose={() => { setShowLogoutConfirm(false); setLogoutGlobal(false); }}
         onConfirm={async () => {
+          setLoggingOut(true);
+          setShowLogoutConfirm(false);
           try {
             const userEmail = db.usuario?.email || session?.user?.email;
             if (logoutGlobal && userEmail) {
-              // Notificar a otros dispositivos para que cierren sesión inmediatamente
-              console.log("📤 Enviando señal de force_logout para:", userEmail);
               await sendBroadcast('force_logout', {
                 email: userEmail,
                 timestamp: Date.now(),
                 origin: window.location.href
               });
             }
-            // Ejecutar signOut global en Supabase
             await sb.auth.signOut({ scope: logoutGlobal ? 'global' : 'local' });
           } catch (err) {
             console.error("Error during logout:", err);
           } finally {
-            // Limpieza local inmediata
             localStorage.removeItem("crm_usuario_activo");
             localStorage.removeItem("crm_theme");
             sessionStorage.clear();
-            // Cerrar sesión
-            sileo.success("Sesión cerrada correctamente");
-            setTimeout(() => {
-              window.location.reload();
-            }, 800);
+            window.location.reload();
           }
         }}
         title="¿Cerrar sesión?"
