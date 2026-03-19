@@ -3,8 +3,6 @@ import { createClient } from "@supabase/supabase-js";
 import { SEMILLA } from "../data/seed";
 import { applyTheme } from "../theme";
 import { sileo as toast } from "../utils/sileo";
-import { io } from "socket.io-client";
-import { getApiUrl } from "../utils.js";
 
 /* ═══════════════════════════════════════════
    SUPABASE
@@ -64,15 +62,7 @@ export function useSupaState() {
   const [isAppReady, setIsAppReady] = useState(false);
   const [session, setSession] = useState(null);
   const channelRef = useRef(null);
-  const socketRef = useRef(null);
   const [intentoCarga, setIntentoCarga] = useState(0); // Para forzar reintentos si falla algo crítico
-
-  // Sincronizar Socket para disparar Workflows manuales
-  useEffect(() => {
-    if (!socketRef.current) {
-      socketRef.current = io(getApiUrl(db));
-    }
-  }, [db.usuario?.org_id]);
 
   const setDb = useCallback((next) => {
     setDbRaw((prev) => {
@@ -93,6 +83,7 @@ export function useSupaState() {
       return v;
     });
   }, []);
+
 
   // ── Cargar datos desde Supabase con prioridad ─────────────────────────────
   const cargarDeSupa = useCallback(async (orgIdForzado) => {
@@ -346,9 +337,11 @@ export function useSupaState() {
         console.log(`🟢 Éxito en ${tabla}`);
         const confirmado = data?.[0] || payload;
 
-        // Disparar workflow vía Socket si es un Deal (Fallback)
-        if (tabla === "deals" && confirmado.id && socketRef.current) {
-          socketRef.current.emit('workflow_trigger', { dealId: confirmado.id, etapaId: confirmado.etapa_id });
+        // Disparar evento para que App.jsx lo capture y mande por Socket (Workflow Fallback)
+        if (tabla === "deals" && confirmado.id) {
+          window.dispatchEvent(new CustomEvent('supa-deal-updated', { 
+            detail: { dealId: confirmado.id, etapaId: confirmado.etapa_id } 
+          }));
         }
 
         setDb((d) => {

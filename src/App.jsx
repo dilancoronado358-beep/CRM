@@ -257,8 +257,20 @@ export default function App() {
         });
       }
     });
+    // Listener para disparar workflows desde useSupaState (CustomEvent Fallback)
+    const handleSupaDealUpdate = (e) => {
+      const { dealId, etapaId } = e.detail;
+      if (socket && socket.connected) {
+        console.log(`🔌 [App Socket] Emitiendo workflow_trigger para ${dealId}`);
+        socket.emit('workflow_trigger', { dealId, etapaId });
+      }
+    };
+    window.addEventListener('supa-deal-updated', handleSupaDealUpdate);
 
-    return () => socket.disconnect();
+    return () => {
+      window.removeEventListener('supa-deal-updated', handleSupaDealUpdate);
+      socket.disconnect();
+    };
   }, []);
 
   // Recordatorios de Tareas del Día
@@ -545,10 +557,10 @@ export default function App() {
       </div>
 
       {/* GLOBAL OMNIBAR */}
-      <SpotlightSearch 
-        db={db} 
-        open={spotlightOpen} 
-        onClose={() => setSpotlightOpen(false)} 
+      <SpotlightSearch
+        db={db}
+        open={spotlightOpen}
+        onClose={() => setSpotlightOpen(false)}
         onNavigate={(m) => setModulo(m)}
         onLogout={() => setShowLogoutConfirm(true)}
         applyTheme={applyTheme}
