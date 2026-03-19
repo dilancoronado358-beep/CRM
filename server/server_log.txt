@@ -2612,3 +2612,26 @@
 [2026-03-19T06:56:28.902Z] 🚀 SERVER CRM INICIANDO...
 [2026-03-19T06:56:29.255Z] 📡 [Realtime Subscription Status]: SUBSCRIBED
 [2026-03-19T06:56:34.940Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6358
+[2026-03-19T06:57:24.801Z] 🔗 [OAuth Google] Redirect URI generado: https://janiece-apocatastatic-intensionally.ngrok-free.dev/api/auth/google/callback
+[2026-03-19T06:57:34.706Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6330
+[2026-03-19T06:57:54.697Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6370
+[2026-03-19T06:58:14.718Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6426
+[2026-03-19T06:58:28.937Z] ⏱️ [CRON] Iniciando sync automático...
+[2026-03-19T06:58:29.674Z] ℹ️ [CRON] Se encontraron 0 cuentas activas para sincronizar.
+[2026-03-19T06:58:34.720Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6282
+[2026-03-19T06:58:54.726Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6318
+[2026-03-19T07:00:05.427Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6334
+[2026-03-19T07:00:28.939Z] ⏱️ [CRON] Iniciando sync automático...
+[2026-03-19T07:00:29.547Z] ℹ️ [CRON] Se encontraron 0 cuentas activas para sincronizar.
+[2026-03-19T07:01:05.419Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6378
+[2026-03-19T07:01:25.424Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6230
+[2026-03-19T07:01:45.446Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6338
+[2026-03-19T07:02:05.465Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6298
+[2026-03-19T07:02:25.467Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6426
+[2026-03-19T07:02:28.952Z] ⏱️ [CRON] Iniciando sync automático...
+[2026-03-19T07:02:29.220Z] ℹ️ [CRON] Se encontraron 0 cuentas activas para sincronizar.
+[2026-03-19T07:03:36.129Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6454
+[2026-03-19T07:04:28.953Z] ⏱️ [CRON] Iniciando sync automático...
+[2026-03-19T07:04:29.412Z] ℹ️ [CRON] Se encontraron 0 cuentas activas para sincronizar.
+[2026-03-19T07:04:36.130Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6242
+[2026-03-19T07:04:56.124Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6442
