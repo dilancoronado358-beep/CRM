@@ -2600,3 +2600,15 @@
 [2026-03-19T06:53:52.418Z] 🚀 SERVER CRM INICIANDO...
 [2026-03-19T06:53:53.243Z] 📡 [Realtime Subscription Status]: SUBSCRIBED
 [2026-03-19T06:53:58.443Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6342
+[2026-03-19T06:54:56.513Z] 🔗 [OAuth Google] Redirect URI generado: http://janiece-apocatastatic-intensionally.ngrok-free.dev/api/auth/google/callback
+[2026-03-19T06:54:58.221Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6318
+[2026-03-19T06:55:14.600Z] 🔗 [OAuth Google] Redirect URI generado: http://janiece-apocatastatic-intensionally.ngrok-free.dev/api/auth/google/callback
+[2026-03-19T06:55:18.224Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6394
+[2026-03-19T06:55:38.236Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6378
+[2026-03-19T06:55:52.448Z] ⏱️ [CRON] Iniciando sync automático...
+[2026-03-19T06:55:52.748Z] ℹ️ [CRON] Se encontraron 0 cuentas activas para sincronizar.
+[2026-03-19T06:55:58.246Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6358
+[2026-03-19T06:56:18.250Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6338
+[2026-03-19T06:56:28.902Z] 🚀 SERVER CRM INICIANDO...
+[2026-03-19T06:56:29.255Z] 📡 [Realtime Subscription Status]: SUBSCRIBED
+[2026-03-19T06:56:34.940Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6358

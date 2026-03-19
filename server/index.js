@@ -87,6 +87,7 @@ const triggerWebhooks = async (evento, payload) => {
 };
 
 const app = express();
+app.set('trust proxy', true);
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 
@@ -1304,7 +1305,11 @@ app.get('/api/auth/google', (req, res) => {
   const { userId, orgId } = req.query;
   if (!userId) return res.status(400).send("Falta userId");
 
-  const redirect_uri = `${req.protocol}://${req.get('host')}/api/auth/google/callback`;
+  const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'https';
+  const host = req.get('host');
+  const finalProto = (host.includes('localhost') || host.includes('127.0.0.1')) ? protocol : 'https';
+  const redirect_uri = `${finalProto}://${host}/api/auth/google/callback`;
+  
   logFile(`🔗 [OAuth Google] Redirect URI generado: ${redirect_uri}`);
 
   const rootUrl = 'https://accounts.google.com/o/oauth2/v2/auth';
@@ -1330,7 +1335,11 @@ app.get('/api/auth/azure', (req, res) => {
   const { userId, orgId } = req.query;
   if (!userId) return res.status(400).send("Falta userId");
 
-  const redirect_uri = `${req.protocol}://${req.get('host')}/api/auth/azure/callback`;
+  const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'https';
+  const host = req.get('host');
+  const finalProto = (host.includes('localhost') || host.includes('127.0.0.1')) ? protocol : 'https';
+  const redirect_uri = `${finalProto}://${host}/api/auth/azure/callback`;
+
   logFile(`🔗 [OAuth Azure] Redirect URI generado: ${redirect_uri}`);
 
   const rootUrl = 'https://login.microsoftonline.com/common/oauth2/v2.0/authorize';
