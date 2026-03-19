@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { T, THEMES, applyTheme } from "../theme";
 import { Btn, Inp, Sel, Campo, Tarjeta, EncabezadoSeccion, Celda, CabeceraTabla, FilaTabla, Chip, Ico, Modal, ConfirmModal } from "../components/ui";
-import { fdtm, uid } from "../utils";
+import { fdtm, uid, getApiUrl } from "../utils";
 import { sb } from "../hooks/useSupaState";
 import axios from "axios";
 import { sileo } from "../utils/sileo";
@@ -13,12 +13,7 @@ import { io } from "socket.io-client";
 // (Se usa una ref dentro del componente)
 
 export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
-  const getApiUrl = () => {
-    const orgActual = db.organizacion?.find(o => o.id === db.usuario?.org_id);
-    if (orgActual?.wa_server_url) return orgActual.wa_server_url;
-    const protocol = window.location.protocol;
-    return `${protocol}//${window.location.hostname}:3001`;
-  };
+  const API_URL = getApiUrl(db);
 
   const [tab, setTab] = useState("perfil");
   const socketRef = useRef(null);
@@ -87,9 +82,7 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
 
   // Efecto para escuchar eventos del WebSocket del Backend Local
   useEffect(() => {
-    const protocol = window.location.protocol === "https:" ? "https:" : "http:";
-    const orgActual = db.organizacion?.find(o => o.id === db.usuario?.org_id);
-    const finalUrl = fWaUrl || orgActual?.wa_server_url || `${protocol}//${window.location.hostname}:3001`;
+    const finalUrl = fWaUrl || getApiUrl(db);
     socketRef.current = io(finalUrl, {
       transports: ['websocket'],
       extraHeaders: { "ngrok-skip-browser-warning": "true" },
@@ -133,9 +126,7 @@ export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
   }, [db.usuario?.org_id, db.organizacion]);
 
   const iniciarVinculacionWA = () => {
-    const protocol = window.location.protocol === "https:" ? "https:" : "http:";
-    const orgActual = db.organizacion?.find(o => o.id === db.usuario?.org_id);
-    const finalUrl = fWaUrl || orgActual?.wa_server_url || `${protocol}//${window.location.hostname}:3001`;
+    const finalUrl = fWaUrl || getApiUrl(db);
 
     // Si ya existe un socket, desconectarlo antes de crear uno nuevo con la URL actualizada
     if (socketRef.current) {
@@ -1103,7 +1094,7 @@ ALTER TABLE usuariosApp ADD COLUMN IF NOT EXISTS org_id UUID REFERENCES organiza
                           <span>DIAGNÓSTICO:</span>
                           <span onClick={() => window.open(fWaUrl || orgActual?.wa_server_url, '_blank')} style={{ cursor: "pointer", textDecoration: "underline", color: T.amber }}>🔗 Burlar Seguridad ngrok</span>
                         </div>
-                        <div style={{ marginBottom: 4 }}>Conectando a: <b style={{ color: T.white }}>{fWaUrl || db.usuariosApp?.find(u => u.role === 'admin' && u.waServerUrl)?.waServerUrl || `http://${window.location.hostname}:3001`}</b></div>
+                        <div style={{ marginBottom: 4 }}>Conectando a: <button style={{ color: T.white }}>{fWaUrl || getApiUrl(db)}</button></div>
 
                         {testResult && (
                           <div style={{ marginTop: 8, padding: 6, borderRadius: 4, background: testResult.success ? T.green + "20" : T.red + "20", color: testResult.success ? T.green : T.red, border: `1px solid ${testResult.success ? T.green : T.red}40` }}>

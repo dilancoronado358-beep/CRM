@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect } from "react";
 import { T } from "../theme";
-import { money, fdate, fdtm, ACT_CFG } from "../utils";
+import { money, fdate, fdtm, ACT_CFG, getApiUrl } from "../utils";
 import { Tarjeta, KPI, Chip, Ico, Btn, Modal, Vacio } from "../components/ui";
 import axios from "axios";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, LineChart, Line, CartesianGrid, Area, AreaChart, RadialBarChart, RadialBar, PieChart, Pie } from "recharts";
@@ -98,9 +98,7 @@ export const Dashboard = ({ db, t = s => s }) => {
     setAnalisisIA(""); // Reset para nuevo intento
 
     // Detectar URL dinámica del servidor (evita fallos si no es localhost)
-    const protocol = window.location.protocol === "https:" ? "https:" : "http:";
-    const host = window.location.hostname;
-    const API_URL = `${protocol}//${host}:3001`;
+    const API_URL = getApiUrl(db);
 
     try {
       const { data } = await axios.post(`${API_URL}/ai/analyze`, {

@@ -4,21 +4,14 @@ import { Btn, Inp, Tarjeta, Celda, Chip, Ico, Modal } from "../components/ui";
 import { io } from "socket.io-client";
 import { useSupaState } from "../hooks/useSupaState";
 import { sileo as toast } from "../utils/sileo";
+import { getApiUrl } from "../utils";
 
 export function ChatWhatsApp({ db, setDb, guardarEnSupa, eliminarDeSupa, t }) {
   const [waConnected, setWaConnected] = useState(false);
   const [waQR, setWaQR] = useState("");
   const socketRef = useRef(null);
 
-  // URL del servidor WhatsApp — se detecta automáticamente según la organización, el usuario o el host del CRM
-  const protocol = window.location.protocol === "https:" ? "https:" : "http:";
-  
-  // Buscar la configuración de la organización actual
-  const orgActual = db?.organizacion?.find(o => o.id === db.usuario?.org_id);
-  const orgUrl = orgActual?.wa_server_url;
-  const adminUrl = db?.usuariosApp?.find(u => u.role === 'admin' && u.waServerUrl)?.waServerUrl;
-  
-  const WA_SERVER_URL = orgUrl || db?.usuario?.waServerUrl || adminUrl || `${protocol}//${window.location.hostname}:3001`;
+  const WA_SERVER_URL = getApiUrl(db);
 
   const [chats, setChats] = useState([]);
   const [activeChatId, setActiveChatId] = useState(null);

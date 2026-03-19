@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useSupaState, sb } from "./hooks/useSupaState";
 import { T, applyTheme } from "./theme";
+import { getApiUrl } from "./utils";
 
 import { Av, Btn, ControlSegmentado, IndSupa, Ico, SpotlightSearch, ConfirmModal } from "./components/ui";
 import { io } from "socket.io-client";
@@ -246,9 +247,7 @@ export default function App() {
 
   // SOCKET GLOBAL PARA NOTIFICACIONES
   useEffect(() => {
-    const protocol = window.location.protocol === "https:" ? "https:" : "http:";
-    const host = window.location.hostname;
-    const socket = io(`${protocol}//${host}:3001`);
+    const socket = io(getApiUrl(db));
 
     socket.on("whatsapp_message", (msg) => {
       if (!msg.fromMe) {

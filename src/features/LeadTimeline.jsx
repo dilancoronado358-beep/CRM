@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { T } from "../theme";
 import { Ico, Btn } from "../components/ui";
+import { getApiUrl } from "../utils";
 import { createClient } from "@supabase/supabase-js";
 import { io } from "socket.io-client";
 import { sileo as toast } from "../utils/sileo";
@@ -31,8 +32,7 @@ export function LeadTimeline({ deal = {}, contacto = {}, db = {}, setDb, guardar
     return cp;
   }, [telefono]);
 
-  const adminUrl = db?.usuariosApp?.find(u => u.role === 'admin' && u.waServerUrl)?.waServerUrl;
-  const WA_SERVER_URL = db?.usuario?.waServerUrl || adminUrl || `${window.location.protocol}//${window.location.hostname}:3001`;
+  const WA_SERVER_URL = getApiUrl(db);
 
   // Tareas filtradas para este contacto/deal desde el DB GLOBAL
   const globalTasks = useMemo(() => {

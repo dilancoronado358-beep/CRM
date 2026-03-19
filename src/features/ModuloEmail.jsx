@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { T } from "../theme";
-import { uid, fdtm, fdate } from "../utils";
+import { uid, fdtm, fdate, getApiUrl } from "../utils";
 import { Av, Chip, Btn, Inp, Sel, Campo, Modal, Tarjeta, Vacio, ControlSegmentado, Ico } from "../components/ui";
 import axios from "axios";
 import { sileo as toast } from "../utils/sileo";
@@ -31,12 +31,6 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) => {
     }, 1500);
   };
 
-  const getApiUrl = () => {
-    const orgActual = db.organizacion?.find(o => o.id === db.usuario?.org_id);
-    if (orgActual?.wa_server_url) return orgActual.wa_server_url;
-    const protocol = window.location.protocol;
-    return `${protocol}//${window.location.hostname}:3001`;
-  };
 
   const enviarRealista = async () => {
     if (!f.para.trim() || !f.cuerpo.trim()) return;
@@ -48,7 +42,7 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) => {
     setLogEnvio(["[SMTP] Iniciando handshake con " + host]);
 
     try {
-      const API_URL = getApiUrl();
+      const API_URL = getApiUrl(db);
       setLogEnvio(prev => [...prev, "[AUTH] Autenticando canal TLS/SSL... ok."]);
       
       const res = await axios.post(`${API_URL}/api/email/send`, {
@@ -101,7 +95,7 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) => {
     if (!acc) return;
 
     try {
-      const API_URL = getApiUrl();
+      const API_URL = getApiUrl(db);
       await axios.post(`${API_URL}/api/email/send`, {
         accountId: acc.id,
         to: emailFocus.de,

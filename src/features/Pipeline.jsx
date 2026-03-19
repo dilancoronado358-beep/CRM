@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { T } from "../theme";
-import { uid, money, fdate } from "../utils";
+import { uid, money, fdate, getApiUrl } from "../utils";
 import { Chip, Btn, Inp, Sel, LocalInput } from "../components/ui";
 import { Campo, Modal, Tarjeta, SelColor, EncabezadoSeccion, ControlSegmentado, Ico, Barra, Vacio } from "../components/ui";
 import { LeadTimeline } from "./LeadTimeline";
@@ -601,7 +601,7 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
         else if (etapa.es_perdido || etapa.es_perdido === true) event = 'deal.perdido';
         
         if (event) {
-          const API_URL = `http://${window.location.hostname}:3001`;
+          const API_URL = getApiUrl(db);
           import("axios").then(axios => {
             axios.default.post(`${API_URL}/api/internal/trigger-webhook`, {
               event,
