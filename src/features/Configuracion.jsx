@@ -1117,11 +1117,15 @@ ALTER TABLE usuariosApp ADD COLUMN IF NOT EXISTS org_id UUID REFERENCES organiza
                     <div style={{ fontSize: 13, color: T.whiteDim, marginBottom: 8 }}>Vincula tu número mediante código QR para capturar mensajes entrantes, enviar notificaciones de citas y utilizar plantillas aprobadas.</div>
 
                     {/* Debug Connection info */}
-                    <div style={{ padding: "12px", background: T.bg1, borderRadius: 8, fontSize: 11, color: T.whiteDim, marginBottom: 20, border: `1px solid ${T.borderHi}`, fontFamily: "monospace" }}>
-                      <div style={{ color: T.teal, marginBottom: 8, fontWeight: 700, display: "flex", justifyContent: "space-between" }}>
-                        <span>DIAGNÓSTICO DE CONEXIÓN:</span>
-                        <span onClick={() => window.open(fWaUrl || db.usuariosApp?.find(u => u.role === 'admin' && u.waServerUrl)?.waServerUrl, '_blank')} style={{ cursor: "pointer", textDecoration: "underline", color: T.amber }}>🔗 Burlar Seguridad Túnel</span>
-                      </div>
+                    <details style={{ marginBottom: 20 }}>
+                      <summary style={{ cursor: "pointer", fontSize: 12, color: T.teal, fontWeight: 700, marginBottom: 8 }}>
+                        ⚙️ Detalles Técnicos de Conexión
+                      </summary>
+                      <div style={{ padding: "12px", background: T.bg1, borderRadius: 8, fontSize: 11, color: T.whiteDim, border: `1px solid ${T.borderHi}`, fontFamily: "monospace", marginTop: 8 }}>
+                        <div style={{ color: T.whiteDim, marginBottom: 8, display: "flex", justifyContent: "space-between" }}>
+                          <span>DIAGNÓSTICO:</span>
+                          <span onClick={() => window.open(fWaUrl || orgActual?.wa_server_url, '_blank')} style={{ cursor: "pointer", textDecoration: "underline", color: T.amber }}>🔗 Burlar Seguridad ngrok</span>
+                        </div>
                       <div style={{ marginBottom: 4 }}>Conectando a: <b style={{ color: T.white }}>{fWaUrl || db.usuariosApp?.find(u => u.role === 'admin' && u.waServerUrl)?.waServerUrl || `http://${window.location.hostname}:3001`}</b></div>
 
                       {testResult && (
@@ -1130,8 +1134,9 @@ ALTER TABLE usuariosApp ADD COLUMN IF NOT EXISTS org_id UUID REFERENCES organiza
                         </div>
                       )}
 
-                      {!fWaUrl && db.usuario.role === 'admin' && <div style={{ color: T.teal, marginTop: 4 }}>💡 Como Admin, la URL que pongas en 'Infraestructura' será la predeterminada para todos.</div>}
-                    </div>
+                        {!fWaUrl && db.usuario.role === 'admin' && <div style={{ color: T.teal, marginTop: 4 }}>💡 Tip: URL gestionada por la organización.</div>}
+                      </div>
+                    </details>
 
                     {/* Renderización del QR si está presente */}
                     {waQR && !waConnected && (

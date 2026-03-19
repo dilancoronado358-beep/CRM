@@ -9,10 +9,15 @@ export function ChatWhatsApp({ db, setDb, guardarEnSupa, eliminarDeSupa, t }) {
   const [waQR, setWaQR] = useState("");
   const socketRef = useRef(null);
 
-  // URL del servidor WhatsApp — se detecta automáticamente según la configuración, el admin o el host del CRM
+  // URL del servidor WhatsApp — se detecta automáticamente según la organización, el usuario o el host del CRM
   const protocol = window.location.protocol === "https:" ? "https:" : "http:";
+  
+  // Buscar la configuración de la organización actual
+  const orgActual = db?.organizacion?.find(o => o.id === db.usuario?.org_id);
+  const orgUrl = orgActual?.wa_server_url;
   const adminUrl = db?.usuariosApp?.find(u => u.role === 'admin' && u.waServerUrl)?.waServerUrl;
-  const WA_SERVER_URL = db?.usuario?.waServerUrl || adminUrl || `${protocol}//${window.location.hostname}:3001`;
+  
+  const WA_SERVER_URL = orgUrl || db?.usuario?.waServerUrl || adminUrl || `${protocol}//${window.location.hostname}:3001`;
 
   const [chats, setChats] = useState([]);
   const [activeChatId, setActiveChatId] = useState(null);
@@ -334,11 +339,11 @@ export function ChatWhatsApp({ db, setDb, guardarEnSupa, eliminarDeSupa, t }) {
         <div style={{ width: 64, height: 64, borderRadius: "50%", background: "#25D366", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 10px 30px rgba(37,211,102,0.3)" }}>
           <Ico k="phone" size={32} style={{ color: "#000" }} />
         </div>
-        <h2 style={{ fontSize: 24, fontWeight: 800, color: T.white }}>Conectando con WhatsApp...</h2>
-        <p style={{ color: T.whiteDim }}>Verificando el estado del servidor en: <span style={{ fontFamily: "monospace", color: T.teal }}>{WA_SERVER_URL}</span></p>
+        <h2 style={{ fontSize: 24, fontWeight: 800, color: T.white }}>Configurando Chatbot...</h2>
+        <p style={{ color: T.whiteDim, fontSize: 15 }}>Estableciendo conexión segura con el motor de WhatsApp.</p>
 
-        {adminUrl && !db.usuario?.waServerUrl && (
-          <p style={{ fontSize: 12, color: T.teal, marginTop: -10 }}>ℹ️ Usando configuración global del Administrador.</p>
+        {orgUrl && (
+          <p style={{ fontSize: 12, color: T.teal, marginTop: -10 }}>ℹ️ Conectado a la infraestructura de la organización.</p>
         )}
 
         {window.location.hostname === "localhost" && !db.usuario?.waServerUrl && (
@@ -347,7 +352,7 @@ export function ChatWhatsApp({ db, setDb, guardarEnSupa, eliminarDeSupa, t }) {
           </div>
         )}
 
-        <Btn variant="primario" onClick={() => socketRef.current?.emit('get_whatsapp_status')}>Forzar Revisión</Btn>
+        <Btn variant="primario" onClick={() => socketRef.current?.emit('get_whatsapp_status')} style={{ padding: "12px 32px" }}>Intentar Reconexión</Btn>
       </div>
     );
   }
