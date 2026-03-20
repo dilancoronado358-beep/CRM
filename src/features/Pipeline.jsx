@@ -30,7 +30,7 @@ const calculateLeadScore = (db, deal) => {
 
 const FormDeal = ({ db, setDb, f, setF, editDeal, onGuardar, onCancelar, guardarEnSupa, ejecutarAutomaciones, setModulo, setShowConfigCampos, focusEmailId, setFocusEmailId }) => {
   const customFieldsDef = db.campos_personalizados || [];
-  const [leadTab, setLeadTab] = useState("timeline");
+  const [rightTab, setRightTab] = useState("timeline");
   const [dragActive, setDragActive] = useState(false);
 
   const plActual = db.pipelines.find(p => p.id === f.pipeline_id);
@@ -50,18 +50,16 @@ const FormDeal = ({ db, setDb, f, setF, editDeal, onGuardar, onCancelar, guardar
   const quitarArchivo = id => setF(p => ({ ...p, archivos: p.archivos.filter(a => a.id !== id) }));
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 40, minHeight: 740, padding: 32, background: T.bg0, borderRadius: 32, color: T.white }}>
-      {/* ENSING "LIQUID-GLASS" STAGE SELECTOR */}
-      <div style={{ position: "relative", marginBottom: 20 }}>
-        <div style={{ display: "flex", background: T.bg2 + "40", padding: 4, borderRadius: 20, border: `1px solid ${T.borderHi}`, position: "relative", overflow: "hidden" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 32, minHeight: 800, padding: 24, background: T.bg0, borderRadius: 28, color: T.white }}>
+      {/* ENSING "LIQUID-RIBBON" COMPACT */}
+      <div style={{ position: "relative", marginBottom: 12 }}>
+        <div style={{ display: "flex", background: "rgba(255,255,255,0.03)", padding: 4, borderRadius: 16, border: `1px solid ${T.white}08`, position: "relative", overflow: "hidden" }}>
           {stages.map((st, idx) => {
             const isActive = st.id === f.etapa_id;
             const isPast = idx < currentEtIdx;
             
             return (
-              <div 
-                key={st.id} 
-                onClick={async () => {
+              <div key={st.id} onClick={async () => {
                   const nextF = { ...f, etapa_id: st.id, prob: st.probabilidad };
                   setF(nextF);
                   if (editDeal) {
@@ -69,134 +67,78 @@ const FormDeal = ({ db, setDb, f, setF, editDeal, onGuardar, onCancelar, guardar
                     if (st.id !== f.etapa_id) await ejecutarAutomaciones(editDeal, st.id);
                   }
                 }}
-                style={{ 
-                  flex: 1, padding: "14px 10px", textAlign: "center", cursor: "pointer", position: "relative", zIndex: 1,
-                  transition: "all .4s cubic-bezier(0.2, 0, 0.2, 1)"
-                }}
+                style={{ flex: 1, padding: "10px 8px", textAlign: "center", cursor: "pointer", position: "relative", zIndex: 1, transition: "all .4s ease" }}
               >
                 {isActive && (
-                   <div style={{ position: "absolute", inset: 0, background: T.teal, borderRadius: 16, boxShadow: `0 0 25px ${T.teal}40`, zIndex: -1, animation: "liquid-pop .4s ease-out" }} />
+                   <div style={{ position: "absolute", inset: 0, background: T.teal, borderRadius: 12, boxShadow: `0 0 20px ${T.teal}40`, zIndex: -1, animation: "liquid-pop .4s ease-out" }} />
                 )}
-                <div style={{ fontSize: 10, fontWeight: 900, color: isActive ? "#000" : isPast ? T.teal : T.whiteFade, letterSpacing: ".1em", textTransform: "uppercase", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
-                  {isPast && <Ico k="check" size={10} style={{ color: T.teal }} />}
+                <div style={{ fontSize: 9, fontWeight: 900, color: isActive ? "#000" : isPast ? T.teal : T.whiteFade, letterSpacing: ".05em", textTransform: "uppercase", display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}>
+                  {isPast && <Ico k="check" size={8} />}
                   {st.nombre}
                 </div>
               </div>
             );
           })}
         </div>
-        <style>{`
-          @keyframes liquid-pop {
-            0% { transform: scaleX(0.8); opacity: 0; }
-            100% { transform: scaleX(1); opacity: 1; }
-          }
-        `}</style>
+        <style>{` @keyframes liquid-pop { 0% { transform: scaleX(0.8); opacity: 0; } 100% { transform: scaleX(1); opacity: 1; } } `}</style>
       </div>
 
-      <div style={{ display: "flex", gap: 48, flexWrap: "wrap" }}>
-        {/* COLUMNA IZQUIERDA: THE ENGINE ROOM */}
-        <div style={{ flex: "1 1 440px", display: "flex", flexDirection: "column", gap: 40 }}>
+      <div style={{ display: "flex", gap: 40, flexWrap: "wrap" }}>
+        
+        {/* COLUMNA IZQUIERDA: FULL INFO (SCROLLABLE AREA) */}
+        <div style={{ flex: "1 1 440px", display: "flex", flexDirection: "column", gap: 32, maxHeight: "75vh", overflowY: "auto", paddingRight: 10 }}>
           
-          {/* NAVIGATION "DYNAMIC SEGMENT" */}
-          <div style={{ display: "flex", background: "transparent", padding: 0, gap: 8 }}>
-            {["timeline", "whatsapp", "fields", "files", "finanzas", "historial"].map(tk => (
-              <div 
-                key={tk} 
-                onClick={() => setLeadTab(tk)}
-                style={{ 
-                  padding: "10px 18px", fontSize: 11, fontWeight: 800, 
-                  color: leadTab === tk ? T.teal : T.whiteFade, 
-                  borderBottom: `2px solid ${leadTab === tk ? T.teal : "transparent"}`,
-                  cursor: "pointer", transition: "all .3s", textTransform: "uppercase", letterSpacing: ".05em"
-                }}
-              >
-                {tk === "timeline" ? "Feed" : tk}
-              </div>
-            ))}
-          </div>
+          {/* SECTION 1: INFORMACIÓN ESENCIAL */}
+          <div style={{ background: "rgba(255,255,255,0.02)", border: `1px solid ${T.white}08`, borderRadius: 28, padding: 28 }}>
+             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
+                <div style={{ fontSize: 13, fontWeight: 900, color: T.teal, letterSpacing: ".15em", textTransform: "uppercase" }}>Información Esencial</div>
+                <div style={{ background: "rgba(255,255,255,0.05)", padding: "4px 10px", borderRadius: 8, fontSize: 12, fontWeight: 800, color: T.whiteDim }}>Score: {calculateLeadScore(db, f)}</div>
+             </div>
 
-          {/* OBSIDIAN GLASS CARD: CORE DATA */}
-          <div style={{ background: `linear-gradient(165deg, ${T.bg1}60, ${T.bg2}30)`, backdropFilter: "blur(20px)", border: `1px solid ${T.white}08`, borderRadius: 32, padding: 32, boxShadow: "0 20px 50px rgba(0,0,0,0.3)" }}>
-             <div style={{ fontSize: 12, fontWeight: 900, color: T.teal, marginBottom: 8, letterSpacing: ".2em", textTransform: "uppercase", opacity: 0.8 }}>Value Engine</div>
-             <div style={{ fontSize: 24, fontWeight: 900, color: T.white, marginBottom: 32 }}>Detalles del Lead</div>
-
-             <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+             <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
                <Campo label="Título del Negocio">
                  <LocalInput value={f.titulo} onCommit={v => {
                    const nf = { ...f, titulo: v }; setF(nf);
                    if (editDeal) guardarEnSupa("deals", { ...editDeal, ...nf });
-                 }} style={{ fontSize: 16, fontWeight: 600, background: "rgba(255,255,255,0.03)", border: `1px solid ${T.white}10`, borderRadius: 16, height: 50, color: T.white }} />
+                 }} style={{ fontSize: 15, fontWeight: 700, background: "rgba(255,255,255,0.02)", border: `1px solid ${T.white}10`, borderRadius: 12, height: 44 }} />
                </Campo>
 
-               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
-                 <Campo label="Valuación ($)"><LocalInput type="number" value={f.valor} onCommit={v => {
+               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+                 <Campo label="Valor ($)"><LocalInput type="number" value={f.valor} onCommit={v => {
                    const nf = { ...f, valor: v }; setF(nf);
                    if (editDeal) guardarEnSupa("deals", { ...editDeal, ...nf });
-                 }} style={{ color: T.teal, fontSize: 18, fontWeight: 900, background: "rgba(255,255,255,0.03)", border: `1px solid ${T.white}10`, borderRadius: 16 }} /></Campo>
+                 }} style={{ color: T.teal, fontSize: 16, fontWeight: 900, background: "rgba(255,255,255,0.02)", border: `1px solid ${T.white}10`, borderRadius: 12 }} /></Campo>
                  <Campo label="Confianza %"><LocalInput type="number" value={f.prob} onCommit={v => {
                    const nf = { ...f, prob: v }; setF(nf);
                    if (editDeal) guardarEnSupa("deals", { ...editDeal, ...nf });
-                 }} style={{ fontWeight: 800, background: "rgba(255,255,255,0.03)", border: `1px solid ${T.white}10`, borderRadius: 16 }} /></Campo>
+                 }} style={{ fontWeight: 800, background: "rgba(255,255,255,0.02)", border: `1px solid ${T.white}10`, borderRadius: 12 }} /></Campo>
                </div>
              </div>
           </div>
 
-          {/* AI MINIMALIST SCORE */}
-          <div style={{ background: "rgba(255,255,255,0.02)", border: `1px solid ${T.white}08`, borderRadius: 32, padding: 28, display: "flex", alignItems: "center", gap: 28 }}>
-             <div style={{ position: "relative", width: 72, height: 72 }}>
-                <svg viewBox="0 0 36 36" style={{ width: "100%", height: "100%", transform: "rotate(-90deg)" }}>
-                  <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="1.5" />
-                  <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke={T.teal} strokeDasharray={`${calculateLeadScore(db, f)}, 100`} strokeWidth="1.5" strokeLinecap="round" style={{ transition: "stroke-dasharray 1.5s cubic-bezier(0.4, 0, 0.2, 1)" }} />
-                </svg>
-                <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 900, color: T.white }}>{calculateLeadScore(db, f)}</div>
-             </div>
-             <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 14, fontWeight: 800, color: T.white, letterSpacing: ".02em" }}>Predictive Score</div>
-                <div style={{ fontSize: 11, color: T.whiteFade, marginTop: 4, lineHeight: 1.4 }}>Potencial de cierre analizado por inteligencia de datos ENSING.</div>
-             </div>
-          </div>
-
-          {/* STAKEHOLDERS */}
-          <div style={{ background: "rgba(255,255,255,0.02)", border: `1px solid ${T.white}08`, borderRadius: 32, padding: 32 }}>
-            <div style={{ fontSize: 11, fontWeight: 900, color: T.whiteFade, marginBottom: 24, letterSpacing: ".2em", textTransform: "uppercase" }}>Engagement & Staff</div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-              <Campo label="Contacto Lead"><Sel value={f.contacto_id} onChange={async e => {
+          {/* SECTION 2: RELACIONES & STAFF */}
+          <div style={{ background: "rgba(255,255,255,0.02)", border: `1px solid ${T.white}08`, borderRadius: 28, padding: 28 }}>
+            <div style={{ fontSize: 11, fontWeight: 900, color: T.whiteFade, marginBottom: 20, letterSpacing: ".15em", textTransform: "uppercase" }}>Relaciones & Staff</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+              <Campo label="Contacto Principal"><Sel value={f.contacto_id} onChange={async e => {
                 const val = e.target.value; const nextF = { ...f, contacto_id: val }; setF(nextF);
                 if (editDeal) await guardarEnSupa("deals", { ...editDeal, ...nextF });
-              }} style={{ background: "transparent", border: `1px solid ${T.white}10`, borderRadius: 16, height: 48 }}><option value="">— Ninguno —</option>{db.contactos.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}</Sel></Campo>
+              }} style={{ background: "transparent", border: `1px solid ${T.white}10`, borderRadius: 12, height: 44 }}><option value="">— Ninguno —</option>{db.contactos.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}</Sel></Campo>
               
               <Campo label="Responsable"><Sel value={f.responsable} onChange={async e => {
                 const val = e.target.value; const nextF = { ...f, responsable: val }; setF(nextF);
                 if (editDeal) await guardarEnSupa("deals", { ...editDeal, ...nextF });
-              }} style={{ background: "transparent", border: `1px solid ${T.white}10`, borderRadius: 16, height: 48 }}>{db.usuariosApp?.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}</Sel></Campo>
+              }} style={{ background: "transparent", border: `1px solid ${T.white}10`, borderRadius: 12, height: 44 }}>{db.usuariosApp?.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}</Sel></Campo>
             </div>
           </div>
 
-          <div style={{ display: "flex", gap: 20, marginTop: 8 }}>
-            <Btn variant="fantasma" onClick={onCancelar} full style={{ height: 54, borderRadius: 20, border: `1px solid ${T.white}10` }}>Descubrir</Btn>
-            <Btn onClick={() => onGuardar(f)} full style={{ height: 54, borderRadius: 20, background: T.teal, color: "#000", border: "none", fontWeight: 900, boxShadow: `0 10px 30px ${T.teal}30` }}>GUARDAR CAMBIOS</Btn>
-          </div>
-        </div>
-
-        {/* COLUMNA DERECHA: CONTENT AREA */}
-        <div style={{ flex: "1.2 1 540px", minHeight: "65vh", background: "rgba(255,255,255,0.01)", borderRadius: 40, border: `1px solid ${T.white}05`, overflow: "hidden", display: "flex", flexDirection: "column" }}>
-          
-          {leadTab === "timeline" && (
-            <LeadTimeline
-              deal={editDeal}
-              contacto={db.contactos.find(c => c.id === f.contacto_id) || {}}
-              db={db} setDb={setDb} guardarEnSupa={guardarEnSupa} setModulo={setModulo}
-              focusEmailId={focusEmailId} setFocusEmailId={setFocusEmailId}
-            />
-          )}
-
-          {leadTab === "fields" && (
-            <div style={{ padding: 40 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 32 }}>
-                <div style={{ fontSize: 18, fontWeight: 900, color: T.white }}>Atributos Avanzados</div>
-                <Btn variant="fantasma" size="xs" onClick={() => setShowConfigCampos(true)} style={{ color: T.teal }}><Ico k="cog" size={14} /></Btn>
-              </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 28 }}>
+          {/* SECTION 3: ATRIBUTOS EXTRA */}
+          <div style={{ background: "rgba(255,255,255,0.02)", border: `1px solid ${T.white}08`, borderRadius: 28, padding: 28 }}>
+             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
+                <div style={{ fontSize: 11, fontWeight: 900, color: T.whiteFade, letterSpacing: ".15em", textTransform: "uppercase" }}>Atributos Extra</div>
+                <Btn variant="fantasma" size="xs" onClick={() => setShowConfigCampos(true)} style={{ color: T.teal }}><Ico k="cog" size={12} /></Btn>
+             </div>
+             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
                 {customFieldsDef.map(cf => {
                   const val = f.custom_fields?.[cf.id] || "";
                   const handleChange = (v) => setF(prev => ({ ...prev, custom_fields: { ...(prev.custom_fields || {}), [cf.id]: v } }));
@@ -205,75 +147,100 @@ const FormDeal = ({ db, setDb, f, setF, editDeal, onGuardar, onCancelar, guardar
                   return (
                     <Campo key={cf.id} label={cf.nombre}>
                       {cf.tipo === "lista" ? (
-                        <Sel value={val} onChange={e => handleChange(e.target.value)} onBlur={handleBlur} style={{ background: "rgba(255,255,255,0.03)", border: `1px solid ${T.white}10`, borderRadius: 14 }}>
+                        <Sel value={val} onChange={e => handleChange(e.target.value)} onBlur={handleBlur} style={{ background: "rgba(255,255,255,0.02)", border: `1px solid ${T.white}10`, borderRadius: 10 }}>
                           <option value="">— Seleccionar —</option>
                           {cf.opciones?.map(opt => <option key={opt} value={opt}>{opt}</option>)}
                         </Sel>
                       ) : (
-                        <LocalInput value={val} onCommit={v => { handleChange(v); handleBlur(); }} style={{ background: "rgba(255,255,255,0.03)", border: `1px solid ${T.white}10`, borderRadius: 14, color: T.white }} />
+                        <LocalInput value={val} onCommit={v => { handleChange(v); handleBlur(); }} style={{ background: "rgba(255,255,255,0.02)", border: `1px solid ${T.white}10`, borderRadius: 10, color: T.white }} />
                       )}
                     </Campo>
                   );
                 })}
-              </div>
-            </div>
-          )}
+             </div>
+          </div>
 
-          {leadTab === "files" && (
-            <div style={{ padding: 40, flex: 1, display: "flex", flexDirection: "column" }} onDragOver={e => { e.preventDefault(); setDragActive(true); }} onDragLeave={() => setDragActive(false)} onDrop={handleDrop}>
-              <div style={{ flex: 1, border: `1px dashed ${dragActive ? T.teal : T.white + "15"}`, borderRadius: 32, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 20, padding: 60, background: dragActive ? T.teal + "05" : "transparent", transition: "all .3s" }}>
-                 <div style={{ width: 80, height: 80, borderRadius: "50%", background: "rgba(255,255,255,0.02)", display: "flex", alignItems: "center", justifyContent: "center", border: `1px solid ${T.white}08` }}>
-                   <Ico k="upload" size={32} style={{ color: T.whiteFade }} />
-                 </div>
-                 <div style={{ textAlign: "center" }}>
-                   <div style={{ fontSize: 18, fontWeight: 900, color: T.white }}>Obsidian Vault</div>
-                   <div style={{ fontSize: 12, color: T.whiteFade, marginTop: 8 }}>Deposite archivos aquí para el almacenamiento blindado.</div>
-                 </div>
-              </div>
-              <div style={{ marginTop: 32, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+          {/* SECTION 4: VAULT DE DOCUMENTOS */}
+          <div style={{ background: "rgba(255,255,255,0.02)", border: `1px solid ${T.white}08`, borderRadius: 28, padding: 28 }}>
+            <div style={{ fontSize: 11, fontWeight: 900, color: T.whiteFade, marginBottom: 20, letterSpacing: ".15em", textTransform: "uppercase" }}>Vault de Documentos</div>
+            <div style={{ flex: 1, border: `1px dashed ${dragActive ? T.teal : T.white + "10"}`, borderRadius: 20, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, padding: 32, background: dragActive ? T.teal + "05" : "transparent", transition: "all .3s" }} 
+                 onDragOver={e => { e.preventDefault(); setDragActive(true); }} onDragLeave={() => setDragActive(false)} onDrop={handleDrop}>
+               <Ico k="upload" size={24} style={{ color: T.whiteFade }} />
+               <div style={{ fontSize: 12, color: T.whiteFade, textAlign: "center" }}>Suelte archivos aquí para adjuntar.</div>
+            </div>
+            {f.archivos?.length > 0 && (
+              <div style={{ marginTop: 20, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                 {(f.archivos || []).map(a => (
-                  <div key={a.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "rgba(255,255,255,0.03)", padding: "14px 18px", borderRadius: 16, border: `1px solid ${T.white}08` }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 12, overflow: "hidden" }}>
-                      <Ico k={a.tipo === "img" ? "image" : "file"} size={16} style={{ color: T.teal }} />
-                      <span style={{ fontSize: 13, color: T.whiteOff, whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden" }}>{a.nombre}</span>
+                  <div key={a.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "rgba(255,255,255,0.03)", padding: "10px 14px", borderRadius: 12, border: `1px solid ${T.white}08` }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, overflow: "hidden" }}>
+                      <Ico k={a.tipo === "img" ? "image" : "file"} size={14} style={{ color: T.teal }} />
+                      <span style={{ fontSize: 12, color: T.whiteOff, whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden" }}>{a.nombre}</span>
                     </div>
-                    <Btn variant="fantasma" size="xs" onClick={() => quitarArchivo(a.id)} style={{ color: T.red, opacity: 0.6 }}><Ico k="trash" size={16} /></Btn>
+                    <Btn variant="fantasma" size="xs" onClick={() => quitarArchivo(a.id)} style={{ color: T.red, opacity: 0.6 }}><Ico k="trash" size={14} /></Btn>
                   </div>
                 ))}
               </div>
-            </div>
-          )}
+            )}
+          </div>
 
-          {leadTab === "whatsapp" && <div style={{ padding: 60, textAlign: "center", color: T.whiteFade, fontSize: 13 }}>Sincronización de WhatsApp pendiente.</div>}
+          <div style={{ display: "flex", gap: 16, marginTop: 8 }}>
+            <Btn variant="fantasma" onClick={onCancelar} full style={{ height: 50, borderRadius: 16 }}>Descartar</Btn>
+            <Btn onClick={() => onGuardar(f)} full style={{ height: 50, borderRadius: 16, background: T.teal, color: "#000", border: "none", fontWeight: 900 }}>GUARDAR CAMBIOS</Btn>
+          </div>
+        </div>
+
+        {/* COLUMNA DERECHA: ACTIVITY FEED & MATRIX */}
+        <div style={{ flex: "1.2 1 540px", minHeight: "75vh", background: "rgba(255,255,255,0.01)", borderRadius: 32, border: `1px solid ${T.white}05`, overflow: "hidden", display: "flex", flexDirection: "column" }}>
           
-          {leadTab === "finanzas" && (
-            <div style={{ padding: 40 }}>
-               <div style={{ fontSize: 20, fontWeight: 900, color: T.white, marginBottom: 32, letterSpacing: ".02em" }}>Financial Matrix</div>
-               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
-                 <div style={{ padding: 32, background: "rgba(255,255,255,0.02)", borderRadius: 32, border: `1px solid ${T.white}08`, display: "flex", flexDirection: "column", gap: 10 }}>
-                   <div style={{ fontSize: 10, color: T.whiteFade, fontWeight: 900, letterSpacing: ".2em" }}>PROJECTED REVENUE</div>
-                   <div style={{ fontSize: 32, fontWeight: 900, color: T.teal }}>{money(editDeal?.valor || 0)}</div>
-                 </div>
-                 <div style={{ padding: 32, background: "rgba(255,255,255,0.02)", borderRadius: 32, border: `1px solid ${T.white}08`, display: "flex", flexDirection: "column", gap: 10 }}>
-                   <div style={{ fontSize: 10, color: T.whiteFade, fontWeight: 900, letterSpacing: ".2em" }}>REGISTERED COSTS</div>
-                   <div style={{ fontSize: 32, fontWeight: 900, color: T.red, opacity: 0.8 }}>{money((db.finanzas_gastos || []).filter(g => g.deal_id === editDeal?.id).reduce((acc, g) => acc + g.monto, 0))}</div>
-                 </div>
+          <div style={{ display: "flex", background: "rgba(255,255,255,0.02)", padding: 4, gap: 4 }}>
+             {["timeline", "whatsapp", "finanzas", "historial"].map(tk => (
+               <div key={tk} onClick={() => setRightTab(tk)} style={{ flex: 1, padding: "10px 4px", textAlign: "center", fontSize: 10, fontWeight: 900, textTransform: "uppercase", cursor: "pointer", background: rightTab === tk ? T.bg2 : "transparent", color: rightTab === tk ? T.teal : T.whiteFade, borderRadius: 12, transition: "all .3s" }}>
+                 {tk === "timeline" ? "Feed" : tk}
                </div>
-            </div>
-          )}
+             ))}
+          </div>
 
-          {leadTab === "historial" && (
-            <div style={{ padding: 32, display: "flex", flexDirection: "column", gap: 16 }}>
-              {(db.auditoria || []).filter(a => a.entidad_id === editDeal?.id).sort((a,b) => new Date(b.creado) - new Date(a.creado)).map(a => (
-                <div key={a.id} style={{ display: "flex", gap: 20, padding: 20, background: "rgba(255,255,255,0.02)", borderRadius: 24, border: `1px solid ${T.white}05` }}>
-                   <div style={{ width: 4, background: T.teal, borderRadius: 2, height: 16, marginTop: 4 }} />
-                   <div style={{ fontSize: 14, color: T.whiteOff, lineHeight: 1.5 }}>
-                     <span style={{ fontWeight: 800, color: T.white }}>{a.usuario_nombre}</span> actualizó {a.campo} a <span style={{ color: T.teal, fontWeight: 600 }}>{a.valor_nuevo}</span>
+          <div style={{ flex: 1, overflowY: "auto" }}>
+            {rightTab === "timeline" && (
+              <LeadTimeline
+                deal={editDeal}
+                contacto={db.contactos.find(c => c.id === f.contacto_id) || {}}
+                db={db} setDb={setDb} guardarEnSupa={guardarEnSupa} setModulo={setModulo}
+                focusEmailId={focusEmailId} setFocusEmailId={setFocusEmailId}
+              />
+            )}
+
+            {rightTab === "whatsapp" && <div style={{ padding: 60, textAlign: "center", color: T.whiteFade, fontSize: 13 }}>Sincronización de WhatsApp pendiente.</div>}
+            
+            {rightTab === "finanzas" && (
+              <div style={{ padding: 40 }}>
+                 <div style={{ fontSize: 20, fontWeight: 900, color: T.white, marginBottom: 32 }}>Financial Matrix</div>
+                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
+                   <div style={{ padding: 32, background: "rgba(255,255,255,0.02)", borderRadius: 24, border: `1px solid ${T.white}08` }}>
+                     <div style={{ fontSize: 10, color: T.whiteFade, fontWeight: 900, letterSpacing: ".1em" }}>REVENUE</div>
+                     <div style={{ fontSize: 32, fontWeight: 900, color: T.teal }}>{money(editDeal?.valor || 0)}</div>
                    </div>
-                </div>
-              ))}
-            </div>
-          )}
+                   <div style={{ padding: 32, background: "rgba(255,255,255,0.02)", borderRadius: 24, border: `1px solid ${T.white}08` }}>
+                     <div style={{ fontSize: 10, color: T.whiteFade, fontWeight: 900, letterSpacing: ".1em" }}>COSTS</div>
+                     <div style={{ fontSize: 32, fontWeight: 900, color: T.red, opacity: 0.8 }}>{money((db.finanzas_gastos || []).filter(g => g.deal_id === editDeal?.id).reduce((acc, g) => acc + g.monto, 0))}</div>
+                   </div>
+                 </div>
+              </div>
+            )}
+
+            {rightTab === "historial" && (
+              <div style={{ padding: 32, display: "flex", flexDirection: "column", gap: 12 }}>
+                {(db.auditoria || []).filter(a => a.entidad_id === editDeal?.id).sort((a,b) => new Date(b.creado) - new Date(a.creado)).map(a => (
+                  <div key={a.id} style={{ display: "flex", gap: 16, padding: "16px 20px", background: "rgba(255,255,255,0.02)", borderRadius: 16, border: `1px solid ${T.white}05` }}>
+                     <div style={{ width: 4, background: T.teal, borderRadius: 2, height: 16, marginTop: 4 }} />
+                     <div style={{ fontSize: 13, color: T.whiteOff }}>
+                       <span style={{ fontWeight: 800, color: T.white }}>{a.usuario_nombre}</span> actualizó {a.campo} a <span style={{ color: T.teal }}>{a.valor_nuevo}</span>
+                     </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
@@ -872,16 +839,25 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
                           </div>
                         </div>
 
-                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 16 }}>
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 14 }}>
                            <div style={{ fontSize: 18, fontWeight: 900, color: T.teal }}>{money(deal.valor)}</div>
-                           <div style={{ fontSize: 11, color: T.whiteFade, fontWeight: 600 }}>{fdate(deal.creado)}</div>
+                           <div style={{ fontSize: 10, color: T.whiteFade, fontWeight: 600 }}>{fdate(deal.creado)}</div>
                         </div>
 
-                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 12, paddingTop: 12, borderTop: `1px solid ${T.white}05` }}>
-                           <div style={{ width: 24, height: 24, borderRadius: "50%", background: T.bg3, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 900, color: T.teal }}>
-                             {deal.responsable?.[0] || "?"}
+                        {/* INFO DENSITY: ALWAYS VISIBLE */}
+                        <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 12, paddingTop: 12, borderTop: `1px solid ${T.white}08` }}>
+                           {contacto && (
+                             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                               <Ico k="user" size={10} style={{ color: T.teal, opacity: 0.7 }} />
+                               <span style={{ fontSize: 11, color: T.whiteOff, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{contacto.nombre}</span>
+                             </div>
+                           )}
+                           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                              <div style={{ width: 18, height: 18, borderRadius: "50%", background: T.bg3, border: `1px solid ${T.white}10`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 900, color: T.teal }}>
+                                {deal.responsable?.[0] || "?"}
+                              </div>
+                              <span style={{ fontSize: 11, color: T.whiteDim }}>{deal.responsable}</span>
                            </div>
-                           <span style={{ fontSize: 11, color: T.whiteDim }}>{deal.responsable}</span>
                         </div>
                       </div>
                     );
