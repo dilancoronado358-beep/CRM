@@ -68,6 +68,12 @@ const HtmlEmail = memo(({ html, cuerpo }) => {
 export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa, cargandoFondo }) => {
   const [carpeta, setCarpeta] = useState("entrada");
 
+  const getAvClr = (s) => {
+    if (!s) return T.teal;
+    let h = 0; for (let i = 0; i < s.length; i++) h = s.charCodeAt(i) + ((h << 5) - h);
+    return `hsl(${Math.abs(h) % 360}, 65%, 65%)`;
+  };
+
   const [showRedactar, setShowRedactar] = useState(false);
   const [emailFocus, setEmailFocus] = useState(null);
   const [f, setF] = useState({ para: "", asunto: "", cuerpo: "", cc: "", bcc: "", plantillaId: "" });
@@ -282,47 +288,51 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa, cargando
 
         <div style={{ flex: 1, overflowY: "auto", padding: "12px" }}>
           {cargandoFondo && msgs.length === 0 ? (
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {[1, 2, 3, 4, 5].map(i => <div key={i} style={{ height: 100, background: "rgba(255,255,255,0.03)", borderRadius: 16, animation: "pulse 1.5s infinite" }} />)}
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              {[1, 2, 3, 4, 5].map(i => <div key={i} style={{ height: 100, background: "rgba(255,255,255,0.02)", borderRadius: 16, animation: "pulse 1.5s infinite" }} />)}
             </div>
           ) : msgs.length === 0 ? <Vacio text="No hay mensajes" /> : msgs.map(e => {
             const isSel = emailFocus?.id === e.id;
             const deStr = (carpeta === "entrada" ? e.de : e.para) || "Sin remitente";
+            const avClr = getAvClr(deStr);
+            
             return (
               <div key={e.id} onClick={() => { setEmailFocus(e); marcarLeido(e.id); }}
                 style={{ 
                   position: "relative", 
-                  padding: "18px 20px", 
-                  borderRadius: 20, 
-                  marginBottom: 8, 
+                  padding: "14px 18px", 
+                  borderRadius: 14, 
+                  marginBottom: 6, 
                   cursor: "pointer", 
-                  background: isSel ? "rgba(255,255,255,0.06)" : "rgba(255,255,255,0.015)", 
-                  border: `1px solid ${isSel ? T.teal + "30" : "transparent"}`,
-                  boxShadow: isSel ? `0 8px 20px rgba(0,0,0,0.1)` : "none",
-                  transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                  background: isSel ? "rgba(255,255,255,0.04)" : "transparent",
+                  border: `1px solid ${isSel ? T.whiteFade + "15" : "transparent"}`,
+                  boxShadow: isSel ? `0 10px 25px -5px rgba(0,0,0,0.2)` : "none",
+                  transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
                   display: "flex",
-                  gap: 14,
-                  alignItems: "flex-start",
+                  gap: 12,
+                  alignItems: "center",
                   overflow: "hidden"
                 }}
-                onMouseEnter={e => { if (!isSel) { e.currentTarget.style.background = "rgba(255,255,255,0.03)"; e.currentTarget.style.transform = "translateY(-2px)"; } }}
-                onMouseLeave={e => { if (!isSel) { e.currentTarget.style.background = "rgba(255,255,255,0.015)"; e.currentTarget.style.transform = "translateY(0)"; } }}
+                onMouseEnter={e => { if (!isSel) e.currentTarget.style.background = "rgba(255,255,255,0.02)"; }}
+                onMouseLeave={e => { if (!isSel) e.currentTarget.style.background = "transparent"; }}
               >
-                {!e.leido && carpeta === "entrada" && (
-                  <div style={{ position: "absolute", left: -2, top: "50%", transform: "translateY(-50%)", width: 4, height: 32, background: T.teal, borderRadius: 4, boxShadow: `0 0 12px ${T.teal}` }} />
+                {!e.leido && (
+                  <div style={{ position: "absolute", left: 0, top: "50%", transform: "translateY(-50%)", width: 4, height: 18, background: T.teal, borderRadius: "0 4px 4px 0", boxShadow: `0 0 10px ${T.teal}80` }} />
                 )}
                 
-                <Av text={deStr} size={42} color={!e.leido ? T.teal : T.whiteFade} />
+                <div style={{ transform: isSel ? "scale(1.05)" : "scale(1)", transition: "transform 0.3s" }}>
+                  <Av text={deStr} size={40} color={avClr} />
+                </div>
                 
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4, alignItems: "center" }}>
-                    <span style={{ fontSize: 13, fontWeight: !e.leido ? 900 : 700, color: !e.leido ? T.white : T.whiteOff, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {deStr.split("@")[0]}
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 2 }}>
+                    <span style={{ fontSize: 13, fontWeight: !e.leido ? 800 : 600, color: !e.leido ? T.white : T.whiteOff, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {deStr.split("@")[0].substring(0, 20)}
                     </span>
-                    <span style={{ fontSize: 11, color: T.whiteDim, fontWeight: 600 }}>{fdate(e.fecha)}</span>
+                    <span style={{ fontSize: 10, color: T.whiteDim, opacity: 0.7, fontWeight: 500 }}>{fdate(e.fecha)}</span>
                   </div>
-                  <div style={{ fontSize: 13, fontWeight: !e.leido ? 800 : 600, color: T.white, marginBottom: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", letterSpacing: "-0.01em" }}>{e.asunto}</div>
-                  <div style={{ fontSize: 12, color: T.whiteDim, overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical", opacity: 0.6 }}>{e.cuerpo}</div>
+                  <div style={{ fontSize: 13, fontWeight: !e.leido ? 700 : 500, color: T.white, marginBottom: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{e.asunto}</div>
+                  <div style={{ fontSize: 12, color: T.whiteDim, overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical", opacity: 0.5 }}>{e.cuerpo}</div>
                 </div>
               </div>
             );
