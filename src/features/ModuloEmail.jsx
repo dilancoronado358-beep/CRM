@@ -65,7 +65,7 @@ const HtmlEmail = memo(({ html, cuerpo }) => {
   );
 });
 
-export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa, cargandoFondo, setModulo, focusEmailId, setFocusEmailId }) => {
+export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, cargandoFondo, setModulo, focusEmailId, setFocusEmailId }) => {
   const [carpeta, setCarpeta] = useState("entrada");
 
   const getAvClr = (s) => {
