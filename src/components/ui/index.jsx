@@ -99,7 +99,7 @@ export const LocalInput = ({ value, onChange, onCommit, type = "text", ...props 
   );
 };
 
-export const Sel = ({ value, onChange, children, style = {}, placeholder = "Seleccionar..." }) => {
+export const Sel = ({ value, onChange, children, style = {}, innerStyle = {}, placeholder = "Seleccionar..." }) => {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
 
@@ -119,9 +119,9 @@ export const Sel = ({ value, onChange, children, style = {}, placeholder = "Sele
   return (
     <div ref={ref} style={{ position: "relative", width: "100%", ...style }}>
       <div onClick={() => setOpen(!open)}
-        style={{ background: "rgba(255,255,255,0.03)", border: `1px solid ${T.whiteFade}15`, borderRadius: 12, padding: "10px 16px", display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", backdropFilter: "blur(12px)", transition: "all 0.2s" }}
+        style={{ background: "rgba(255,255,255,0.03)", border: `1px solid ${T.whiteFade}15`, borderRadius: 12, padding: "10px 16px", display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", backdropFilter: "blur(12px)", transition: "all 0.2s", ...innerStyle }}
         onMouseEnter={e => e.currentTarget.style.borderColor = T.teal + "80"}
-        onMouseLeave={e => e.currentTarget.style.borderColor = T.whiteFade + "15"}
+        onMouseLeave={e => e.currentTarget.style.borderColor = innerStyle.border ? innerStyle.border : (T.whiteFade + "15")}
       >
         <span style={{ fontSize: 13, color: T.whiteOff, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, marginRight: 8 }}>{sel.lab}</span>
         <Ico k="chevron-down" size={14} style={{ transform: open ? "rotate(180deg)" : "none", transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)", color: open ? T.teal : T.whiteDim, flexShrink: 0 }} />

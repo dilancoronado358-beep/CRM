@@ -708,13 +708,17 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
       )}
 
 
-      <div style={{ display: "flex", gap: 16, marginBottom: 24, alignItems: "center", flexWrap: "wrap" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12, background: T.bg1, border: `1px solid ${T.borderHi}`, borderRadius: 10, padding: "6px 16px", boxShadow: "0 2px 4px rgba(0,0,0,0.02)" }}>
-          <span style={{ fontSize: 13, fontWeight: 700, color: T.whiteDim }}>Pipeline Activo:</span>
-          <select value={plActivo} onChange={e => setPlActivo(e.target.value)}
-            style={{ border: "none", background: "transparent", fontSize: 15, fontWeight: 800, color: T.teal, outline: "none", cursor: "pointer", paddingRight: 8, fontFamily: "inherit" }}>
+      <div style={{ display: "flex", gap: 10, marginBottom: 16, alignItems: "center", flexWrap: "wrap", transform: "scale(0.98)", transformOrigin: "left top" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, background: T.bg1, border: `1px solid ${T.borderHi}`, borderRadius: 10, padding: "0px 12px", boxShadow: "0 2px 4px rgba(0,0,0,0.02)", minWidth: 180 }}>
+          <span style={{ fontSize: 13, fontWeight: 700, color: T.whiteDim, whiteSpace: "nowrap" }}>Pipeline Activo:</span>
+          <Sel 
+            value={plActivo} 
+            onChange={e => setPlActivo(e.target.value)}
+            style={{ flex: 1 }}
+            innerStyle={{ background: "transparent", border: "none", padding: "6px 0", height: "auto" }}
+          >
             {db.pipelines.map(pl => <option key={pl.id} value={pl.id}>{pl.nombre} ({db.deals.filter(d => d.pipeline_id === pl.id).length})</option>)}
-          </select>
+          </Sel>
         </div>
 
         <div style={{ background: T.bg1, border: `1px solid ${T.borderHi}`, borderRadius: 10, padding: "2px 8px" }}>
@@ -730,7 +734,7 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
           />
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", background: T.bg1, border: `1px solid ${T.borderHi}`, borderRadius: 10, padding: "4px 12px", gap: 10, flex: 1, minWidth: 250 }}>
+        <div style={{ display: "flex", alignItems: "center", background: T.bg1, border: `1px solid ${T.borderHi}`, borderRadius: 10, padding: "0px 10px", gap: 8, flex: 1, minWidth: 200 }}>
           <Ico k="search" size={16} style={{ color: T.whiteDim }} />
           <input 
             type="text" 
@@ -779,7 +783,7 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
 
       {/* KANBAN — ESTILO BITRIX24 DARK */}
       {tab === "kanban" && pipeline && (
-        <div style={{ display: "flex", gap: 10, overflowX: "auto", paddingBottom: 20, minHeight: "70vh", alignItems: "flex-start" }}>
+        <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 16, minHeight: "75vh", alignItems: "flex-start", transform: "scale(0.97)", transformOrigin: "left top" }}>
           {pipeline.etapas.map((etapa, etapaIdx) => {
             const etDeals = plDeals.filter(d => d.etapa_id === etapa.id);
             const isOver = dragSobre === etapa.id;
@@ -787,7 +791,7 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
             const colBg = isOver ? etapa.color + "15" : T.bg2;
             return (
               <div key={etapa.id}
-                style={{ minWidth: 220, maxWidth: 220, display: "flex", flexDirection: "column", flexShrink: 0, borderRadius: 12, background: colBg, border: `1px solid ${isOver ? etapa.color + "60" : T.borderHi}`, transition: "all .2s", overflow: "hidden" }}
+                style={{ minWidth: 200, maxWidth: 200, display: "flex", flexDirection: "column", flexShrink: 0, borderRadius: 12, background: colBg, border: `1px solid ${isOver ? etapa.color + "60" : T.borderHi}`, transition: "all .2s", overflow: "hidden" }}
                 onDragOver={e => { e.preventDefault(); setDragSobre(etapa.id); }}
                 onDrop={async e => {
                   e.preventDefault();
@@ -805,12 +809,12 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
                 onDragLeave={() => setDragSobre(null)}>
 
                 {/* CABECERA SÓLIDA DE COLOR — compacta como Bitrix24 */}
-                <div style={{ background: etapa.color, padding: "7px 10px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 6 }}>
+                <div style={{ background: etapa.color, padding: "6px 10px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 6 }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 10, fontWeight: 800, color: "#fff", textTransform: "uppercase", letterSpacing: ".08em", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{etapa.nombre}</div>
-                    <div style={{ fontSize: 13, fontWeight: 900, color: "#fff", opacity: 0.95 }}>{money(totalEtapa)}</div>
+                    <div style={{ fontSize: 9.5, fontWeight: 800, color: "#fff", textTransform: "uppercase", letterSpacing: ".08em", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{etapa.nombre}</div>
+                    <div style={{ fontSize: 12, fontWeight: 900, color: "#fff", opacity: 0.95 }}>{money(totalEtapa)}</div>
                   </div>
-                  <span style={{ background: "rgba(0,0,0,0.25)", color: "#fff", borderRadius: 20, padding: "1px 8px", fontSize: 10, fontWeight: 800, flexShrink: 0 }}>{etDeals.length}</span>
+                  <span style={{ background: "rgba(0,0,0,0.25)", color: "#fff", borderRadius: 20, padding: "1px 6px", fontSize: 9, fontWeight: 800, flexShrink: 0 }}>{etDeals.length}</span>
                 </div>
 
                 {/* BOTÓN AGREGAR */}
@@ -841,7 +845,7 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
                           border: `1px solid ${isSelected ? T.teal : T.borderHi}`, 
                           borderLeft: `3px solid ${etapa.color}`, 
                           borderRadius: 8, 
-                          padding: "11px 12px", 
+                          padding: "9px 10px", 
                           cursor: "pointer", 
                           userSelect: "none", 
                           transition: "all .2s cubic-bezier(0.4, 0, 0.2, 1)", 
@@ -878,8 +882,8 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
 
                         {/* INDICADOR SCORE */}
                          {/* Título + botones acción */}
-                         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 8 }}>
-                           <div style={{ fontSize: 13, fontWeight: 700, color: T.white, lineHeight: 1.35, flex: 1, display: "flex", alignItems: "center", gap: 6 }}>
+                         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 6 }}>
+                           <div style={{ fontSize: 12, fontWeight: 700, color: T.white, lineHeight: 1.3, flex: 1, display: "flex", alignItems: "center", gap: 5 }}>
                              {/* Indicador de Temperatura */}
                              <div title={dStat.desc} style={{ display: "flex", alignItems: "center", gap: 4 }}>
                                <div style={{ width: 8, height: 8, borderRadius: "50%", background: dStat.color, boxShadow: `0 0 6px ${dStat.color}80` }} />
@@ -939,7 +943,7 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
                          </div>
 
                         {/* Monto */}
-                        <div style={{ fontSize: 16, fontWeight: 900, color: T.green, marginBottom: 8, letterSpacing: "-0.01em" }}>{money(deal.valor)}</div>
+                        <div style={{ fontSize: 14.5, fontWeight: 900, color: T.green, marginBottom: 6, letterSpacing: "-0.01em" }}>{money(deal.valor)}</div>
 
                         {/* Meta-data: ID y nombre */}
                         <div style={{ display: "flex", flexDirection: "column", gap: 3, marginBottom: 8, borderTop: `1px solid ${T.borderHi}`, paddingTop: 8 }}>
