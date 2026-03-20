@@ -164,9 +164,26 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa, cargando
         setShowRedactar(false);
         setSimulandoEnvio(false);
         setLogEnvio([]);
-        const nuevo = { id: "em_sent_" + Date.now(), de: acc.email, para: f.para, asunto: f.asunto || "Sin asunto", cuerpo: f.cuerpo, fecha: new Date().toISOString(), creado_at: new Date().toISOString(), carpeta: 'enviados', leido: true, adjuntos: adjuntosLocal, account_id: acc.id, user_id: db.usuario?.id };
+        const nuevo = { 
+          id: uuid(), // Use real UUID
+          de: acc.email, 
+          para: f.para, 
+          asunto: f.asunto || "Sin asunto", 
+          cuerpo: f.cuerpo, 
+          fecha: new Date().toISOString(), 
+          creado: new Date().toISOString(),
+          creado_at: new Date().toISOString(), 
+          created_at: new Date().toISOString(),
+          carpeta: 'enviados', 
+          leido: true, 
+          adjuntos: adjuntosLocal, 
+          account_id: acc.id, 
+          user_id: db.usuario?.id 
+        };
         setDb(prev => ({ ...prev, emails: [nuevo, ...prev.emails] }));
-        await guardarEnSupa("emails", nuevo);
+        const resSupa = await guardarEnSupa("emails", nuevo);
+        if (resSupa.error) toast.error("Error al guardar: " + resSupa.error.message);
+        
         setF({ para: "", asunto: "", cuerpo: "", cc: "", bcc: "", plantillaId: "" });
         setAdjuntosLocal([]);
       }, 800);
@@ -259,10 +276,13 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa, cargando
       deal_id: nd.id, 
       user_id: db.usuario?.id, 
       account_id: emailFocus.account_id || selectedAccountId || (db.email_accounts?.[0]?.id),
-      creado_at: emailFocus.creado_at || new Date().toISOString()
+      creado_at: emailFocus.creado_at || new Date().toISOString(),
+      created_at: emailFocus.created_at || new Date().toISOString(),
+      creado: emailFocus.creado || new Date().toISOString()
     };
     setDb(d => ({ ...d, emails: (d.emails || []).map(e => e.id === emailFocus.id ? updatedEmail : e) }));
-    await guardarEnSupa("emails", updatedEmail);
+    const rEmail = await guardarEnSupa("emails", updatedEmail);
+    if (rEmail.error) toast.error("Error vinculando email: " + rEmail.error.message);
     
     // Log actividad
     const act = { id: "act" + uid(), deal_id: nd.id, tipo: "email", nota: `Convertido desde email: ${emailFocus.asunto}`, fecha: new Date().toISOString(), usuario_id: db.usuario?.id };
@@ -341,11 +361,14 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa, cargando
         account_id: acc.id,
         user_id: db.usuario?.id,
         creado_at: new Date().toISOString(),
+        created_at: new Date().toISOString(),
+        creado: new Date().toISOString(),
         thread_id: emailFocus.thread_id,
         mensaje_id: res.data?.messageId || null
       };
       setDb(prev => ({ ...prev, emails: [nuevaRpta, ...prev.emails] }));
-      await guardarEnSupa("emails", nuevaRpta);
+      const rs = await guardarEnSupa("emails", nuevaRpta);
+      if (rs.error) toast.error("Error guardando respuesta: " + rs.error.message);
       
       setRespuestaRapida("");
       setReplyCC(""); setReplyBCC("");

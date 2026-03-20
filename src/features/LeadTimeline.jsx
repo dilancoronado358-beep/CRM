@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { T } from "../theme";
 import { Ico, Btn, Inp } from "../components/ui";
-import { getApiUrl } from "../utils";
+import { getApiUrl, uuid, uid } from "../utils";
 import { createClient } from "@supabase/supabase-js";
 import { io } from "socket.io-client";
 import { sileo as toast } from "../utils/sileo";
@@ -354,23 +354,26 @@ export function LeadTimeline({ deal = {}, contacto = {}, db = {}, setDb, guardar
       
       // Persistir correo en la tabla 'emails' para el Timeline
       const sentEmail = {
-        id: "em_sent_" + Date.now(),
+        id: uuid(), // Use real UUID
         de: db.email_accounts?.find(a => a.id === accId)?.email || "Tú",
         para: emailTo || contacto?.email,
         asunto: emailSubject || "(Sin asunto)",
         cuerpo: emailBody,
         html: emailBody.replace(/\n/g, '<br>'),
         fecha: new Date().toISOString(),
+        creado: new Date().toISOString(),
+        creado_at: new Date().toISOString(),
+        created_at: new Date().toISOString(),
         carpeta: 'enviados',
         leido: true,
         deal_id: deal?.id,
         contacto_id: contacto?.id,
         account_id: accId,
         user_id: db.usuario?.id, // CRITICAL: Filtered by user_id in cargarDeSupa
-        creado_at: new Date().toISOString(),
         adjuntos: emailAttachments
       };
-      await guardarEnSupa("emails", sentEmail);
+      const rSupa = await guardarEnSupa("emails", sentEmail);
+      if (rSupa.error) toast.error("Error BD Email: " + rSupa.error.message);
 
       cargarTimeline();
     } catch (e) {
