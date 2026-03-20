@@ -12,25 +12,25 @@ const calculateLeadScore = (db, deal) => {
   let score = 0;
   if (!db || !deal) return 0;
   const contacto = db.contactos?.find(c => c.id === deal.contacto_id);
-  
+
   if (deal.valor > 0) score += 20;
   if (contacto?.telefono) score += 15;
   if (contacto?.email) score += 10;
   if (deal.empresa_id || deal.empresa) score += 15;
-  
+
   const acts = (db.actividades || []).filter(a => a.deal_id === deal.id);
   if (acts.length > 0) score += 20;
   if (acts.length > 2) score += 10;
-  
+
   const waMsgs = (db.whatsapp_messages || []).filter(m => m.deal_id === deal.id);
   if (waMsgs.length > 0) score += 10;
-  
+
   return Math.min(100, score);
 };
 
 const FormDeal = ({ db, setDb, f, setF, editDeal, onGuardar, onCancelar, guardarEnSupa, ejecutarAutomaciones, setModulo, setShowConfigCampos, focusEmailId, setFocusEmailId }) => {
   const customFieldsDef = db.campos_personalizados || [];
-  const [leadTab, setLeadTab] = useState("timeline"); // timeline, info, tareas, whatsapp, cotizacion, historial
+  const [leadTab, setLeadTab] = useState("timeline");
   const [dragActive, setDragActive] = useState(false);
 
   const plActual = db.pipelines.find(p => p.id === f.pipeline_id);
@@ -50,332 +50,221 @@ const FormDeal = ({ db, setDb, f, setF, editDeal, onGuardar, onCancelar, guardar
   const quitarArchivo = id => setF(p => ({ ...p, archivos: p.archivos.filter(a => a.id !== id) }));
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 24, minHeight: 600 }}>
-      {/* STAGE SELECTOR (PREMIUM PILL FLOW) */}
-      <div style={{ display: "flex", width: "100%", gap: 12, paddingBottom: 15, height: 44, position: "relative" }}>
-        {stages.map((st, idx) => {
-          const isActive = st.id === f.etapa_id;
-          const isPast = idx < currentEtIdx;
-          
-          let color = T.whiteOff;
-          let bg = T.bg2;
-          let border = `1px solid ${T.borderHi}`;
-          let glow = "none";
+    <div style={{ display: "flex", flexDirection: "column", gap: 32, minHeight: 700, padding: 20 }}>
+      {/* ENSING "CYBER-RIBBON" STAGE SELECTOR */}
+      <div style={{ position: "relative", padding: "10px 0 30px" }}>
+        <div style={{ height: 2, background: `linear-gradient(90deg, transparent, ${T.teal}80, transparent)`, position: "absolute", top: 32, left: 40, right: 40, zIndex: 0 }} />
+        <div style={{ display: "flex", justifyContent: "space-between", position: "relative", zIndex: 1 }}>
+          {stages.map((st, idx) => {
+            const isActive = st.id === f.etapa_id;
+            const isPast = idx < currentEtIdx;
+            const color = isActive ? T.teal : isPast ? T.teal + "80" : T.whiteFade;
 
-          if (isActive) { 
-            bg = st.color || T.teal; 
-            color = "#000"; 
-            border = `1px solid ${bg}`;
-            glow = `0 10px 30px ${bg}40`;
-          } else if (isPast) { 
-            color = st.color || T.teal; 
-            bg = (st.color || T.teal) + "15";
-            border = `1px solid ${st.color || T.teal}30`;
-          }
-
-          return (
-            <div
-              key={st.id}
-              onClick={async () => {
-                const nextF = { ...f, etapa_id: st.id, prob: st.probabilidad };
-                setF(nextF);
-                if (editDeal) {
-                  await guardarEnSupa("deals", { ...editDeal, ...nextF });
-                  if (st.id !== f.etapa_id) await ejecutarAutomaciones(editDeal, st.id);
-                }
-              }}
-              style={{
-                flex: 1, 
-                height: "100%", 
-                display: "flex", 
-                alignItems: "center", 
-                justifyContent: "center",
-                fontSize: 11, 
-                fontWeight: 900, 
-                cursor: "pointer", 
-                background: bg, 
-                color: color,
-                borderRadius: 14,
-                border: border,
-                boxShadow: glow,
-                transition: "all .4s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
-                textAlign: "center",
-                textTransform: "uppercase", 
-                letterSpacing: ".1em",
-                position: "relative",
-                transform: isActive ? "scale(1.05)" : "scale(1)",
-                zIndex: isActive ? 2 : 1
-              }}
-            >
-              {st.nombre}
-              {isActive && <div style={{ position: "absolute", bottom: -6, left: "50%", transform: "translateX(-50%)", width: 6, height: 6, borderRadius: "50%", background: bg }} />}
-            </div>
-          );
-        })}
-      </div>
-
-      {/* PREMIUM NAVIGATION TABS */}
-      <div style={{ display: "flex", gap: 32, borderBottom: `1px solid ${T.border}`, paddingBottom: 0, marginBottom: 8, position: "relative" }}>
-        {["timeline", "whatsapp", "cotizacion", "finanzas", "historial"].map(tabKey => (
-          <div 
-            key={tabKey} 
-            onClick={() => setLeadTab(tabKey)}
-            style={{ 
-              padding: "12px 4px", 
-              fontSize: 14, 
-              fontWeight: 800, 
-              color: leadTab === tabKey ? T.teal : T.whiteFade, 
-              cursor: "pointer", 
-              position: "relative",
-              transition: "all .3s",
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              textTransform: "uppercase",
-              letterSpacing: ".05em"
-            }}
-          >
-            <Ico k={tabKey === "timeline" ? "lightning" : tabKey === "whatsapp" ? "phone" : tabKey === "cotizacion" ? "dollar" : tabKey === "finanzas" ? "trend" : "history"} size={16} /> 
-            {tabKey}
-            {leadTab === tabKey && (
-              <div style={{ position: "absolute", bottom: -1, left: 0, right: 0, height: 3, background: T.teal, borderRadius: "3px 3px 0 0", boxShadow: `0 -4px 10px ${T.teal}60` }} />
-            )}
-          </div>
-        ))}
-      </div>
-
-      <div style={{ display: "flex", gap: 32, flexWrap: "wrap" }}>
-        {/* COLUMNA IZQUIERDA: INFORMACIÓN Y CAMPOS */}
-        <div style={{ flex: "1 1 440px", maxWidth: 440, display: "flex", flexDirection: "column", gap: 32 }}>
-          {/* SECCIÓN 1: DETALLES PRINCIPALES */}
-          <div style={{ background: T.bg1, border: `1px solid ${T.borderHi}`, borderRadius: 28, padding: 32, boxShadow: "0 20px 50px rgba(0,0,0,0.15)", position: "relative", overflow: "hidden" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 28 }}>
-              <div style={{ width: 40, height: 40, borderRadius: 12, background: T.tealSoft, display: "flex", alignItems: "center", justifyContent: "center", color: T.teal }}><Ico k="board" size={20} /></div>
-              <div>
-                <span style={{ fontSize: 10, fontWeight: 900, color: T.whiteFade, textTransform: "uppercase", letterSpacing: ".2em", display: "block" }}>Módulo Negocio</span>
-                <span style={{ fontSize: 16, fontWeight: 900, color: T.white }}>Información Esencial</span>
+            return (
+              <div
+                key={st.id}
+                onClick={async () => {
+                  const nextF = { ...f, etapa_id: st.id, prob: st.probabilidad };
+                  setF(nextF);
+                  if (editDeal) {
+                    await guardarEnSupa("deals", { ...editDeal, ...nextF });
+                    if (st.id !== f.etapa_id) await ejecutarAutomaciones(editDeal, st.id);
+                  }
+                }}
+                style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", cursor: "pointer", transition: "all .4s" }}
+              >
+                <div style={{
+                  width: 14, height: 14, borderRadius: "50%",
+                  background: isActive ? T.teal : T.bg1,
+                  border: `2px solid ${isActive ? T.teal : isPast ? T.teal + "80" : T.borderHi}`,
+                  boxShadow: isActive ? `0 0 20px ${T.teal}` : "none",
+                  marginBottom: 12, transition: "all .4s",
+                  transform: isActive ? "scale(1.5)" : "scale(1)"
+                }} />
+                <span style={{ fontSize: 9, fontWeight: 900, color: color, textTransform: "uppercase", letterSpacing: ".15em", textAlign: "center", maxWidth: 80 }}>
+                  {st.nombre}
+                </span>
               </div>
-            </div>
-            
-            <Campo label="Nombre del Trato" style={{ marginBottom: 28 }}>
-              <LocalInput value={f.titulo} onCommit={v => {
-                const nf = { ...f, titulo: v };
-                setF(nf);
-                if (editDeal) guardarEnSupa("deals", { ...editDeal, ...nf });
-              }} placeholder="ej. Venta Corporativa — Acme Corp" style={{ fontSize: 18, fontWeight: 900, background: T.bg2, border: `1px solid ${T.borderHi}`, borderRadius: 14, height: 50, padding: "0 20px" }} />
-            </Campo>
- 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24, marginBottom: 28 }}>
-              <Campo label="Valor Proyectado ($)">
-                <LocalInput type="number" value={f.valor} onCommit={v => {
-                  const nf = { ...f, valor: v };
-                  setF(nf);
-                  if (editDeal) guardarEnSupa("deals", { ...editDeal, ...nf });
-                }} style={{ fontWeight: 900, color: T.teal, fontSize: 18, background: T.bg2, border: `1px solid ${T.borderHi}`, borderRadius: 14, height: 50, padding: "0 20px" }} />
-              </Campo>
-              <Campo label="Confianza (%)">
-                <LocalInput type="number" value={f.prob} onCommit={v => {
-                  const nf = { ...f, prob: v };
-                  setF(nf);
-                  if (editDeal) guardarEnSupa("deals", { ...editDeal, ...nf });
-                }} style={{ fontWeight: 900, fontSize: 18, background: T.bg2, border: `1px solid ${T.borderHi}`, borderRadius: 14, height: 50, padding: "0 20px" }} />
-              </Campo>
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-              <Campo label="Embudo de Ventas"><Sel value={f.pipeline_id} onChange={async e => {
-                const plId = e.target.value;
-                const pl = db.pipelines.find(p => p.id === plId);
-                const nextF = { ...f, pipeline_id: plId, etapa_id: pl?.etapas[0]?.id || "" };
-                setF(nextF);
-                if (editDeal) {
-                  await guardarEnSupa("deals", { ...editDeal, ...nextF });
-                  if (editDeal.etapa_id !== (pl?.etapas[0]?.id || "")) await ejecutarAutomaciones(editDeal, pl?.etapas[0]?.id || "");
-                }
-              }} style={{ background: T.bg2, border: `1px solid ${T.borderHi}`, borderRadius: 14, height: 50 }}>{db.pipelines.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}</Sel></Campo>
-              
-              <Campo label="Estado Actual"><Sel value={f.etapa_id} onChange={async e => {
-                const val = e.target.value;
-                const nextF = { ...f, etapa_id: val };
-                setF(nextF);
-                if (editDeal) {
-                  await guardarEnSupa("deals", { ...editDeal, ...nextF });
-                  if (val !== f.etapa_id) await ejecutarAutomaciones(editDeal, val);
-                }
-              }} style={{ background: T.bg2, border: `1px solid ${T.borderHi}`, borderRadius: 14, height: 50 }}>{plActual?.etapas.map(e => <option key={e.id} value={e.id}>{e.nombre}</option>)}</Sel></Campo>
-            </div>
-          </div>
-/div>
+            );
+          })}
+        </div>
+      </div>
 
-          {/* SECCIÓN 2: ASIGNACIÓN Y CONTACTO */}
-          <div style={{ background: T.bg1, border: `1px solid ${T.border}`, borderRadius: 20, padding: 24, boxShadow: "var(--shadow-sm)" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 20 }}>
-              <div style={{ width: 4, height: 16, background: T.teal, borderRadius: 4 }} />
-              <span style={{ fontSize: 13, fontWeight: 800, color: T.whiteOff, textTransform: "uppercase", letterSpacing: ".05em" }}>Relaciones y Responsable</span>
-            </div>
+      <div style={{ display: "flex", gap: 40, flexWrap: "wrap" }}>
+        {/* COLUMNA IZQUIERDA: THE ENGINE ROOM */}
+        <div style={{ flex: "1 1 420px", display: "flex", flexDirection: "column", gap: 32 }}>
+
+          {/* NAVIGATION "DYNAMIC SEGMENT" */}
+          <div style={{ display: "flex", background: T.bg2, padding: 6, borderRadius: 16, border: `1px solid ${T.borderHi}` }}>
+            {["timeline", "whatsapp", "fields", "files", "finanzas", "historial"].map(tk => (
+              <div
+                key={tk}
+                onClick={() => setLeadTab(tk)}
+                style={{
+                  flex: 1, padding: "8px 4px", textAlign: "center", fontSize: 10, fontWeight: 900,
+                  color: leadTab === tk ? "#000" : T.whiteFade,
+                  background: leadTab === tk ? T.teal : "transparent",
+                  borderRadius: 12, cursor: "pointer", transition: "all .3s", textTransform: "uppercase"
+                }}
+              >
+                {tk === "timeline" ? "Feed" : tk}
+              </div>
+            ))}
+          </div>
+
+          {/* GLASS-CARD: CORE DATA */}
+          <div style={{ background: `linear-gradient(165deg, ${T.bg1}, ${T.bg2})`, border: `1px solid ${T.borderHi}`, borderRadius: 28, padding: 28, boxShadow: "var(--shadow-lg)", position: "relative" }}>
+            <div style={{ fontSize: 11, fontWeight: 900, color: T.teal, marginBottom: 4, letterSpacing: ".1em" }}>REVENUE & VALUE</div>
+            <div style={{ fontSize: 18, fontWeight: 900, color: T.white, marginBottom: 28 }}>Detalles del Lead</div>
 
             <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-              <Campo label="Contacto Asociado"><Sel value={f.contacto_id} onChange={async e => {
-                const val = e.target.value;
-                const nextF = { ...f, contacto_id: val };
-                setF(nextF);
-                if (editDeal) await guardarEnSupa("deals", { ...editDeal, ...nextF });
-              }}><option value="">— Ninguno —</option>{db.contactos.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}</Sel></Campo>
+              <Campo label="Nombre del Trato">
+                <LocalInput value={f.titulo} onCommit={v => {
+                  const nf = { ...f, titulo: v }; setF(nf);
+                  if (editDeal) guardarEnSupa("deals", { ...editDeal, ...nf });
+                }} style={{ fontSize: 15, fontWeight: 700, background: T.bg2 + "80", border: `1px solid ${T.borderHi}`, borderRadius: 12, height: 44 }} />
+              </Campo>
 
-              <Campo label="Empresa (B2B)"><Sel value={f.empresa_id} onChange={async e => {
-                const val = e.target.value;
-                const nextF = { ...f, empresa_id: val };
-                setF(nextF);
-                if (editDeal) await guardarEnSupa("deals", { ...editDeal, ...nextF });
-              }}><option value="">— Ninguna —</option>{db.empresas.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}</Sel></Campo>
-
-              <Campo label="Responsable"><Sel value={f.responsable} onChange={async e => {
-                const val = e.target.value;
-                const nextF = { ...f, responsable: val };
-                setF(nextF);
-                if (editDeal) await guardarEnSupa("deals", { ...editDeal, ...nextF });
-              }}>{db.usuariosApp?.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}</Sel></Campo>
-            </div>
-            {/* IA Lead Scoring Modernizado */}
-          <div style={{ background: T.bg2, border: `1px solid ${T.borderHi}`, borderRadius: 28, padding: 32, position: "relative", overflow: "hidden", boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.5)" }}>
-             <div style={{ position: "absolute", top: -20, right: -20, width: 120, height: 120, background: T.teal, opacity: 0.1, borderRadius: "50%", filter: "blur(40px)" }} />
-             
-             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 28 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-                  <div style={{ width: 50, height: 50, borderRadius: 16, background: "linear-gradient(135deg, " + T.teal + ", " + T.tealDark + ")", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, boxShadow: `0 8px 20px ${T.teal}40`, color: "#000" }}>
-                    <Ico k="lightning" size={24} />
-                  </div>
-                  <div>
-                    <div style={{ fontSize: 16, fontWeight: 900, color: T.white }}>Predictive Score</div>
-                    <div style={{ fontSize: 12, color: T.teal, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".1em" }}>Powered by ENSING IA</div>
-                  </div>
-                </div>
-                <div style={{ textAlign: "right" }}>
-                  <div style={{ fontSize: 42, fontWeight: 900, color: T.white, lineHeight: 1, textShadow: `0 0 20px ${T.teal}40` }}>{calculateLeadScore(db, f)}<span style={{ fontSize: 14, color: T.whiteFade, fontWeight: 500, verticalAlign: "middle", marginLeft: 4 }}>%</span></div>
-                </div>
-             </div>
- 
-             <div style={{ height: 10, background: T.bg1, borderRadius: 10, overflow: "hidden", marginBottom: 24 }}>
-                <div style={{ width: `${calculateLeadScore(db, f)}%`, height: "100%", background: `linear-gradient(90deg, ${T.tealDark}, ${T.teal}, ${T.tealLight})`, boxShadow: `0 0 15px ${T.teal}80`, transition: "width 1.5s cubic-bezier(0.23, 1, 0.32, 1)" }} />
-             </div>
-             
-             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                {[
-                  { l: "Perfil Rico", v: (db.contactos.find(c => c.id === f.contacto_id)?.telefono && f.valor > 0), p: "+35" },
-                  { l: "Empresa B2B", v: !!f.empresa_id || !!f.empresa, p: "+15" },
-                  { l: "Compromiso", v: (db.actividades || []).some(a => a.deal_id === editDeal?.id), p: "+30" },
-                  { l: "Interacción", v: (db.whatsapp_messages || []).some(m => m.deal_id === editDeal?.id), p: "+20" }
-                ].map((it, i) => (
-                  <div key={i} style={{ fontSize: 12, color: it.v ? T.white : T.whiteFade, display: "flex", alignItems: "center", gap: 10, background: it.v ? T.teal + "10" : T.white + "05", padding: "10px 14px", borderRadius: 14, border: `1px solid ${it.v ? T.teal + "30" : T.white + "08"}`, transition: "all .3s" }}>
-                    <div style={{ width: 8, height: 8, borderRadius: "50%", background: it.v ? T.teal : T.whiteFade, boxShadow: it.v ? `0 0 10px ${T.teal}` : "none" }} />
-                    <span style={{ flex: 1, fontWeight: 700 }}>{it.l}</span>
-                    <span style={{ color: it.v ? T.teal : T.whiteFade, fontWeight: 900 }}>{it.p}</span>
-                  </div>
-                ))}
-             </div>
-          </div>
-</div>
-          </div>
-
-          {/* SECCIÓN 3: CAMPOS PERSONALIZADOS */}
-          <div style={{ background: T.bg1, border: `1px solid ${T.border}`, borderRadius: 20, padding: 24, boxShadow: "var(--shadow-sm)" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <div style={{ width: 4, height: 16, background: T.teal, borderRadius: 4 }} />
-                <span style={{ fontSize: 11, fontWeight: 800, color: T.whiteOff, textTransform: "uppercase", letterSpacing: ".05em" }}>Campos Extra</span>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+                <Campo label="Valor ($)"><LocalInput type="number" value={f.valor} onCommit={v => {
+                  const nf = { ...f, valor: v }; setF(nf);
+                  if (editDeal) guardarEnSupa("deals", { ...editDeal, ...nf });
+                }} style={{ color: T.teal, fontWeight: 900, background: T.bg2, border: `1px solid ${T.borderHi}`, borderRadius: 12 }} /></Campo>
+                <Campo label="Confianza %"><LocalInput type="number" value={f.prob} onCommit={v => {
+                  const nf = { ...f, prob: v }; setF(nf);
+                  if (editDeal) guardarEnSupa("deals", { ...editDeal, ...nf });
+                }} style={{ fontWeight: 900, background: T.bg2, border: `1px solid ${T.borderHi}`, borderRadius: 12 }} /></Campo>
               </div>
-              <Btn variant="fantasma" size="xs" onClick={() => setShowConfigCampos(true)} style={{ color: T.teal }}><Ico k="cog" size={12} /></Btn>
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-              {customFieldsDef.map(cf => {
-                const val = f.custom_fields?.[cf.id] || "";
-                const handleChange = (v) => setF(prev => ({ ...prev, custom_fields: { ...(prev.custom_fields || {}), [cf.id]: v } }));
-                const handleBlur = async () => { if (editDeal) await guardarEnSupa("deals", { ...editDeal, custom_fields: f.custom_fields }); };
-
-                return (
-                  <Campo key={cf.id} label={cf.nombre}>
-                    {cf.tipo === "lista" ? (
-                      <Sel value={val} onChange={e => handleChange(e.target.value)} onBlur={handleBlur}>
-                        <option value="">— Seleccionar —</option>
-                        {cf.opciones?.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                      </Sel>
-                    ) : cf.tipo === "fecha" ? (
-                      <LocalInput type="date" value={val} onCommit={v => { handleChange(v); handleBlur(); }} />
-                    ) : (
-                      <LocalInput value={val} onCommit={v => { handleChange(v); handleBlur(); }} placeholder={`Ingresar ${cf.nombre.toLowerCase()}...`} />
-                    )}
-                  </Campo>
-                );
-              })}
             </div>
           </div>
 
-          {/* SECCIÓN 4: ARCHIVOS Y DOCUMENTOS */}
-          <div style={{ background: `linear-gradient(to bottom, ${T.bg1}, ${T.bg2}30)`, border: `2px dashed ${dragActive ? T.teal : T.border}`, borderRadius: 20, padding: 24, textAlign: "center", transition: "all .2s" }}
-            onDragOver={e => { e.preventDefault(); setDragActive(true); }}
-            onDragLeave={() => setDragActive(false)}
-            onDrop={handleDrop}
-          >
-            <div style={{ width: 48, height: 48, borderRadius: "50%", background: T.bg2, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 12px", border: `1px solid ${T.borderHi}` }}>
-              <Ico k="upload" size={20} style={{ color: T.teal }} />
+          {/* AI SCORING: MINIMALIST GAUGE */}
+          <div style={{ background: T.bg1, border: `1px solid ${T.borderHi}`, borderRadius: 28, padding: 24, display: "flex", alignItems: "center", gap: 20 }}>
+            <div style={{ position: "relative", width: 64, height: 64 }}>
+              <svg viewBox="0 0 36 36" style={{ width: "100%", height: "100%", transform: "rotate(-90deg)" }}>
+                <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke={T.border} strokeWidth="2" />
+                <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke={T.teal} strokeDasharray={`${calculateLeadScore(db, f)}, 100`} strokeWidth="3" strokeLinecap="round" style={{ transition: "stroke-dasharray 1s ease" }} />
+              </svg>
+              <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, fontWeight: 900, color: T.white }}>{calculateLeadScore(db, f)}</div>
             </div>
-            <div style={{ fontSize: 13, color: T.white, fontWeight: 800 }}>Documentos</div>
-            <div style={{ fontSize: 11, color: T.whiteDim, marginTop: 4 }}>Arrastra archivos para subir</div>
-            
-            <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 8 }}>
-              {(f.archivos || []).map(a => (
-                <div key={a.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: T.bg1, padding: "8px 12px", borderRadius: 10, border: `1px solid ${T.borderHi}`, boxShadow: "var(--shadow-sm)" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10, overflow: "hidden" }}>
-                    <Ico k={a.tipo === "img" ? "image" : "file"} size={14} style={{ color: T.teal }} />
-                    <span style={{ fontSize: 12, color: T.whiteOff, whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden" }}>{a.nombre}</span>
-                  </div>
-                  <Btn variant="fantasma" size="xs" onClick={() => quitarArchivo(a.id)} style={{ color: T.red }}><Ico k="trash" size={12} /></Btn>
-                </div>
-              ))}
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 13, fontWeight: 900, color: T.white }}>IA Scoring</div>
+              <div style={{ fontSize: 10, color: T.whiteFade, marginTop: 2 }}>Potencial de conversión calculado por ENSING Core.</div>
             </div>
           </div>
 
-          <div style={{ display: "flex", gap: 12 }}>
-            <Btn variant="secundario" onClick={onCancelar} full>Cerrar</Btn>
-            <Btn onClick={() => onGuardar(f)} full style={{ background: T.teal, color: "#000" }}>Guardar Deal</Btn>
+          {/* STAKEHOLDERS */}
+          <div style={{ background: T.bg1, border: `1px solid ${T.borderHi}`, borderRadius: 28, padding: 28 }}>
+            <div style={{ fontSize: 11, fontWeight: 900, color: T.whiteFade, marginBottom: 20, letterSpacing: ".1em", textTransform: "uppercase" }}>Asignación & Contacto</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+              <Campo label="Contacto Principal"><Sel value={f.contacto_id} onChange={async e => {
+                const val = e.target.value; const nextF = { ...f, contacto_id: val }; setF(nextF);
+                if (editDeal) await guardarEnSupa("deals", { ...editDeal, ...nextF });
+              }} style={{ background: T.bg2, border: `1px solid ${T.borderHi}`, borderRadius: 12, height: 44 }}><option value="">— Sin contacto —</option>{db.contactos.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}</Sel></Campo>
+
+              <Campo label="Líder del Negocio"><Sel value={f.responsable} onChange={async e => {
+                const val = e.target.value; const nextF = { ...f, responsable: val }; setF(nextF);
+                if (editDeal) await guardarEnSupa("deals", { ...editDeal, ...nextF });
+              }} style={{ background: T.bg2, border: `1px solid ${T.borderHi}`, borderRadius: 12, height: 44 }}>{db.usuariosApp?.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}</Sel></Campo>
+            </div>
+          </div>
+
+          {/* FOOTER ACTIONS */}
+          <div style={{ display: "flex", gap: 16 }}>
+            <Btn variant="fantasma" onClick={onCancelar} full style={{ height: 48, borderRadius: 16 }}>Descartar</Btn>
+            <Btn onClick={() => onGuardar(f)} full style={{ height: 48, borderRadius: 16, background: T.teal, color: "#000", border: "none", fontWeight: 900 }}>GUARDAR CAMBIOS</Btn>
           </div>
         </div>
 
-        <div style={{ flex: "1.2 1 500px", borderLeft: `1px solid ${T.borderHi}`, minHeight: "65vh" }}>
+        {/* COLUMNA DERECHA: CONTENT AREA */}
+        <div style={{ flex: "1.2 1 500px", minHeight: "60vh", background: T.bg2 + "40", borderRadius: 32, border: `1px solid ${T.borderHi}`, overflow: "hidden", display: "flex", flexDirection: "column" }}>
+
           {leadTab === "timeline" && (
             <LeadTimeline
               deal={editDeal}
               contacto={db.contactos.find(c => c.id === f.contacto_id) || {}}
-              db={db}
-              setDb={setDb}
-              guardarEnSupa={guardarEnSupa}
-              setModulo={setModulo}
-              focusEmailId={focusEmailId}
-              setFocusEmailId={setFocusEmailId}
+              db={db} setDb={setDb} guardarEnSupa={guardarEnSupa} setModulo={setModulo}
+              focusEmailId={focusEmailId} setFocusEmailId={setFocusEmailId}
             />
           )}
-          {leadTab === "cotizacion" && <Cotizaciones db={db} deal={editDeal} onCerrar={() => setLeadTab("timeline")} guardarEnSupa={guardarEnSupa} />}
-          {leadTab === "finanzas" && (
-            <div style={{ padding: 24, display: "flex", flexDirection: "column", gap: 20 }}>
-              <div style={{ fontSize: 18, fontWeight: 800, color: T.white }}>Resumen Financiero</div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-                 <div style={{ background: T.bg2, padding: 16, borderRadius: 12, border: `1px solid ${T.borderHi}` }}>
-                   <div style={{ fontSize: 11, color: T.whiteDim }}>VALOR BRUTO</div>
-                   <div style={{ fontSize: 20, fontWeight: 800, color: T.teal }}>{money(editDeal?.valor || 0)}</div>
-                 </div>
-                 <div style={{ background: T.bg2, padding: 16, borderRadius: 12, border: `1px solid ${T.borderHi}` }}>
-                   <div style={{ fontSize: 11, color: T.whiteDim }}>GASTOS</div>
-                   <div style={{ fontSize: 20, fontWeight: 800, color: T.red }}>{money((db.finanzas_gastos || []).filter(g => g.deal_id === editDeal?.id).reduce((acc, g) => acc + g.monto, 0))}</div>
-                 </div>
+
+          {leadTab === "fields" && (
+            <div style={{ padding: 32, display: "flex", flexDirection: "column", gap: 24 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div style={{ fontSize: 16, fontWeight: 900, color: T.white }}>Atributos del Trato</div>
+                <Btn variant="fantasma" size="xs" onClick={() => setShowConfigCampos(true)} style={{ color: T.teal }}><Ico k="cog" size={12} /></Btn>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
+                {customFieldsDef.map(cf => {
+                  const val = f.custom_fields?.[cf.id] || "";
+                  const handleChange = (v) => setF(prev => ({ ...prev, custom_fields: { ...(prev.custom_fields || {}), [cf.id]: v } }));
+                  const handleBlur = async () => { if (editDeal) await guardarEnSupa("deals", { ...editDeal, custom_fields: f.custom_fields }); };
+
+                  return (
+                    <Campo key={cf.id} label={cf.nombre}>
+                      {cf.tipo === "lista" ? (
+                        <Sel value={val} onChange={e => handleChange(e.target.value)} onBlur={handleBlur} style={{ background: T.bg1, border: `1px solid ${T.borderHi}`, borderRadius: 10 }}>
+                          <option value="">— Seleccionar —</option>
+                          {cf.opciones?.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                        </Sel>
+                      ) : (
+                        <LocalInput value={val} onCommit={v => { handleChange(v); handleBlur(); }} style={{ background: T.bg1, border: `1px solid ${T.borderHi}`, borderRadius: 10 }} />
+                      )}
+                    </Campo>
+                  );
+                })}
               </div>
             </div>
           )}
+
+          {leadTab === "files" && (
+            <div style={{ padding: 32, flex: 1, display: "flex", flexDirection: "column" }} onDragOver={e => { e.preventDefault(); setDragActive(true); }} onDragLeave={() => setDragActive(false)} onDrop={handleDrop}>
+              <div style={{ flex: 1, border: `2px dashed ${dragActive ? T.teal : T.borderHi}`, borderRadius: 24, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16, padding: 40, background: dragActive ? T.teal + "08" : "transparent" }}>
+                <Ico k="upload" size={32} style={{ color: T.whiteFade }} />
+                <div style={{ textAlign: "center" }}>
+                  <div style={{ fontSize: 16, fontWeight: 900, color: T.white }}>Safe Storage</div>
+                  <div style={{ fontSize: 12, color: T.whiteFade, marginTop: 4 }}>Arrastra archivos aquí para subirlos al lead.</div>
+                </div>
+              </div>
+              <div style={{ marginTop: 24, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                {(f.archivos || []).map(a => (
+                  <div key={a.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: T.bg1, padding: "10px 14px", borderRadius: 12, border: `1px solid ${T.borderHi}` }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, overflow: "hidden" }}>
+                      <Ico k={a.tipo === "img" ? "image" : "file"} size={14} style={{ color: T.teal }} />
+                      <span style={{ fontSize: 12, color: T.whiteOff, whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden" }}>{a.nombre}</span>
+                    </div>
+                    <Btn variant="fantasma" size="xs" onClick={() => quitarArchivo(a.id)} style={{ color: T.red }}><Ico k="trash" size={14} /></Btn>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {leadTab === "whatsapp" && <div style={{ padding: 40, textAlign: "center", color: T.whiteFade }}>Módulo de WhatsApp próximamente integrado.</div>}
+
+          {leadTab === "finanzas" && (
+            <div style={{ padding: 32 }}>
+              <div style={{ fontSize: 18, fontWeight: 900, color: T.white, marginBottom: 24 }}>Análisis Financiero</div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+                <div style={{ padding: 24, background: T.bg1, borderRadius: 20, border: `1px solid ${T.borderHi}`, display: "flex", flexDirection: "column", gap: 8 }}>
+                  <div style={{ fontSize: 11, color: T.whiteFade, fontWeight: 900 }}>REVENUE PROYECTADO</div>
+                  <div style={{ fontSize: 28, fontWeight: 900, color: T.teal }}>{money(editDeal?.valor || 0)}</div>
+                </div>
+                <div style={{ padding: 24, background: T.bg1, borderRadius: 20, border: `1px solid ${T.borderHi}`, display: "flex", flexDirection: "column", gap: 8 }}>
+                  <div style={{ fontSize: 11, color: T.whiteFade, fontWeight: 900 }}>GASTOS REGISTRADOS</div>
+                  <div style={{ fontSize: 28, fontWeight: 900, color: T.red }}>{money((db.finanzas_gastos || []).filter(g => g.deal_id === editDeal?.id).reduce((acc, g) => acc + g.monto, 0))}</div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {leadTab === "historial" && (
-            <div style={{ padding: 20 }}>
-              {(db.auditoria || []).filter(a => a.entidad_id === editDeal?.id).sort((a,b) => new Date(b.creado) - new Date(a.creado)).map(a => (
-                <div key={a.id} style={{ padding: "12px 16px", borderBottom: `1px solid ${T.borderHi}`, display: "flex", gap: 12 }}>
-                  <div style={{ width: 8, height: 8, borderRadius: "50%", background: T.teal, marginTop: 4 }} />
-                  <div style={{ flex: 1, fontSize: 13, color: T.white }}>
-                    <strong>{a.usuario_nombre}</strong> cambió {a.campo} a <span style={{ color: T.teal }}>{a.valor_nuevo}</span>
+            <div style={{ padding: 24, display: "flex", flexDirection: "column", gap: 12 }}>
+              {(db.auditoria || []).filter(a => a.entidad_id === editDeal?.id).sort((a, b) => new Date(b.creado) - new Date(a.creado)).map(a => (
+                <div key={a.id} style={{ display: "flex", gap: 16, padding: "14px", background: T.bg1, borderRadius: 16, border: `1px solid ${T.borderHi}` }}>
+                  <div style={{ width: 6, height: 6, borderRadius: "50%", background: T.teal, marginTop: 6 }} />
+                  <div style={{ fontSize: 13, color: T.whiteOff }}>
+                    <span style={{ fontWeight: 800, color: T.white }}>{a.usuario_nombre}</span> actualizó {a.campo} → <span style={{ color: T.teal }}>{a.valor_nuevo}</span>
                   </div>
                 </div>
               ))}
@@ -415,18 +304,18 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
   const [fEmpresa, setFEmpresa] = useState("todas");
   const [showFiltros, setShowFiltros] = useState(false);
 
-// MOVE OUTSIDE LATER
+  // MOVE OUTSIDE LATER
 
   const getDealStatus = (deal) => {
     const acts = (db.actividades || []).filter(a => a.deal_id === deal.id);
     const tareas = (db.tareas || []).filter(t => t.deal_id === deal.id && t.estado !== "completada");
-    
+
     const now = Date.now();
     const lastAct = acts.length > 0 ? Math.max(...acts.map(a => new Date(a.fecha).getTime())) : new Date(deal.creado).getTime();
     const diff = now - lastAct;
 
     // TODO: Considerar mensajes de WhatsApp si estuvieran en db.whatsapp_messages
-    
+
     if (diff <= 86400000) return { label: "Hot", color: "#FF4500", icon: "🔥", glow: "0 0 12px #FF450060", desc: "Actividad en las últimas 24h" };
     if (diff <= 86400000 * 3) return { label: "Warm", color: T.amber, icon: "⚡", glow: "none", desc: "Actividad en los últimos 3 días" };
     if (diff >= 86400000 * 5) return { label: "Cold", color: T.whiteDim, icon: "❄️", glow: "none", desc: "Sin actividad por más de 5 días", cold: true };
@@ -454,11 +343,11 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
   };
 
   const ejecutarAutomaciones = async (deal, nuevaEtapaId) => {
-     try {
-       await executeRules(db, deal, nuevaEtapaId, { guardarEnSupa });
-     } catch (err) {
-       console.error("Error al ejecutar automatizaciones dinámicas:", err);
-     }
+    try {
+      await executeRules(db, deal, nuevaEtapaId, { guardarEnSupa });
+    } catch (err) {
+      console.error("Error al ejecutar automatizaciones dinámicas:", err);
+    }
   };
 
 
@@ -477,7 +366,7 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
 
 
   const pipeline = db.pipelines.find(p => p.id === plActivo);
-  
+
   const plDeals = db.deals.filter(d => {
     if (d.pipeline_id !== plActivo) return false;
 
@@ -490,7 +379,7 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
       const acts = (db.actividades || []).filter(a => a.deal_id === d.id);
       if (acts.length > 0) {
         const ultimaAct = Math.max(...acts.map(a => new Date(a.fecha).getTime()));
-        if ((Date.now() - ultimaAct) <= (86400000 * 2)) return false; 
+        if ((Date.now() - ultimaAct) <= (86400000 * 2)) return false;
       }
     }
     else if (filtroRapido === "cierre") {
@@ -564,12 +453,12 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
     setShowNuevaEt(false); setNuevaEt({ nombre: "", color: T.teal, probabilidad: 50 });
   };
 
-// MOVE OUTSIDE LATER
+  // MOVE OUTSIDE LATER
 
   const guardarDeal = async (form) => {
     if (editDeal) {
       const act = { ...editDeal, ...form };
-      
+
       // --- LOGICA DE AUDITORIA ---
       const camposAObservar = ["titulo", "valor", "responsable", "etapa_id"];
       for (const c of camposAObservar) {
@@ -599,19 +488,19 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
       // DISPARAR WEBHOOKS SEGÚN ETAPA (Phase 42)
       const pl = db.pipelines.find(p => p.id === form.pipeline_id);
       const etapa = pl?.etapas.find(e => e.id === form.etapa_id);
-      
+
       if (etapa && etapa.id !== editDeal.etapa_id) {
         let event = null;
         if (etapa.es_ganado || etapa.es_ganado === true) event = 'deal.ganado';
         else if (etapa.es_perdido || etapa.es_perdido === true) event = 'deal.perdido';
-        
+
         if (event) {
           const API_URL = getApiUrl(db);
           import("axios").then(axios => {
             axios.default.post(`${API_URL}/api/internal/trigger-webhook`, {
               event,
               payload: { deal: act, pipeline: pl.nombre, etapa: etapa.nombre, user: db.usuario?.name }
-            }).catch(() => {});
+            }).catch(() => { });
           });
         }
       }
@@ -638,7 +527,7 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
       await guardarEnSupa("deals", act);
     } else {
       const nv = { ...form, id: "d" + uid(), creado: new Date().toISOString().slice(0, 10) };
-      
+
       // Notificación si se asigna a otro al crear
       if (nv.responsable && nv.responsable !== db.usuario?.name) {
         const targetUser = db.usuariosApp?.find(u => u.name === nv.responsable);
@@ -748,30 +637,30 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
 
       {showConfetti && (
         <div style={{ position: "fixed", inset: 0, zIndex: 9999, pointerEvents: "none", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
-           {[...Array(50)].map((_, i) => (
-             <div key={i} style={{
-               position: "absolute",
-               width: 10,
-               height: 10,
-               background: [T.teal, T.green, "#FFD700", "#FF4500", "#1E90FF"][i % 5],
-               borderRadius: i % 2 === 0 ? "50%" : "0",
-               top: "-10%",
-               left: `${Math.random() * 100}%`,
-               opacity: 0.8,
-               animation: `confetti-fall ${1 + Math.random() * 2}s linear forwards`,
-               animationDelay: `${Math.random() * 2}s`
-             }} />
-           ))}
-           <style>{`
+          {[...Array(50)].map((_, i) => (
+            <div key={i} style={{
+              position: "absolute",
+              width: 10,
+              height: 10,
+              background: [T.teal, T.green, "#FFD700", "#FF4500", "#1E90FF"][i % 5],
+              borderRadius: i % 2 === 0 ? "50%" : "0",
+              top: "-10%",
+              left: `${Math.random() * 100}%`,
+              opacity: 0.8,
+              animation: `confetti-fall ${1 + Math.random() * 2}s linear forwards`,
+              animationDelay: `${Math.random() * 2}s`
+            }} />
+          ))}
+          <style>{`
              @keyframes confetti-fall {
                0% { transform: translateY(0) rotate(0deg); opacity: 1; }
                100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
              }
            `}</style>
-           <div style={{ background: "rgba(0,0,0,0.8)", padding: "20px 40px", borderRadius: 20, border: `2px solid ${T.green}`, color: "#fff", fontSize: 24, fontWeight: 900, boxShadow: "var(--shadow-xl)", animation: "pop-in 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)" }}>
-              🎉 ¡DEAL GANADO! 🚀
-           </div>
-           <style>{`
+          <div style={{ background: "rgba(0,0,0,0.8)", padding: "20px 40px", borderRadius: 20, border: `2px solid ${T.green}`, color: "#fff", fontSize: 24, fontWeight: 900, boxShadow: "var(--shadow-xl)", animation: "pop-in 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)" }}>
+            🎉 ¡DEAL GANADO! 🚀
+          </div>
+          <style>{`
              @keyframes pop-in {
                0% { transform: scale(0.5); opacity: 0; }
                100% { transform: scale(1); opacity: 1; }
@@ -784,8 +673,8 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
       <div style={{ display: "flex", gap: 16, marginBottom: 24, alignItems: "center", flexWrap: "wrap" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12, background: T.bg1, border: `1px solid ${T.borderHi}`, borderRadius: 10, padding: "2px 14px", boxShadow: "0 2px 4px rgba(0,0,0,0.02)", minWidth: 220 }}>
           <span style={{ fontSize: 13, fontWeight: 700, color: T.whiteDim, whiteSpace: "nowrap" }}>Pipeline Activo:</span>
-          <Sel 
-            value={plActivo} 
+          <Sel
+            value={plActivo}
             onChange={e => setPlActivo(e.target.value)}
             style={{ flex: 1 }}
             innerStyle={{ background: "transparent", border: "none", padding: "6px 0", height: "auto" }}
@@ -795,24 +684,24 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
         </div>
 
         <div style={{ background: T.bg1, border: `1px solid ${T.borderHi}`, borderRadius: 10, padding: "2px 8px" }}>
-          <ControlSegmentado 
-            value={filtroRapido} 
-            onChange={setFiltroRapido} 
+          <ControlSegmentado
+            value={filtroRapido}
+            onChange={setFiltroRapido}
             options={[
               { value: "todos", label: "Todos", icon: "board" },
               { value: "mios", label: "Mis Leads", icon: "users" },
               { value: "frios", label: "Fríos", icon: "clock" },
               { value: "cierre", label: "Cierre Próximo", icon: "calendar" }
-            ]} 
+            ]}
           />
         </div>
 
         <div style={{ display: "flex", alignItems: "center", background: T.bg1, border: `1px solid ${T.borderHi}`, borderRadius: 10, padding: "4px 12px", gap: 10, flex: 1, minWidth: 250 }}>
           <Ico k="search" size={16} style={{ color: T.whiteDim }} />
-          <input 
-            type="text" 
-            placeholder="Buscar por título o contacto..." 
-            value={busqueda} 
+          <input
+            type="text"
+            placeholder="Buscar por título o contacto..."
+            value={busqueda}
             onChange={e => setBusqueda(e.target.value)}
             style={{ border: "none", background: "transparent", color: T.white, fontSize: 13, outline: "none", width: "100%", fontFamily: "inherit" }}
           />
@@ -913,15 +802,15 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
 
                     return (
                       <div key={deal.id} draggable onDragStart={() => setDragDeal(deal)}
-                        style={{ 
-                          background: T.bg1, 
-                          border: `1px solid ${isSelected ? T.teal : T.borderHi}`, 
-                          borderLeft: `3px solid ${etapa.color}`, 
-                          borderRadius: 8, 
-                          padding: "11px 12px", 
-                          cursor: "pointer", 
-                          userSelect: "none", 
-                          transition: "all .2s cubic-bezier(0.4, 0, 0.2, 1)", 
+                        style={{
+                          background: T.bg1,
+                          border: `1px solid ${isSelected ? T.teal : T.borderHi}`,
+                          borderLeft: `3px solid ${etapa.color}`,
+                          borderRadius: 8,
+                          padding: "11px 12px",
+                          cursor: "pointer",
+                          userSelect: "none",
+                          transition: "all .2s cubic-bezier(0.4, 0, 0.2, 1)",
                           position: "relative",
                           boxShadow: dStat.glow,
                           filter: dStat.cold ? "grayscale(0.6) opacity(0.8)" : "none"
@@ -930,90 +819,90 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
                           if (e.target.type === "checkbox") return;
                           setEditDeal(deal); setShowDealForm(true);
                         }}
-                        onMouseEnter={e => { 
-                          e.currentTarget.style.boxShadow = dStat.glow !== "none" ? `0 8px 24px rgba(0,0,0,0.2), ${dStat.glow}` : `0 4px 18px rgba(0,0,0,0.18)`; 
+                        onMouseEnter={e => {
+                          e.currentTarget.style.boxShadow = dStat.glow !== "none" ? `0 8px 24px rgba(0,0,0,0.2), ${dStat.glow}` : `0 4px 18px rgba(0,0,0,0.18)`;
                           e.currentTarget.style.transform = "translateY(-2px)";
                           e.currentTarget.style.filter = "none";
                           const actions = e.currentTarget.querySelector(".card-actions");
                           if (actions) actions.style.opacity = "1";
                         }}
-                        onMouseLeave={e => { 
-                          e.currentTarget.style.boxShadow = dStat.glow; 
-                          e.currentTarget.style.transform = ""; 
+                        onMouseLeave={e => {
+                          e.currentTarget.style.boxShadow = dStat.glow;
+                          e.currentTarget.style.transform = "";
                           e.currentTarget.style.filter = dStat.cold ? "grayscale(0.6) opacity(0.8)" : "none";
                           const actions = e.currentTarget.querySelector(".card-actions");
                           if (actions) actions.style.opacity = "0";
                         }}>
-                        
-                        <input type="checkbox" checked={isSelected} 
+
+                        <input type="checkbox" checked={isSelected}
                           onChange={(e) => {
                             e.stopPropagation();
                             setSelectedIds(prev => e.target.checked ? [...prev, deal.id] : prev.filter(id => id !== deal.id));
                           }}
-                          style={{ position: "absolute", top: 10, right: 10, cursor: "pointer", zIndex: 10 }} 
+                          style={{ position: "absolute", top: 10, right: 10, cursor: "pointer", zIndex: 10 }}
                         />
 
                         {/* INDICADOR SCORE */}
-                         {/* Título + botones acción */}
-                         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 8 }}>
-                           <div style={{ fontSize: 13, fontWeight: 700, color: T.white, lineHeight: 1.35, flex: 1, display: "flex", alignItems: "center", gap: 6 }}>
-                             {/* Indicador de Temperatura */}
-                             <div title={dStat.desc} style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                               <div style={{ width: 8, height: 8, borderRadius: "50%", background: dStat.color, boxShadow: `0 0 6px ${dStat.color}80` }} />
-                               <span style={{ fontSize: 14 }}>{dStat.icon}</span>
-                             </div>
+                        {/* Título + botones acción */}
+                        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 8 }}>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: T.white, lineHeight: 1.35, flex: 1, display: "flex", alignItems: "center", gap: 6 }}>
+                            {/* Indicador de Temperatura */}
+                            <div title={dStat.desc} style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                              <div style={{ width: 8, height: 8, borderRadius: "50%", background: dStat.color, boxShadow: `0 0 6px ${dStat.color}80` }} />
+                              <span style={{ fontSize: 14 }}>{dStat.icon}</span>
+                            </div>
 
-                             {deal.titulo}
+                            {deal.titulo}
 
-                             {calculateLeadScore(deal) >= 80 && (
-                               <div title={`Lead Caliente (${calculateLeadScore(deal)} pts)`} style={{ animation: "flicker 1.5s infinite alternate" }}>
-                                 🔥
-                               </div>
-                             )}
-                             <style>{`
+                            {calculateLeadScore(deal) >= 80 && (
+                              <div title={`Lead Caliente (${calculateLeadScore(deal)} pts)`} style={{ animation: "flicker 1.5s infinite alternate" }}>
+                                🔥
+                              </div>
+                            )}
+                            <style>{`
                                @keyframes flicker {
                                  from { transform: scale(1); filter: drop-shadow(0 0 2px orange); }
                                  to { transform: scale(1.15); filter: drop-shadow(0 0 5px red); }
                                }
                              `}</style>
-                           </div>
-                           <div className="card-actions" style={{ display: "flex", gap: 3, marginLeft: 6, flexShrink: 0, opacity: 0, transition: "opacity .2s" }}>
-                             <button title="Marcar Ganado" onClick={async e => { 
-                               e.stopPropagation(); 
-                               const ets = pipeline.etapas || [];
-                               const etGanada = ets.find(et => et.es_ganado) || 
-                                              ets.find(et => ["ganado", "venta", "exito", "éxito", "cerrado"].some(k => (et.nombre || "").toLowerCase().includes(k))) ||
-                                              ets[ets.length - 1];
-                               
-                               if (etGanada) {
-                                  const act = { ...deal, etapa_id: etGanada.id, prob: 100 };
-                                  setDb(d => ({ ...d, deals: d.deals.map(dl => dl.id === deal.id ? act : dl) }));
-                                   await guardarEnSupa("deals", act);
-                                  await ejecutarAutomaciones(deal, etGanada.id);
-                                  await chequearComision(deal.id, etGanada.id, deal.valor);
-                                  setShowConfetti(true);
-                                  setTimeout(() => setShowConfetti(false), 4000);
-                               }
-                             }}
-                               style={{ background: T.bg2, border: `1px solid ${T.green}40`, borderRadius: 4, padding: "3px 6px", cursor: "pointer", fontSize: 10 }}>✅</button>
-                             <button title="Marcar Perdido" onClick={async e => { 
-                               e.stopPropagation(); 
-                               const ets = pipeline.etapas || [];
-                               const etPerdida = ets.find(et => et.es_perdido) || 
-                                               ets.find(et => ["perdido", "rechazado", "cancelado", "no interesado"].some(k => (et.nombre || "").toLowerCase().includes(k))) ||
-                                               (ets.length > 1 ? ets[ets.length - 2] : ets[0]);
-                               
-                               if (etPerdida) {
-                                  const act = { ...deal, etapa_id: etPerdida.id, prob: 0 };
-                                  setDb(d => ({ ...d, deals: d.deals.map(dl => dl.id === deal.id ? act : dl) }));
-                                  await guardarEnSupa("deals", act);
-                               }
-                             }}
-                               style={{ background: T.bg2, border: `1px solid ${T.red}40`, borderRadius: 4, padding: "3px 6px", cursor: "pointer", fontSize: 10 }}>❌</button>
-                             <button title="Editar" onClick={e => { e.stopPropagation(); setEditDeal(deal); setShowDealForm(true); }}
-                               style={{ background: T.bg2, border: `1px solid ${T.borderHi}`, borderRadius: 4, padding: "3px 6px", cursor: "pointer", fontSize: 10, color: T.whiteDim, lineHeight: 1 }}>✏️</button>
-                           </div>
-                         </div>
+                          </div>
+                          <div className="card-actions" style={{ display: "flex", gap: 3, marginLeft: 6, flexShrink: 0, opacity: 0, transition: "opacity .2s" }}>
+                            <button title="Marcar Ganado" onClick={async e => {
+                              e.stopPropagation();
+                              const ets = pipeline.etapas || [];
+                              const etGanada = ets.find(et => et.es_ganado) ||
+                                ets.find(et => ["ganado", "venta", "exito", "éxito", "cerrado"].some(k => (et.nombre || "").toLowerCase().includes(k))) ||
+                                ets[ets.length - 1];
+
+                              if (etGanada) {
+                                const act = { ...deal, etapa_id: etGanada.id, prob: 100 };
+                                setDb(d => ({ ...d, deals: d.deals.map(dl => dl.id === deal.id ? act : dl) }));
+                                await guardarEnSupa("deals", act);
+                                await ejecutarAutomaciones(deal, etGanada.id);
+                                await chequearComision(deal.id, etGanada.id, deal.valor);
+                                setShowConfetti(true);
+                                setTimeout(() => setShowConfetti(false), 4000);
+                              }
+                            }}
+                              style={{ background: T.bg2, border: `1px solid ${T.green}40`, borderRadius: 4, padding: "3px 6px", cursor: "pointer", fontSize: 10 }}>✅</button>
+                            <button title="Marcar Perdido" onClick={async e => {
+                              e.stopPropagation();
+                              const ets = pipeline.etapas || [];
+                              const etPerdida = ets.find(et => et.es_perdido) ||
+                                ets.find(et => ["perdido", "rechazado", "cancelado", "no interesado"].some(k => (et.nombre || "").toLowerCase().includes(k))) ||
+                                (ets.length > 1 ? ets[ets.length - 2] : ets[0]);
+
+                              if (etPerdida) {
+                                const act = { ...deal, etapa_id: etPerdida.id, prob: 0 };
+                                setDb(d => ({ ...d, deals: d.deals.map(dl => dl.id === deal.id ? act : dl) }));
+                                await guardarEnSupa("deals", act);
+                              }
+                            }}
+                              style={{ background: T.bg2, border: `1px solid ${T.red}40`, borderRadius: 4, padding: "3px 6px", cursor: "pointer", fontSize: 10 }}>❌</button>
+                            <button title="Editar" onClick={e => { e.stopPropagation(); setEditDeal(deal); setShowDealForm(true); }}
+                              style={{ background: T.bg2, border: `1px solid ${T.borderHi}`, borderRadius: 4, padding: "3px 6px", cursor: "pointer", fontSize: 10, color: T.whiteDim, lineHeight: 1 }}>✏️</button>
+                          </div>
+                        </div>
 
                         {/* Monto */}
                         <div style={{ fontSize: 16, fontWeight: 900, color: T.green, marginBottom: 8, letterSpacing: "-0.01em" }}>{money(deal.valor)}</div>
@@ -1065,9 +954,9 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
             <thead>
               <tr style={{ background: "rgba(255,255,255,0.02)", borderBottom: `1px solid ${T.borderHi}` }}>
                 <th style={{ padding: "12px 16px", textAlign: "left", width: 40 }}>
-                  <input type="checkbox" 
-                    checked={selectedIds.length === plDeals.length && plDeals.length > 0} 
-                    onChange={e => setSelectedIds(e.target.checked ? plDeals.map(d => d.id) : [])} 
+                  <input type="checkbox"
+                    checked={selectedIds.length === plDeals.length && plDeals.length > 0}
+                    onChange={e => setSelectedIds(e.target.checked ? plDeals.map(d => d.id) : [])}
                     style={{ cursor: "pointer" }}
                   />
                 </th>
@@ -1088,16 +977,16 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
                 const isSelected = selectedIds.includes(deal.id);
 
                 return (
-                  <tr key={deal.id} 
+                  <tr key={deal.id}
                     onClick={() => { setEditDeal(deal); setShowDealForm(true); }}
                     style={{ borderBottom: `1px solid ${T.borderHi}`, cursor: "pointer", transition: "background 0.2s", background: isSelected ? T.tealGlow : "transparent" }}
                     onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.03)"}
                     onMouseLeave={e => e.currentTarget.style.background = isSelected ? T.tealGlow : "transparent"}
                   >
                     <td style={{ padding: "12px 16px" }} onClick={e => e.stopPropagation()}>
-                      <input type="checkbox" 
-                        checked={isSelected} 
-                        onChange={e => setSelectedIds(prev => e.target.checked ? [...prev, deal.id] : prev.filter(id => id !== deal.id))} 
+                      <input type="checkbox"
+                        checked={isSelected}
+                        onChange={e => setSelectedIds(prev => e.target.checked ? [...prev, deal.id] : prev.filter(id => id !== deal.id))}
                         style={{ cursor: "pointer" }}
                       />
                     </td>
@@ -1229,7 +1118,7 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
       </Modal>
 
       <Modal open={showDealForm} onClose={() => { setShowDealForm(false); setEditDeal(null); }} title={editDeal ? "Editar Deal" : "Nuevo Deal"} width={editDeal ? 1200 : 680}>
-        <FormDeal 
+        <FormDeal
           db={db}
           setDb={setDb}
           f={f}
@@ -1292,12 +1181,12 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
             <span style={{ fontSize: 13, fontWeight: 800, color: T.teal }}>{selectedIds.length} seleccionados</span>
             <Btn variant="fantasma" size="xs" onClick={() => setSelectedIds([])} style={{ color: T.whiteDim }}>Deseleccionar</Btn>
           </div>
-          
+
           <div style={{ height: 24, width: 1, background: T.border }} />
 
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
             <span style={{ fontSize: 11, color: T.whiteDim, fontWeight: 700 }}>ACCIONES:</span>
-            
+
             <Sel value="" onChange={e => handleBulkStage(e.target.value)} style={{ width: 140, fontSize: 11, padding: "6px 10px" }}>
               <option value="">Cambiar Etapa...</option>
               {pipeline.etapas.map(et => <option key={et.id} value={et.id}>{et.nombre}</option>)}
