@@ -619,7 +619,7 @@ export function LeadTimeline({ deal = {}, contacto = {}, db = {}, setDb, guardar
                   style={{ width: 140, background: T.bg1, border: `1px solid ${T.borderHi}`, borderRadius: 8, padding: "8px 10px", fontSize: 11, color: T.white, outline: "none" }}
                 >
                   <option value="">— Plantilla —</option>
-                  {(db.plantillasEmail || []).map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
+                  {(db.plantillasEmail || []).filter(p => p).map(p => <option key={p.id} value={p.id}>{p.nombre || p.titulo || p.asunto}</option>)}
                 </select>
               </div>
 

@@ -647,7 +647,7 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, carga
               <div style={{ width: 140 }}>
                 <Sel value={f.plantillaId} onChange={aplicarTpl} style={{ height: 32, fontSize: 11, background: "rgba(255,255,255,0.05)", border: `1px solid ${T.whiteFade}10` }}>
                   <option value="">— Plantillas —</option>
-                  {db.plantillasEmail?.map(p => <option key={p.id} value={p.id}>{p.nombre || p.asunto}</option>)}
+                  {(db.plantillasEmail || []).filter(p => p).map(p => <option key={p.id} value={p.id}>{p.nombre || p.titulo || p.asunto}</option>)}
                 </Sel>
               </div>
               <button 

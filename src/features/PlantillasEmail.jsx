@@ -12,7 +12,8 @@ export const PlantillasEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) =>
   const fileInputRef = useRef(null);
   const s = k => e => setF(p => ({ ...p, [k]: e.target.value }));
 
-  const filtradas = db.plantillasEmail?.filter(p => [p.nombre, p.asunto, p.cuerpo].some(v => v?.toLowerCase().includes(busqueda.toLowerCase()))) || [];
+  const filtradas = (db.plantillasEmail || [])
+    .filter(p => p && [p.nombre, p.titulo, p.asunto, p.cuerpo].some(v => v?.toLowerCase().includes(busqueda.toLowerCase())));
 
   const guardar = async () => {
     if (!f.titulo.trim() || !f.cuerpo.trim()) return;
