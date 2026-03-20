@@ -160,12 +160,13 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa, cargando
       }, { headers: { 'ngrok-skip-browser-warning': 'true' } });
 
       setLogEnvio(p => [...p, "[250] OK: Transmitido."]);
-      setTimeout(() => {
+      setTimeout(async () => {
         setShowRedactar(false);
         setSimulandoEnvio(false);
         setLogEnvio([]);
-        const nuevo = { id: "em_sent_" + Date.now(), de: acc.email, para: f.para, asunto: f.asunto || "Sin asunto", cuerpo: f.cuerpo, fecha: new Date().toISOString(), carpeta: 'enviados', leido: true, adjuntos: adjuntosLocal };
+        const nuevo = { id: "em_sent_" + Date.now(), de: acc.email, para: f.para, asunto: f.asunto || "Sin asunto", cuerpo: f.cuerpo, fecha: new Date().toISOString(), carpeta: 'enviados', leido: true, adjuntos: adjuntosLocal, account_id: acc.id };
         setDb(prev => ({ ...prev, emails: [nuevo, ...prev.emails] }));
+        await guardarEnSupa("emails", nuevo);
         setF({ para: "", asunto: "", cuerpo: "", cc: "", bcc: "", plantillaId: "" });
         setAdjuntosLocal([]);
       }, 800);
@@ -320,8 +321,24 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa, cargando
         attachments: adjuntosLocal
       }, { headers: { 'ngrok-skip-browser-warning': 'true' } });
       toast.success("✅ Respuesta enviada.");
-      const nuevaRpta = { id: "em_reply_" + Date.now(), de: acc.email, para: emailFocus.de, asunto: `Re: ${emailFocus.asunto}`, cuerpo: respuestaRapida, fecha: new Date().toISOString(), carpeta: 'enviados', leido: true, adjuntos: adjuntosLocal };
+      const nuevaRpta = { 
+        id: "em_reply_" + Date.now(), 
+        de: acc.email, 
+        para: emailFocus.de, 
+        asunto: `Re: ${emailFocus.asunto}`, 
+        cuerpo: respuestaRapida, 
+        fecha: new Date().toISOString(), 
+        carpeta: 'enviados', 
+        leido: true, 
+        adjuntos: adjuntosLocal,
+        deal_id: emailFocus.deal_id,
+        account_id: acc.id,
+        thread_id: emailFocus.thread_id,
+        mensaje_id: res.data?.messageId || null
+      };
       setDb(prev => ({ ...prev, emails: [nuevaRpta, ...prev.emails] }));
+      await guardarEnSupa("emails", nuevaRpta);
+      
       setRespuestaRapida("");
       setReplyCC(""); setReplyBCC("");
       setShowCCReply(false); setShowBCCReply(false);

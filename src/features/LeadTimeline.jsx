@@ -351,6 +351,25 @@ export function LeadTimeline({ deal = {}, contacto = {}, db = {}, setDb, guardar
       setEmailBcc("");
       setEmailAttachments([]);
       setEmailTo(contacto?.email || "");
+      
+      // Persistir correo en la tabla 'emails' para el Timeline
+      const sentEmail = {
+        id: "em_sent_" + Date.now(),
+        de: db.email_accounts?.find(a => a.id === accId)?.email || "Tú",
+        para: emailTo || contacto?.email,
+        asunto: emailSubject || "(Sin asunto)",
+        cuerpo: emailBody,
+        html: emailBody.replace(/\n/g, '<br>'),
+        fecha: new Date().toISOString(),
+        carpeta: 'enviados',
+        leido: true,
+        deal_id: deal?.id,
+        contacto_id: contacto?.id,
+        account_id: accId,
+        adjuntos: emailAttachments
+      };
+      await guardarEnSupa("emails", sentEmail);
+
       cargarTimeline();
     } catch (e) {
       toast.error("Error al enviar email: " + (e.response?.data?.error || e.message));
