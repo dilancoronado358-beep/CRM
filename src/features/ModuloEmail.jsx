@@ -16,6 +16,13 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa, cargando
   const [logEnvio, setLogEnvio] = useState([]);
   const [adjuntosSubiendo, setAdjuntosSubiendo] = useState(false);
   const [adjuntosLocal, setAdjuntosLocal] = useState([]);
+  const [selectedAccountId, setSelectedAccountId] = useState(db.email_accounts?.[0]?.id || null);
+
+  useEffect(() => {
+    if (!selectedAccountId && db.email_accounts?.length > 0) {
+      setSelectedAccountId(db.email_accounts[0].id);
+    }
+  }, [db.email_accounts, selectedAccountId]);
 
   const s = k => e => setF(p => ({ ...p, [k]: e.target.value }));
 
@@ -34,7 +41,7 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa, cargando
 
   const enviarRealista = async () => {
     if (!f.para.trim() || !f.cuerpo.trim()) return;
-    const acc = db.email_accounts?.[0];
+    const acc = db.email_accounts?.find(a => a.id === selectedAccountId) || db.email_accounts?.[0];
     if (!acc) { toast.error("Por favor, configura tu cuenta de correo."); return; }
 
     setSimulandoEnvio(true);
@@ -75,13 +82,15 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa, cargando
   };
 
   const handleSync = async () => {
-    const acc = db.email_accounts?.[0];
+    const acc = db.email_accounts?.find(a => a.id === selectedAccountId) || db.email_accounts?.[0];
     if (!acc) return;
     await guardarEnSupa("email_accounts", { ...acc, last_sync: new Date().toISOString() });
     toast.info("Sincronización en curso...");
   };
 
-  const msgs = db.emails.filter(e => e.carpeta === carpeta).sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+  const msgs = db.emails
+    .filter(e => e.carpeta === carpeta && (selectedAccountId ? e.account_id === selectedAccountId : true))
+    .sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
 
   const sidebarItems = [
     { id: "entrada", label: "Inbox", icon: "inbox" },
@@ -111,7 +120,7 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa, cargando
 
   const enviarRespuesta = async () => {
     if (!respuestaRapida.trim() || !emailFocus) return;
-    const acc = db.email_accounts?.[0];
+    const acc = db.email_accounts?.find(a => a.id === selectedAccountId) || db.email_accounts?.[0];
     if (!acc) return;
     try {
       const API_URL = getApiUrl(db);
@@ -135,12 +144,23 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa, cargando
       {/* 1. SIDEBAR (GLASS PANEL) */}
       <div style={{ width: 240, background: "rgba(255,255,255,0.02)", backdropFilter: "blur(20px)", borderRight: `1px solid ${T.whiteFade}08`, display: "flex", flexDirection: "column", padding: "24px 16px" }}>
         <button onClick={() => setShowRedactar(true)}
-          style={{ width: "100%", height: 48, background: "linear-gradient(135deg, #14B8A6, #0D9488)", border: "none", borderRadius: 12, color: "#fff", fontWeight: 800, fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, cursor: "pointer", transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)", boxShadow: `0 8px 20px ${T.teal}40`, marginBottom: 32 }}
+          style={{ width: "100%", height: 48, background: "linear-gradient(135deg, #14B8A6, #0D9488)", border: "none", borderRadius: 12, color: "#fff", fontWeight: 800, fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, cursor: "pointer", transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)", boxShadow: `0 8px 20px ${T.teal}40`, marginBottom: 12 }}
           onMouseEnter={e => { e.currentTarget.style.transform = "scale(1.02) translateY(-2px)"; e.currentTarget.style.boxShadow = `0 12px 25px ${T.teal}60`; }}
           onMouseLeave={e => { e.currentTarget.style.transform = "scale(1) translateY(0)"; e.currentTarget.style.boxShadow = `0 8px 20px ${T.teal}40`; }}
         >
           <Ico k="edit" size={16} /> REDACTAR
         </button>
+
+        {db.email_accounts && db.email_accounts.length > 0 && (
+          <div style={{ marginBottom: 24 }}>
+            <div style={{ fontSize: 10, fontWeight: 800, color: T.whiteDim, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 8, paddingLeft: 4 }}>Cuenta Activa</div>
+            <Sel value={selectedAccountId} onChange={e => { setSelectedAccountId(e.target.value); setEmailFocus(null); }} style={{ width: "100%", height: 40, borderRadius: 10, fontSize: 12, background: "rgba(255,255,255,0.05)" }}>
+              {db.email_accounts.map(acc => (
+                <option key={acc.id} value={acc.id}>{acc.email}</option>
+              ))}
+            </Sel>
+          </div>
+        )}
 
         <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
           {sidebarItems.map(item => {

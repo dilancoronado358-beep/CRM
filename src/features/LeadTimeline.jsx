@@ -195,7 +195,7 @@ export function LeadTimeline({ deal = {}, contacto = {}, db = {}, setDb, guardar
        try {
          const qE = sb.from('emails').select('*');
          const filters = [];
-         if (contacto?.email) filters.push(`de.eq.${contacto.email}`, `para.eq.${contacto.email}`);
+         if (contacto?.email) filters.push(`de.ilike.%${contacto.email}%`, `para.ilike.%${contacto.email}%`);
          if (deal?.id) filters.push(`deal_id.eq.${deal.id}`);
          if (contacto?.id) filters.push(`contacto_id.eq.${contacto.id}`);
 
@@ -223,9 +223,16 @@ export function LeadTimeline({ deal = {}, contacto = {}, db = {}, setDb, guardar
     // FUSIONAR: Preservamos los locales (id que empiezan con local_)
     setItems(prev => {
       const locales = prev.filter(p => typeof p.id === 'string' && p.id.startsWith('local_'));
-      // Removemos los locales que ya llegaron del server basados en coincidencia de body
-      const serverBodies = new Set(entries.filter(e => e.type === "whatsapp").map(e => e.body));
-      const localesRestantes = locales.filter(l => !serverBodies.has(l.body));
+      
+      // Removemos los locales que ya llegaron del server basados en coincidencia de body o id
+      const serverBodiesW = new Set(entries.filter(e => e.type === "whatsapp").map(e => e.body));
+      const serverBodiesE = new Set(entries.filter(e => e.type === "email").map(e => e.body));
+      
+      const localesRestantes = locales.filter(l => {
+        if (l.type === "whatsapp") return !serverBodiesW.has(l.body);
+        if (l.type === "email") return !serverBodiesE.has(l.body);
+        return true;
+      });
 
       const fusionados = [...entries, ...localesRestantes];
       fusionados.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
@@ -306,6 +313,23 @@ export function LeadTimeline({ deal = {}, contacto = {}, db = {}, setDb, guardar
     if (!accId) return toast.error("No hay cuenta vinculada");
 
     setEnviandoEmail(true);
+
+    const localId = "local_" + Date.now();
+    const optimisticEmail = {
+      type: "email",
+      id: localId,
+      body: emailBody,
+      asunto: emailSubject || "(Sin asunto)",
+      timestamp: Date.now() / 1000,
+      de: db.email_accounts?.find(a => a.id === accId)?.email || "Tú",
+      para: emailTo,
+      html: emailBody.replace(/\n/g, '<br>'), // Simple fallback
+      adjuntos: emailAttachments
+    };
+
+    // UI Optimista
+    setItems(prev => [optimisticEmail, ...prev]);
+
     try {
       const API_URL = getApiUrl(db);
       await axios.post(`${API_URL}/api/email/send`, {
