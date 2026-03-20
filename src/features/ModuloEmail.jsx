@@ -164,7 +164,7 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa, cargando
         setShowRedactar(false);
         setSimulandoEnvio(false);
         setLogEnvio([]);
-        const nuevo = { id: "em_sent_" + Date.now(), de: acc.email, para: f.para, asunto: f.asunto || "Sin asunto", cuerpo: f.cuerpo, fecha: new Date().toISOString(), carpeta: 'enviados', leido: true, adjuntos: adjuntosLocal, account_id: acc.id };
+        const nuevo = { id: "em_sent_" + Date.now(), de: acc.email, para: f.para, asunto: f.asunto || "Sin asunto", cuerpo: f.cuerpo, fecha: new Date().toISOString(), carpeta: 'enviados', leido: true, adjuntos: adjuntosLocal, account_id: acc.id, user_id: db.usuario?.id };
         setDb(prev => ({ ...prev, emails: [nuevo, ...prev.emails] }));
         await guardarEnSupa("emails", nuevo);
         setF({ para: "", asunto: "", cuerpo: "", cc: "", bcc: "", plantillaId: "" });
@@ -254,7 +254,12 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa, cargando
     await guardarEnSupa("deals", nd);
     
     // Vincular email al deal
-    const updatedEmail = { ...emailFocus, deal_id: nd.id };
+    const updatedEmail = { 
+      ...emailFocus, 
+      deal_id: nd.id, 
+      user_id: db.usuario?.id, 
+      account_id: emailFocus.account_id || selectedAccountId || (db.email_accounts?.[0]?.id)
+    };
     setDb(d => ({ ...d, emails: (d.emails || []).map(e => e.id === emailFocus.id ? updatedEmail : e) }));
     await guardarEnSupa("emails", updatedEmail);
     
@@ -333,6 +338,7 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa, cargando
         adjuntos: adjuntosLocal,
         deal_id: emailFocus.deal_id,
         account_id: acc.id,
+        user_id: db.usuario?.id, // CRITICAL: Filtered by user_id in cargarDeSupa
         thread_id: emailFocus.thread_id,
         mensaje_id: res.data?.messageId || null
       };
