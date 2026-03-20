@@ -14,29 +14,48 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa, cargando
     const content = html || (cuerpo ? cuerpo.replace(/\n/g, '<br>') : "");
 
     useEffect(() => {
+      const iframe = iframeRef.current;
+      if (!iframe) return;
+
       const adjustHeight = () => {
-        const iframe = iframeRef.current;
-        if (iframe && iframe.contentWindow) {
-          iframe.style.height = '0px';
-          iframe.style.height = iframe.contentWindow.document.body.scrollHeight + 40 + 'px';
+        if (iframe.contentWindow && iframe.contentWindow.document.body) {
+          const h = iframe.contentWindow.document.body.scrollHeight;
+          if (h > 0) iframe.style.height = (h + 60) + "px";
         }
       };
+
+      const obs = new ResizeObserver(adjustHeight);
       
-      const timeout = setTimeout(adjustHeight, 500); // Wait for images
-      return () => clearTimeout(timeout);
+      const setup = () => {
+        if (iframe.contentWindow && iframe.contentWindow.document.body) {
+          obs.observe(iframe.contentWindow.document.body);
+          adjustHeight();
+        }
+      };
+
+      iframe.addEventListener("load", setup);
+      setup(); // Try immediately
+
+      return () => {
+        iframe.removeEventListener("load", setup);
+        obs.disconnect();
+      };
     }, [content]);
 
     return (
       <iframe
         ref={iframeRef}
         title="Email Content"
+        scrolling="no"
         srcDoc={`
           <!DOCTYPE html>
           <html>
             <head>
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
               <style>
                 body { font-family: 'Inter', -apple-system, sans-serif; color: #1e293b; margin: 0; padding: 24px; overflow-x: hidden; line-height: 1.6; background: #fff; }
-                img, table, div, p { max-width: 100% !important; height: auto !important; box-sizing: border-box !important; }
+                img, table, td, div, p, section { max-width: 100% !important; height: auto !important; box-sizing: border-box !important; }
+                table { width: 100% !important; table-layout: fixed !important; }
                 a { color: #06B6D4; text-decoration: none; }
                 * { word-wrap: break-word; }
               </style>
@@ -44,7 +63,7 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa, cargando
             <body>${content}</body>
           </html>
         `}
-        style={{ width: "100%", border: "none", background: "#FFFFFF", borderRadius: 16, overflow: "hidden", minHeight: 400, transition: "height 0.3s ease" }}
+        style={{ width: "100%", border: "none", background: "#FFFFFF", borderRadius: 16, overflow: "hidden", minHeight: 400, transition: "height 0.2s ease-out" }}
       />
     );
   };
