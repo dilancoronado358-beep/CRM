@@ -563,7 +563,7 @@ export default function App() {
       </div>
 
       {/* CONTENIDO PRINCIPAL */}
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", background: T.bg0 }}>
 
         {/* TOPBAR */}
         <div style={{ height: 72, background: T.bg1, borderBottom: `1px solid ${T.border}`, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 32px", flexShrink: 0, boxShadow: "0 2px 10px rgba(0,0,0,0.02)" }}>
@@ -590,8 +590,8 @@ export default function App() {
         </div>
 
         {/* AREA DE TRABAJO */}
-        <div style={{ flex: 1, overflowY: "auto", padding: "32px", position: "relative" }}>
-          <div key={modulo} className="animate-fade-in" style={{ maxWidth: 1400, margin: "0 auto" }}>
+        <div style={{ flex: 1, overflowY: "auto", padding: "16px 24px", position: "relative", background: T.bg0 }}>
+          <div key={modulo} className="animate-fade-in" style={{ width: "100%", maxWidth: 1600, margin: "0 auto" }}>
             <ModuloActivo {...propsModulo} />
           </div>
         </div>

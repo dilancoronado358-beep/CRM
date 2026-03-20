@@ -193,15 +193,33 @@ export const Modal = ({ open, onClose, title, children, width = 640 }) => {
 
 export const Tarjeta = ({ children, style = {}, onClick, brillo }) => (
   <div onClick={onClick} 
-    onMouseEnter={e => { if (onClick) { e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = "var(--shadow-xl)"; e.currentTarget.style.borderColor = T.borderHi; } }}
-    onMouseLeave={e => { if (onClick) { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = brillo ? "0 4px 15px rgba(37,99,235,0.08)" : "var(--shadow-sm)"; e.currentTarget.style.borderColor = T.border; } }}
-    style={{ background: T.bg1, border: `1px solid ${T.border}`, borderRadius: 16, boxShadow: brillo ? "0 4px 15px rgba(37,99,235,0.08)" : "var(--shadow-sm)", ...style, cursor: onClick ? "pointer" : undefined, transition: "all .4s cubic-bezier(0.16, 1, 0.3, 1)", position: "relative", overflow: "hidden" }}>
+    onMouseEnter={e => { 
+      e.currentTarget.style.transform = onClick ? "translateY(-4px)" : "translateY(-2px)"; 
+      e.currentTarget.style.boxShadow = "var(--shadow-premium)"; 
+      e.currentTarget.style.borderColor = T.teal; 
+    }}
+    onMouseLeave={e => { 
+      e.currentTarget.style.transform = ""; 
+      e.currentTarget.style.boxShadow = brillo ? "0 4px 20px rgba(20, 184, 166, 0.1)" : "var(--shadow-sm)"; 
+      e.currentTarget.style.borderColor = T.border; 
+    }}
+    style={{ 
+      background: T.bg1, 
+      border: `1px solid ${T.border}`, 
+      borderRadius: 20, 
+      boxShadow: brillo ? "0 4px 20px rgba(20, 184, 166, 0.1)" : "var(--shadow-sm)", 
+      ...style, 
+      cursor: onClick ? "pointer" : undefined, 
+      transition: "all 0.5s cubic-bezier(0.16, 1, 0.3, 1)", 
+      position: "relative", 
+      overflow: "hidden" 
+    }}>
     {children}
   </div>
 );
 
-export const KPI = ({ label, value, sub, color = T.teal, icon }) => (
-  <Tarjeta style={{ padding: "20px 22px", flex: 1, minWidth: 160, overflow: "hidden" }}>
+export const KPI = ({ label, value, sub, color = T.teal, icon, style = {} }) => (
+  <Tarjeta style={{ padding: "20px 22px", flex: 1, minWidth: 160, overflow: "hidden", ...style }}>
     {/* Patrón de fondo sutil */}
     <div style={{ position: "absolute", inset: 0, opacity: 0.03, pointerEvents: "none", backgroundImage: `radial-gradient(${T.white} 1px, transparent 1px)`, backgroundSize: "16px 16px" }} />
     

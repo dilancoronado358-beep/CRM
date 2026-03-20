@@ -249,7 +249,7 @@ export const Dashboard = ({ db, t = s => s }) => {
   }, [ganados]);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 24, minHeight: "100vh", background: T.bg0, paddingBottom: 40 }}>
       {/* Dashboard Toolbar */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
         <div>
@@ -271,34 +271,34 @@ export const Dashboard = ({ db, t = s => s }) => {
 
       {/* KPI Row */}
       {widgets.kpis && (
-        <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-          <KPI label={t("Pipeline Activo")} value={money(activos.reduce((s, d) => s + d.valor, 0))} sub={`${activos.length} oportunidades`} color={T.teal} icon="funnel" />
-          <KPI label={t("Total Ganado")} value={money(ganados.reduce((s, d) => s + d.valor, 0))} sub={`${ganados.length} deals cerrados`} color={T.green} icon="trend" />
-          <KPI label={t("Tasa de Conversión")} value={`${conv}%`} sub="total histórico" color={T.amber} icon="chart" />
-          <KPI label={t("Contactos")} value={userContacts.length} sub={`${userContacts.filter(c => c.estado === "lead").length} leads activos`} color={T.teal} icon="users" />
-          <KPI label={t("Actividades Pend.")} value={actPend} sub={`${vencidas} tareas vencidas`} color={vencidas > 0 ? T.red : T.teal} icon="lightning" />
-          <KPI label={t("Tiempo Resp. WA")} value={avgResponseTime} sub="promedio histórico" color={avgResponseTime === "N/A" ? T.whiteDim : T.teal} icon="phone" />
+        <div style={{ display: "flex", gap: 16, flexWrap: "wrap", justifyContent: "flex-start" }}>
+          <KPI label={t("Pipeline Activo")} value={money(activos.reduce((s,d)=>s+d.valor,0))} sub={`${activos.length} ops`} color={T.teal} icon="funnel" style={{ flex: "1 1 240px", minWidth: 220 }} />
+          <KPI label={t("Total Ganado")} value={money(ganados.reduce((s,d)=>s+d.valor,0))} sub={`${ganados.length} deals`} color={T.green} icon="trend" style={{ flex: "1 1 240px", minWidth: 220 }} />
+          <KPI label={t("Tasa Conv.")} value={`${conv}%`} sub="histórico" color={T.amber} icon="chart" style={{ flex: "1 1 240px", minWidth: 220 }} />
+          <KPI label={t("Contactos")} value={userContacts.length} sub={`${userContacts.filter(c=>c.estado==="lead").length} leads`} color={T.teal} icon="users" style={{ flex: "1 1 240px", minWidth: 220 }} />
+          <KPI label={t("Act. Pend.")} value={actPend} sub={`${vencidas} venc.`} color={vencidas > 0 ? T.red : T.teal} icon="lightning" style={{ flex: "1 1 240px", minWidth: 220 }} />
+          <KPI label={t("Resp. WA")} value={avgResponseTime} sub="promedio" color={avgResponseTime === "N/A" ? T.whiteDim : T.teal} icon="phone" style={{ flex: "1 1 240px", minWidth: 220 }} />
         </div>
       )}
 
       {/* Main Grid Layout */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 20 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(360px, 1fr))", gap: 24 }}>
         
         {/* WIDGET: AI INSIGHTS */}
-        <div style={{ gridColumn: "span 6", display: widgets.ai ? "block" : "none" }}>
-          <Tarjeta brillo style={{ padding: 20, background: T.bg1, border: `1px solid ${T.teal}`, display: "flex", alignItems: "center", gap: 20 }}>
+        <div style={{ gridColumn: "1 / -1", display: widgets.ai ? "block" : "none" }}>
+          <Tarjeta brillo style={{ padding: 24, background: T.bg1, border: `1px solid ${T.teal}33`, display: "flex", alignItems: "center", gap: 24 }}>
             <div style={{ position: "relative" }}>
-              <div style={{ width: 50, height: 50, borderRadius: 14, background: `linear-gradient(45deg, ${T.teal}, #6366F1)`, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: `0 4px 12px rgba(20, 184, 166, 0.3)` }}>
-                <Ico k="lightning" size={28} style={{ color: "#FFF" }} />
+              <div style={{ width: 60, height: 60, borderRadius: 16, background: `linear-gradient(135deg, ${T.teal}, #6366F1)`, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: `0 8px 20px rgba(20, 184, 166, 0.3)` }}>
+                <Ico k="lightning" size={32} style={{ color: "#FFF" }} />
               </div>
-              <div style={{ position: "absolute", top: -4, right: -4, width: 12, height: 12, borderRadius: "50%", background: T.teal, border: `2px solid ${T.bg1}` }} />
+              <div style={{ position: "absolute", top: -4, right: -4, width: 14, height: 14, borderRadius: "50%", background: T.teal, border: `2px solid ${T.bg1}`, boxShadow: "0 0 10px rgba(20, 184, 166, 0.5)" }} />
             </div>
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 16, fontWeight: 900, color: T.white }}>Sales Intelligence Pro</div>
-              <div style={{ fontSize: 13, color: T.whiteDim, marginTop: 2 }}>Tu asistente IA analizando el comportamiento de {userDeals.length} oportunidades en tiempo real.</div>
+              <div style={{ fontSize: 18, fontWeight: 900, color: T.white, letterSpacing: "-.02em" }}>Sales Intelligence Pro</div>
+              <div style={{ fontSize: 14, color: T.whiteDim, marginTop: 4, lineHeight: 1.5 }}>Tu asistente IA analizando el comportamiento de {userDeals.length} oportunidades en tiempo real para optimizar tu conversión.</div>
             </div>
-            <div style={{ display: "flex", gap: 12 }}>
-              <Btn variant="primario" onClick={solicitarAnalisis} disabled={cargandoIA}>
+            <div style={{ display: "flex", gap: 16 }}>
+              <Btn variant="primario" onClick={solicitarAnalisis} disabled={cargandoIA} style={{ padding: "12px 24px" }}>
                 {cargandoIA ? "Procesando..." : "Generar Insights Estratégicos"}
               </Btn>
             </div>

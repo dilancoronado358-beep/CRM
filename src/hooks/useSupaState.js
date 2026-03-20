@@ -176,11 +176,11 @@ export function useSupaState() {
       // Temporizador estricto de seguridad: máximo 2.5 segundos de pantalla de carga
       const timeoutFallback = setTimeout(() => {
         if (montado) {
-          console.warn("⚠️ Tiempo de carga excedido (30s). Forzando isAppReady a true.");
+          console.warn("⚠️ Tiempo de carga excedido (10s). Forzando isAppReady a true.");
           setCargando(false);
           setIsAppReady(true);
         }
-      }, 30000);
+      }, 10000);
 
       try {
         let uLocal = null;
