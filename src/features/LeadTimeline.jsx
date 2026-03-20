@@ -195,13 +195,17 @@ export function LeadTimeline({ deal = {}, contacto = {}, db = {}, setDb, guardar
        try {
          const qE = sb.from('emails').select('*');
          const filters = [];
-         if (deal?.id) filters.push(`deal_id.eq.${deal.id}`);
-         if (contacto?.email) {
-            filters.push(`and(de.ilike.%${contacto.email}%,deal_id.is.null)`);
-            filters.push(`and(para.ilike.%${contacto.email}%,deal_id.is.null)`);
-         }
-         if (contacto?.id) {
-            filters.push(`and(contacto_id.eq.${contacto.id},deal_id.is.null)`);
+         if (deal?.id) {
+            // Si hay negocio, SOLO mostrar lo estrictamente vinculado para evitar ruido
+            filters.push(`deal_id.eq.${deal.id}`);
+         } else {
+            // Vista de contacto general
+            if (contacto?.email) {
+               filters.push(`de.ilike.%${contacto.email}%`, `para.ilike.%${contacto.email}%`);
+            }
+            if (contacto?.id) {
+               filters.push(`contacto_id.eq.${contacto.id}`);
+            }
          }
 
          if (filters.length > 0) {
