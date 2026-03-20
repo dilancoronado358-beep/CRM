@@ -30,36 +30,36 @@ const OPERATORS = [
 ];
 
 /**
- * COMPONENTE: Dropdown Estilo Bitrix (Enlace punteado)
+ * COMPONENTE: Dropdown Estilo ENSING (Enlace punteado)
  */
-const BitrixSelect = ({ label, value, options, onChange, style = {} }) => {
+const ThemedSelect = ({ label, value, options, onChange, style = {} }) => {
   const [open, setOpen] = useState(false);
   const selected = options.find(o => o.id === value);
 
   return (
     <div style={{ position: "relative", ...style }}>
-      {label && <div style={{ fontSize: 12, color: "#999", marginBottom: 4 }}>{label}</div>}
-      <div 
+      {label && <div style={{ fontSize: 12, color: T.whiteDim, marginBottom: 4 }}>{label}</div>}
+      <div
         onClick={() => setOpen(!open)}
-        style={{ color: "#00B4FF", fontSize: 13, fontWeight: 600, borderBottom: "1px dashed #00B4FF", cursor: "pointer", display: "inline-block", padding: "2px 0" }}
+        style={{ color: T.teal, fontSize: 13, fontWeight: 700, borderBottom: `1px dashed ${T.teal}`, cursor: "pointer", display: "inline-block", padding: "2px 0" }}
       >
         {selected ? selected.label : (value || "seleccionar")}
       </div>
       {open && (
         <>
           <div onClick={() => setOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 9998 }} />
-          <div style={{ position: "absolute", top: "100%", left: 0, background: "#FFF", boxShadow: "0 5px 20px rgba(0,0,0,0.15)", borderRadius: 8, border: "1px solid #EEE", zIndex: 9999, minWidth: 180, padding: 6, marginTop: 4, maxHeight: 300, overflowY: "auto" }}>
-             {options.map(o => (
-               <div 
-                key={o.id} 
+          <div style={{ position: "absolute", top: "100%", left: 0, background: T.bg2, boxShadow: "0 10px 30px rgba(0,0,0,0.3)", borderRadius: 12, border: `1px solid ${T.borderHi}`, zIndex: 9999, minWidth: 200, padding: 8, marginTop: 8, maxHeight: 300, overflowY: "auto" }}>
+            {options.map(o => (
+              <div
+                key={o.id}
                 onClick={() => { onChange(o.id); setOpen(false); }}
-                style={{ padding: "8px 12px", fontSize: 13, cursor: "pointer", borderRadius: 4, background: value === o.id ? "#F0F7FF" : "transparent", color: value === o.id ? "#00B4FF" : "#333" }}
-                onMouseEnter={e => e.currentTarget.style.background = "#F5F5F5"}
-                onMouseLeave={e => e.currentTarget.style.background = value === o.id ? "#F0F7FF" : "transparent"}
-               >
-                 {o.label}
-               </div>
-             ))}
+                style={{ padding: "10px 14px", fontSize: 13, cursor: "pointer", borderRadius: 8, background: value === o.id ? T.tealSoft : "transparent", color: value === o.id ? T.teal : T.whiteOff, fontWeight: value === o.id ? 700 : 500, transition: "all .15s" }}
+                onMouseEnter={e => e.currentTarget.style.background = T.bg3}
+                onMouseLeave={e => e.currentTarget.style.background = value === o.id ? T.tealSoft : "transparent"}
+              >
+                {o.label}
+              </div>
+            ))}
           </div>
         </>
       )}
@@ -175,7 +175,7 @@ export const Automatizaciones = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t }
   const [addStageId, setAddStageId] = useState(null);
   const [catSel, setCatSel] = useState("comunicacion");
   const [q, setQ] = useState("");
-  
+
   // INSPECTOR STATE
   const [editRule, setEditRule] = useState(null);
   const [showFieldMenu, setShowFieldMenu] = useState(false);
@@ -220,7 +220,7 @@ export const Automatizaciones = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t }
       pipeline_id: pipelineId,
       org_id: db.usuario?.org_id,
       tipo: ruleId,
-      config: { 
+      config: {
         sub: ruleDef.sub,
         ejecucion: "paralelo",
         hora: "inmediatamente",
@@ -236,7 +236,7 @@ export const Automatizaciones = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t }
       },
       activo: true,
     };
-    
+
     setWfs(prev => [...prev, newRule]);
     try {
       await guardarEnSupa("automatizaciones", newRule);
@@ -279,150 +279,268 @@ export const Automatizaciones = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t }
   const reglasPorEtapa = (eId) => wfs.filter(w => w && w.etapa_id === eId && w.pipeline_id === pipelineId);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "calc(100vh - 120px)", background: "#F4F7FB", borderRadius: 16, overflow: "hidden", border: "1px solid #E0E6ED" }}>
-      
-      {/* HEADER BITRIX STYLE */}
-      <div style={{ background: "#FFF", padding: "0 24px", borderBottom: "1px solid #E0E6ED", flexShrink: 0 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", height: 60 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <div style={{ width: 32, height: 32, borderRadius: 8, background: T.teal, display: "flex", alignItems: "center", justifyContent: "center", color: "#FFF" }}>
-              <Ico k="refresh" size={18} />
+    <div style={{ display: "flex", flexDirection: "column", height: "calc(100vh - 120px)", background: T.bg0, borderRadius: 20, overflow: "hidden", border: `1px solid ${T.borderHi}`, position: "relative" }}>
+
+      {/* HEADER PREMIUM STYLE */}
+      <div style={{ background: T.bg1, padding: "0 24px", borderBottom: `1px solid ${T.borderHi}`, flexShrink: 0 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", height: 70 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+            <div style={{ width: 40, height: 40, borderRadius: 12, background: T.tealDark, display: "flex", alignItems: "center", justifyContent: "center", color: "#FFF", boxShadow: `0 8px 16px ${T.tealSoft}` }}>
+              <Ico k="refresh" size={20} />
             </div>
-            <div style={{ fontSize: 18, fontWeight: 700, color: "#333" }}>{t("Reglas de automatización y disparadores")} <span style={{ color: "#999", fontSize: 13, fontWeight: 400 }}>{pipeline?.nombre}</span></div>
+            <div>
+              <div style={{ fontSize: 18, fontWeight: 800, color: T.white }}>{t("Manualización y Disparadores")}</div>
+              <div style={{ fontSize: 13, color: T.whiteDim }}>Pipeline: <b style={{ color: T.teal }}>{pipeline?.nombre}</b></div>
+            </div>
           </div>
-          <div style={{ display: "flex", gap: 10 }}>
-            <Btn variant="secundario" size="sm" style={{ fontWeight: 600 }}>EXTENSIONES</Btn>
-            <Btn style={{ background: "#00B4FF", borderColor: "#00B4FF", fontWeight: 600 }} size="sm">MODO DE PRUEBA</Btn>
+          <div style={{ display: "flex", gap: 12 }}>
+            <Btn variant="secundario" size="sm" style={{ fontWeight: 700, borderRadius: 10, borderColor: T.borderHi }}>EXTENSIONES</Btn>
+            <Btn style={{ background: T.teal, color: "#000", fontWeight: 800, borderRadius: 10, border: "none" }} size="sm">MODO PRUEBA</Btn>
           </div>
         </div>
 
-        {/* TABS */}
-        <div style={{ display: "flex", gap: 30 }}>
+        {/* MODERN TABS */}
+        <div style={{ display: "flex", gap: 32 }}>
           {[
-            { id: "reglas", label: "Reglas de automatización" },
+            { id: "reglas", label: "Automatización" },
             { id: "variables", label: "Variables" },
             { id: "constantes", label: "Constantes" },
-            { id: "logs", label: "Registros de la prueba" }
+            { id: "logs", label: "Historial" }
           ].map(m => (
-            <div key={m.id} onClick={() => setTab(m.id)} style={{ padding: "12px 0", fontSize: 14, fontWeight: tab === m.id ? 700 : 500, color: tab === m.id ? T.teal : "#666", borderBottom: `2.5px solid ${tab === m.id ? T.teal : "transparent"}`, cursor: "pointer", transition: "all .2s" }}>
+            <div key={m.id} onClick={() => setTab(m.id)} style={{ padding: "16px 0", fontSize: 14, fontWeight: tab === m.id ? 800 : 600, color: tab === m.id ? T.teal : T.whiteDim, borderBottom: `3px solid ${tab === m.id ? T.teal : "transparent"}`, cursor: "pointer", transition: "all .3s cubic-bezier(0.4, 0, 0.2, 1)" }}>
               {m.label}
             </div>
           ))}
         </div>
       </div>
 
-      {/* TOOLBAR */}
-      <div style={{ padding: "14px 24px", display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
-        <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-          <Btn size="sm" style={{ background: "#BBEB00", color: "#333", border: "none", fontWeight: 700 }}>CREAR</Btn>
-          <Sel value={pipelineId} onChange={e => setPipelineId(e.target.value)} style={{ width: 180, background: "#FFF", height: 34, padding: "0 10px", color: "#333" }}>
-            {db.pipelines?.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
-          </Sel>
-          <div style={{ position: "relative" }}>
-            <Ico k="search" size={14} style={{ position: "absolute", left: 10, top: 10, color: "#999" }} />
-            <Inp placeholder={t("buscar")} style={{ paddingLeft: 30, width: 240, height: 34, background: "#FFF", color: "#333" }} />
+      {/* CONTENT SWITCHER */}
+      {tab === "reglas" && (
+        <>
+          {/* TOOLBAR */}
+          <div style={{ padding: "20px 24px", display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
+            <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
+              <Btn size="sm" style={{ background: T.white, color: T.bg0, border: "none", fontWeight: 800, padding: "8px 20px", borderRadius: 10 }} onClick={() => { setAddStageId(etapas[0]?.id); setShowAdd(true); }}>CREAR REGLA</Btn>
+              <Sel value={pipelineId} onChange={e => setPipelineId(e.target.value)} style={{ width: 180, background: T.bg1, border: `1px solid ${T.borderHi}`, height: 38, borderRadius: 10, color: T.white }}>
+                {db.pipelines?.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
+              </Sel>
+              <div style={{ position: "relative" }}>
+                <Ico k="search" size={14} style={{ position: "absolute", left: 14, top: 12, color: T.whiteDim }} />
+                <Inp placeholder={t("buscar")} value={q} onChange={e => setQ(e.target.value)} style={{ paddingLeft: 38, width: 260, height: 38, background: T.bg1, border: `1px solid ${T.borderHi}`, borderRadius: 10, color: T.white }} />
+              </div>
+            </div>
+          </div>
+
+          {/* STAGE BOARD */}
+          <div style={{ flex: 1, overflowX: "auto", overflowY: "hidden", display: "flex", padding: "0 24px 24px" }}>
+            <div style={{ display: "flex", gap: 16, height: "100%" }}>
+              {etapas.map((et, idx) => (
+                <div key={et.id} style={{ width: 240, display: "flex", flexDirection: "column", gap: 12 }}>
+                  {/* STAGE HEADER ENSING STYLE */}
+                  <div style={{
+                    background: et.color || T.tealDark,
+                    padding: "12px 20px",
+                    color: "#FFF",
+                    fontSize: 12,
+                    fontWeight: 900,
+                    position: "relative",
+                    borderRadius: 14,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    textAlign: "center",
+                    minHeight: 46,
+                    textTransform: "uppercase",
+                    letterSpacing: ".08em",
+                    boxShadow: "var(--shadow-sm)"
+                  }}>
+                    {et.nombre}
+                  </div>
+
+                  {/* ADD BUTTON */}
+                  <div onClick={() => { setAddStageId(et.id); setShowAdd(true); }} style={{
+                    height: 40,
+                    border: `1px dashed ${T.borderHi}`,
+                    borderRadius: 12,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: T.whiteDim,
+                    fontSize: 22,
+                    cursor: "pointer",
+                    background: T.bg1,
+                    transition: "all .3s",
+                    boxShadow: "0 4px 10px rgba(0,0,0,0.05)"
+                  }} onMouseEnter={e => { e.currentTarget.style.borderColor = T.teal; e.currentTarget.style.background = T.bg2; }}>
+                    <Ico k="plus" size={18} />
+                  </div>
+
+                  {/* COLUMN CONTENT */}
+                  <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 12, padding: "4px 0" }}>
+                    {reglasPorEtapa(et.id).map(r => {
+                      const def = ALL_RULES.find(dr => dr.id === r.tipo) || ALL_RULES[0];
+                      return (
+                        <Tarjeta key={r.id} style={{ background: T.bg1, border: `1px solid ${T.borderHi}`, padding: 16, borderRadius: 16, boxShadow: "0 10px 20px rgba(0,0,0,0.08)", position: "relative", transition: "all .2s" }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
+                            <div style={{ flex: 1 }}>
+                              <div style={{ fontSize: 10, color: def.type === "trigger" ? T.amber : T.teal, fontWeight: 900, textTransform: "uppercase", letterSpacing: ".1em", marginBottom: 4 }}>{def.type === "trigger" ? "Disparador" : (r.config?.hora === "inmediatamente" ? "inmediatamente" : `En ${r.config?.hora}`)}</div>
+                              <div style={{ fontSize: 14, fontWeight: 800, color: T.white, lineHeight: "1.3" }}>{r.nombre}</div>
+                            </div>
+                            <div onClick={() => setEditRule(r)} style={{ color: T.whiteDim, cursor: "pointer", paddingVertical: 4 }}><Ico k="edit" size={14} /></div>
+                          </div>
+                          <div style={{ fontSize: 12, color: T.whiteFade, lineHeight: "1.5", fontStyle: "italic" }}>{r.config?.sub || def.sub}</div>
+                          <div style={{ marginTop: 16, display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: 12, borderTop: `1px solid ${T.border}` }}>
+                            <div onClick={() => setEditRule(r)} style={{ color: T.teal, fontSize: 11, fontWeight: 800, cursor: "pointer", textTransform: "uppercase" }}>ajustar</div>
+                            <div onClick={() => handleEliminar(r.id)} style={{ color: T.red, fontSize: 11, fontWeight: 800, cursor: "pointer", textTransform: "uppercase" }}>quitar</div>
+                          </div>
+                        </Tarjeta>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
+
+      {tab === "variables" && (
+        <div style={{ flex: 1, padding: 40, display: "flex", flexDirection: "column", gap: 24, overflowY: "auto" }}>
+          <EncabezadoSeccion titulo="Variables Dinámicas" sub="Configura valores globales que puedes inyectar en tus correos o mensajes." />
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: 24 }}>
+            <Tarjeta style={{ background: T.bg1, padding: 40, textAlign: "center", border: `2px dashed ${T.borderHi}`, borderRadius: 24, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 18, transition: "all .3s" }}>
+              <div style={{ width: 64, height: 64, borderRadius: 20, background: T.bg2, border: `1px solid ${T.borderHi}`, display: "flex", alignItems: "center", justifyContent: "center", color: T.teal, boxShadow: "var(--shadow-sm)" }}>
+                <Ico k="plus" size={28} />
+              </div>
+              <div style={{ fontWeight: 800, color: T.white, fontSize: 16 }}>Crear Nueva Variable</div>
+              <Btn style={{ background: T.teal, color: "#000", fontWeight: 800, padding: "10px 24px", borderRadius: 12 }} size="sm">INICIAR</Btn>
+            </Tarjeta>
+            {[
+              { n: "descuento_promo", v: "20%", t: "Porcentaje" },
+              { n: "bot_signature", v: "Soporte ENSINGCRM", t: "Firma" }
+            ].map(v => (
+              <Tarjeta key={v.n} style={{ background: T.bg1, padding: 24, border: `1px solid ${T.borderHi}`, borderRadius: 24, boxShadow: "0 15px 35px rgba(0,0,0,0.1)" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 16 }}>
+                  <div style={{ fontSize: 10, fontWeight: 900, color: T.teal, textTransform: "uppercase", letterSpacing: ".1em", background: T.tealSoft, padding: "4px 10px", borderRadius: 6 }}>{v.t}</div>
+                  <Ico k="edit" size={16} style={{ color: T.whiteDim, cursor: "pointer" }} />
+                </div>
+                <div style={{ fontSize: 16, fontWeight: 800, color: T.white, marginBottom: 8 }}>{v.n}</div>
+                <div style={{ fontSize: 14, color: T.whiteOff, background: T.bg2, padding: "12px 16px", borderRadius: 12, border: `1px solid ${T.border}`, fontFamily: "monospace" }}>{v.v}</div>
+              </Tarjeta>
+            ))}
           </div>
         </div>
-      </div>
+      )}
 
-      {/* STAGE BOARD */}
-      <div style={{ flex: 1, overflowX: "auto", overflowY: "hidden", display: "flex", padding: "0 24px 24px" }}>
-        <div style={{ display: "flex", gap: 12, height: "100%" }}>
-          {etapas.map((et, idx) => (
-            <div key={et.id} style={{ width: 220, display: "flex", flexDirection: "column", gap: 10 }}>
-              {/* STAGE HEADER BITRIX STYLE */}
-              <div style={{ 
-                background: et.color || "#DDD", 
-                padding: "10px 16px", 
-                color: "#FFF", 
-                fontSize: 12, 
-                fontWeight: 800, 
-                position: "relative",
-                clipPath: idx === 0 ? "polygon(0% 0%, 90% 0%, 100% 50%, 90% 100%, 0% 100%)" : "polygon(0% 0%, 90% 0%, 100% 50%, 90% 100%, 0% 100%, 10% 50%)",
-                marginRight: -10,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                textAlign: "center",
-                minHeight: 40,
-                textTransform: "uppercase",
-                letterSpacing: ".02em"
-              }}>
-                {et.nombre}
-              </div>
-
-              {/* ADD BUTTON */}
-              <div onClick={() => { setAddStageId(et.id); setShowAdd(true); }} style={{ 
-                height: 34, 
-                border: "1px dashed #C0C5D1", 
-                borderRadius: 6, 
-                display: "flex", 
-                alignItems: "center", 
-                justifyContent: "center", 
-                color: "#999", 
-                fontSize: 20, 
-                cursor: "pointer", 
-                background: "rgba(255,255,255,0.7)",
-                transition: "all .2s ease"
-              }} onMouseEnter={e => e.currentTarget.style.borderColor = T.teal}>
-                +
-              </div>
-
-              {/* COLUMN CONTENT */}
-              <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 10, padding: "4px 0" }}>
-                {reglasPorEtapa(et.id).map(r => {
-                   const def = ALL_RULES.find(dr => dr.id === r.tipo) || ALL_RULES[0];
-                   return (
-                    <Tarjeta key={r.id} style={{ background: "#FFF", border: "1px solid #E0E6ED", padding: 12, borderRadius: 8, boxShadow: "0 2px 4px rgba(0,0,0,0.05)", position: "relative" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 }}>
-                        <div style={{ flex: 1 }}>
-                           <div style={{ fontSize: 10, color: def.type === "trigger" ? "#F59E0B" : T.teal, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 2 }}>{def.type === "trigger" ? "Disparador" : (r.config?.hora === "inmediatamente" ? "inmediatamente" : `En ${r.config?.hora}`)}</div>
-                           <div style={{ fontSize: 13, fontWeight: 700, color: "#333", lineHeight: "1.2" }}>{r.nombre}</div>
-                        </div>
-                        <div onClick={() => setEditRule(r)} style={{ color: "#999", cursor: "pointer", paddingLeft: 8 }}><Ico k="edit" size={13} /></div>
-                      </div>
-                      <div style={{ fontSize: 11, color: "#999", lineHeight: "1.4", fontStyle: "italic" }}>{r.config?.sub || def.sub}</div>
-                      <div style={{ marginTop: 12, display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: 8, borderTop: "1px solid #F0F2F5" }}>
-                         <div onClick={() => setEditRule(r)} style={{ color: "#00B4FF", fontSize: 11, fontWeight: 600, cursor: "pointer" }}>cambiar</div>
-                         <div onClick={() => handleEliminar(r.id)} style={{ color: "#FF4D4D", fontSize: 11, fontWeight: 600, cursor: "pointer" }}>eliminar</div>
-                      </div>
-                    </Tarjeta>
-                   );
-                })}
-              </div>
-            </div>
-          ))}
+      {tab === "constantes" && (
+        <div style={{ flex: 1, padding: 40, overflowY: "auto" }}>
+          <EncabezadoSeccion titulo="Valores de Sistema" sub="Referencias fijas de la plataforma para tus automatizaciones." />
+          <div style={{ background: T.bg1, borderRadius: 24, border: `1px solid ${T.borderHi}`, overflow: "hidden", boxShadow: "0 20px 50px rgba(0,0,0,0.15)" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <thead style={{ background: T.bg2, borderBottom: `1px solid ${T.borderHi}` }}>
+                <tr>
+                  <th style={{ padding: "16px 24px", textAlign: "left", fontSize: 12, color: T.whiteDim, textTransform: "uppercase", letterSpacing: ".05em" }}>Constante</th>
+                  <th style={{ padding: "16px 24px", textAlign: "left", fontSize: 12, color: T.whiteDim, textTransform: "uppercase", letterSpacing: ".05em" }}>Valor Actual</th>
+                  <th style={{ padding: "16px 24px", textAlign: "left", fontSize: 12, color: T.whiteDim, textTransform: "uppercase", letterSpacing: ".05em" }}>Función</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[
+                  { n: "ROOT_NAME", v: "ENSING HQ", d: "ID Maestra de la organización" },
+                  { n: "DEFAULT_LOCALE", v: "es_ES", d: "Idioma nativo para reportes" },
+                  { n: "API_GATEWAY", v: "v2.secure.ensin.ai", d: "Endpoint de conexión de servicios" }
+                ].map(c => (
+                  <tr key={c.n} style={{ borderBottom: `1px solid ${T.border}` }}>
+                    <td style={{ padding: "18px 24px", fontSize: 14, fontWeight: 800, color: T.white }}>{c.n}</td>
+                    <td style={{ padding: "18px 24px", fontSize: 14, color: T.teal, fontWeight: 700, fontFamily: "monospace" }}>{c.v}</td>
+                    <td style={{ padding: "18px 24px", fontSize: 14, color: T.whiteFade }}>{c.d}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* ADD RULE MODAL */}
-      <Modal open={showAdd} onClose={() => setShowAdd(false)} title={`Agregar regla a: ${etapas.find(e => e.id === addStageId)?.nombre}`} width={1000}>
+      {tab === "logs" && (
+        <div style={{ flex: 1, padding: 40, overflowY: "auto" }}>
+          <EncabezadoSeccion titulo="Logs de Actividad" sub="Monitoreo en tiempo real de los disparadores y sus respuestas." />
+          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            {[
+              { t: "Notificación WA", d: "Venta Mayorista #02", s: "Success", h: "10:15:32", c: T.green },
+              { t: "Cálculo Scoring", d: "Lead: Mario Rossi", s: "Success", h: "09:42:11", c: T.green },
+              { t: "Zendesk Sync", d: "Soporte #883", s: "Failed", h: "08:12:05", c: T.red },
+            ].map((l, i) => (
+              <Tarjeta key={i} style={{ background: T.bg1, padding: "18px 24px", border: `1px solid ${T.borderHi}`, borderRadius: 20, display: "flex", alignItems: "center", justifyContent: "space-between", boxShadow: "var(--shadow-sm)" }}>
+                <div style={{ display: "flex", gap: 18, alignItems: "center" }}>
+                  <div style={{ width: 44, height: 44, borderRadius: 14, background: l.c + "15", color: l.c, display: "flex", alignItems: "center", justifyContent: "center", border: `1px solid ${l.c}30` }}>
+                    <Ico k={l.s === "Success" ? "check" : "exclamation-triangle"} size={20} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 15, fontWeight: 800, color: T.white }}>{l.t}</div>
+                    <div style={{ fontSize: 13, color: T.whiteFade }}>Ref: {l.d}</div>
+                  </div>
+                </div>
+                <div style={{ textAlign: "right" }}>
+                  <div style={{ fontSize: 14, fontWeight: 900, color: l.c, textTransform: "uppercase", letterSpacing: ".1em" }}>{l.s}</div>
+                  <div style={{ fontSize: 12, color: T.whiteDim, fontWeight: 600 }}>{l.h}</div>
+                </div>
+              </Tarjeta>
+            ))}
+            <div style={{ textAlign: "center", marginTop: 24 }}>
+              <Btn variant="fantasma" size="sm" style={{ color: T.teal, fontWeight: 800 }}>EXPLORAR HISTORIAL</Btn>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL SEARCH FIELD OVERLAY */}
+      {showFieldMenu && (
+        <>
+          <div onClick={() => setShowFieldMenu(false)} style={{ position: "fixed", inset: 0, zIndex: 10000, background: "rgba(0,0,0,0.4)", backdropFilter: "blur(4px)" }} />
+          <div style={{ position: "fixed", top: "15%", left: "50%", transform: "translateX(-50%)", width: 500, background: T.bg1, boxShadow: "0 30px 60px rgba(0,0,0,0.5)", borderRadius: 24, zIndex: 10001, border: `1px solid ${T.borderHi}`, maxHeight: "70vh", overflowY: "auto" }}>
+            <div style={{ padding: "24px 28px", borderBottom: `1px solid ${T.borderHi}`, fontWeight: 800, fontSize: 16, display: "flex", justifyContent: "space-between", color: T.white }}>
+              Propiedades del CRM
+              <span onClick={() => setShowFieldMenu(false)} style={{ cursor: "pointer", color: T.whiteDim }}><Ico k="x" size={18} /></span>
+            </div>
+            <div style={{ padding: 12 }}>
+              {crmFields.map(f => (
+                <div key={f.id} onClick={() => addFieldToRule(f)} style={{ padding: "14px 20px", fontSize: 14, cursor: "pointer", borderRadius: 12, color: T.whiteOff, display: "flex", justifyContent: "space-between", alignItems: "center" }} onMouseEnter={e => { e.currentTarget.style.background = T.bg2; e.currentTarget.style.color = T.teal; }}>
+                  {f.label} <span style={{ fontSize: 11, color: T.whiteFade, textTransform: "uppercase", fontWeight: 700 }}>{f.type}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* ADD NEW RULE MENU (MODERN) */}
+      <Modal open={showAdd} onClose={() => setShowAdd(false)} title={<span style={{ color: T.white, fontWeight: 800 }}>{t("Catálogo de Automatizaciones")}</span>} width={1000}>
         <div style={{ display: "flex", height: 600, margin: "-22px" }}>
-          <div style={{ width: 300, background: "#F8FAFB", borderRight: "1px solid #E0E6ED", padding: "10px 0", overflowY: "auto", flexShrink: 0 }}>
-            <div style={{ padding: "10px 20px", marginBottom: 15 }}>
-               <Inp value={q} onChange={e => setQ(e.target.value)} placeholder="Buscar regla..." style={{ height: 36, fontSize: 13, background: "#FFF", color: "#333" }} />
+          <div style={{ width: 280, background: T.bg2, borderRight: `1px solid ${T.borderHi}`, padding: "20px 0", overflowY: "auto", flexShrink: 0 }}>
+            <div style={{ padding: "0 20px 20px" }}>
+              <Inp value={q} onChange={e => setQ(e.target.value)} placeholder="Filtrar por acción..." style={{ height: 44, fontSize: 14, background: T.bg1, border: `1px solid ${T.border}`, color: T.white, borderRadius: 14 }} />
             </div>
             {CATEGORIES.map(c => (
-              <div key={c.id} onClick={() => setCatSel(c.id)} style={{ padding: "12px 20px", display: "flex", alignItems: "center", gap: 12, cursor: "pointer", background: catSel === c.id ? "#FFF" : "transparent", color: catSel === c.id ? T.teal : "#666", borderLeft: `4px solid ${catSel === c.id ? T.teal : "transparent"}`, fontWeight: catSel === c.id ? 700 : 500, transition: "background .15s" }}>
-                <div style={{ color: catSel === c.id ? T.teal : "#999" }}><Ico k={c.icon} size={16} /></div>
-                <span style={{ fontSize: 13 }}>{c.label}</span>
+              <div key={c.id} onClick={() => setCatSel(c.id)} style={{ padding: "14px 24px", display: "flex", alignItems: "center", gap: 14, cursor: "pointer", background: catSel === c.id ? T.bg1 : "transparent", color: catSel === c.id ? T.teal : T.whiteDim, borderLeft: `5px solid ${catSel === c.id ? T.teal : "transparent"}`, fontWeight: catSel === c.id ? 800 : 500, transition: "background .2s" }}>
+                <div style={{ color: catSel === c.id ? T.teal : T.whiteFade }}><Ico k={c.icon} size={18} /></div>
+                <span style={{ fontSize: 14 }}>{c.label}</span>
               </div>
             ))}
           </div>
-
-          <div style={{ flex: 1, padding: "30px 40px", overflowY: "auto", background: "#FFF" }}>
-            <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+          <div style={{ flex: 1, padding: "30px 40px", overflowY: "auto", background: T.bg1 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               {ALL_RULES.filter(r => (q ? (r.label.toLowerCase().includes(q.toLowerCase()) || r.sub.toLowerCase().includes(q.toLowerCase())) : r.cat === catSel)).map(r => (
-                <div key={r.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "20px 0", borderBottom: "1px solid #F3F5F7" }}>
+                <Tarjeta key={r.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "24px 28px", border: `1px solid ${T.border}`, borderRadius: 20, background: T.bg1, transition: "all .2s" }} onMouseEnter={e => e.currentTarget.style.borderColor = T.teal}>
                   <div style={{ flex: 1 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
-                       <div style={{ color: r.color }}><Ico k={r.icon} size={16} /></div>
-                       <div style={{ fontSize: 15, fontWeight: 700, color: "#333" }}>{r.label}</div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 6 }}>
+                      <div style={{ color: r.color || T.teal, background: (r.color || T.teal) + "15", padding: 8, borderRadius: 10 }}><Ico k={r.icon} size={20} /></div>
+                      <div style={{ fontSize: 16, fontWeight: 800, color: T.white }}>{r.label}</div>
                     </div>
-                    <div style={{ fontSize: 13, color: "#777" }}>{r.sub}</div>
+                    <div style={{ fontSize: 14, color: T.whiteFade }}>{r.sub}</div>
                   </div>
-                  <Btn onClick={() => handleAgregarRegla(r.id)} variant="secundario" size="sm" style={{ padding: "6px 16px", background: "#FFF", color: "#333", fontWeight: 700 }}>{t("Agregar")}</Btn>
-                </div>
+                  <Btn onClick={() => handleAgregarRegla(r.id)} style={{ padding: "10px 24px", background: T.bg2, color: T.white, border: `1px solid ${T.borderHi}`, fontWeight: 800, borderRadius: 10 }}>{t("Agregar")}</Btn>
+                </Tarjeta>
               ))}
             </div>
           </div>
@@ -430,195 +548,132 @@ export const Automatizaciones = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t }
       </Modal>
 
       {/* INSPECTOR MODAL */}
-      <Modal open={!!editRule} onClose={() => setEditRule(null)} title={<span style={{color: '#333'}}>{editRule?.nombre}</span>} width={700}>
-        <div style={{ display: "flex", flexDirection: "column", gap: 24, padding: "10px 5px", color: "#333" }}>
-          
-          <div style={{ display: "flex", gap: 20, paddingBottom: 20, borderBottom: "1px solid #F0F2F5" }}>
+      <Modal open={!!editRule} onClose={() => setEditRule(null)} title={<span style={{ color: T.white, fontWeight: 800 }}>{editRule?.nombre}</span>} width={700}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 28, padding: "10px 5px" }}>
+
+          <div style={{ display: "flex", gap: 24, paddingBottom: 24, borderBottom: `1px solid ${T.borderHi}` }}>
             <div style={{ flex: 1 }}>
-               <BitrixSelect 
-                  label="Ejecución" 
-                  value={editRule?.config?.ejecucion || "paralelo"} 
-                  options={[{id: "paralelo", label: "En paralelo"}, {id: "secuencial", label: "Secuencial"}]}
-                  onChange={v => setEditRule({...editRule, config: {...editRule.config, ejecucion: v}})}
-               />
+              <ThemedSelect
+                label="Modo de Ejecución"
+                value={editRule?.config?.ejecucion || "paralelo"}
+                options={[{ id: "paralelo", label: "En paralelo" }, { id: "secuencial", label: "Secuencial" }]}
+                onChange={v => setEditRule({ ...editRule, config: { ...editRule.config, ejecucion: v } })}
+              />
             </div>
             <div style={{ flex: 1 }}>
-               <BitrixSelect 
-                  label="Hora" 
-                  value={editRule?.config?.hora || "inmediatamente"} 
-                  options={[{id: "inmediatamente", label: "Inmediatamente"}, {id: "1h", label: "En 1 hora"}, {id: "1d", label: "En 1 día"}]}
-                  onChange={v => setEditRule({...editRule, config: {...editRule.config, hora: v}})}
-               />
+              <ThemedSelect
+                label="Tiempo de Retraso"
+                value={editRule?.config?.hora || "inmediatamente"}
+                options={[{ id: "inmediatamente", label: "Inmediatamente" }, { id: "1h", label: "En 1 hora" }, { id: "1d", label: "En 1 día" }]}
+                onChange={v => setEditRule({ ...editRule, config: { ...editRule.config, hora: v } })}
+              />
             </div>
           </div>
 
           {/* CONDITIONS EDITOR */}
-          <div>
-             <div style={{ fontSize: 13, fontWeight: 700, color: "#333", marginBottom: 12 }}>Condición</div>
-             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                {editRule?.config?.condiciones?.map((cond, i) => (
-                   <div key={cond.id} style={{ display: "flex", gap: 8, alignItems: "center", background: "#F8FAFB", padding: 10, borderRadius: 6, border: "1px solid #E0E6ED" }}>
-                      <div style={{ fontSize: 12, fontWeight: 700, color: "#666", width: 120 }}>{cond.label}</div>
-                      <BitrixSelect 
-                        value={cond.op} 
-                        options={OPERATORS}
-                        onChange={v => {
-                           const newConds = [...editRule.config.condiciones];
-                           newConds[i].op = v;
-                           setEditRule({...editRule, config: {...editRule.config, condiciones: newConds}});
-                        }}
-                      />
-                      <Inp 
-                         value={cond.val} 
-                         onChange={e => {
-                            const newConds = [...editRule.config.condiciones];
-                            newConds[i].val = e.target.value;
-                            setEditRule({...editRule, config: {...editRule.config, condiciones: newConds}});
-                         }}
-                         placeholder="valor..."
-                         style={{ flex: 1, background: "#FFF", height: 28, fontSize: 12, border: "1px solid #DDD" }}
-                      />
-                      <div onClick={() => {
-                         const newConds = editRule.config.condiciones.filter(c => c.id !== cond.id);
-                         setEditRule({...editRule, config: {...editRule.config, condiciones: newConds}});
-                      }} style={{ color: "#FF4D4D", cursor: "pointer" }}><Ico k="trash" size={14} /></div>
-                   </div>
-                ))}
-                <span onClick={() => setShowFieldMenu("condicion")} style={{ color: "#00B4FF", fontSize: 13, cursor: "pointer", borderBottom: "1px dashed #00B4FF", width: "fit-content" }}>+ Agregar condición</span>
-             </div>
+          <div style={{ background: T.bg2, padding: 24, borderRadius: 20, border: `1px solid ${T.border}` }}>
+            <div style={{ fontSize: 14, fontWeight: 800, color: T.white, marginBottom: 18, display: "flex", alignItems: "center", gap: 10 }}>
+              <Ico k="lightning" size={16} /> Condición de Disparo
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {editRule?.config?.condiciones?.map((cond, i) => (
+                <div key={cond.id} style={{ display: "flex", gap: 12, alignItems: "center", background: T.bg1, padding: "12px 16px", borderRadius: 12, border: `1px solid ${T.borderHi}` }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: T.whiteOff, width: 130 }}>{cond.label}</div>
+                  <ThemedSelect
+                    value={cond.op}
+                    options={OPERATORS}
+                    onChange={v => {
+                      const newConds = [...editRule.config.condiciones];
+                      newConds[i].op = v;
+                      setEditRule({ ...editRule, config: { ...editRule.config, condiciones: newConds } });
+                    }}
+                  />
+                  <Inp
+                    value={cond.val}
+                    onChange={e => {
+                      const newConds = [...editRule.config.condiciones];
+                      newConds[i].val = e.target.value;
+                      setEditRule({ ...editRule, config: { ...editRule.config, condiciones: newConds } });
+                    }}
+                    placeholder="valor..."
+                    style={{ flex: 1, background: T.bg2, height: 32, fontSize: 13, border: `1px solid ${T.borderHi}`, borderRadius: 8, color: T.white }}
+                  />
+                  <div onClick={() => {
+                    const newConds = editRule.config.condiciones.filter(c => c.id !== cond.id);
+                    setEditRule({ ...editRule, config: { ...editRule.config, condiciones: newConds } });
+                  }} style={{ color: T.red, cursor: "pointer", padding: 6 }}><Ico k="trash" size={16} /></div>
+                </div>
+              ))}
+              <div style={{ marginTop: 8 }}>
+                <span onClick={() => setShowFieldMenu("condicion")} style={{ color: T.teal, fontSize: 13, fontWeight: 800, cursor: "pointer", borderBottom: `2px solid ${T.tealSoft}`, paddingBottom: 2 }}>+ AGREGAR REGLA LÓGICA</span>
+              </div>
+            </div>
           </div>
 
-          {/* SPECIFIC FIELDS PER RULE TYPE */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 20, borderTop: "1px solid #F0F2F5", paddingTop: 20 }}>
-            
-            {/* NOTIFICATIONS / COMMUNICATION */}
+          {/* FIELDS EDITOR */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+            {/* NOTIFICACIONES */}
             {(editRule?.tipo.includes("enviar") || editRule?.tipo === "notif_user" || editRule?.tipo === "send_chat_msg" || editRule?.tipo === "add_comment" || editRule?.tipo.includes("msg") || editRule?.tipo.includes("notif")) && (
-              <div style={{ display: "flex", flexDirection: "column", gap: 15 }}>
-                <div style={{ fontSize: 13, fontWeight: 700 }}>Contenido de la notificación</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+                <div style={{ fontSize: 14, fontWeight: 800, color: T.white }}>Contenido Automatizado</div>
                 {editRule.tipo.includes("email") && (
                   <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                    <div style={{ fontSize: 12, color: "#999" }}>Asunto:</div>
-                    <Inp value={editRule.config?.asunto} onChange={e => setEditRule({...editRule, config: {...editRule.config, asunto: e.target.value}})} style={{ background: "#FFF", color: "#333", border: "1px solid #DDD" }} />
+                    <div style={{ fontSize: 12, color: T.whiteDim, fontWeight: 700 }}>Asunto del Correo:</div>
+                    <Inp value={editRule.config?.asunto} onChange={e => setEditRule({ ...editRule, config: { ...editRule.config, asunto: e.target.value } })} style={{ background: T.bg1, color: T.white, border: `1px solid ${T.border}`, borderRadius: 10, height: 40 }} />
                   </div>
                 )}
                 <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                  <div style={{ fontSize: 12, color: "#999" }}>Mensaje:</div>
-                  <textarea 
-                    value={editRule.config?.mensaje} 
-                    onChange={e => setEditRule({...editRule, config: {...editRule.config, mensaje: e.target.value}})}
-                    style={{ width: "100%", height: 100, borderRadius: 6, border: "1px solid #DDD", padding: 12, fontSize: 13, outline: "none", fontFamily: "inherit", resize: "none" }}
-                    placeholder="Escribe el mensaje aquí... usa {nombre} para variables"
+                  <div style={{ fontSize: 12, color: T.whiteDim, fontWeight: 700 }}>Cuerpo del Mensaje:</div>
+                  <textarea
+                    value={editRule.config?.mensaje}
+                    onChange={e => setEditRule({ ...editRule, config: { ...editRule.config, mensaje: e.target.value } })}
+                    style={{ width: "100%", height: 120, borderRadius: 12, border: `1px solid ${T.border}`, background: T.bg1, color: T.white, padding: 16, fontSize: 14, outline: "none", fontFamily: "inherit", resize: "none", lineHeight: "1.5" }}
+                    placeholder="Escribe el mensaje... {nombre} se reemplazará automáticamente."
                   />
                 </div>
-                <BitrixSelect 
-                    label="Destinatario"
-                    value={editRule.config?.destinatario || "responsable"}
-                    options={[{id: "responsable", label: "Persona responsable"}, {id: "cliente", label: "Cliente (Contacto/Empresa)"}, {id: "todos", label: "Todos los involucrados"}]}
-                    onChange={v => setEditRule({...editRule, config: {...editRule.config, destinatario: v}})}
+                <ThemedSelect
+                  label="Enviar a"
+                  value={editRule.config?.destinatario || "responsable"}
+                  options={[{ id: "responsable", label: "Persona responsable" }, { id: "cliente", label: "Cliente (Contacto/Empresa)" }, { id: "todos", label: "Toda la organización" }]}
+                  onChange={v => setEditRule({ ...editRule, config: { ...editRule.config, destinatario: v } })}
                 />
               </div>
             )}
 
-            {/* CHANGE STAGE */}
-            {(editRule?.tipo === "change_stage") && (
-              <div style={{ display: "flex", flexDirection: "column", gap: 15 }}>
-                <div style={{ fontSize: 13, fontWeight: 700 }}>Mover a la etapa</div>
-                <BitrixSelect 
-                    label="Seleccionar etapa de destino"
-                    value={editRule.config?.etapa_destino || ""}
-                    options={etapas.map(e => ({ id: e.id, label: e.nombre }))}
-                    onChange={v => setEditRule({...editRule, config: {...editRule.config, etapa_destino: v}})}
-                />
-              </div>
-            )}
-
-            {/* CHANGE RESPONSIBLE */}
-            {(editRule?.tipo === "change_resp") && (
-              <div style={{ display: "flex", flexDirection: "column", gap: 15 }}>
-                <div style={{ fontSize: 13, fontWeight: 700 }}>Nueva persona responsable</div>
-                <BitrixSelect 
-                    label="Seleccionar empleado"
-                    value={editRule.config?.responsable_id || ""}
-                    options={usuarios.map(u => ({ id: u.id, label: u.name || u.email }))}
-                    onChange={v => setEditRule({...editRule, config: {...editRule.config, responsable_id: v}})}
-                />
-              </div>
-            )}
-
-            {/* CREATE TASK */}
-            {(editRule?.tipo === "create_task") && (
-              <div style={{ display: "flex", flexDirection: "column", gap: 15 }}>
-                <div style={{ fontSize: 13, fontWeight: 700 }}>Detalles de la tarea</div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                  <div style={{ fontSize: 12, color: "#999" }}>Título:</div>
-                  <Inp value={editRule.config?.titulo_tarea} onChange={e => setEditRule({...editRule, config: {...editRule.config, titulo_tarea: e.target.value}})} style={{ background: "#FFF", color: "#333", border: "1px solid #DDD" }} />
-                </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                  <div style={{ fontSize: 12, color: "#999" }}>Descripción:</div>
-                  <textarea 
-                    value={editRule.config?.desc_tarea} 
-                    onChange={e => setEditRule({...editRule, config: {...editRule.config, desc_tarea: e.target.value}})}
-                    style={{ width: "100%", height: 80, borderRadius: 6, border: "1px solid #DDD", padding: 12, fontSize: 13, outline: "none", fontFamily: "inherit", resize: "none" }}
-                    placeholder="Descripción de la tarea..."
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* MODIFICATIONS / CUSTOM FIELDS */}
+            {/* MOD_ITEM / CAMPOS */}
             {(editRule?.tipo === "mod_item" || editRule?.tipo === "upd_contact" || editRule?.tipo === "upd_company") && (
-              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                <div style={{ fontSize: 13, fontWeight: 700 }}>Campos a modificar</div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                    {editRule.config?.campos?.map((f, i) => (
-                      <div key={i} style={{ display: "flex", gap: 10, alignItems: "center" }}>
-                        <div style={{ width: 140, fontSize: 12, fontWeight: 600, color: "#666" }}>{f.label}</div>
-                        <Inp 
-                            value={f.value} 
-                            onChange={e => {
-                              const newCampos = [...editRule.config.campos];
-                              newCampos[i].value = e.target.value;
-                              setEditRule({...editRule, config: {...editRule.config, campos: newCampos}});
-                            }}
-                            style={{ flex: 1, background: "#FFF", color: "#333", height: 32, border: "1px solid #DDD" }} 
-                        />
-                        <div style={{ color: "#FF4D4D", cursor: "pointer" }} onClick={() => {
-                            const newCampos = editRule.config.campos.filter((_, idx) => idx !== i);
-                            setEditRule({...editRule, config: {...editRule.config, campos: newCampos}});
-                        }}><Ico k="trash" size={14} /></div>
-                      </div>
-                    ))}
-                    <span onClick={() => setShowFieldMenu("campos")} style={{ color: "#00B4FF", fontSize: 13, cursor: "pointer", borderBottom: "1px dashed #00B4FF", width: "fit-content" }}>+ Seleccionar campo</span>
+              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                <div style={{ fontSize: 14, fontWeight: 800, color: T.white }}>Actualización de Propiedades</div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                  {editRule.config?.campos?.map((f, i) => (
+                    <div key={i} style={{ display: "flex", gap: 14, alignItems: "center", background: T.bg2, padding: "12px 16px", borderRadius: 12 }}>
+                      <div style={{ width: 150, fontSize: 13, fontWeight: 700, color: T.whiteDim }}>{f.label}</div>
+                      <Inp
+                        value={f.value}
+                        onChange={e => {
+                          const newCampos = [...editRule.config.campos];
+                          newCampos[i].value = e.target.value;
+                          setEditRule({ ...editRule, config: { ...editRule.config, campos: newCampos } });
+                        }}
+                        style={{ flex: 1, background: T.bg1, color: T.white, height: 36, border: `1px solid ${T.border}`, borderRadius: 8 }}
+                      />
+                      <div style={{ color: T.red, cursor: "pointer", padding: 6 }} onClick={() => {
+                        const newCampos = editRule.config.campos.filter((_, idx) => idx !== i);
+                        setEditRule({ ...editRule, config: { ...editRule.config, campos: newCampos } });
+                      }}><Ico k="trash" size={16} /></div>
+                    </div>
+                  ))}
+                  <div style={{ marginTop: 4 }}>
+                    <span onClick={() => setShowFieldMenu("campos")} style={{ color: T.teal, fontSize: 13, fontWeight: 800, cursor: "pointer", borderBottom: `2px solid ${T.tealSoft}` }}>+ SELECCIONAR PROPIEDAD</span>
+                  </div>
                 </div>
               </div>
             )}
-
           </div>
 
-          {/* FIELD SELECTOR OVERLAY (DYNAMIC) */}
-          {showFieldMenu && (
-            <>
-              <div onClick={() => setShowFieldMenu(false)} style={{ position: "fixed", inset: 0, zIndex: 9998 }} />
-              <div style={{ position: "fixed", top: "20%", left: "30%", right: "30%", background: "#FFF", boxShadow: "0 10px 40px rgba(0,0,0,0.2)", borderRadius: 12, zIndex: 9999, border: "1px solid #DDD", maxHeight: "60vh", overflowY: "auto" }}>
-                 <div style={{ padding: 15, borderBottom: "1px solid #EEE", fontWeight: 700, fontSize: 14, display: "flex", justifyContent: "space-between" }}>
-                    Seleccionar campo de CRM
-                    <span onClick={() => setShowFieldMenu(false)} style={{ cursor: "pointer" }}><Ico k="x" size={14} /></span>
-                 </div>
-                 <div style={{ padding: 10 }}>
-                    <div style={{ fontSize: 11, color: "#999", marginBottom: 8, padding: "0 10px", fontWeight: 800 }}>CAMPOS DISPONIBLES (ESTÁNDAR + PERSONALIZADOS)</div>
-                    {crmFields.map(f => (
-                      <div key={f.id} onClick={() => addFieldToRule(f)} style={{ padding: "10px 15px", fontSize: 13, cursor: "pointer", borderRadius: 4 }} onMouseEnter={e => e.currentTarget.style.background = "#F5F9FF"}>
-                          {f.label} <span style={{ fontSize: 11, color: "#999" }}>({f.type})</span>
-                      </div>
-                    ))}
-                 </div>
-              </div>
-            </>
-          )}
-
-          <div style={{ marginTop: 20, display: "flex", gap: 12, borderTop: "1px solid #F0F2F5", paddingTop: 24 }}>
-             <Btn onClick={() => handleUpdateRule(editRule)} style={{ background: "#BBEB00", color: "#333", border: "none", padding: "10px 30px", fontSize: 13, fontWeight: 700, borderRadius: 4 }}>GUARDAR</Btn>
-             <Btn variant="secundario" onClick={() => setEditRule(null)} style={{ padding: "10px 30px", fontSize: 13, fontWeight: 700, borderRadius: 4, background: "#FFF", color: "#666", border: "1px solid #DDD" }}>CANCELAR</Btn>
+          <div style={{ marginTop: 32, display: "flex", gap: 16, borderTop: `1px solid ${T.borderHi}`, paddingTop: 28 }}>
+            <Btn onClick={() => handleUpdateRule(editRule)} style={{ background: T.teal, color: "#000", border: "none", padding: "12px 40px", fontSize: 14, fontWeight: 900, borderRadius: 12 }}>GUARDAR CAMBIOS</Btn>
+            <Btn variant="secundario" onClick={() => setEditRule(null)} style={{ padding: "12px 30px", fontSize: 14, fontWeight: 700, borderRadius: 12, background: T.bg1, color: T.whiteOff, border: `1px solid ${T.borderHi}` }}>DESCARTAR</Btn>
           </div>
 
         </div>
@@ -626,12 +681,12 @@ export const Automatizaciones = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t }
 
       <style>{`
         ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-thumb { background: #CBD5E1; borderRadius: 10px; }
+        ::-webkit-scrollbar-thumb { background: ${T.borderHi}; border-radius: 10px; }
         ::-webkit-scrollbar-track { background: transparent; }
         
         select option {
-           background: #FFF !important;
-           color: #333 !important;
+           background: ${T.bg2} !important;
+           color: ${T.white} !important;
         }
       `}</style>
     </div>
