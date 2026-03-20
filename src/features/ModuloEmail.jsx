@@ -6,7 +6,7 @@ import axios from "axios";
 import { sileo as toast } from "../utils/sileo";
 import { sb } from "../hooks/useSupaState";
 
-const VisualEditor = ({ html, onChange, style }) => {
+const VisualEditor = ({ html, onChange, style, onSelectionChange }) => {
   const ref = useRef(null);
   const [isFocused, setIsFocused] = useState(false);
 
@@ -15,6 +15,10 @@ const VisualEditor = ({ html, onChange, style }) => {
       ref.current.innerHTML = html || "";
     }
   }, [html, isFocused]);
+
+  const handleSelection = () => {
+    if (onSelectionChange) onSelectionChange();
+  };
 
   return (
     <div 
@@ -25,6 +29,8 @@ const VisualEditor = ({ html, onChange, style }) => {
         setIsFocused(false);
         if (onChange) onChange(e.target.innerHTML);
       }}
+      onKeyUp={handleSelection}
+      onMouseUp={handleSelection}
       style={{ 
         outline: "none", 
         minHeight: "100%", 
@@ -105,6 +111,19 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, carga
   const [showRedactar, setShowRedactar] = useState(false);
   const [emailFocus, setEmailFocus] = useState(null);
   const [f, setF] = useState({ para: "", cc: "", bcc: "", asunto: "", cuerpo: "", plantillaId: "", tipo: "texto" });
+  const [activeStyles, setActiveStyles] = useState({});
+
+  const checkStyles = () => {
+    if (f.tipo !== "texto") return;
+    setActiveStyles({
+      bold: document.queryCommandState("bold"),
+      italic: document.queryCommandState("italic"),
+      underline: document.queryCommandState("underline"),
+      "align-left": document.queryCommandState("justifyLeft"),
+      "align-center": document.queryCommandState("justifyCenter"),
+      "align-right": document.queryCommandState("justifyRight"),
+    });
+  };
   const [showCC, setShowCC] = useState(false);
   const [showBCC, setShowBCC] = useState(false);
   const [respuestaRapida, setRespuestaRapida] = useState("");
@@ -712,7 +731,7 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, carga
                    { k: "italic", cmd: "italic" },
                    { k: "underline", cmd: "underline" },
                  ].map(b => (
-                   <button key={b.k} onMouseDown={e => e.preventDefault()} onClick={() => { if (f.tipo === "texto") document.execCommand(b.cmd, false, null); }} style={{ width: 28, height: 28, borderRadius: 6, border: "none", background: "transparent", color: T.whiteOff, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }} onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.05)"} onMouseLeave={e => e.currentTarget.style.background = "transparent"}><Ico k={b.k} size={13} /></button>
+                   <button key={b.k} onMouseDown={e => e.preventDefault()} onClick={() => { if (f.tipo === "texto") { document.execCommand(b.cmd, false, null); checkStyles(); } }} style={{ width: 28, height: 28, borderRadius: 6, border: "none", background: activeStyles[b.k] ? T.teal : "transparent", color: activeStyles[b.k] ? "#000" : T.whiteOff, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }} onMouseEnter={e => { if (!activeStyles[b.k]) e.currentTarget.style.background = "rgba(255,255,255,0.05)"; }} onMouseLeave={e => { if (!activeStyles[b.k]) e.currentTarget.style.background = "transparent"; }}><Ico k={b.k} size={13} /></button>
                  ))}
                </div>
 
@@ -724,7 +743,7 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, carga
                    { k: "align-center", cmd: "justifyCenter" },
                    { k: "align-right", cmd: "justifyRight" },
                  ].map(b => (
-                   <button key={b.k} onMouseDown={e => e.preventDefault()} onClick={() => { if (f.tipo === "texto") document.execCommand(b.cmd, false, null); }} style={{ width: 28, height: 28, borderRadius: 6, border: "none", background: "transparent", color: T.whiteOff, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }} onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.05)"} onMouseLeave={e => e.currentTarget.style.background = "transparent"}><Ico k={b.k} size={13} /></button>
+                   <button key={b.k} onMouseDown={e => e.preventDefault()} onClick={() => { if (f.tipo === "texto") { document.execCommand(b.cmd, false, null); checkStyles(); } }} style={{ width: 28, height: 28, borderRadius: 6, border: "none", background: activeStyles[b.k] ? T.teal : "transparent", color: activeStyles[b.k] ? "#000" : T.whiteOff, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }} onMouseEnter={e => { if (!activeStyles[b.k]) e.currentTarget.style.background = "rgba(255,255,255,0.05)"; }} onMouseLeave={e => { if (!activeStyles[b.k]) e.currentTarget.style.background = "transparent"; }}><Ico k={b.k} size={13} /></button>
                  ))}
                </div>
                
@@ -742,7 +761,7 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, carga
                  />
                ) : (
                  <div style={{ width: "100%", height: 320, background: "#fff", overflowY: "auto" }}>
-                   <VisualEditor html={f.cuerpo} onChange={(html) => setF({ ...f, cuerpo: html })} style={{ fontSize: 14 }} />
+                   <VisualEditor html={f.cuerpo} onChange={(html) => setF({ ...f, cuerpo: html })} onSelectionChange={checkStyles} style={{ fontSize: 14 }} />
                  </div>
                )}
                {adjuntosSubiendo && <div style={{ position: "absolute", bottom: 12, right: 12, fontSize: 10, color: T.teal, fontWeight: 700 }}>Subiendo archivos...</div>}

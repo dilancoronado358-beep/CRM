@@ -3,16 +3,19 @@ import { T } from "../theme";
 import { uid, TPL_CATS } from "../utils";
 import { Chip, Btn, Inp, Sel, Campo, Modal, Tarjeta, Vacio, EncabezadoSeccion, BuscadorBar, Ico } from "../components/ui";
 
-const VisualEditor = ({ html, onChange, style }) => {
+const VisualEditor = ({ html, onChange, style, onSelectionChange }) => {
   const ref = useRef(null);
   const [isFocused, setIsFocused] = useState(false);
 
-  // Solo inyectar HTML si NO tiene el foco para evitar parpadeos y pérdida de cursor
   useEffect(() => {
     if (ref.current && !isFocused && ref.current.innerHTML !== html) {
       ref.current.innerHTML = html || "";
     }
   }, [html, isFocused]);
+
+  const handleSelection = () => {
+    if (onSelectionChange) onSelectionChange();
+  };
 
   return (
     <div 
@@ -23,6 +26,8 @@ const VisualEditor = ({ html, onChange, style }) => {
         setIsFocused(false);
         if (onChange) onChange(e.target.innerHTML);
       }}
+      onKeyUp={handleSelection}
+      onMouseUp={handleSelection}
       style={{ 
         outline: "none", 
         minHeight: "100%", 
@@ -41,6 +46,20 @@ const VisualEditor = ({ html, onChange, style }) => {
 export const PlantillasEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) => {
   const [showForm, setShowForm] = useState(false);
   const [f, setF] = useState({ titulo: "", categoria: "prospectacion", asunto: "", cuerpo: "", tipo: "texto" });
+  const [activeStyles, setActiveStyles] = useState({});
+
+  const checkStyles = () => {
+    if (f.tipo !== "texto") return;
+    setActiveStyles({
+      bold: document.queryCommandState("bold"),
+      italic: document.queryCommandState("italic"),
+      underline: document.queryCommandState("underline"),
+      strike: document.queryCommandState("strikeThrough"),
+      "align-left": document.queryCommandState("justifyLeft"),
+      "align-center": document.queryCommandState("justifyCenter"),
+      "align-right": document.queryCommandState("justifyRight"),
+    });
+  };
   const [editando, setEditando] = useState(null);
   const [busqueda, setBusqueda] = useState("");
   const [showPreview, setShowPreview] = useState(false);
@@ -198,9 +217,15 @@ export const PlantillasEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) =>
                 ].map(b => (
                   <button key={b.k} 
                     onMouseDown={e => e.preventDefault()}
-                    onClick={() => { if (f.tipo === "texto") document.execCommand(b.cmd, false, null); }}
-                    style={{ width: 34, height: 34, borderRadius: 8, border: "none", background: "rgba(255,255,255,0.05)", color: T.whiteOff, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
-                    onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.1)"}
+                    onClick={() => { 
+                      if (f.tipo === "texto") {
+                        document.execCommand(b.cmd, false, null);
+                        checkStyles();
+                      }
+                    }}
+                    style={{ width: 34, height: 34, borderRadius: 8, border: "none", background: activeStyles[b.k] ? T.teal : "rgba(255,255,255,0.05)", color: activeStyles[b.k] ? "#000" : T.whiteOff, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }}
+                    onMouseEnter={e => { if (!activeStyles[b.k]) e.currentTarget.style.background = "rgba(255,255,255,0.1)"; }}
+                    onMouseLeave={e => { if (!activeStyles[b.k]) e.currentTarget.style.background = "rgba(255,255,255,0.05)"; }}
                   >
                     <Ico k={b.k} size={15} />
                   </button>
@@ -215,9 +240,15 @@ export const PlantillasEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) =>
                 ].map(b => (
                   <button key={b.k} 
                     onMouseDown={e => e.preventDefault()}
-                    onClick={() => { if (f.tipo === "texto") document.execCommand(b.cmd, false, null); }}
-                    style={{ width: 34, height: 34, borderRadius: 8, border: "none", background: "rgba(255,255,255,0.05)", color: T.whiteOff, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
-                    onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.1)"}
+                    onClick={() => { 
+                      if (f.tipo === "texto") {
+                        document.execCommand(b.cmd, false, null);
+                        checkStyles();
+                      }
+                    }}
+                    style={{ width: 34, height: 34, borderRadius: 8, border: "none", background: activeStyles[b.k] ? T.teal : "rgba(255,255,255,0.05)", color: activeStyles[b.k] ? "#000" : T.whiteOff, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }}
+                    onMouseEnter={e => { if (!activeStyles[b.k]) e.currentTarget.style.background = "rgba(255,255,255,0.1)"; }}
+                    onMouseLeave={e => { if (!activeStyles[b.k]) e.currentTarget.style.background = "rgba(255,255,255,0.05)"; }}
                   >
                     <Ico k={b.k} size={15} />
                   </button>
@@ -294,6 +325,7 @@ export const PlantillasEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) =>
                 <VisualEditor 
                   html={f.cuerpo} 
                   onChange={(html) => setF({ ...f, cuerpo: html })} 
+                  onSelectionChange={checkStyles}
                 />
               </div>
             )}
