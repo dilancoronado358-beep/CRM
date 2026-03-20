@@ -304,9 +304,9 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa, cargando
     .sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
 
   const sidebarItems = [
-    { id: "entrada", label: "Inbox", icon: "inbox" },
-    { id: "enviados", label: "Sent", icon: "send" },
-    { id: "borradores", label: "Drafts", icon: "note" },
+    { id: "entrada", label: "Bandeja entrada", icon: "inbox" },
+    { id: "enviados", label: "Enviados", icon: "send" },
+    { id: "borradores", label: "Borradores", icon: "note" },
   ];
 
   const handleFileChange = async (e) => {
@@ -415,7 +415,7 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa, cargando
                 onMouseLeave={e => { if (!act) e.currentTarget.style.background = "transparent"; }}
               >
                 <Ico k={item.icon} size={18} style={{ color: act ? T.teal : T.whiteFade }} />
-                <span style={{ fontSize: 13, fontWeight: act ? 700 : 500, flex: 1 }}>{item.label}</span>
+                <span style={{ fontSize: 13, fontWeight: act ? 700 : 500, flex: 1 }}>{t(item.label)}</span>
                 {count > 0 && <span style={{ background: T.teal, color: "#fff", borderRadius: 99, padding: "2px 8px", fontSize: 10, fontWeight: 800 }}>{count}</span>}
               </div>
             );

@@ -123,8 +123,8 @@ export const Sel = ({ value, onChange, children, style = {}, placeholder = "Sele
         onMouseEnter={e => e.currentTarget.style.borderColor = T.teal + "80"}
         onMouseLeave={e => e.currentTarget.style.borderColor = T.whiteFade + "15"}
       >
-        <span style={{ fontSize: 13, color: T.whiteOff, fontWeight: 700 }}>{sel.lab}</span>
-        <Ico k="chevron-down" size={14} style={{ transform: open ? "rotate(180deg)" : "none", transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)", color: open ? T.teal : T.whiteDim }} />
+        <span style={{ fontSize: 13, color: T.whiteOff, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, marginRight: 8 }}>{sel.lab}</span>
+        <Ico k="chevron-down" size={14} style={{ transform: open ? "rotate(180deg)" : "none", transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)", color: open ? T.teal : T.whiteDim, flexShrink: 0 }} />
       </div>
       {open && (
         <div style={{ position: "absolute", top: "calc(100% + 8px)", left: 0, right: 0, background: T.bg2, border: `1px solid ${T.borderHi}`, borderRadius: 12, zIndex: 10000, boxShadow: "0 15px 35px rgba(0,0,0,0.4)", padding: 6, maxHeight: 220, overflowY: "auto", animation: "slideIn .2s" }}>
