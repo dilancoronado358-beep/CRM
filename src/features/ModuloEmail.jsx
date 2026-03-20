@@ -14,6 +14,10 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa, cargando
   const [showCC, setShowCC] = useState(false);
   const [showBCC, setShowBCC] = useState(false);
   const [respuestaRapida, setRespuestaRapida] = useState("");
+  const [replyCC, setReplyCC] = useState("");
+  const [replyBCC, setReplyBCC] = useState("");
+  const [showCCReply, setShowCCReply] = useState(false);
+  const [showBCCReply, setShowBCCReply] = useState(false);
   const [simulandoEnvio, setSimulandoEnvio] = useState(false);
   const [logEnvio, setLogEnvio] = useState([]);
   const [adjuntosSubiendo, setAdjuntosSubiendo] = useState(false);
@@ -129,17 +133,23 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa, cargando
     if (!acc) return;
     try {
       const API_URL = getApiUrl(db);
-      await axios.post(`${API_URL}/api/email/send`, {
+      const res = await axios.post(`${API_URL}/api/email/send`, {
         accountId: acc.id,
         to: emailFocus.de,
-        subject: emailFocus.asunto.startsWith("Re:") ? emailFocus.asunto : `Re: ${emailFocus.asunto}`,
+        cc: replyCC,
+        bcc: replyBCC,
+        subject: `Re: ${emailFocus.asunto}`,
         body: respuestaRapida,
+        parentMessageId: emailFocus.mensaje_id,
+        threadId: emailFocus.thread_id,
         attachments: adjuntosLocal
       }, { headers: { 'ngrok-skip-browser-warning': 'true' } });
       toast.success("✅ Respuesta enviada.");
       const nuevaRpta = { id: "em_reply_" + Date.now(), de: acc.email, para: emailFocus.de, asunto: `Re: ${emailFocus.asunto}`, cuerpo: respuestaRapida, fecha: new Date().toISOString(), carpeta: 'enviados', leido: true, adjuntos: adjuntosLocal };
       setDb(prev => ({ ...prev, emails: [nuevaRpta, ...prev.emails] }));
       setRespuestaRapida("");
+      setReplyCC(""); setReplyBCC("");
+      setShowCCReply(false); setShowBCCReply(false);
       setAdjuntosLocal([]);
     } catch (e) { toast.error("Error enviando respuesta."); }
   };
@@ -300,16 +310,39 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa, cargando
             </div>
           </div>
 
-          <div style={{ height: 80, borderTop: `1px solid ${T.whiteFade}05`, display: "flex", alignItems: "center", padding: "0 32px", gap: 16 }}>
-            <div style={{ position: "relative" }}>
-              <input type="file" multiple id="email-reply-attach-input" style={{ display: "none" }} onChange={handleFileChange} />
-              <label htmlFor="email-reply-attach-input">
-                <Ico k="paperclip" size={18} style={{ cursor: "pointer", color: adjuntosSubiendo ? T.whiteDim : T.white }} />
-              </label>
+          {/* FOOTER: RESPUESTA RÁPIDA (PREMIUM) */}
+        <div style={{ padding: "20px 24px", borderTop: `1px solid ${T.whiteFade}08`, background: "rgba(255,255,255,0.01)" }}>
+          {showCCReply && <div style={{ marginBottom: 12, animation: "fadeIn 0.2s" }}><Inp value={replyCC} onChange={e => setReplyCC(e.target.value)} placeholder="CC (Copia)..." style={{ background: "rgba(0,0,0,0.1)", border: `1px solid ${T.whiteFade}08`, borderRadius: 10, padding: "8px 12px", fontSize: 12 }} /></div>}
+          {showBCCReply && <div style={{ marginBottom: 12, animation: "fadeIn 0.2s" }}><Inp value={replyBCC} onChange={e => setReplyBCC(e.target.value)} placeholder="BCC (Copia Oculta)..." style={{ background: "rgba(0,0,0,0.1)", border: `1px solid ${T.whiteFade}08`, borderRadius: 10, padding: "8px 12px", fontSize: 12 }} /></div>}
+          
+          <div style={{ display: "flex", gap: 12, alignItems: "flex-end" }}>
+            <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
+              <button onClick={() => setShowCCReply(!showCCReply)} style={{ background: showCCReply ? T.teal + "20" : "transparent", border: `1px solid ${showCCReply ? T.teal : T.whiteFade + "15"}`, borderRadius: 8, padding: "4px 8px", color: showCCReply ? T.teal : T.whiteDim, fontSize: 10, fontWeight: 800, cursor: "pointer" }}>CC</button>
+              <button onClick={() => setShowBCCReply(!showBCCReply)} style={{ background: showBCCReply ? T.teal + "20" : "transparent", border: `1px solid ${showBCCReply ? T.teal : T.whiteFade + "15"}`, borderRadius: 8, padding: "4px 8px", color: showBCCReply ? T.teal : T.whiteDim, fontSize: 10, fontWeight: 800, cursor: "pointer" }}>BCC</button>
             </div>
-            <Inp value={respuestaRapida} onChange={e => setRespuestaRapida(e.target.value)} placeholder="Escribe una respuesta rápida..." style={{ flex: 1, borderRadius: 12, height: 48 }} />
-            <Btn onClick={enviarRespuesta} disabled={!respuestaRapida.trim() || adjuntosSubiendo} style={{ height: 48, borderRadius: 12, padding: "0 24px" }}><Ico k="send" size={16} style={{ marginRight: 8 }} /> Responder</Btn>
+            
+            <div style={{ position: "relative", flex: 1 }}>
+              <Inp value={respuestaRapida} onChange={e => setRespuestaRapida(e.target.value)} placeholder="Escribe tu respuesta..." style={{ background: "rgba(0,0,0,0.15)", border: `1px solid ${T.whiteFade}08`, borderRadius: 16, padding: "12px 48px 12px 16px", minHeight: 48, fontSize: 13 }} rows={1} />
+              <button onClick={() => document.getElementById('reply-attach').click()} style={{ position: "absolute", right: 12, bottom: 12, background: "none", border: "none", color: T.whiteDim, cursor: "pointer", opacity: 0.6 }} onMouseEnter={e => e.currentTarget.style.opacity = 1} onMouseLeave={e => e.currentTarget.style.opacity = 0.6}><Ico k="paperclip" size={18} /></button>
+              <input type="file" id="reply-attach" multiple style={{ display: "none" }} onChange={handleFileChange} />
+            </div>
+            <Btn onClick={enviarRespuesta} disabled={simulandoEnvio || !respuestaRapida.trim() || adjuntosSubiendo} style={{ height: 48, borderRadius: 16, padding: "0 24px" }}>
+              {simulandoEnvio ? "..." : <><Ico k="reply" size={16} style={{ marginRight: 6 }} /> Responder</>}
+            </Btn>
           </div>
+
+          {adjuntosLocal.length > 0 && (
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 12 }}>
+              {adjuntosLocal.map((at, i) => (
+                <div key={i} style={{ display: "flex", alignItems: "center", gap: 6, background: "rgba(255,255,255,0.03)", padding: "3px 8px", borderRadius: 6, border: `1px solid ${T.whiteFade}08` }}>
+                  <Ico k="paperclip" size={10} style={{ color: T.teal }} />
+                  <span style={{ fontSize: 10, color: T.whiteOff }}>{at.name}</span>
+                  <button onClick={() => setAdjuntosLocal(p => p.filter((_, idx) => idx !== i))} style={{ background: "none", border: "none", color: T.red, cursor: "pointer", padding: 0, marginLeft: 2, display: "flex" }}><Ico k="x" size={10} /></button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
         </div>
       ) : (
         <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", opacity: 0.3 }}>
