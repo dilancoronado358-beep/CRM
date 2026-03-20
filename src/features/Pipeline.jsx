@@ -290,7 +290,7 @@ const FormDeal = ({ db, setDb, f, setF, editDeal, onGuardar, onCancelar, guardar
 };
 
 export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModulo, focusEmailId, setFocusEmailId }) => {
-  const [plActivo, setPlActivo] = useState(db.pipelines[0]?.id || "");
+  const [plActivo, setPlActivo] = useState(db.pipelines?.[0]?.id || "");
   const [tab, setTab] = useState("kanban");
   const [showConfetti, setShowConfetti] = useState(false);
 
@@ -368,8 +368,8 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
   // Estado del formulario de Deal elevado al nivel de Pipeline para sobrevivir re-renders de Supabase Realtime.
   const defaultF = () => ({
     titulo: "", contacto_id: "", empresa_id: "",
-    pipeline_id: db.pipelines[0]?.id || "",
-    etapa_id: db.pipelines[0]?.etapas?.[0]?.id || "",
+    pipeline_id: db.pipelines?.[0]?.id || "",
+    etapa_id: db.pipelines?.[0]?.etapas?.[0]?.id || "",
     valor: 0, prob: 50, fecha_cierre: "",
     responsable: db.usuario?.name || "",
     etiquetas: "", notas: "", archivos: [], custom_fields: {}
@@ -378,7 +378,7 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
   const [dragActive, setDragActive] = useState(false);
 
 
-  const pipeline = db.pipelines.find(p => p.id === plActivo);
+  const pipeline = db.pipelines?.find(p => p.id === plActivo);
 
   const plDeals = db.deals.filter(d => {
     if (d.pipeline_id !== plActivo) return false;
@@ -404,7 +404,7 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
 
     // Filtros Avanzados
     if (busqueda && !d.titulo.toLowerCase().includes(busqueda.toLowerCase())) {
-      const contacto = db.contactos.find(c => c.id === d.contacto_id);
+      const contacto = db.contactos?.find(c => c.id === d.contacto_id);
       if (!contacto?.nombre?.toLowerCase().includes(busqueda.toLowerCase())) return false;
     }
     if (fResp !== "todos" && d.responsable !== fResp) return false;
@@ -489,7 +489,7 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
           };
           // Si es etapa_id, intentamos poner el nombre de la etapa para que sea humano
           if (c === "etapa_id") {
-            const pl = db.pipelines.find(p => p.id === editDeal.pipeline_id);
+            const pl = db.pipelines?.find(p => p.id === editDeal.pipeline_id);
             log.valor_anterior = pl?.etapas.find(e => e.id === editDeal[c])?.nombre || editDeal[c];
             log.valor_nuevo = pl?.etapas.find(e => e.id === form[c])?.nombre || form[c];
           }
@@ -499,7 +499,7 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
 
       // 4. NOTIFICACIONES & WEBHOOKS (Phase 40 & 42)
       // DISPARAR WEBHOOKS SEGÚN ETAPA (Phase 42)
-      const pl = db.pipelines.find(p => p.id === form.pipeline_id);
+      const pl = db.pipelines?.find(p => p.id === form.pipeline_id);
       const etapa = pl?.etapas.find(e => e.id === form.etapa_id);
 
       if (etapa && etapa.id !== editDeal.etapa_id) {
@@ -604,7 +604,7 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
       deals: prev.deals.map(d => selectedIds.includes(d.id) ? { ...d, etapa_id: newEtapaId } : d)
     }));
     for (const id of selectedIds) {
-      const d = db.deals.find(x => x.id === id);
+      const d = db.deals?.find(x => x.id === id);
       if (d) {
         await guardarEnSupa("deals", { ...d, etapa_id: newEtapaId });
         await ejecutarAutomaciones(d, newEtapaId);
@@ -692,7 +692,7 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
             style={{ flex: 1 }}
             innerStyle={{ background: "transparent", border: "none", padding: "6px 0", height: "auto" }}
           >
-            {db.pipelines.map(pl => <option key={pl.id} value={pl.id}>{pl.nombre} ({db.deals.filter(d => d.pipeline_id === pl.id).length})</option>)}
+            {db.pipelines?.map(pl => <option key={pl.id} value={pl.id}>{pl.nombre} ({db.deals.filter(d => d.pipeline_id === pl.id).length})</option>)}
           </Sel>
         </div>
 
@@ -739,7 +739,7 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
             <span style={{ fontSize: 11, fontWeight: 700, color: T.whiteDim, textTransform: "uppercase" }}>Empresa</span>
             <select value={fEmpresa} onChange={e => setFEmpresa(e.target.value)} style={{ background: T.bg2, color: T.white, border: `1px solid ${T.borderHi}`, borderRadius: 8, padding: "6px 12px", fontSize: 13, cursor: "pointer", outline: "none" }}>
               <option value="todas">Todas las empresas</option>
-              {db.empresas.map(emp => <option key={emp.id} value={emp.id}>{emp.nombre}</option>)}
+              {db.empresas?.map(emp => <option key={emp.id} value={emp.id}>{emp.nombre}</option>)}
             </select>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -759,7 +759,7 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
       {/* KANBAN — ESTILO BITRIX24 DARK */}
       {tab === "kanban" && pipeline && (
         <div style={{ display: "flex", gap: 10, overflowX: "auto", paddingBottom: 20, minHeight: "70vh", alignItems: "flex-start" }}>
-          {pipeline.etapas.map((etapa, etapaIdx) => {
+          {pipeline.etapas?.map((etapa, etapaIdx) => {
             const etDeals = plDeals.filter(d => d.etapa_id === etapa.id);
             const isOver = dragSobre === etapa.id;
             const totalEtapa = etDeals.reduce((s, d) => s + (d.valor || 0), 0);
@@ -1153,7 +1153,7 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
 
             <Sel value="" onChange={e => handleBulkStage(e.target.value)} style={{ width: 140, fontSize: 11, padding: "6px 10px" }}>
               <option value="">Cambiar Etapa...</option>
-              {pipeline.etapas.map(et => <option key={et.id} value={et.id}>{et.nombre}</option>)}
+              {pipeline?.etapas?.map(et => <option key={et.id} value={et.id}>{et.nombre}</option>)}
             </Sel>
 
             <Sel value="" onChange={e => handleBulkResp(e.target.value)} style={{ width: 140, fontSize: 11, padding: "6px 10px" }}>
