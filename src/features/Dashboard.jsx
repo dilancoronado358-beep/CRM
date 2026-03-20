@@ -71,7 +71,7 @@ export const Dashboard = ({ db, t = s => s }) => {
       }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div style={{ fontWeight: 800, fontSize: 16, color: T.white, display: "flex", alignItems: "center", gap: 10 }}>
-            <div style={{ width: 32, height: 32, borderRadius: 10, background: (color || T.teal) + "20", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <div style={{ width: 32, height: 32, borderRadius: 10, background: T.bg2, border: `1px solid ${color || T.teal}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
               <Ico k={icon} size={18} style={{ color: color || T.teal }} />
             </div>
             {title}
@@ -286,12 +286,12 @@ export const Dashboard = ({ db, t = s => s }) => {
         
         {/* WIDGET: AI INSIGHTS */}
         <div style={{ gridColumn: "span 6", display: widgets.ai ? "block" : "none" }}>
-          <Tarjeta brillo style={{ padding: 20, background: `linear-gradient(135deg, ${T.bg1}, ${T.bg2})`, border: `1px solid ${T.teal}40`, display: "flex", alignItems: "center", gap: 20 }}>
+          <Tarjeta brillo style={{ padding: 20, background: T.bg1, border: `1px solid ${T.teal}`, display: "flex", alignItems: "center", gap: 20 }}>
             <div style={{ position: "relative" }}>
-              <div style={{ width: 50, height: 50, borderRadius: 14, background: `linear-gradient(45deg, ${T.teal}, #6366F1)`, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: `0 8px 20px ${T.teal}40` }}>
+              <div style={{ width: 50, height: 50, borderRadius: 14, background: `linear-gradient(45deg, ${T.teal}, #6366F1)`, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: `0 4px 12px rgba(20, 184, 166, 0.3)` }}>
                 <Ico k="lightning" size={28} style={{ color: "#FFF" }} />
               </div>
-              <div style={{ position: "absolute", top: -4, right: -4, width: 12, height: 12, borderRadius: "50%", background: T.teal, border: `2px solid ${T.bg1}`, animation: "pulse 2s infinite" }} />
+              <div style={{ position: "absolute", top: -4, right: -4, width: 12, height: 12, borderRadius: "50%", background: T.teal, border: `2px solid ${T.bg1}` }} />
             </div>
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: 16, fontWeight: 900, color: T.white }}>Sales Intelligence Pro</div>
@@ -310,23 +310,23 @@ export const Dashboard = ({ db, t = s => s }) => {
           {funnelData.length > 0 ? (
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               {funnelData.map((et, i) => {
-                const w = Math.max(30, et.pct);
-                return (
-                  <div key={i} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <div style={{ width: 10, height: 10, borderRadius: "2px", background: et.color, boxShadow: `0 0 8px ${et.color}60` }} />
-                        <span style={{ fontSize: 14, fontWeight: 700, color: T.white }}>{et.name}</span>
-                        <span style={{ fontSize: 11, color: T.whiteDim }}>{et.deals} deals</span>
-                      </div>
-                      <span style={{ fontSize: 15, fontWeight: 900, color: et.color }}>{money(et.value)}</span>
-                    </div>
-                    <div style={{ height: 32, background: T.bg2, borderRadius: 10, overflow: "hidden", position: "relative", border: `1px solid ${T.borderHi}` }}>
-                      <div style={{
-                        height: "100%", width: `${w}%`, background: `linear-gradient(90deg, ${et.color}70, ${et.color})`,
-                        borderRadius: 10, transition: "width 1s cubic-bezier(0.34, 1.56, 0.64, 1)",
-                        position: "relative"
-                      }}>
+                        const w = Math.max(30, et.pct);
+                        return (
+                          <div key={i} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                <div style={{ width: 10, height: 10, borderRadius: "2px", background: et.color }} />
+                                <span style={{ fontSize: 14, fontWeight: 700, color: T.white }}>{et.name}</span>
+                                <span style={{ fontSize: 11, color: T.whiteDim }}>{et.deals} deals</span>
+                              </div>
+                              <span style={{ fontSize: 15, fontWeight: 900, color: et.color }}>{money(et.value)}</span>
+                            </div>
+                            <div style={{ height: 32, background: T.bg2, borderRadius: 10, overflow: "hidden", position: "relative", border: `1px solid ${T.borderHi}` }}>
+                              <div style={{
+                                height: "100%", width: `${w}%`, background: et.color,
+                                borderRadius: 10, transition: "width 1s cubic-bezier(0.34, 1.56, 0.64, 1)",
+                                position: "relative"
+                              }}>
                          <div style={{ position: "absolute", inset: 0, background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent)", animation: "shimmer 3s infinite" }} />
                       </div>
                       <span style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", fontSize: 12, fontWeight: 900, color: T.whiteOff }}>{et.pct}%</span>
@@ -375,7 +375,7 @@ export const Dashboard = ({ db, t = s => s }) => {
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             {recentWins.map(deal => (
               <div key={deal.id} style={{ display: "flex", gap: 14, alignItems: "center", padding: "12px 16px", background: T.bg2, borderRadius: 12, border: `1px solid ${T.borderHi}`, transition: "transform .2s" }}>
-                <div style={{ width: 42, height: 42, borderRadius: "50%", background: T.green + "15", border: `1px solid ${T.green}30`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>🏆</div>
+                <div style={{ width: 42, height: 42, borderRadius: "50%", background: "rgba(255,255,255,0.05)", border: `1px solid ${T.green}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>🏆</div>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 14, fontWeight: 800, color: T.white }}>{deal.titulo}</div>
                   <div style={{ fontSize: 11, color: T.whiteDim }}>{deal.responsable} · {money(deal.valor)}</div>
@@ -387,19 +387,19 @@ export const Dashboard = ({ db, t = s => s }) => {
           </div>
         </Widget>
 
-        {/* WIDGET: VELOCITY */}
-        <Widget id="velocity" span={3} title="Sales Velocity" icon="lightning" color={T.purple}>
+         {/* WIDGET: VELOCITY */}
+        <Widget id="velocity" span={3} title="Sales Velocity" icon="lightning" color={T.teal}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 20 }}>
              <div>
                 <div style={{ fontSize: 32, fontWeight: 900, color: T.white }}>{averageVelocity}<span style={{ fontSize: 16, color: T.whiteDim, marginLeft: 4 }}>días</span></div>
-                <div style={{ fontSize: 12, color: T.purple, fontWeight: 700 }}>Ciclo de cierre promedio</div>
+                <div style={{ fontSize: 12, color: T.teal, fontWeight: 700 }}>Ciclo de cierre promedio</div>
              </div>
-             <div style={{ padding: "6px 12px", background: T.purple + "15", borderRadius: 20, fontSize: 11, color: T.purple, fontWeight: 800 }}>EFICIENCIA +12%</div>
+             <div style={{ padding: "6px 12px", background: "rgba(255,255,255,0.05)", borderRadius: 20, fontSize: 11, color: T.teal, fontWeight: 800 }}>EFICIENCIA +12%</div>
           </div>
           <div style={{ height: 120 }}>
              <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={velocityData}>
-                   <Line type="monotone" dataKey="velocity" stroke={T.purple} strokeWidth={4} dot={false} />
+                   <Line type="monotone" dataKey="velocity" stroke={T.teal} strokeWidth={4} dot={false} />
                 </LineChart>
              </ResponsiveContainer>
           </div>
@@ -448,7 +448,7 @@ export const Dashboard = ({ db, t = s => s }) => {
          <div style={{ display: "flex", flexDirection: "column", gap: 12, padding: "10px 0" }}>
             <p style={{ color: T.whiteDim, fontSize: 13, marginBottom: 16 }}>Selecciona los widgets que deseas ver en tu dashboard principal.</p>
             {Object.keys(widgets).map(wId => (
-              <label key={wId} style={{ display: "flex", alignItems: "center", gap: 14, padding: "12px 16px", background: T.bg2, borderRadius: 12, cursor: "pointer", transition: "all .2s", border: `1px solid ${widgets[wId] ? T.teal + "40" : T.borderHi}` }}>
+              <label key={wId} style={{ display: "flex", alignItems: "center", gap: 14, padding: "12px 16px", background: T.bg2, borderRadius: 12, cursor: "pointer", transition: "all .2s", border: `1px solid ${widgets[wId] ? T.teal : T.borderHi}` }}>
                  <input type="checkbox" checked={widgets[wId]} onChange={() => toggleWidget(wId)} style={{ width: 18, height: 18, accentColor: T.teal }} />
                  <span style={{ fontSize: 14, fontWeight: 700, color: T.white, textTransform: "capitalize" }}>{wId === "kpis" ? "Resumen (KPIs)" : wId === "ai" ? "Sales AI Insights" : wId.replace(/[A-Z]/g, ' $&')}</span>
                  <div style={{ flex: 1 }} />
@@ -461,7 +461,6 @@ export const Dashboard = ({ db, t = s => s }) => {
 
       <style>{`
         @keyframes fadeIn { from { opacity:0; transform: translateY(10px); } to { opacity:1; transform: translateY(0); } }
-        @keyframes pulse { 0% { box-shadow: 0 0 0 0 ${T.teal}80; } 70% { box-shadow: 0 0 0 10px ${T.teal}00; } 100% { box-shadow: 0 0 0 0 ${T.teal}00; } }
       `}</style>
 
       <Modal
@@ -481,7 +480,7 @@ export const Dashboard = ({ db, t = s => s }) => {
               .ia-loader {
                 width: 50px;
                 height: 50px;
-                border: 4px solid ${T.teal}20;
+                border: 4px solid rgba(255,255,255,0.1);
                 border-top-color: ${T.teal};
                 border-radius: 50%;
                 animation: spin 1s linear infinite;
@@ -501,7 +500,7 @@ export const Dashboard = ({ db, t = s => s }) => {
                 </Btn>
               </div>
             )}
-            <div style={{ marginTop: 24, padding: 16, background: T.teal + "10", borderRadius: 10, border: `1px solid ${T.teal}30`, display: "flex", gap: 12 }}>
+            <div style={{ marginTop: 24, padding: 16, background: "rgba(255,255,255,0.03)", borderRadius: 10, border: `1px solid ${T.teal}`, display: "flex", gap: 12 }}>
               <Ico k="star" size={18} style={{ color: T.teal }} />
               <div style={{ fontSize: 12, color: T.teal }}>
                 Este análisis se basa en tus datos actuales y es generado dinámicamente para ayudarte a vender más.

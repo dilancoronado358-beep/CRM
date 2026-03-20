@@ -10,13 +10,12 @@ export { Ico, SpotlightSearch, ConfirmModal };
 export const Av = ({ text = "?", color = T.teal, size = 36, fs }) => (
   <div style={{ 
     width: size, height: size, borderRadius: "50%", 
-    background: `linear-gradient(135deg, ${color}20, ${color}35)`, 
-    border: `1.5px solid ${color}40`, 
+    background: T.bg3, 
+    border: `1.5px solid ${T.borderHi}`, 
     color, fontWeight: 800, fontSize: fs || size * .38, 
     display: "flex", alignItems: "center", justifyContent: "center", 
     flexShrink: 0, overflow: "hidden", 
-    boxShadow: `inset 0 2px 4px rgba(255,255,255,0.1), 0 4px 12px ${color}15`,
-    textShadow: `0 0 10px ${color}40`,
+    boxShadow: "var(--shadow-sm)",
     userSelect: "none"
   }}>
     {(text || "?").slice(0, 1).toUpperCase() + ((text || "").split(" ")[1] || text || "").slice(0, 1).toUpperCase()}
@@ -24,19 +23,19 @@ export const Av = ({ text = "?", color = T.teal, size = 36, fs }) => (
 );
 
 export const Chip = ({ label, color, bg }) => (
-  <span style={{ display: "inline-flex", alignItems: "center", padding: "2px 8px", borderRadius: 20, fontSize: 11, fontWeight: 600, color, background: bg || color + "18", border: `1px solid ${color}28`, whiteSpace: "nowrap" }}>
+  <span style={{ display: "inline-flex", alignItems: "center", padding: "2px 10px", borderRadius: 20, fontSize: 11, fontWeight: 700, color, background: bg || "rgba(255,255,255,0.05)", border: `1px solid ${color}`, whiteSpace: "nowrap", textTransform: "uppercase", letterSpacing: ".02em" }}>
     {label}
   </span>
 );
 
 export const Btn = ({ children, variant = "primario", size = "md", onClick, disabled, style = {}, full }) => {
   const V = {
-    primario: { bg: T.teal, color: "#FFF", border: T.teal, shadow: "0 2px 5px rgba(37,99,235,0.2)" },
-    secundario: { bg: T.bg1, color: T.whiteOff, border: T.borderHi, shadow: "0 1px 2px rgba(0,0,0,0.05)" },
+    primario: { bg: T.teal, color: "#FFF", border: T.teal, shadow: "var(--shadow-sm)" },
+    secundario: { bg: T.bg1, color: T.whiteOff, border: T.borderHi, shadow: "var(--shadow-sm)" },
     fantasma: { bg: "transparent", color: T.whiteDim, border: "transparent" },
-    peligro: { bg: T.redS, color: T.red, border: T.red + "30" },
-    exito: { bg: T.greenS, color: T.green, border: T.green + "30" },
-    turquesa: { bg: T.tealSoft, color: T.teal, border: T.teal + "30" },
+    peligro: { bg: T.bg2, color: T.red, border: T.red },
+    exito: { bg: T.bg2, color: T.green, border: T.green },
+    turquesa: { bg: T.bg2, color: T.teal, border: T.teal },
   };
   const S = { sm: { padding: "5px 10px", fontSize: 11 }, md: { padding: "8px 14px", fontSize: 12.5 }, lg: { padding: "11px 22px", fontSize: 14 } };
   const v = V[variant] || V.primario; const s = S[size] || S.md;
@@ -45,7 +44,7 @@ export const Btn = ({ children, variant = "primario", size = "md", onClick, disa
       onMouseEnter={e => {
         if (disabled) return;
         e.currentTarget.style.transform = "translateY(-1.5px)";
-        e.currentTarget.style.boxShadow = v.shadow ? `0 8px 20px -4px ${v.border}60` : "0 4px 12px rgba(0,0,0,0.1)";
+        e.currentTarget.style.boxShadow = "var(--shadow-md)";
         if (variant === "fantasma") e.currentTarget.style.background = "rgba(255,255,255,0.05)";
       }}
       onMouseLeave={e => {
@@ -143,15 +142,15 @@ export const Sel = ({ value, onChange, children, style = {}, innerStyle = {}, pl
   return (
     <div ref={ref} style={{ position: "relative", width: "100%", ...style }}>
       <div onClick={() => setOpen(!open)}
-        style={{ background: "rgba(255,255,255,0.03)", border: `1px solid ${T.whiteFade}15`, borderRadius: 12, padding: "10px 16px", display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", backdropFilter: "blur(12px)", transition: "all 0.2s", ...innerStyle }}
-        onMouseEnter={e => e.currentTarget.style.borderColor = T.teal + "80"}
-        onMouseLeave={e => e.currentTarget.style.borderColor = innerStyle.border ? innerStyle.border : (T.whiteFade + "15")}
+        style={{ background: "rgba(255,255,255,0.03)", border: `1px solid ${T.whiteFade}`, borderRadius: 12, padding: "10px 16px", display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", backdropFilter: "blur(12px)", transition: "all 0.2s", ...innerStyle }}
+        onMouseEnter={e => e.currentTarget.style.borderColor = T.teal}
+        onMouseLeave={e => e.currentTarget.style.borderColor = innerStyle.border ? innerStyle.border : T.borderHi}
       >
         <span style={{ fontSize: 13, color: T.whiteOff, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, marginRight: 8 }}>{sel.lab}</span>
         <Ico k="chevron-down" size={14} style={{ transform: open ? "rotate(180deg)" : "none", transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)", color: open ? T.teal : T.whiteDim, flexShrink: 0 }} />
       </div>
       {open && (
-        <div style={{ position: "absolute", top: "calc(100% + 8px)", left: 0, right: 0, background: T.bg1, border: `1px solid ${T.whiteFade}25`, borderRadius: 12, zIndex: 10000, boxShadow: "0 20px 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.05)", padding: 6, maxHeight: 220, overflowY: "auto", animation: "slideIn .2s forwards" }}>
+        <div style={{ position: "absolute", top: "calc(100% + 8px)", left: 0, right: 0, background: T.bg1, border: `1px solid ${T.borderHi}`, borderRadius: 12, zIndex: 10000, boxShadow: "var(--shadow-xl)", padding: 6, maxHeight: 220, overflowY: "auto", animation: "slideIn .2s forwards" }}>
           {options.map(o => (
             <div key={o.val} onClick={() => { onChange({ target: { value: o.val } }); setOpen(false); }}
               style={{ padding: "10px 14px", borderRadius: 8, fontSize: 13, color: o.val === value ? T.teal : T.whiteOff, background: o.val === value ? T.bg2 : "transparent", cursor: "pointer", transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)", fontWeight: o.val === value ? 800 : 500 }}
@@ -321,7 +320,7 @@ export const IndSupa = ({ estado }) => {
   };
   const c = cfg[estado] || cfg.local;
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 6, background: c.color + "15", border: `1px solid ${c.color}30`, borderRadius: 6, padding: "4px 10px", fontSize: 11, fontWeight: 600, color: c.color }}>
+    <div style={{ display: "flex", alignItems: "center", gap: 6, background: "rgba(255,255,255,0.05)", border: `1px solid ${c.color}`, borderRadius: 6, padding: "4px 10px", fontSize: 11, fontWeight: 600, color: c.color }}>
       <div style={{ width: 6, height: 6, borderRadius: "50%", background: c.color, animation: estado === "conectando" ? "pulse 1s infinite" : undefined }} />
       {c.texto}
     </div>

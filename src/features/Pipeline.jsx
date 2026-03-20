@@ -66,9 +66,9 @@ const FormDeal = ({ db, setDb, f, setF, editDeal, onGuardar, onCancelar, guardar
             color = "#fff";
             borderColor = st.color || T.teal;
           } else if (isPast) {
-            bg = (st.color || T.teal) + "30";
+            bg = T.bg3;
             color = st.color || T.teal;
-            borderColor = (st.color || T.teal) + "60";
+            borderColor = T.borderHi;
           }
 
           return (
@@ -87,7 +87,7 @@ const FormDeal = ({ db, setDb, f, setF, editDeal, onGuardar, onCancelar, guardar
                 fontSize: 11, fontWeight: 700, cursor: "pointer", background: bg, color: color,
                 border: `1px solid ${borderColor}`, borderRadius: 4, transition: "all .2s",
                 textAlign: "center", padding: "0 4px", textTransform: "uppercase", letterSpacing: ".02em",
-                boxShadow: isActive ? `0 2px 8px ${bg}40` : "none"
+                boxShadow: isActive ? "var(--shadow-sm)" : "none"
               }}
             >
               {st.nombre}
@@ -179,7 +179,7 @@ const FormDeal = ({ db, setDb, f, setF, editDeal, onGuardar, onCancelar, guardar
             </div>
 
             {/* Lead Scoring Breakdown */}
-            <div style={{ background: `linear-gradient(135deg, ${T.bg1}, ${T.bg2})`, border: `1px solid ${T.teal}30`, borderRadius: 16, padding: 18, marginTop: 20 }}>
+            <div style={{ background: T.bg2, border: `1px solid ${T.borderHi}`, borderRadius: 16, padding: 18, marginTop: 20 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   <div style={{ fontSize: 18 }}>{calculateLeadScore(db, f) >= 80 ? "🔥" : "📊"}</div>
@@ -196,7 +196,7 @@ const FormDeal = ({ db, setDb, f, setF, editDeal, onGuardar, onCancelar, guardar
                   { l: "Interacción WA", v: (db.whatsapp_messages || []).some(m => m.deal_id === editDeal?.id), p: "+20" }
                 ].map((it, i) => (
                   <div key={i} style={{ fontSize: 10, color: it.v ? T.white : T.whiteDim, display: "flex", alignItems: "center", gap: 5 }}>
-                    <div style={{ width: 6, height: 6, borderRadius: "50%", background: it.v ? T.green : T.whiteDim + "30" }} />
+                    <div style={{ width: 6, height: 6, borderRadius: "50%", background: it.v ? T.green : "rgba(255,255,255,0.1)" }} />
                     {it.l} <span style={{ color: it.v ? T.green : T.whiteDim, fontWeight: 700 }}>{it.p}</span>
                   </div>
                 ))}
@@ -695,7 +695,7 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
                100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
              }
            `}</style>
-           <div style={{ background: "rgba(0,0,0,0.8)", padding: "20px 40px", borderRadius: 20, border: `2px solid ${T.green}`, color: "#fff", fontSize: 24, fontWeight: 900, boxShadow: `0 0 30px ${T.green}40`, animation: "pop-in 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)" }}>
+           <div style={{ background: "rgba(0,0,0,0.8)", padding: "20px 40px", borderRadius: 20, border: `2px solid ${T.green}`, color: "#fff", fontSize: 24, fontWeight: 900, boxShadow: "var(--shadow-xl)", animation: "pop-in 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)" }}>
               🎉 ¡DEAL GANADO! 🚀
            </div>
            <style>{`
@@ -788,10 +788,10 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
             const etDeals = plDeals.filter(d => d.etapa_id === etapa.id);
             const isOver = dragSobre === etapa.id;
             const totalEtapa = etDeals.reduce((s, d) => s + (d.valor || 0), 0);
-            const colBg = isOver ? etapa.color + "15" : T.bg2;
+            const colBg = isOver ? "rgba(255,255,255,0.05)" : T.bg2;
             return (
               <div key={etapa.id}
-                style={{ minWidth: 220, maxWidth: 220, display: "flex", flexDirection: "column", flexShrink: 0, borderRadius: 12, background: colBg, border: `1px solid ${isOver ? etapa.color + "60" : T.borderHi}`, transition: "all .2s", overflow: "hidden" }}
+                style={{ minWidth: 220, maxWidth: 220, display: "flex", flexDirection: "column", flexShrink: 0, borderRadius: 12, background: colBg, border: `1px solid ${isOver ? etapa.color : T.borderHi}`, transition: "all .2s", overflow: "hidden" }}
                 onDragOver={e => { e.preventDefault(); setDragSobre(etapa.id); }}
                 onDrop={async e => {
                   e.preventDefault();

@@ -752,12 +752,12 @@ export function LeadTimeline({ deal = {}, contacto = {}, db = {}, setDb, guardar
                   {/* ICON NODE */}
                   <div style={{ 
                     width: 36, height: 36, borderRadius: 10, 
-                    background: (colors[it.type] || T.teal) + "18", 
+                    background: "rgba(255,255,255,0.05)", 
                     color: colors[it.type] || T.teal, 
                     display: "flex", alignItems: "center", justifyContent: "center", 
-                    border: `1px solid ${(colors[it.type] || T.teal)}30`, 
+                    border: `1px solid ${colors[it.type] || T.teal}`, 
                     flexShrink: 0, zIndex: 2,
-                    boxShadow: `0 4px 12px ${(colors[it.type] || T.teal)}15`,
+                    boxShadow: "var(--shadow-sm)",
                     backdropFilter: "blur(4px)"
                   }}>
                     <Ico k={iconMap[it.type]} size={16} />

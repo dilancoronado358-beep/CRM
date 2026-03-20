@@ -566,21 +566,7 @@ export default function App() {
       <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
 
         {/* TOPBAR */}
-        <div style={{ 
-          height: 72, 
-          background: T.bg1, 
-          borderBottom: `1px solid ${T.border}`, 
-          display: "flex", 
-          alignItems: "center", 
-          justifyContent: "space-between", 
-          padding: "0 32px", 
-          flexShrink: 0, 
-          boxShadow: "var(--shadow-sm)",
-          backdropFilter: "blur(12px)",
-          position: "sticky",
-          top: 0,
-          zIndex: 40
-        }}>
+        <div style={{ height: 72, background: T.bg1, borderBottom: `1px solid ${T.border}`, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 32px", flexShrink: 0, boxShadow: "0 2px 10px rgba(0,0,0,0.02)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
             <div style={{ fontWeight: 800, fontSize: 20, color: T.white }}>
               {MODULOS.find(m => m.id === modulo)?.label || t("Cargando...")}
