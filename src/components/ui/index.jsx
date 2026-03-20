@@ -42,17 +42,41 @@ export const Btn = ({ children, variant = "primario", size = "md", onClick, disa
   const v = V[variant] || V.primario; const s = S[size] || S.md;
   return (
     <button onClick={onClick} disabled={disabled}
-      style={{ background: v.bg, color: v.color, border: `1px solid ${v.border}`, boxShadow: v.shadow, ...s, borderRadius: 7, cursor: disabled ? "not-allowed" : "pointer", opacity: disabled ? .5 : 1, fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 5, transition: "all .15s", width: full ? "100%" : undefined, justifyContent: full ? "center" : undefined, ...style }}>
+      onMouseEnter={e => {
+        if (disabled) return;
+        e.currentTarget.style.transform = "translateY(-1.5px)";
+        e.currentTarget.style.boxShadow = v.shadow ? `0 8px 20px -4px ${v.border}60` : "0 4px 12px rgba(0,0,0,0.1)";
+        if (variant === "fantasma") e.currentTarget.style.background = "rgba(255,255,255,0.05)";
+      }}
+      onMouseLeave={e => {
+        e.currentTarget.style.transform = "";
+        e.currentTarget.style.boxShadow = v.shadow || "none";
+        if (variant === "fantasma") e.currentTarget.style.background = "transparent";
+      }}
+      style={{ background: v.bg, color: v.color, border: `1px solid ${v.border}`, boxShadow: v.shadow, ...s, borderRadius: 8, cursor: disabled ? "not-allowed" : "pointer", opacity: disabled ? .5 : 1, fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 5, transition: "all .2s cubic-bezier(0.4, 0, 0.2, 1)", width: full ? "100%" : undefined, justifyContent: full ? "center" : undefined, ...style }}>
       {children}
     </button>
   );
 };
 
 export const Inp = ({ value, onChange, placeholder, type = "text", style = {}, rows, readOnly, defaultValue, ...props }) => {
-  const base = { background: T.bg1, border: `1px solid ${T.borderHi}`, borderRadius: 7, color: T.white, fontSize: 13, outline: "none", width: "100%", boxSizing: "border-box", fontFamily: "inherit", transition: "border .2s, box-shadow .2s" };
-  const sharedProps = { value, onChange, placeholder, readOnly, defaultValue, ...props };
-  if (rows) return <textarea {...sharedProps} rows={rows} style={{ ...base, padding: "9px 11px", resize: "vertical", ...style }} />;
-  return <input type={type} {...sharedProps} style={{ ...base, padding: "9px 11px", ...style }} />;
+  const base = { background: T.bg1, border: `1px solid ${T.borderHi}`, borderRadius: 8, color: T.white, fontSize: 13, outline: "none", width: "100%", boxSizing: "border-box", fontFamily: "inherit", transition: "all 0.2s" };
+  const sharedProps = { 
+    value, onChange, placeholder, readOnly, defaultValue, 
+    onFocus: (e) => {
+      e.target.style.borderColor = T.teal;
+      e.target.style.boxShadow = `0 0 0 3px ${T.teal}25`;
+      if (props.onFocus) props.onFocus(e);
+    },
+    onBlur: (e) => {
+      e.target.style.borderColor = T.borderHi;
+      e.target.style.boxShadow = "none";
+      if (props.onBlur) props.onBlur(e);
+    },
+    ...props 
+  };
+  if (rows) return <textarea {...sharedProps} rows={rows} style={{ ...base, padding: "10px 12px", resize: "vertical", ...style }} />;
+  return <input type={type} {...sharedProps} style={{ ...base, padding: "10px 12px", ...style }} />;
 };
 
 // 🛡️ COMPONENTE ANTI-RERENDER: El arma definitiva contra la pérdida de texto.
@@ -127,12 +151,12 @@ export const Sel = ({ value, onChange, children, style = {}, innerStyle = {}, pl
         <Ico k="chevron-down" size={14} style={{ transform: open ? "rotate(180deg)" : "none", transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)", color: open ? T.teal : T.whiteDim, flexShrink: 0 }} />
       </div>
       {open && (
-        <div style={{ position: "absolute", top: "calc(100% + 8px)", left: 0, right: 0, background: T.bg1, border: `1px solid ${T.whiteFade}25`, borderRadius: 12, zIndex: 10000, boxShadow: "0 20px 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.05)", padding: 6, maxHeight: 220, overflowY: "auto", animation: "slideIn .2s" }}>
+        <div style={{ position: "absolute", top: "calc(100% + 8px)", left: 0, right: 0, background: T.bg1, border: `1px solid ${T.whiteFade}25`, borderRadius: 12, zIndex: 10000, boxShadow: "0 20px 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.05)", padding: 6, maxHeight: 220, overflowY: "auto", animation: "slideIn .2s forwards" }}>
           {options.map(o => (
             <div key={o.val} onClick={() => { onChange({ target: { value: o.val } }); setOpen(false); }}
-              style={{ padding: "10px 14px", borderRadius: 8, fontSize: 13, color: o.val === value ? T.teal : T.whiteOff, background: o.val === value ? T.teal + "15" : "transparent", cursor: "pointer", transition: "all 0.15s", fontWeight: o.val === value ? 800 : 500 }}
-              onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,255,255,0.08)"; e.currentTarget.style.paddingLeft = "18px"; }}
-              onMouseLeave={e => { e.currentTarget.style.background = o.val === value ? T.teal + "15" : "transparent"; e.currentTarget.style.paddingLeft = "14px"; }}
+              style={{ padding: "10px 14px", borderRadius: 8, fontSize: 13, color: o.val === value ? T.teal : T.whiteOff, background: o.val === value ? T.teal + "15" : "transparent", cursor: "pointer", transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)", fontWeight: o.val === value ? 800 : 500 }}
+              onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,255,255,0.08)"; }}
+              onMouseLeave={e => { e.currentTarget.style.background = o.val === value ? T.teal + "15" : "transparent"; }}
             >
               {o.lab}
             </div>
@@ -156,20 +180,23 @@ export const Modal = ({ open, onClose, title, children, width = 640 }) => {
   if (open) console.log("🔘 [DEBUG] Abriendo Modal:", title);
   if (!open) return null;
   return (
-    <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(17,24,39,.6)", backdropFilter: "blur(4px)", zIndex: 9000, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
-      <div onClick={e => e.stopPropagation()} style={{ background: T.bg1, border: `1px solid ${T.border}`, borderRadius: 14, width: "100%", maxWidth: width, maxHeight: "92vh", display: "flex", flexDirection: "column", boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)" }}>
-        <div style={{ padding: "16px 22px", borderBottom: `1px solid ${T.border}`, display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
-          <span style={{ fontWeight: 700, fontSize: 16, color: T.white }}>{title}</span>
-          <button onClick={onClose} style={{ background: "none", border: "none", color: T.whiteDim, cursor: "pointer", padding: 4, borderRadius: 5, display: "flex" }}><Ico k="x" size={17} /></button>
+    <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(17,24,39,.6)", backdropFilter: "blur(8px)", zIndex: 9000, display: "flex", alignItems: "center", justifyContent: "center", padding: 20, animation: "fadeIn .3s" }}>
+      <div onClick={e => e.stopPropagation()} style={{ background: T.bg1, border: `1px solid ${T.border}`, borderRadius: 16, width: "100%", maxWidth: width, maxHeight: "92vh", display: "flex", flexDirection: "column", boxShadow: "0 25px 50px -12px rgba(0,0,0,0.5)", animation: "slideIn .3s cubic-bezier(0.16, 1, 0.3, 1)" }}>
+        <div style={{ padding: "18px 24px", borderBottom: `1px solid ${T.border}`, display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
+          <span style={{ fontWeight: 800, fontSize: 17, color: T.white }}>{title}</span>
+          <button onClick={onClose} style={{ background: "rgba(255,255,255,0.05)", border: "none", color: T.whiteDim, cursor: "pointer", padding: 6, borderRadius: 8, display: "flex", transition: "all .2s" }} onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,255,255,0.1)"; e.currentTarget.style.color = T.white; }} onMouseLeave={e => { e.currentTarget.style.background = "rgba(255,255,255,0.05)"; e.currentTarget.style.color = T.whiteDim; }}><Ico k="x" size={18} /></button>
         </div>
-        <div style={{ padding: 22, overflowY: "auto", flex: 1 }}>{children}</div>
+        <div style={{ padding: 24, overflowY: "auto", flex: 1 }}>{children}</div>
       </div>
     </div>
   );
 };
 
 export const Tarjeta = ({ children, style = {}, onClick, brillo }) => (
-  <div onClick={onClick} style={{ background: T.bg1, border: `1px solid ${T.border}`, borderRadius: 12, boxShadow: brillo ? "0 4px 15px rgba(37,99,235,0.08)" : "0 1px 3px rgba(0,0,0,0.05)", ...style, cursor: onClick ? "pointer" : undefined, transition: "box-shadow .2s, transform .2s" }}>
+  <div onClick={onClick} 
+    onMouseEnter={e => { if (onClick) { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 12px 30px rgba(0,0,0,0.2)"; e.currentTarget.style.borderColor = T.teal + "40"; } }}
+    onMouseLeave={e => { if (onClick) { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = brillo ? "0 4px 15px rgba(37,99,235,0.08)" : "0 1px 3px rgba(0,0,0,0.05)"; e.currentTarget.style.borderColor = T.border; } }}
+    style={{ background: T.bg1, border: `1px solid ${T.border}`, borderRadius: 14, boxShadow: brillo ? "0 4px 15px rgba(37,99,235,0.08)" : "0 1px 3px rgba(0,0,0,0.05)", ...style, cursor: onClick ? "pointer" : undefined, transition: "all .3s cubic-bezier(0.16, 1, 0.3, 1)" }}>
     {children}
   </div>
 );

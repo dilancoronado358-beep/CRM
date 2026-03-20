@@ -15,30 +15,42 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+::selection {
+  background: rgba(45, 212, 191, 0.3);
+  color: inherit;
+}
+
 body {
   margin: 0;
   padding: 0;
   overflow-y: auto;
-  background: #F4F7FE; /* Light mode default bg */
+  background: #F4F7FE;
 }
 
 * {
   box-sizing: border-box;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(128, 128, 128, 0.2) transparent;
+}
+
+/* Base interactive transitions */
+button, input, select, textarea, a {
+  transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease, opacity 0.2s ease;
 }
 
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(128, 128, 128, 0.2);
+  background: rgba(128, 128, 128, 0.15);
   border-radius: 10px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(128, 128, 128, 0.4);
+  background: rgba(128, 128, 128, 0.3);
 }
 
 @keyframes pulse {
@@ -48,13 +60,26 @@ body {
 }
 
 @keyframes slideIn {
-  from { transform: translateX(20px); opacity: 0; }
-  to { transform: translateX(0); opacity: 1; }
+  from { transform: translateY(10px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
 }
 
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
+}
+
+@keyframes fadeInScale {
+  from { opacity: 0; transform: scale(0.98); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.4s ease-out forwards;
+}
+
+.animate-slide-up {
+  animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .glass {
@@ -64,15 +89,14 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-/* Base resets for inputs and buttons */
 button {
   font-family: inherit;
 }
 input, select, textarea {
   font-family: inherit;
+  outline: none;
 }
 
-/* Premium Select Styling */
 select {
   color-scheme: dark;
 }
@@ -83,8 +107,7 @@ option {
   padding: 8px;
 }
 
-/* Custom styles for the native select used in Sel component */
 select:focus {
   border-color: var(--teal) !important;
-  box-shadow: 0 0 0 2px var(--tealSoft) !important;
+  box-shadow: 0 0 0 3px rgba(45, 212, 191, 0.15) !important;
 }
