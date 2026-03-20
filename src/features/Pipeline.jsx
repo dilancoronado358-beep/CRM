@@ -668,7 +668,7 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
       <EncabezadoSeccion title="Pipeline CRM" sub="Gestiona tus oportunidades en etapas visuales"
         actions={
           <div style={{ display: "flex", gap: 12 }}>
-            <ControlSegmentado value={tab} onChange={setTab} options={[{ value: "kanban", label: "Kanban", icon: "board" }, { value: "configurar", label: "Configurar", icon: "cog" }]} />
+            <ControlSegmentado value={tab} onChange={setTab} options={[{ value: "kanban", label: "Kanban", icon: "board" }, { value: "lista", label: "Lista", icon: "list" }, { value: "configurar", label: "Configurar", icon: "cog" }]} />
             <Btn onClick={() => { setEditDeal(null); setPreEtapa(null); setShowDealForm(true); }}><Ico k="plus" size={14} />Nuevo Deal</Btn>
           </div>
         } />
@@ -978,6 +978,87 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* VISTA DE LISTA — TABULAR */}
+      {tab === "lista" && pipeline && (
+        <div style={{ background: T.bg1, border: `1px solid ${T.borderHi}`, borderRadius: 16, overflow: "hidden" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+            <thead>
+              <tr style={{ background: "rgba(255,255,255,0.02)", borderBottom: `1px solid ${T.borderHi}` }}>
+                <th style={{ padding: "12px 16px", textAlign: "left", width: 40 }}>
+                  <input type="checkbox" 
+                    checked={selectedIds.length === plDeals.length && plDeals.length > 0} 
+                    onChange={e => setSelectedIds(e.target.checked ? plDeals.map(d => d.id) : [])} 
+                    style={{ cursor: "pointer" }}
+                  />
+                </th>
+                <th style={{ padding: "12px 16px", textAlign: "left", color: T.whiteDim, fontWeight: 700, fontSize: 11, textTransform: "uppercase" }}>Estado</th>
+                <th style={{ padding: "12px 16px", textAlign: "left", color: T.whiteDim, fontWeight: 700, fontSize: 11, textTransform: "uppercase" }}>Negocio</th>
+                <th style={{ padding: "12px 16px", textAlign: "left", color: T.whiteDim, fontWeight: 700, fontSize: 11, textTransform: "uppercase" }}>Contacto</th>
+                <th style={{ padding: "12px 16px", textAlign: "left", color: T.whiteDim, fontWeight: 700, fontSize: 11, textTransform: "uppercase" }}>Monto</th>
+                <th style={{ padding: "12px 16px", textAlign: "left", color: T.whiteDim, fontWeight: 700, fontSize: 11, textTransform: "uppercase" }}>Etapa</th>
+                <th style={{ padding: "12px 16px", textAlign: "left", color: T.whiteDim, fontWeight: 700, fontSize: 11, textTransform: "uppercase" }}>Responsable</th>
+                <th style={{ padding: "12px 16px", textAlign: "left", color: T.whiteDim, fontWeight: 700, fontSize: 11, textTransform: "uppercase" }}>Fecha</th>
+              </tr>
+            </thead>
+            <tbody>
+              {plDeals.map(deal => {
+                const etapa = pipeline.etapas.find(e => e.id === deal.etapa_id) || {};
+                const contacto = db.contactos.find(c => c.id === deal.contacto_id);
+                const dStat = getDealStatus(deal);
+                const isSelected = selectedIds.includes(deal.id);
+
+                return (
+                  <tr key={deal.id} 
+                    onClick={() => { setEditDeal(deal); setShowDealForm(true); }}
+                    style={{ borderBottom: `1px solid ${T.borderHi}`, cursor: "pointer", transition: "background 0.2s", background: isSelected ? T.teal + "05" : "transparent" }}
+                    onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.03)"}
+                    onMouseLeave={e => e.currentTarget.style.background = isSelected ? T.teal + "05" : "transparent"}
+                  >
+                    <td style={{ padding: "12px 16px" }} onClick={e => e.stopPropagation()}>
+                      <input type="checkbox" 
+                        checked={isSelected} 
+                        onChange={e => setSelectedIds(prev => e.target.checked ? [...prev, deal.id] : prev.filter(id => id !== deal.id))} 
+                        style={{ cursor: "pointer" }}
+                      />
+                    </td>
+                    <td style={{ padding: "12px 16px" }}>
+                      <div title={dStat.desc} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <div style={{ width: 8, height: 8, borderRadius: "50%", background: dStat.color }} />
+                        <span style={{ fontSize: 16 }}>{dStat.icon}</span>
+                      </div>
+                    </td>
+                    <td style={{ padding: "12px 16px", fontWeight: 700, color: T.white }}>{deal.titulo}</td>
+                    <td style={{ padding: "12px 16px", color: T.whiteOff }}>{contacto?.nombre || "—"}</td>
+                    <td style={{ padding: "12px 16px", fontWeight: 800, color: T.green }}>{money(deal.valor)}</td>
+                    <td style={{ padding: "12px 16px" }}>
+                      <div style={{ display: "inline-block", background: etapa.color + "20", color: etapa.color, border: `1px solid ${etapa.color}`, padding: "2px 8px", borderRadius: 12, fontSize: 10, fontWeight: 800, textTransform: "uppercase" }}>
+                        {etapa.nombre}
+                      </div>
+                    </td>
+                    <td style={{ padding: "12px 16px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <div style={{ width: 20, height: 20, borderRadius: "50%", background: etapa.color, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 900 }}>
+                          {(deal.responsable || "?")[0].toUpperCase()}
+                        </div>
+                        <span style={{ fontSize: 12, color: T.whiteDim }}>{deal.responsable || "Sin asignar"}</span>
+                      </div>
+                    </td>
+                    <td style={{ padding: "12px 16px", color: T.whiteDim, fontSize: 11 }}>{fdate(deal.creado)}</td>
+                  </tr>
+                );
+              })}
+              {plDeals.length === 0 && (
+                <tr>
+                  <td colSpan="8" style={{ padding: 40, textAlign: "center" }}>
+                    <Vacio text="No hay deals en esta vista." />
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       )}
 
