@@ -3,6 +3,41 @@ import { T } from "../theme";
 import { uid, TPL_CATS } from "../utils";
 import { Chip, Btn, Inp, Sel, Campo, Modal, Tarjeta, Vacio, EncabezadoSeccion, BuscadorBar, Ico } from "../components/ui";
 
+const VisualEditor = ({ html, onChange, style }) => {
+  const ref = useRef(null);
+  const [isFocused, setIsFocused] = useState(false);
+
+  // Solo inyectar HTML si NO tiene el foco para evitar parpadeos y pérdida de cursor
+  useEffect(() => {
+    if (ref.current && !isFocused && ref.current.innerHTML !== html) {
+      ref.current.innerHTML = html || "";
+    }
+  }, [html, isFocused]);
+
+  return (
+    <div 
+      ref={ref}
+      contentEditable
+      onFocus={() => setIsFocused(true)}
+      onBlur={(e) => {
+        setIsFocused(false);
+        if (onChange) onChange(e.target.innerHTML);
+      }}
+      style={{ 
+        outline: "none", 
+        minHeight: "100%", 
+        padding: "40px 60px", 
+        background: "#fff", 
+        color: "#1e293b", 
+        fontSize: 15, 
+        lineHeight: 1.6, 
+        cursor: "text",
+        ...style 
+      }}
+    />
+  );
+};
+
 export const PlantillasEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) => {
   const [showForm, setShowForm] = useState(false);
   const [f, setF] = useState({ titulo: "", categoria: "prospectacion", asunto: "", cuerpo: "", tipo: "texto" });
@@ -153,18 +188,86 @@ export const PlantillasEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) =>
 
               <div style={{ width: 1.5, height: 20, background: T.whiteFade + "15" }} />
 
-              <div style={{ display: "flex", gap: 6 }}>
+              <div style={{ display: "flex", gap: 4, flexWrap: "wrap", flex: 1 }}>
                 {[
-                  { k: "bold", cmd: "bold" },
-                  { k: "list", cmd: "insertUnorderedList" },
-                  { k: "italic", cmd: "italic" }
+                  { k: "bold", cmd: "bold", label: "B" },
+                  { k: "italic", cmd: "italic", label: "I" },
+                  { k: "underline", cmd: "underline", label: "U" },
+                  { k: "strike", cmd: "strikeThrough", label: "S" },
+                  { k: "eraser", cmd: "removeFormat", label: "Tx" },
                 ].map(b => (
                   <button key={b.k} 
+                    onMouseDown={e => e.preventDefault()}
                     onClick={() => { if (f.tipo === "texto") document.execCommand(b.cmd, false, null); }}
-                    style={{ width: 34, height: 34, borderRadius: 8, border: "none", background: "rgba(255,255,255,0.05)", color: T.whiteOff, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }} 
+                    style={{ width: 34, height: 34, borderRadius: 8, border: "none", background: "rgba(255,255,255,0.05)", color: T.whiteOff, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
                     onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.1)"}
                   >
-                    <Ico k={b.k === "bold" ? "edit" : b.k === "italic" ? "pencil" : b.k} size={15} />
+                    <Ico k={b.k} size={15} />
+                  </button>
+                ))}
+
+                <div style={{ width: 1, height: 24, background: T.whiteFade + "15", margin: "0 8px" }} />
+
+                {[
+                  { k: "align-left", cmd: "justifyLeft" },
+                  { k: "align-center", cmd: "justifyCenter" },
+                  { k: "align-right", cmd: "justifyRight" },
+                ].map(b => (
+                  <button key={b.k} 
+                    onMouseDown={e => e.preventDefault()}
+                    onClick={() => { if (f.tipo === "texto") document.execCommand(b.cmd, false, null); }}
+                    style={{ width: 34, height: 34, borderRadius: 8, border: "none", background: "rgba(255,255,255,0.05)", color: T.whiteOff, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+                    onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.1)"}
+                  >
+                    <Ico k={b.k} size={15} />
+                  </button>
+                ))}
+
+                <select 
+                  onMouseDown={e => e.stopPropagation()}
+                  onChange={(e) => { if (f.tipo === "texto") document.execCommand("fontName", false, e.target.value); }}
+                  style={{ background: "rgba(255,255,255,0.05)", border: `1px solid ${T.whiteFade}15`, borderRadius: 8, color: T.whiteOff, fontSize: 11, padding: "0 8px", cursor: "pointer", outline: "none", height: 34 }}
+                >
+                  <option value="Arial">Arial</option>
+                  <option value="Verdana">Verdana</option>
+                  <option value="Georgia">Georgia</option>
+                  <option value="Courier New">Courier</option>
+                </select>
+
+                <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
+                   <input 
+                     type="color" 
+                     onMouseDown={e => e.stopPropagation()}
+                     onChange={(e) => { if (f.tipo === "texto") document.execCommand("foreColor", false, e.target.value); }}
+                     style={{ width: 34, height: 34, borderRadius: 8, border: "none", background: "rgba(255,255,255,0.05)", cursor: "pointer", padding: 0 }}
+                   />
+                   <div style={{ position: "absolute", inset: 0, pointerEvents: "none", display: "flex", alignItems: "center", justifyContent: "center", color: T.whiteDim, opacity: 0.5 }}>
+                     <Ico k="color" size={14} />
+                   </div>
+                </div>
+
+                <div style={{ width: 1, height: 24, background: T.whiteFade + "15", margin: "0 8px" }} />
+
+                {[
+                  { k: "list", cmd: "insertUnorderedList" },
+                  { k: "link", cmd: "createLink", prompt: "Ingresa la URL:" },
+                  { k: "image", cmd: "insertImage", prompt: "URL de la imagen:" },
+                  { k: "table", cmd: "insertHTML", val: "<table border='1' style='width:100%'><tr><td>Celda</td><td>Celda</td></tr></table>" },
+                  { k: "code", cmd: "insertHTML", val: "<pre><code>...</code></pre>" },
+                  { k: "quote", cmd: "formatBlock", val: "blockquote" },
+                ].map(b => (
+                  <button key={b.k} 
+                    onMouseDown={e => e.preventDefault()}
+                    onClick={() => { 
+                      if (f.tipo !== "texto") return;
+                      let val = b.val || null;
+                      if (b.prompt) val = prompt(b.prompt);
+                      if (val || !b.prompt) document.execCommand(b.cmd, false, val); 
+                    }}
+                    style={{ width: 34, height: 34, borderRadius: 8, border: "none", background: "rgba(255,255,255,0.05)", color: T.whiteOff, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+                    onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.1)"}
+                  >
+                    <Ico k={b.k} size={15} />
                   </button>
                 ))}
               </div>
@@ -183,16 +286,16 @@ export const PlantillasEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) =>
 
             {f.tipo === "html" ? (
               <textarea value={f.cuerpo} onChange={s("cuerpo")} 
-                 style={{ width: "100%", height: 450, background: "rgba(0,0,0,0.15)", border: "none", color: T.whiteOff, padding: 32, fontSize: 14, outline: "none", resize: "none", lineHeight: 1.7, fontFamily: "monospace" }} 
+                 style={{ width: "100%", height: 500, background: "rgba(0,0,0,0.15)", border: "none", color: T.whiteOff, padding: 32, fontSize: 14, outline: "none", resize: "none", lineHeight: 1.7, fontFamily: "monospace" }} 
                  placeholder="Escribe o pega aquí tu código HTML profesional..." 
               />
             ) : (
-              <div 
-                contentEditable
-                onBlur={e => setF({...f, cuerpo: e.target.innerHTML})}
-                dangerouslySetInnerHTML={{ __html: f.cuerpo }}
-                style={{ width: "100%", height: 450, background: "#fff", color: "#1e293b", padding: "40px 60px", fontSize: 15, outline: "none", overflowY: "auto", lineHeight: 1.6, cursor: "text", boxShadow: "inset 0 2px 10px rgba(0,0,0,0.05)" }}
-              />
+              <div style={{ width: "100%", height: 500, background: "#fff", overflowY: "auto", boxShadow: "inset 0 2px 10px rgba(0,0,0,0.05)" }}>
+                <VisualEditor 
+                  html={f.cuerpo} 
+                  onChange={(html) => setF({ ...f, cuerpo: html })} 
+                />
+              </div>
             )}
           </div>
           <input type="file" hidden ref={fileInputRef} accept=".html" onChange={handleUploadHtml} />
