@@ -11,6 +11,8 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa, cargando
   const [showRedactar, setShowRedactar] = useState(false);
   const [emailFocus, setEmailFocus] = useState(null);
   const [f, setF] = useState({ para: "", asunto: "", cuerpo: "", cc: "", bcc: "", plantillaId: "" });
+  const [showCC, setShowCC] = useState(false);
+  const [showBCC, setShowBCC] = useState(false);
   const [respuestaRapida, setRespuestaRapida] = useState("");
   const [simulandoEnvio, setSimulandoEnvio] = useState(false);
   const [logEnvio, setLogEnvio] = useState([]);
@@ -26,7 +28,8 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa, cargando
 
   const s = k => e => setF(p => ({ ...p, [k]: e.target.value }));
 
-  const aplicarTpl = id => {
+  const aplicarTpl = e => {
+    const id = e.target.value;
     const tpl = db.plantillasEmail.find(p => p.id === id);
     if (tpl) setF({ ...f, asunto: tpl.asunto, cuerpo: tpl.cuerpo, plantillaId: id });
     else setF({ ...f, plantillaId: "" });
@@ -51,6 +54,8 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa, cargando
       const res = await axios.post(`${API_URL}/api/email/send`, {
         accountId: acc.id,
         to: f.para,
+        cc: f.cc,
+        bcc: f.bcc,
         subject: f.asunto || "Sin asunto",
         body: f.cuerpo,
         attachments: adjuntosLocal
@@ -287,17 +292,67 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa, cargando
       )}
 
       {/* 4. MODAL REDACCIÓN (SUPER CLEAN) */}
-      <Modal open={showRedactar} onClose={() => setShowRedactar(false)} title="Nuevo Mensaje" width={640}>
-        <div style={{ padding: "8px 24px 24px" }}>
-          <Campo label="Para"><Inp value={f.para} onChange={s("para")} placeholder="ej@ejemplo.com" /></Campo>
-          <Campo label="Asunto"><Inp value={f.asunto} onChange={s("asunto")} placeholder="Propuesta..." /></Campo>
-          <div style={{ display: "flex", justifyContent: "flex-end", margin: "12px 0" }}>
-            <button onClick={aplicarTpl} style={{ background: "rgba(255,255,255,0.05)", border: "none", borderRadius: 8, padding: "6px 12px", color: T.whiteDim, fontSize: 11, fontWeight: 700, cursor: "pointer", marginRight: 8 }}>Plantillas</button>
-            <button onClick={redactarIA} style={{ background: "linear-gradient(45deg, #A78BFA, #3b82f6)", border: "none", borderRadius: 8, padding: "6px 12px", color: "#fff", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>Redactar con IA</button>
+      <Modal open={showRedactar} onClose={() => setShowRedactar(false)} title="Nuevo Mensaje" width={720}>
+        <div style={{ padding: "0 12px 20px" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 20 }}>
+            <div style={{ display: "flex", gap: 12, alignItems: "flex-end" }}>
+              <div style={{ flex: 1 }}><Campo label="Para"><Inp value={f.para} onChange={s("para")} placeholder="ej@ejemplo.com" style={{ background: "rgba(255,255,255,0.02)", border: `1px solid ${T.whiteFade}10` }} /></Campo></div>
+              <div style={{ display: "flex", gap: 6, paddingBottom: 6 }}>
+                <button onClick={() => setShowCC(!showCC)} style={{ background: showCC ? T.teal + "20" : "transparent", border: `1px solid ${showCC ? T.teal : T.whiteFade + "20"}`, borderRadius: 8, padding: "4px 10px", color: showCC ? T.teal : T.whiteDim, fontSize: 11, fontWeight: 700, cursor: "pointer", transition: "all 0.2s" }}>CC</button>
+                <button onClick={() => setShowBCC(!showBCC)} style={{ background: showBCC ? T.teal + "20" : "transparent", border: `1px solid ${showBCC ? T.teal : T.whiteFade + "20"}`, borderRadius: 8, padding: "4px 10px", color: showBCC ? T.teal : T.whiteDim, fontSize: 11, fontWeight: 700, cursor: "pointer", transition: "all 0.2s" }}>BCC</button>
+              </div>
+            </div>
+            {showCC && <div style={{ animation: "fadeIn 0.2s" }}><Campo label="CC (Copia)"><Inp value={f.cc} onChange={s("cc")} placeholder="cc@ejemplo.com" style={{ background: "rgba(255,255,255,0.02)", border: `1px solid ${T.whiteFade}10` }} /></Campo></div>}
+            {showBCC && <div style={{ animation: "fadeIn 0.2s" }}><Campo label="BCC (Copia Oculta)"><Inp value={f.bcc} onChange={s("bcc")} placeholder="bcc@ejemplo.com" style={{ background: "rgba(255,255,255,0.02)", border: `1px solid ${T.whiteFade}10` }} /></Campo></div>}
+            <Campo label="Asunto"><Inp value={f.asunto} onChange={s("asunto")} placeholder="Propuesta comercial..." style={{ background: "rgba(255,255,255,0.02)", border: `1px solid ${T.whiteFade}10` }} /></Campo>
           </div>
-          <textarea value={f.cuerpo} onChange={s("cuerpo")} style={{ width: "100%", height: 300, background: "rgba(255,255,255,0.02)", border: `1px solid ${T.whiteFade}10`, borderRadius: 12, color: T.white, padding: 16, fontSize: 14, outline: "none", resize: "none", lineHeight: 1.6 }} placeholder="Escribe tu mensaje..." />
-          <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 20 }}>
-            <Btn onClick={enviarRealista} disabled={simulandoEnvio}>{simulandoEnvio ? "Enviando..." : "Enviar Ahora"}</Btn>
+
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+            <div style={{ display: "flex", gap: 12, alignItems: "center", flex: 1 }}>
+              <div style={{ width: 140 }}>
+                <Sel value={f.plantillaId} onChange={aplicarTpl} style={{ height: 32, fontSize: 11, background: "rgba(255,255,255,0.05)", border: `1px solid ${T.whiteFade}10` }}>
+                  <option value="">— Plantillas —</option>
+                  {db.plantillasEmail?.map(p => <option key={p.id} value={p.id}>{p.nombre || p.asunto}</option>)}
+                </Sel>
+              </div>
+              <button 
+                onClick={() => document.getElementById('compose-attach').click()}
+                style={{ background: "rgba(255,255,255,0.05)", border: "none", borderRadius: 8, padding: "6px 12px", color: T.white, fontSize: 11, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}
+              >
+                <Ico k="paperclip" size={14} /> Adjuntar
+              </button>
+              <input type="file" id="compose-attach" multiple style={{ display: "none" }} onChange={handleFileChange} />
+            </div>
+            <button onClick={redactarIA} style={{ background: `linear-gradient(135deg, ${T.purple}, ${T.teal})`, border: "none", borderRadius: 8, padding: "6px 14px", color: "#fff", fontSize: 11, fontWeight: 800, cursor: "pointer", boxShadow: `0 4px 12px ${T.purple}40`, transition: "all 0.2s" }} onMouseEnter={e => e.currentTarget.style.transform = "scale(1.05)"} onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}>
+              ✨ Redactar con IA
+            </button>
+          </div>
+
+          <div style={{ position: "relative" }}>
+            <textarea value={f.cuerpo} onChange={s("cuerpo")} 
+              style={{ width: "100%", height: 320, background: "rgba(0,0,0,0.2)", border: `1px solid ${T.whiteFade}08`, borderRadius: 16, color: T.whiteOff, padding: 20, fontSize: 14, outline: "none", resize: "none", lineHeight: 1.6, fontFamily: "inherit" }} 
+              placeholder="Escribe tu mensaje aquí..." 
+            />
+            {adjuntosSubiendo && <div style={{ position: "absolute", bottom: 12, right: 12, fontSize: 10, color: T.teal, fontWeight: 700 }}>Subiendo archivos...</div>}
+          </div>
+
+          {adjuntosLocal.length > 0 && (
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}>
+              {adjuntosLocal.map((at, i) => (
+                <div key={i} style={{ display: "flex", alignItems: "center", gap: 6, background: "rgba(255,255,255,0.05)", padding: "4px 10px", borderRadius: 8, border: `1px solid ${T.whiteFade}10` }}>
+                  <Ico k="paperclip" size={12} style={{ color: T.teal }} />
+                  <span style={{ fontSize: 11, color: T.whiteOff }}>{at.name}</span>
+                  <button onClick={() => setAdjuntosLocal(p => p.filter((_, idx) => idx !== i))} style={{ background: "none", border: "none", color: T.red, cursor: "pointer", padding: 0, marginLeft: 4, display: "flex" }}><Ico k="x" size={12} /></button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 24, gap: 12 }}>
+            <Btn variant="secundario" onClick={() => setShowRedactar(false)}>Descartar</Btn>
+            <Btn onClick={enviarRealista} disabled={simulandoEnvio || adjuntosSubiendo} style={{ padding: "0 32px", height: 44, borderRadius: 12 }}>
+              {simulandoEnvio ? "Enviando..." : <><Ico k="send" size={16} style={{ marginRight: 8 }} /> Enviar Ahora</>}
+            </Btn>
           </div>
         </div>
       </Modal>
