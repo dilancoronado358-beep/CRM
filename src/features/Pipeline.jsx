@@ -33,11 +33,11 @@ const FormDeal = ({ db, setDb, f, setF, editDeal, onGuardar, onCancelar, guardar
   const [rightTab, setRightTab] = useState("timeline");
   const [dragActive, setDragActive] = useState(false);
 
-  const plActual = db.pipelines.find(p => p.id === f.pipeline_id);
+  const plActual = db.pipelines?.find(p => p.id === f.pipeline_id);
   const stages = plActual?.etapas || [];
   const currentEtIdx = stages.findIndex(s => s.id === f.etapa_id);
 
-  const selContacto = db.contactos.find(c => c.id === f.contacto_id);
+  const selContacto = db.contactos?.find(c => c.id === f.contacto_id);
 
   const handleDrop = e => {
     e.preventDefault(); setDragActive(false);
@@ -137,11 +137,11 @@ const FormDeal = ({ db, setDb, f, setF, editDeal, onGuardar, onCancelar, guardar
                  <Campo label="Contacto Principal"><Sel value={f.contacto_id} onChange={async e => {
                    const val = e.target.value; const nextF = { ...f, contacto_id: val }; setF(nextF);
                    if (editDeal) await guardarEnSupa("deals", { ...editDeal, ...nextF });
-                 }} style={{ background: "transparent", border: `1px solid ${T.white}10`, borderRadius: 12, height: 44 }}><option value="">— Ninguno —</option>{db.contactos.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}</Sel></Campo>
+                 }} style={{ background: "transparent", border: `1px solid ${T.white}10`, borderRadius: 12, height: 44 }}><option value="">— Ninguno —</option>{db.contactos?.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}</Sel></Campo>
                  <Campo label="Empresa"><Sel value={f.empresa_id} onChange={async e => {
                    const val = e.target.value; const nextF = { ...f, empresa_id: val }; setF(nextF);
                    if (editDeal) await guardarEnSupa("deals", { ...editDeal, ...nextF });
-                 }} style={{ background: "transparent", border: `1px solid ${T.white}10`, borderRadius: 12, height: 44 }}><option value="">— Ninguna —</option>{db.empresas.map(e => <option key={e.id} value={e.id}>{e.nombre}</option>)}</Sel></Campo>
+                 }} style={{ background: "transparent", border: `1px solid ${T.white}10`, borderRadius: 12, height: 44 }}><option value="">— Ninguna —</option>{db.empresas?.map(e => <option key={e.id} value={e.id}>{e.nombre}</option>)}</Sel></Campo>
               </div>
 
               {selContacto && (
@@ -803,7 +803,7 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
                 {/* LISTA DE TARJETAS */}
                 <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: "10px 8px", flex: 1 }}>
                   {etDeals.map(deal => {
-                    const contacto = db.contactos.find(c => c.id === deal.contacto_id);
+                    const contacto = db.contactos?.find(c => c.id === deal.contacto_id);
                     const fechaCreacion = deal.creado ? new Date(deal.creado).toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "2-digit" }) : null;
                     const dealIdCorto = (deal.id || "").toString().slice(-5);
                     const avatarLetras = (deal.responsable || "?").trim().split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
@@ -869,10 +869,10 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
                           <div className="card-actions" style={{ display: "flex", gap: 6, opacity: 0, transition: "opacity .3s" }}>
                              <button onClick={async e => {
                                e.stopPropagation();
-                               const ets = pipeline.etapas || [];
+                               const ets = pipeline?.etapas || [];
                                const etGanada = ets.find(et => et.es_ganado) || ets[ets.length - 1];
-                               const act = { ...deal, etapa_id: etGanada.id, prob: 100 };
-                               setDb(d => ({ ...d, deals: d.deals.map(dl => dl.id === deal.id ? act : dl) }));
+                               const act = { ...deal, etapa_id: etGanada?.id, prob: 100 };
+                               setDb(d => ({ ...d, deals: d.deals?.map(dl => dl.id === deal.id ? act : dl) }));
                                await guardarEnSupa("deals", act);
                                setShowConfetti(true);
                                setTimeout(() => setShowConfetti(false), 4000);
@@ -935,8 +935,8 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
             </thead>
             <tbody>
               {plDeals.map(deal => {
-                const etapa = pipeline.etapas.find(e => e.id === deal.etapa_id) || {};
-                const contacto = db.contactos.find(c => c.id === deal.contacto_id);
+                const etapa = pipeline?.etapas?.find(e => e.id === deal.etapa_id) || {};
+                const contacto = db.contactos?.find(c => c.id === deal.contacto_id);
                 const dStat = getDealStatus(deal);
                 const isSelected = selectedIds.includes(deal.id);
 
