@@ -590,8 +590,8 @@ export default function App() {
         </div>
 
         {/* AREA DE TRABAJO */}
-        <div style={{ flex: 1, overflowY: "auto", padding: "16px 24px", position: "relative", background: T.bg0 }}>
-          <div key={modulo} className="animate-fade-in" style={{ width: "100%", maxWidth: 1600, margin: "0 auto" }}>
+        <div style={{ flex: 1, overflowY: "auto", padding: "32px", position: "relative", background: T.bg0 }}>
+          <div key={modulo} className="animate-fade-in" style={{ width: "100%", maxWidth: 1400, margin: "0 auto" }}>
             <ModuloActivo {...propsModulo} />
           </div>
         </div>

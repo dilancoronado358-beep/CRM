@@ -250,42 +250,21 @@ export const Dashboard = ({ db, t = s => s }) => {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 24, minHeight: "100vh", background: T.bg0, paddingBottom: 40 }}>
-      {/* Dashboard Toolbar */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-        <div>
-          <h1 style={{ margin: 0, fontSize: 24, fontWeight: 900, color: T.white }}>Control Center</h1>
-          <p style={{ margin: 0, fontSize: 13, color: T.whiteDim }}>{isAdmin ? "Vista Global de Operaciones" : `Panel Personal de ${db.usuario?.name}`}</p>
-        </div>
-        <div style={{ display: "flex", gap: 12 }}>
-          {db.pipelines.length > 1 && (
-            <Sel value={plFiltro} onChange={e => setPlFiltro(e.target.value)}
-              style={{ width: "auto", minWidth: 160 }}>
-              {db.pipelines.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
-            </Sel>
-          )}
-          <Btn variant="fantasma" onClick={() => setShowConfig(true)}>
-            <Ico k="edit" size={16} /> Personalizar
-          </Btn>
-        </div>
-      </div>
-
       {/* KPI Row */}
       {widgets.kpis && (
-        <div style={{ display: "flex", gap: 16, flexWrap: "wrap", justifyContent: "flex-start" }}>
+        <div style={{ display: "flex", gap: 16, flexWrap: "wrap", justifyContent: "flex-start", marginBottom: 10 }}>
           <KPI label={t("Pipeline Activo")} value={money(activos.reduce((s,d)=>s+d.valor,0))} sub={`${activos.length} ops`} color={T.teal} icon="funnel" style={{ flex: "1 1 240px", minWidth: 220 }} />
           <KPI label={t("Total Ganado")} value={money(ganados.reduce((s,d)=>s+d.valor,0))} sub={`${ganados.length} deals`} color={T.green} icon="trend" style={{ flex: "1 1 240px", minWidth: 220 }} />
           <KPI label={t("Tasa Conv.")} value={`${conv}%`} sub="histórico" color={T.amber} icon="chart" style={{ flex: "1 1 240px", minWidth: 220 }} />
           <KPI label={t("Contactos")} value={userContacts.length} sub={`${userContacts.filter(c=>c.estado==="lead").length} leads`} color={T.teal} icon="users" style={{ flex: "1 1 240px", minWidth: 220 }} />
-          <KPI label={t("Act. Pend.")} value={actPend} sub={`${vencidas} venc.`} color={vencidas > 0 ? T.red : T.teal} icon="lightning" style={{ flex: "1 1 240px", minWidth: 220 }} />
-          <KPI label={t("Resp. WA")} value={avgResponseTime} sub="promedio" color={avgResponseTime === "N/A" ? T.whiteDim : T.teal} icon="phone" style={{ flex: "1 1 240px", minWidth: 220 }} />
         </div>
       )}
 
-      {/* Main Grid Layout */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(360px, 1fr))", gap: 24 }}>
+      {/* Grid Principal - Sistema de 12 Columnas Restaurado */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(12, 1fr)", gap: 24 }}>
         
         {/* WIDGET: AI INSIGHTS */}
-        <div style={{ gridColumn: "1 / -1", display: widgets.ai ? "block" : "none" }}>
+        <div style={{ gridColumn: "span 7", display: widgets.ai ? "block" : "none" }}>
           <Tarjeta brillo style={{ padding: 24, background: T.bg1, border: `1px solid ${T.teal}33`, display: "flex", alignItems: "center", gap: 24 }}>
             <div style={{ position: "relative" }}>
               <div style={{ width: 60, height: 60, borderRadius: 16, background: `linear-gradient(135deg, ${T.teal}, #6366F1)`, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: `0 8px 20px rgba(20, 184, 166, 0.3)` }}>
@@ -306,7 +285,8 @@ export const Dashboard = ({ db, t = s => s }) => {
         </div>
 
         {/* WIDGET: FUNNEL */}
-        <Widget id="funnel" span={4} title={t("Embudo de Ventas")} icon="funnel" color={T.amber}>
+        <div style={{ gridColumn: "span 5", display: widgets.funnel ? "block" : "none" }}>
+          <Widget id="funnel" title={t("Embudo de Ventas")} icon="funnel" color={T.amber}>
           {funnelData.length > 0 ? (
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               {funnelData.map((et, i) => {
@@ -348,6 +328,7 @@ export const Dashboard = ({ db, t = s => s }) => {
             </div>
           </div>
         </Widget>
+        </div>
 
         {/* WIDGET: TRENDING */}
         <Widget id="trend" span={2} title="Tendencia" icon="trend" color={T.teal}>
@@ -371,7 +352,8 @@ export const Dashboard = ({ db, t = s => s }) => {
         </Widget>
 
         {/* WIDGET: RECENT WINS */}
-        <Widget id="recentWins" span={3} title="Victorias Flash" icon="star" color={T.green}>
+        <div style={{ gridColumn: "span 3", display: widgets.recentWins ? "block" : "none" }}>
+          <Widget id="recentWins" title={t("Últimos Ganados")} icon="check" color={T.green}>
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             {recentWins.map(deal => (
               <div key={deal.id} style={{ display: "flex", gap: 14, alignItems: "center", padding: "12px 16px", background: T.bg2, borderRadius: 12, border: `1px solid ${T.borderHi}`, transition: "transform .2s" }}>
@@ -386,9 +368,11 @@ export const Dashboard = ({ db, t = s => s }) => {
             {recentWins.length === 0 && <Vacio text="Nada nuevo por aquí" />}
           </div>
         </Widget>
+        </div>
 
-         {/* WIDGET: VELOCITY */}
-        <Widget id="velocity" span={3} title="Sales Velocity" icon="lightning" color={T.teal}>
+        {/* WIDGET: VELOCITY */}
+        <div style={{ gridColumn: "span 3", display: widgets.velocity ? "block" : "none" }}>
+          <Widget id="velocity" title={t("Velocidad de Ventas")} icon="lightning" color={T.teal}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 20 }}>
              <div>
                 <div style={{ fontSize: 32, fontWeight: 900, color: T.white }}>{averageVelocity}<span style={{ fontSize: 16, color: T.whiteDim, marginLeft: 4 }}>días</span></div>
@@ -404,9 +388,11 @@ export const Dashboard = ({ db, t = s => s }) => {
              </ResponsiveContainer>
           </div>
         </Widget>
+        </div>
 
         {/* WIDGET: TOP DEALS */}
-        <Widget id="topDeals" span={3} title="Top Opportunities" icon="star" color={T.amber}>
+        <div style={{ gridColumn: "span 3", display: widgets.topDeals ? "block" : "none" }}>
+          <Widget id="topDeals" title={t("Mejores Oportunidades")} icon="star" color={T.amber}>
            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               {[...userDeals].filter(d => !esPerdido(d) && !esGanado(d)).sort((a, b) => b.valor - a.valor).slice(0, 4).map(deal => (
                 <div key={deal.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingBottom: 12, borderBottom: `1px solid ${T.borderHi}` }}>
@@ -422,9 +408,11 @@ export const Dashboard = ({ db, t = s => s }) => {
               ))}
            </div>
         </Widget>
+        </div>
 
         {/* WIDGET: ACTIVITIES */}
-        <Widget id="activities" span={3} title="Live Feed" icon="history" color={T.whiteDim}>
+        <div style={{ gridColumn: "span 3", display: widgets.activities ? "block" : "none" }}>
+          <Widget id="activities" title={t("Actividad Reciente")} icon="lightning" color={T.white}>
            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
               {[...userActs].sort((a, b) => new Date(b.fecha) - new Date(a.fecha)).slice(0, 4).map(act => {
                 const cfg = ACT_CFG[act.tipo] || ACT_CFG.tarea;
@@ -440,6 +428,7 @@ export const Dashboard = ({ db, t = s => s }) => {
               })}
            </div>
         </Widget>
+        </div>
 
       </div>
 
