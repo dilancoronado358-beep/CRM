@@ -76,7 +76,7 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, carga
 
   const [showRedactar, setShowRedactar] = useState(false);
   const [emailFocus, setEmailFocus] = useState(null);
-  const [f, setF] = useState({ para: "", asunto: "", cuerpo: "", cc: "", bcc: "", plantillaId: "" });
+  const [f, setF] = useState({ para: "", asunto: "", cuerpo: "", cc: "", bcc: "", plantillaId: "", tipo: "texto" });
   const [showCC, setShowCC] = useState(false);
   const [showBCC, setShowBCC] = useState(false);
   const [respuestaRapida, setRespuestaRapida] = useState("");
@@ -91,6 +91,7 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, carga
   const [selectedAccountId, setSelectedAccountId] = useState(db.email_accounts?.[0]?.id || null);
   const [selectedIds, setSelectedIds] = useState([]);
   const [showConv, setShowConv] = useState(false);
+  const [showPreviewCompose, setShowPreviewCompose] = useState(false);
   const [cf, setCf] = useState({ titulo: "", pipeline_id: "", etapa_id: "" });
 
   useEffect(() => {
@@ -129,8 +130,8 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, carga
   const aplicarTpl = e => {
     const id = e.target.value;
     const tpl = db.plantillasEmail.find(p => p.id === id);
-    if (tpl) setF({ ...f, asunto: tpl.asunto, cuerpo: tpl.cuerpo, plantillaId: id });
-    else setF({ ...f, plantillaId: "" });
+    if (tpl) setF({ ...f, asunto: tpl.asunto, cuerpo: tpl.cuerpo, plantillaId: id, tipo: tpl.tipo || "texto" });
+    else setF({ ...f, plantillaId: "", tipo: "texto" });
   };
 
   const redactarIA = () => {
@@ -660,6 +661,11 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, carga
             <button onClick={redactarIA} style={{ background: `linear-gradient(135deg, ${T.purple}, ${T.teal})`, border: "none", borderRadius: 8, padding: "6px 14px", color: "#fff", fontSize: 11, fontWeight: 800, cursor: "pointer", boxShadow: `0 4px 12px ${T.purple}40`, transition: "all 0.2s" }} onMouseEnter={e => e.currentTarget.style.transform = "scale(1.05)"} onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}>
               ✨ Redactar con IA
             </button>
+            {f.cuerpo.trim() && (
+               <button onClick={() => setShowPreviewCompose(true)} style={{ background: "rgba(255,255,255,0.05)", border: `1px solid ${T.teal}40`, borderRadius: 8, padding: "6px 14px", color: T.teal, fontSize: 11, fontWeight: 800, cursor: "pointer", transition: "all 0.2s", marginLeft: 8 }} onMouseEnter={e => e.currentTarget.style.transform = "scale(1.05)"} onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}>
+                 <Ico k="eye" size={14} style={{ marginRight: 4 }} /> Vista Previa
+               </button>
+            )}
           </div>
 
           <div style={{ position: "relative" }}>
@@ -730,6 +736,23 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, carga
             <Btn onClick={handleConvert} full style={{ background: T.teal, color: "#000" }}>Crear Lead ahora</Btn>
           </div>
         </div>
+      </Modal>
+      {/* MODAL VISTA PREVIA REDACCIÓN */}
+      <Modal open={showPreviewCompose} onClose={() => setShowPreviewCompose(false)} title="Vista Previa del Mensaje" width={800}>
+        <div style={{ background: "#fff", borderRadius: 12, padding: 0, overflow: "hidden", border: `1px solid ${T.border}` }}>
+          {f.tipo === "html" ? (
+             <iframe
+               title="Preview Compose"
+               srcDoc={f.cuerpo}
+               style={{ width: "100%", height: "500px", border: "none" }}
+             />
+          ) : (
+            <div style={{ padding: 40, color: "#1e293b", whiteSpace: "pre-wrap", minHeight: 300, fontFamily: "sans-serif" }}>
+              {f.cuerpo}
+            </div>
+          )}
+        </div>
+        <Btn onClick={() => setShowPreviewCompose(false)} style={{ marginTop: 20 }} full>Continuar Editando</Btn>
       </Modal>
     </div>
   );
