@@ -133,39 +133,38 @@ export const PlantillasEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) =>
                 <button 
                   onClick={() => {
                     if (f.tipo === "html") {
-                      const tmp = document.createElement("DIV");
-                      tmp.innerHTML = f.cuerpo;
-                      const txt = tmp.textContent || tmp.innerText || "";
-                      setF({ ...f, tipo: "texto", cuerpo: txt.trim() });
+                      // No convertimos a texto plano, simplemente cambiamos a vista visual editable
+                      setF({ ...f, tipo: "texto" });
                     } else {
                       setF({ ...f, tipo: "texto" });
                     }
                   }} 
                   style={{ padding: "6px 12px", borderRadius: 8, border: "none", background: f.tipo === "texto" ? T.teal : "transparent", color: f.tipo === "texto" ? "#000" : T.whiteDim, fontSize: 11, fontWeight: 800, cursor: "pointer", transition: "all 0.2s" }}
                 >
-                  TEXTO
+                  VISUAL
                 </button>
                 <button 
-                  onClick={() => {
-                    if (f.tipo === "texto" && f.cuerpo.trim() && !f.cuerpo.includes("<")) {
-                      const html = `<!DOCTYPE html>\n<html>\n<body style="font-family: sans-serif; line-height: 1.6; color: #333; padding: 20px;">\n  ${f.cuerpo.replace(/\n/g, '<br>\n  ')}\n</body>\n</html>`;
-                      setF({ ...f, tipo: "html", cuerpo: html });
-                    } else {
-                      setF({ ...f, tipo: "html" });
-                    }
-                  }} 
+                  onClick={() => setF({ ...f, tipo: "html" })} 
                   style={{ padding: "6px 12px", borderRadius: 8, border: "none", background: f.tipo === "html" ? T.teal : "transparent", color: f.tipo === "html" ? "#000" : T.whiteDim, fontSize: 11, fontWeight: 800, cursor: "pointer", transition: "all 0.2s" }}
                 >
-                  HTML PRO
+                  CÓDIGO PRO
                 </button>
               </div>
 
               <div style={{ width: 1.5, height: 20, background: T.whiteFade + "15" }} />
 
               <div style={{ display: "flex", gap: 6 }}>
-                {["bold", "list", "mail"].map(k => (
-                  <button key={k} style={{ width: 34, height: 34, borderRadius: 8, border: "none", background: "rgba(255,255,255,0.05)", color: T.whiteOff, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }} onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.1)"}>
-                    <Ico k={k === "bold" ? "edit" : k} size={15} />
+                {[
+                  { k: "bold", cmd: "bold" },
+                  { k: "list", cmd: "insertUnorderedList" },
+                  { k: "italic", cmd: "italic" }
+                ].map(b => (
+                  <button key={b.k} 
+                    onClick={() => { if (f.tipo === "texto") document.execCommand(b.cmd, false, null); }}
+                    style={{ width: 34, height: 34, borderRadius: 8, border: "none", background: "rgba(255,255,255,0.05)", color: T.whiteOff, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }} 
+                    onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.1)"}
+                  >
+                    <Ico k={b.k === "bold" ? "edit" : b.k === "italic" ? "pencil" : b.k} size={15} />
                   </button>
                 ))}
               </div>
@@ -182,10 +181,19 @@ export const PlantillasEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) =>
               </div>
             </div>
 
-            <textarea value={f.cuerpo} onChange={s("cuerpo")} 
-               style={{ width: "100%", height: 380, background: "rgba(0,0,0,0.15)", border: "none", color: T.whiteOff, padding: 32, fontSize: 15, outline: "none", resize: "none", lineHeight: 1.7, fontFamily: f.tipo === "html" ? "monospace" : "inherit" }} 
-               placeholder={f.tipo === "html" ? "Escribe o pega aquí tu código HTML profesional..." : "Empieza a escribir tu mensaje... Usa {{nombre}} para personalizar."} 
-            />
+            {f.tipo === "html" ? (
+              <textarea value={f.cuerpo} onChange={s("cuerpo")} 
+                 style={{ width: "100%", height: 450, background: "rgba(0,0,0,0.15)", border: "none", color: T.whiteOff, padding: 32, fontSize: 14, outline: "none", resize: "none", lineHeight: 1.7, fontFamily: "monospace" }} 
+                 placeholder="Escribe o pega aquí tu código HTML profesional..." 
+              />
+            ) : (
+              <div 
+                contentEditable
+                onBlur={e => setF({...f, cuerpo: e.target.innerHTML})}
+                dangerouslySetInnerHTML={{ __html: f.cuerpo }}
+                style={{ width: "100%", height: 450, background: "#fff", color: "#1e293b", padding: "40px 60px", fontSize: 15, outline: "none", overflowY: "auto", lineHeight: 1.6, cursor: "text", boxShadow: "inset 0 2px 10px rgba(0,0,0,0.05)" }}
+              />
+            )}
           </div>
           <input type="file" hidden ref={fileInputRef} accept=".html" onChange={handleUploadHtml} />
 
