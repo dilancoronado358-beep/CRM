@@ -809,12 +809,21 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
                 onDragLeave={() => setDragSobre(null)}>
 
                 {/* CABECERA SÓLIDA DE COLOR — compacta como Bitrix24 */}
-                <div style={{ background: etapa.color, padding: "7px 10px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 6 }}>
+                <div style={{ 
+                  background: `linear-gradient(135deg, ${etapa.color} 0%, ${etapa.color}DD 100%)`, 
+                  padding: "8px 12px", 
+                  display: "flex", 
+                  alignItems: "center", 
+                  justifyContent: "space-between", 
+                  gap: 6,
+                  backdropFilter: "blur(4px)",
+                  borderBottom: `1px solid ${etapa.color}40`
+                }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 10, fontWeight: 800, color: "#fff", textTransform: "uppercase", letterSpacing: ".08em", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{etapa.nombre}</div>
-                    <div style={{ fontSize: 13, fontWeight: 900, color: "#fff", opacity: 0.95 }}>{money(totalEtapa)}</div>
+                    <div style={{ fontSize: 10.5, fontWeight: 900, color: "#fff", textTransform: "uppercase", letterSpacing: ".1em", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textShadow: "0 1px 2px rgba(0,0,0,0.2)" }}>{etapa.nombre}</div>
+                    <div style={{ fontSize: 13.5, fontWeight: 950, color: "#fff", opacity: 0.98, letterSpacing: "-0.01em" }}>{money(totalEtapa)}</div>
                   </div>
-                  <span style={{ background: "rgba(0,0,0,0.25)", color: "#fff", borderRadius: 20, padding: "1px 8px", fontSize: 10, fontWeight: 800, flexShrink: 0 }}>{etDeals.length}</span>
+                  <span style={{ background: "rgba(0,0,0,0.25)", color: "#fff", borderRadius: 20, padding: "2px 8px", fontSize: 10, fontWeight: 900, flexShrink: 0, boxShadow: "inset 0 1px 3px rgba(0,0,0,0.1)" }}>{etDeals.length}</span>
                 </div>
 
                 {/* BOTÓN AGREGAR */}
@@ -844,13 +853,13 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
                           background: T.bg1, 
                           border: `1px solid ${isSelected ? T.teal : T.borderHi}`, 
                           borderLeft: `3px solid ${etapa.color}`, 
-                          borderRadius: 8, 
+                          borderRadius: 12, 
                           padding: "11px 12px", 
                           cursor: "pointer", 
                           userSelect: "none", 
-                          transition: "all .2s cubic-bezier(0.4, 0, 0.2, 1)", 
+                          transition: "all .3s cubic-bezier(0.34, 1.56, 0.64, 1)", 
                           position: "relative",
-                          boxShadow: dStat.glow,
+                          boxShadow: dStat.glow !== "none" ? dStat.glow : "0 2px 5px rgba(0,0,0,0.05)",
                           filter: dStat.cold ? "grayscale(0.6) opacity(0.8)" : "none"
                         }}
                         onClick={(e) => {
@@ -858,16 +867,18 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
                           setEditDeal(deal); setShowDealForm(true);
                         }}
                         onMouseEnter={e => { 
-                          e.currentTarget.style.boxShadow = dStat.glow !== "none" ? `0 8px 24px rgba(0,0,0,0.2), ${dStat.glow}` : `0 4px 18px rgba(0,0,0,0.18)`; 
-                          e.currentTarget.style.transform = "translateY(-2px)";
+                          e.currentTarget.style.boxShadow = `0 12px 28px rgba(0,0,0,0.25), 0 0 12px ${etapa.color}30`; 
+                          e.currentTarget.style.transform = "translateY(-4px)";
                           e.currentTarget.style.filter = "none";
+                          e.currentTarget.style.borderColor = etapa.color + "60";
                           const actions = e.currentTarget.querySelector(".card-actions");
                           if (actions) actions.style.opacity = "1";
                         }}
                         onMouseLeave={e => { 
-                          e.currentTarget.style.boxShadow = dStat.glow; 
+                          e.currentTarget.style.boxShadow = dStat.glow !== "none" ? dStat.glow : "0 2px 5px rgba(0,0,0,0.05)"; 
                           e.currentTarget.style.transform = ""; 
                           e.currentTarget.style.filter = dStat.cold ? "grayscale(0.6) opacity(0.8)" : "none";
+                          e.currentTarget.style.borderColor = isSelected ? T.teal : T.borderHi;
                           const actions = e.currentTarget.querySelector(".card-actions");
                           if (actions) actions.style.opacity = "0";
                         }}>
@@ -882,12 +893,12 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
 
                         {/* INDICADOR SCORE */}
                          {/* Título + botones acción */}
-                         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 8 }}>
-                           <div style={{ fontSize: 13, fontWeight: 700, color: T.white, lineHeight: 1.35, flex: 1, display: "flex", alignItems: "center", gap: 6 }}>
+                         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 10 }}>
+                           <div style={{ fontSize: 13, fontWeight: 800, color: T.white, lineHeight: 1.35, flex: 1, display: "flex", alignItems: "center", gap: 6 }}>
                              {/* Indicador de Temperatura */}
-                             <div title={dStat.desc} style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                               <div style={{ width: 8, height: 8, borderRadius: "50%", background: dStat.color, boxShadow: `0 0 6px ${dStat.color}80` }} />
-                               <span style={{ fontSize: 14 }}>{dStat.icon}</span>
+                             <div title={dStat.desc} style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                               <div style={{ width: 9, height: 9, borderRadius: "50%", background: dStat.color, boxShadow: `0 0 8px ${dStat.color}` }} />
+                               <span style={{ fontSize: 15 }}>{dStat.icon}</span>
                              </div>
 
                              {deal.titulo}
@@ -943,7 +954,7 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
                          </div>
 
                         {/* Monto */}
-                        <div style={{ fontSize: 16, fontWeight: 900, color: T.green, marginBottom: 8, letterSpacing: "-0.01em" }}>{money(deal.valor)}</div>
+                        <div style={{ fontSize: 17, fontWeight: 950, color: T.green, marginBottom: 10, letterSpacing: "-0.02em", textShadow: "0 1px 1px rgba(0,0,0,0.1)" }}>{money(deal.valor)}</div>
 
                         {/* Meta-data: ID y nombre */}
                         <div style={{ display: "flex", flexDirection: "column", gap: 3, marginBottom: 8, borderTop: `1px solid ${T.borderHi}`, paddingTop: 8 }}>
