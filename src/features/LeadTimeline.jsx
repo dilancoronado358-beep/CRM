@@ -195,9 +195,14 @@ export function LeadTimeline({ deal = {}, contacto = {}, db = {}, setDb, guardar
        try {
          const qE = sb.from('emails').select('*');
          const filters = [];
-         if (contacto?.email) filters.push(`de.ilike.%${contacto.email}%`, `para.ilike.%${contacto.email}%`);
          if (deal?.id) filters.push(`deal_id.eq.${deal.id}`);
-         if (contacto?.id) filters.push(`contacto_id.eq.${contacto.id}`);
+         if (contacto?.email) {
+            filters.push(`and(de.ilike.%${contacto.email}%,deal_id.is.null)`);
+            filters.push(`and(para.ilike.%${contacto.email}%,deal_id.is.null)`);
+         }
+         if (contacto?.id) {
+            filters.push(`and(contacto_id.eq.${contacto.id},deal_id.is.null)`);
+         }
 
          if (filters.length > 0) {
            const { data: emailData } = await qE.or(filters.join(',')).order('fecha', { ascending: false }).limit(40);
