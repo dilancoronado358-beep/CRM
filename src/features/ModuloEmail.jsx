@@ -6,6 +6,40 @@ import axios from "axios";
 import { sileo as toast } from "../utils/sileo";
 import { sb } from "../hooks/useSupaState";
 
+const VisualEditor = ({ html, onChange, style }) => {
+  const ref = useRef(null);
+  const [isFocused, setIsFocused] = useState(false);
+
+  useEffect(() => {
+    if (ref.current && !isFocused && ref.current.innerHTML !== html) {
+      ref.current.innerHTML = html || "";
+    }
+  }, [html, isFocused]);
+
+  return (
+    <div 
+      ref={ref}
+      contentEditable
+      onFocus={() => setIsFocused(true)}
+      onBlur={(e) => {
+        setIsFocused(false);
+        if (onChange) onChange(e.target.innerHTML);
+      }}
+      style={{ 
+        outline: "none", 
+        minHeight: "100%", 
+        padding: "32px", 
+        background: "#fff", 
+        color: "#1e293b", 
+        fontSize: 14, 
+        lineHeight: 1.6, 
+        cursor: "text",
+        ...style 
+      }}
+    />
+  );
+};
+
 const HtmlEmail = memo(({ html, cuerpo }) => {
   const iframeRef = useRef(null);
   const content = html || (cuerpo ? cuerpo.replace(/\n/g, '<br>') : "");
@@ -21,13 +55,8 @@ const HtmlEmail = memo(({ html, cuerpo }) => {
       }
     };
 
-    const obs = new ResizeObserver(adjustHeight);
-    
     const setup = () => {
-      if (iframe.contentWindow && iframe.contentWindow.document.body) {
-        obs.observe(iframe.contentWindow.document.body);
-        adjustHeight();
-      }
+      adjustHeight();
     };
 
     iframe.addEventListener("load", setup);
@@ -35,7 +64,6 @@ const HtmlEmail = memo(({ html, cuerpo }) => {
 
     return () => {
       iframe.removeEventListener("load", setup);
-      obs.disconnect();
     };
   }, [content]);
 
@@ -76,7 +104,7 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, carga
 
   const [showRedactar, setShowRedactar] = useState(false);
   const [emailFocus, setEmailFocus] = useState(null);
-  const [f, setF] = useState({ para: "", asunto: "", cuerpo: "", cc: "", bcc: "", plantillaId: "", tipo: "texto" });
+  const [f, setF] = useState({ para: "", cc: "", bcc: "", asunto: "", cuerpo: "", plantillaId: "", tipo: "texto" });
   const [showCC, setShowCC] = useState(false);
   const [showBCC, setShowBCC] = useState(false);
   const [respuestaRapida, setRespuestaRapida] = useState("");
@@ -668,13 +696,58 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, carga
             )}
           </div>
 
-          <div style={{ position: "relative" }}>
-            <textarea value={f.cuerpo} onChange={s("cuerpo")} 
-              style={{ width: "100%", height: 320, background: "rgba(0,0,0,0.2)", border: `1px solid ${T.whiteFade}08`, borderRadius: 16, color: T.whiteOff, padding: 20, fontSize: 14, outline: "none", resize: "none", lineHeight: 1.6, fontFamily: "inherit" }} 
-              placeholder="Escribe tu mensaje aquí..." 
-            />
-            {adjuntosSubiendo && <div style={{ position: "absolute", bottom: 12, right: 12, fontSize: 10, color: T.teal, fontWeight: 700 }}>Subiendo archivos...</div>}
-          </div>
+          <div style={{ borderRadius: 16, overflow: "hidden", border: `1px solid ${T.whiteFade}10`, position: "relative" }}>
+             {/* TOOLBAR MODERNA */}
+             <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 16px", background: "rgba(255,255,255,0.03)", borderBottom: `1.5px solid ${T.whiteFade}08`, backdropFilter: "blur(10px)", flexWrap: "wrap" }}>
+               <div style={{ display: "flex", background: "rgba(0,0,0,0.2)", borderRadius: 8, padding: 2, gap: 1 }}>
+                 <button onMouseDown={e => e.preventDefault()} onClick={() => setF({ ...f, tipo: "texto" })} style={{ padding: "4px 8px", borderRadius: 6, border: "none", background: f.tipo === "texto" ? T.teal : "transparent", color: f.tipo === "texto" ? "#000" : T.whiteDim, fontSize: 10, fontWeight: 800, cursor: "pointer" }}>VISUAL</button>
+                 <button onMouseDown={e => e.preventDefault()} onClick={() => setF({ ...f, tipo: "html" })} style={{ padding: "4px 8px", borderRadius: 6, border: "none", background: f.tipo === "html" ? T.teal : "transparent", color: f.tipo === "html" ? "#000" : T.whiteDim, fontSize: 10, fontWeight: 800, cursor: "pointer" }}>CODE</button>
+               </div>
+
+               <div style={{ width: 1, height: 16, background: T.whiteFade + "15" }} />
+
+               <div style={{ display: "flex", gap: 2 }}>
+                 {[
+                   { k: "bold", cmd: "bold" },
+                   { k: "italic", cmd: "italic" },
+                   { k: "underline", cmd: "underline" },
+                 ].map(b => (
+                   <button key={b.k} onMouseDown={e => e.preventDefault()} onClick={() => { if (f.tipo === "texto") document.execCommand(b.cmd, false, null); }} style={{ width: 28, height: 28, borderRadius: 6, border: "none", background: "transparent", color: T.whiteOff, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }} onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.05)"} onMouseLeave={e => e.currentTarget.style.background = "transparent"}><Ico k={b.k} size={13} /></button>
+                 ))}
+               </div>
+
+               <div style={{ width: 1, height: 16, background: T.whiteFade + "15" }} />
+
+               <div style={{ display: "flex", gap: 2 }}>
+                 {[
+                   { k: "align-left", cmd: "justifyLeft" },
+                   { k: "align-center", cmd: "justifyCenter" },
+                   { k: "align-right", cmd: "justifyRight" },
+                 ].map(b => (
+                   <button key={b.k} onMouseDown={e => e.preventDefault()} onClick={() => { if (f.tipo === "texto") document.execCommand(b.cmd, false, null); }} style={{ width: 28, height: 28, borderRadius: 6, border: "none", background: "transparent", color: T.whiteOff, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }} onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.05)"} onMouseLeave={e => e.currentTarget.style.background = "transparent"}><Ico k={b.k} size={13} /></button>
+                 ))}
+               </div>
+               
+               <div style={{ marginLeft: "auto", display: "flex", gap: 4 }}>
+                  <button onMouseDown={e => e.preventDefault()} onClick={() => { if (f.tipo === "texto") { const url = prompt("URL:"); if (url) document.execCommand("createLink", false, url); } }} style={{ width: 28, height: 28, borderRadius: 6, border: "none", background: "transparent", color: T.whiteOff, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }} onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.05)"}><Ico k="link" size={13} /></button>
+                  <button onMouseDown={e => e.preventDefault()} onClick={redactarIA} style={{ background: T.teal + "20", color: T.teal, border: "none", borderRadius: 6, height: 28, padding: "0 10px", fontSize: 10, fontWeight: 800, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}><Ico k="lightning" size={12} /> IA</button>
+               </div>
+             </div>
+
+             <div style={{ position: "relative" }}>
+               {f.tipo === "html" ? (
+                 <textarea value={f.cuerpo} onChange={s("cuerpo")} 
+                   style={{ width: "100%", height: 320, background: "rgba(0,0,0,0.2)", border: "none", color: T.whiteOff, padding: 20, fontSize: 13, outline: "none", resize: "none", lineHeight: 1.6, fontFamily: "monospace" }} 
+                   placeholder="Código HTML del mensaje..." 
+                 />
+               ) : (
+                 <div style={{ width: "100%", height: 320, background: "#fff", overflowY: "auto" }}>
+                   <VisualEditor html={f.cuerpo} onChange={(html) => setF({ ...f, cuerpo: html })} style={{ fontSize: 14 }} />
+                 </div>
+               )}
+               {adjuntosSubiendo && <div style={{ position: "absolute", bottom: 12, right: 12, fontSize: 10, color: T.teal, fontWeight: 700 }}>Subiendo archivos...</div>}
+             </div>
+           </div>
 
           {adjuntosLocal.length > 0 && (
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}>
