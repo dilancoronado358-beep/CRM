@@ -283,9 +283,9 @@ export const PlantillasEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) =>
                   { k: "list", cmd: "insertUnorderedList" },
                   { k: "link", cmd: "createLink", prompt: "Ingresa la URL:" },
                   { k: "image", cmd: "insertImage", prompt: "URL de la imagen:" },
-                  { k: "table", cmd: "insertHTML", val: "<table border='1' style='width:100%'><tr><td>Celda</td><td>Celda</td></tr></table>" },
-                  { k: "code", cmd: "insertHTML", val: "<pre><code>...</code></pre>" },
-                  { k: "quote", cmd: "formatBlock", val: "blockquote" },
+                  { k: "table", cmd: "insertHTML", val: `<table style="width:100%; border-collapse: collapse; margin: 16px 0; border: 1px solid #e2e8f0;"><tr><td style="border: 1px solid #e2e8f0; padding: 12px;">Celda 1</td><td style="border: 1px solid #e2e8f0; padding: 12px;">Celda 2</td></tr><tr><td style="border: 1px solid #e2e8f0; padding: 12px;">Dato A</td><td style="border: 1px solid #e2e8f0; padding: 12px;">Dato B</td></tr></table><p><br></p>` },
+                  { k: "code", cmd: "insertHTML", val: `<pre style="background: #1e293b; color: #f8fafc; padding: 16px; border-radius: 8px; font-family: 'Courier New', monospace; margin: 16px 0; white-space: pre-wrap;"><code>// Tu código aquí</code></pre><p><br></p>` },
+                  { k: "quote", cmd: "insertHTML", val: `<blockquote style="border-left: 4px solid #06b6d4; padding: 12px 20px; margin: 16px 0; color: #64748b; font-style: italic; background: #f8fafc;">"Tu cita aquí"</blockquote><p><br></p>` },
                 ].map(b => (
                   <button key={b.k} 
                     onMouseDown={e => e.preventDefault()}
@@ -293,10 +293,14 @@ export const PlantillasEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) =>
                       if (f.tipo !== "texto") return;
                       let val = b.val || null;
                       if (b.prompt) val = prompt(b.prompt);
-                      if (val || !b.prompt) document.execCommand(b.cmd, false, val); 
+                      if (val || !b.prompt) {
+                        document.execCommand(b.cmd, false, val); 
+                        checkStyles();
+                      }
                     }}
-                    style={{ width: 34, height: 34, borderRadius: 8, border: "none", background: "rgba(255,255,255,0.05)", color: T.whiteOff, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+                    style={{ width: 34, height: 34, borderRadius: 8, border: "none", background: "rgba(255,255,255,0.05)", color: T.whiteOff, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }}
                     onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.1)"}
+                    onMouseLeave={e => e.currentTarget.style.background = "rgba(255,255,255,0.05)"}
                   >
                     <Ico k={b.k} size={15} />
                   </button>

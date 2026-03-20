@@ -748,7 +748,16 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, carga
                </div>
                
                <div style={{ marginLeft: "auto", display: "flex", gap: 4 }}>
-                  <button onMouseDown={e => e.preventDefault()} onClick={() => { if (f.tipo === "texto") { const url = prompt("URL:"); if (url) document.execCommand("createLink", false, url); } }} style={{ width: 28, height: 28, borderRadius: 6, border: "none", background: "transparent", color: T.whiteOff, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }} onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.05)"}><Ico k="link" size={13} /></button>
+                  {[
+                    { k: "link", cmd: "createLink", prompt: "URL:" },
+                    { k: "image", cmd: "insertImage", prompt: "URL (Imagen):" },
+                    { k: "table", cmd: "insertHTML", val: `<table style="width:100%; border-collapse: collapse; margin: 12px 0; border: 1px solid #e2e8f0;"><tr><td style="border: 1px solid #e2e8f0; padding: 8px;">Col 1</td><td style="border: 1px solid #e2e8f0; padding: 8px;">Col 2</td></tr></table><p><br></p>` },
+                    { k: "code", cmd: "insertHTML", val: `<pre style="background: #1e293b; color: #f8fafc; padding: 12px; border-radius: 6px; font-size: 12px; margin: 12px 0;"><code>// Código</code></pre><p><br></p>` },
+                    { k: "quote", cmd: "insertHTML", val: `<blockquote style="border-left: 3px solid #06b6d4; padding-left: 12px; margin: 12px 0; color: #64748b; font-style: italic;">"Cita"</blockquote><p><br></p>` },
+                  ].map(b => (
+                    <button key={b.k} onMouseDown={e => e.preventDefault()} onClick={() => { if (f.tipo === "texto") { let v = b.val || null; if (b.prompt) v = prompt(b.prompt); if (v || !b.prompt) { document.execCommand(b.cmd, false, v); checkStyles(); } } }} style={{ width: 28, height: 28, borderRadius: 6, border: "none", background: "transparent", color: T.whiteOff, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }} onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.05)"} onMouseLeave={e => e.currentTarget.style.background = "transparent"}><Ico k={b.k} size={13} /></button>
+                  ))}
+                  <div style={{ width: 1, height: 16, background: T.whiteFade + "15", margin: "0 4px" }} />
                   <button onMouseDown={e => e.preventDefault()} onClick={redactarIA} style={{ background: T.teal + "20", color: T.teal, border: "none", borderRadius: 6, height: 28, padding: "0 10px", fontSize: 10, fontWeight: 800, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}><Ico k="lightning" size={12} /> IA</button>
                </div>
              </div>
