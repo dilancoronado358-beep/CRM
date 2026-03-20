@@ -78,107 +78,105 @@ export const PlantillasEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) =>
       </div>
       {filtradas.length === 0 && <Vacio text="No hay plantillas." />}
 
-      <Modal open={showForm} onClose={() => { setShowForm(false); setEditando(null); }} title={editando ? "Editar Plantilla de correo electrónico" : "Nueva Plantilla de correo electrónico"} width={800}>
-        <div style={{ background: "rgba(255,255,255,0.02)", borderRadius: 12, padding: 24, border: `1px solid ${T.whiteFade}10` }}>
+      <Modal open={showForm} onClose={() => { setShowForm(false); setEditando(null); }} title={editando ? "Diseño de Plantilla Premium" : "Crear Nueva Experiencia de Correo"} width={850}>
+        <div style={{ position: "relative", padding: "8px 12px 24px" }}>
           
-          {/* Fila 1: Nombre */}
-          <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 16 }}>
-            <div style={{ width: 80, fontSize: 13, fontWeight: 700, color: T.whiteDim, textAlign: "right" }}>Nombre:</div>
-            <div style={{ flex: 1 }}><Inp value={f.titulo} onChange={s("titulo")} placeholder="Ingrese su nombre" style={{ background: "rgba(255,255,255,0.03)", border: `1px solid ${T.whiteFade}15`, height: 38 }} /></div>
-          </div>
+          {/* SECCIÓN DE DATOS (GLASS CARD) */}
+          <div style={{ background: "rgba(255,255,255,0.02)", backdropFilter: "blur(20px)", borderRadius: 24, padding: "28px 32px", border: `1.5px solid ${T.whiteFade}08`, marginBottom: 24, boxShadow: "0 15px 35px rgba(0,0,0,0.2)" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 200px", gap: 32 }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  <label style={{ fontSize: 10, fontWeight: 800, color: T.teal, textTransform: "uppercase", letterSpacing: "0.1em" }}>Identificación de Plantilla</label>
+                  <Inp value={f.titulo} onChange={s("titulo")} placeholder="Escribe un nombre interno que sea fácil de recordar..." style={{ background: "transparent", border: "none", borderBottom: `2px solid ${T.whiteFade}15`, borderRadius: 0, padding: "8px 0", fontSize: 18, fontWeight: 700, color: T.white }} />
+                </div>
+                
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  <label style={{ fontSize: 10, fontWeight: 800, color: T.whiteDim, textTransform: "uppercase", letterSpacing: "0.1em" }}>Asunto Estratégico</label>
+                  <Inp value={f.asunto} onChange={s("asunto")} placeholder="Atrapa la atención con un gran asunto..." style={{ background: "rgba(255,255,255,0.03)", border: `1.5px solid ${T.whiteFade}08`, borderRadius: 12, padding: "12px 16px", fontSize: 14 }} />
+                </div>
+              </div>
 
-          {/* Fila 2: Unión */}
-          <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 16 }}>
-            <div style={{ width: 80, fontSize: 13, fontWeight: 700, color: T.whiteDim, textAlign: "right" }}>Unión:</div>
-            <div style={{ width: 120 }}>
-              <Sel value={f.categoria} onChange={s("categoria")} style={{ height: 32, background: "transparent" }}>
-                {Object.entries(TPL_CATS).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
-              </Sel>
-            </div>
-          </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  <label style={{ fontSize: 10, fontWeight: 800, color: T.whiteDim, textTransform: "uppercase", letterSpacing: "0.1em" }}>Propósito / Categoría</label>
+                  <Sel value={f.categoria} onChange={s("categoria")} style={{ height: 44, background: "rgba(255,255,255,0.03)", borderRadius: 12 }}>
+                    {Object.entries(TPL_CATS).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+                  </Sel>
+                </div>
 
-          {/* Fila 3: Compartir */}
-          <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 16 }}>
-            <div style={{ width: 80, fontSize: 13, fontWeight: 700, color: T.whiteDim, textAlign: "right" }}>Compartir:</div>
-            <div style={{ flex: 1, height: 38, border: `1px solid ${T.whiteFade}15`, borderRadius: 8, background: "rgba(255,255,255,0.02)", display: "flex", alignItems: "center", padding: "0 12px" }}>
-              <button style={{ background: "none", border: "none", color: T.teal, fontSize: 13, fontWeight: 800, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
-                <Ico k="plus" size={14} /> Agregar
-              </button>
-            </div>
-          </div>
-
-          <div style={{ height: 1.5, background: T.whiteFade + "08", margin: "24px 0" }} />
-
-          {/* Fila 4: De (Remitente) */}
-          <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 16 }}>
-            <div style={{ width: 80, fontSize: 13, fontWeight: 700, color: T.whiteDim, textAlign: "right" }}>De:</div>
-            <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 8, color: T.whiteOff, fontSize: 13 }}>
-              <div style={{ width: 24, height: 24, borderRadius: "50%", background: T.whiteFade + "15", display: "flex", alignItems: "center", justifyContent: "center" }}><Ico k="user" size={14} /></div>
-              <span>Remitente predeterminado ("De")</span>
-              <Ico k="chevron-down" size={12} style={{ color: T.whiteDim, marginLeft: 4 }} />
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                   <label style={{ fontSize: 10, fontWeight: 800, color: T.whiteDim, textTransform: "uppercase", letterSpacing: "0.1em" }}>Intercambio de Datos</label>
+                   <button style={{ height: 44, borderRadius: 12, border: `1.5px dashed ${T.whiteFade}20`, background: "transparent", color: T.whiteDim, fontSize: 12, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }} onMouseEnter={e => e.currentTarget.style.borderColor = T.teal}>
+                     <Ico k="refresh" size={14} /> Vincular Variables
+                   </button>
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Fila 5: Asunto */}
-          <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 24 }}>
-            <div style={{ width: 80, fontSize: 13, fontWeight: 700, color: T.whiteDim, textAlign: "right" }}>Asunto:</div>
-            <div style={{ flex: 1, display: "flex", gap: 12 }}>
-              <Inp value={f.asunto} onChange={s("asunto")} placeholder="Ingrese el asunto del mensaje" style={{ background: "rgba(255,255,255,0.03)", border: `1px solid ${T.whiteFade}15`, height: 38 }} />
-              <button style={{ width: 38, height: 38, borderRadius: 8, background: "rgba(255,255,255,0.05)", border: "none", color: T.whiteDim, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <Ico k="refresh" size={14} />
-              </button>
-            </div>
-          </div>
+          {/* EDITOR SECTION */}
+          <div style={{ borderRadius: 24, overflow: "hidden", border: `1.5px solid ${T.whiteFade}10`, boxShadow: "0 20px 40px rgba(0,0,0,0.2)" }}>
+            {/* TOOLBAR MODERNA */}
+            <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 24px", background: "rgba(255,255,255,0.03)", borderBottom: `1.5px solid ${T.whiteFade}08`, backdropFilter: "blur(10px)" }}>
+              <div style={{ display: "flex", background: "rgba(0,0,0,0.2)", borderRadius: 10, padding: 3, gap: 2 }}>
+                <button onClick={() => setF({ ...f, tipo: "texto" })} style={{ padding: "6px 12px", borderRadius: 8, border: "none", background: f.tipo === "texto" ? T.teal : "transparent", color: f.tipo === "texto" ? "#000" : T.whiteDim, fontSize: 11, fontWeight: 800, cursor: "pointer", transition: "all 0.2s" }}>TEXTO</button>
+                <button onClick={() => setF({ ...f, tipo: "html" })} style={{ padding: "6px 12px", borderRadius: 8, border: "none", background: f.tipo === "html" ? T.teal : "transparent", color: f.tipo === "html" ? "#000" : T.whiteDim, fontSize: 11, fontWeight: 800, cursor: "pointer", transition: "all 0.2s" }}>HTML PRO</button>
+              </div>
 
-          {/* TOOLBAR */}
-          <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", background: "rgba(255,255,255,0.02)", border: `1px solid ${T.whiteFade}15`, borderBottom: "none", borderTopLeftRadius: 12, borderTopRightRadius: 12 }}>
-            <div style={{ display: "flex", gap: 4 }}>
-              {["B", "I", "U", "S"].map(t => <button key={t} style={{ width: 32, height: 32, borderRadius: 6, background: "transparent", border: "none", color: T.whiteOff, fontWeight: 800, fontSize: 14, cursor: "pointer" }}>{t}</button>)}
-              <button style={{ width: 32, height: 32, borderRadius: 6, background: "transparent", border: "none", color: T.whiteOff, cursor: "pointer" }}><Ico k="edit" size={16} /></button>
-            </div>
-            <div style={{ width: 1.5, height: 20, background: T.whiteFade + "15" }} />
-            <div style={{ display: "flex", gap: 4 }}>
-              <button style={{ padding: "0 10px", height: 32, borderRadius: 6, background: "rgba(255,255,255,0.05)", border: `1px solid ${T.whiteFade}15`, color: T.whiteOff, fontSize: 12, display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}>
-                Fuente <Ico k="chevron-down" size={10} />
-              </button>
-            </div>
-            <div style={{ width: 1.5, height: 20, background: T.whiteFade + "15" }} />
-            <div style={{ display: "flex", gap: 4 }}>
-               <button style={{ width: 32, height: 32, borderRadius: 6, background: "transparent", border: "none", color: T.whiteOff, cursor: "pointer" }}><Ico k="list" size={16} /></button>
-               <button style={{ width: 32, height: 32, borderRadius: 6, background: "transparent", border: "none", color: T.whiteOff, cursor: "pointer" }}><Ico k="list" size={16} /></button>
-               <button style={{ width: 32, height: 32, borderRadius: 6, background: "transparent", border: "none", color: T.whiteOff, cursor: "pointer" }}><Ico k="funnel" size={16} /></button>
-            </div>
-            <div style={{ width: 1.5, height: 20, background: T.whiteFade + "15" }} />
-            <div style={{ display: "flex", gap: 8, ml: "auto", flex: 1, justifyContent: "flex-end" }}>
-               <button onClick={() => fileInputRef.current.click()} style={{ width: 32, height: 32, borderRadius: 6, background: "transparent", border: "none", color: T.whiteDim, cursor: "pointer" }} title="Subir HTML"><Ico k="phone" size={16} /></button>
-               <button onClick={() => setShowPreview(true)} style={{ width: 32, height: 32, borderRadius: 6, background: "transparent", border: "none", color: T.teal, cursor: "pointer" }} title="Vista Previa"><Ico k="eye" size={16} /></button>
-            </div>
-          </div>
+              <div style={{ width: 1.5, height: 20, background: T.whiteFade + "15" }} />
 
-          <textarea value={f.cuerpo} onChange={s("cuerpo")} 
-               style={{ width: "100%", height: 350, background: "rgba(0,0,0,0.1)", border: `1px solid ${T.whiteFade}15`, borderBottomLeftRadius: 12, borderBottomRightRadius: 12, color: T.whiteOff, padding: 24, fontSize: 14, outline: "none", resize: "none", lineHeight: 1.6, fontFamily: "inherit" }} 
-               placeholder="Escribe tu mensaje aquí o sube un archivo HTML..." 
-          />
+              <div style={{ display: "flex", gap: 6 }}>
+                {["bold", "list", "mail"].map(k => (
+                  <button key={k} style={{ width: 34, height: 34, borderRadius: 8, border: "none", background: "rgba(255,255,255,0.05)", color: T.whiteOff, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }} onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.1)"}>
+                    <Ico k={k === "bold" ? "edit" : k} size={15} />
+                  </button>
+                ))}
+              </div>
+
+              <div style={{ marginLeft: "auto", display: "flex", gap: 12 }}>
+                {f.tipo === "html" && (
+                  <button onClick={() => fileInputRef.current.click()} style={{ background: T.whiteOff, color: "#000", border: "none", borderRadius: 8, padding: "0 16px", height: 34, fontSize: 11, fontWeight: 800, cursor: "pointer", display: "flex", alignItems: "center", gap: 8 }}>
+                    <Ico k="paperclip" size={14} /> IMPORTAR HTML
+                  </button>
+                )}
+                <button onClick={() => setShowPreview(true)} style={{ background: "rgba(20,184,166,0.15)", color: T.teal, border: `1px solid ${T.teal}40`, borderRadius: 8, padding: "0 16px", height: 34, fontSize: 11, fontWeight: 800, cursor: "pointer", display: "flex", alignItems: "center", gap: 8 }} onMouseEnter={e => e.currentTarget.style.background = T.teal + "30"}>
+                  <Ico k="eye" size={14} /> VISTA PREVIA
+                </button>
+              </div>
+            </div>
+
+            <textarea value={f.cuerpo} onChange={s("cuerpo")} 
+               style={{ width: "100%", height: 380, background: "rgba(0,0,0,0.15)", border: "none", color: T.whiteOff, padding: 32, fontSize: 15, outline: "none", resize: "none", lineHeight: 1.7, fontFamily: f.tipo === "html" ? "monospace" : "inherit" }} 
+               placeholder={f.tipo === "html" ? "Escribe o pega aquí tu código HTML profesional..." : "Empieza a escribir tu mensaje... Usa {{nombre}} para personalizar."} 
+            />
+          </div>
           <input type="file" hidden ref={fileInputRef} accept=".html" onChange={handleUploadHtml} />
 
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 20, padding: "0 8px" }}>
-            <div style={{ display: "flex", gap: 24 }}>
-               <button style={{ background: "none", border: "none", color: T.whiteFade, fontSize: 13, display: "flex", alignItems: "center", gap: 8, cursor: "pointer", opacity: 0.6 }}><Ico k="paperclip" size={16} /> Archivo</button>
-               <button style={{ background: "none", border: "none", color: T.whiteFade, fontSize: 13, display: "flex", alignItems: "center", gap: 8, cursor: "pointer", opacity: 0.6 }}><Ico k="note" size={16} /> Crear documento</button>
+          {/* ACCIONES FINALES */}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 32 }}>
+            <div style={{ display: "flex", gap: 24, opacity: 0.6 }}>
+               <span style={{ fontSize: 12, fontWeight: 700, color: T.whiteDim, display: "flex", alignItems: "center", gap: 6 }}><Ico k="check" size={14} /> Autoguardado activo</span>
+               <span style={{ fontSize: 12, fontWeight: 700, color: T.whiteDim, display: "flex", alignItems: "center", gap: 6 }}><Ico k="bell" size={14} /> Notificar al equipo</span>
             </div>
-            <div style={{ color: T.teal, fontWeight: 800, fontSize: 24, opacity: 0.2 }}>A</div>
-          </div>
 
-          <div style={{ height: 1.5, background: T.whiteFade + "08", margin: "24px 0" }} />
-
-          <div style={{ display: "flex", gap: 24, alignItems: "center" }}>
-            <button onClick={guardar} 
-              style={{ background: "#A3E635", color: "#000", border: "none", borderRadius: 8, padding: "12px 32px", fontSize: 13, fontWeight: 900, cursor: "pointer", textTransform: "uppercase", letterSpacing: "0.05em", boxShadow: "0 8px 20px rgba(163,230,53,0.3)" }}>
-              GUARDAR
-            </button>
-            <button onClick={() => { setShowForm(false); setEditando(null); }} style={{ background: "none", border: "none", color: T.whiteDim, fontSize: 13, fontWeight: 800, cursor: "pointer", textTransform: "uppercase" }}>
-              CANCELAR
-            </button>
+            <div style={{ display: "flex", gap: 16 }}>
+              <button 
+                onClick={() => { setShowForm(false); setEditando(null); }} 
+                style={{ background: "transparent", border: `1px solid ${T.whiteFade}15`, color: T.whiteDim, borderRadius: 12, padding: "0 24px", height: 48, fontSize: 13, fontWeight: 700, cursor: "pointer", transition: "all 0.2s" }}
+                onMouseEnter={e => e.currentTarget.style.color = T.white}
+              >
+                DESCARTAR
+              </button>
+              <button 
+                onClick={guardar} 
+                disabled={!f.titulo.trim() || !f.cuerpo.trim()}
+                style={{ background: `linear-gradient(135deg, ${T.teal}, #0D9488)`, color: "#fff", border: "none", borderRadius: 12, padding: "0 40px", height: 48, fontSize: 13, fontWeight: 900, cursor: "pointer", boxShadow: `0 10px 25px ${T.teal}40`, transition: "all 0.3s" }}
+                onMouseEnter={e => { e.currentTarget.style.transform = "scale(1.02) translateY(-2px)"; e.currentTarget.style.boxShadow = `0 15px 30px ${T.teal}60`; }}
+                onMouseLeave={e => { e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = `0 10px 25px ${T.teal}40`; }}
+              >
+                GUARDAR PLANTILLA
+              </button>
+            </div>
           </div>
         </div>
       </Modal>
