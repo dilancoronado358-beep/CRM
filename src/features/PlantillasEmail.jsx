@@ -19,11 +19,11 @@ export const PlantillasEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) =>
     if (editando) {
       const act = { ...editando, ...f };
       setDb(d => ({ ...d, plantillasEmail: d.plantillasEmail.map(p => p.id === editando.id ? act : p) }));
-      await guardarEnSupa("plantillas", act);
+      await guardarEnSupa("plantillasEmail", act);
     } else {
       const nv = { ...f, id: "tpl" + uid(), creador: db.usuario?.name || "Usuario" };
       setDb(d => ({ ...d, plantillasEmail: [nv, ...(d.plantillasEmail || [])] }));
-      await guardarEnSupa("plantillas", nv);
+      await guardarEnSupa("plantillasEmail", nv);
     }
     setShowForm(false); setEditando(null); setF({ titulo: "", categoria: "prospectacion", asunto: "", cuerpo: "", tipo: "texto" });
   };
@@ -31,7 +31,7 @@ export const PlantillasEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) =>
   const eliminar = async id => {
     if (!confirm("¿Eliminar plantilla?")) return;
     setDb(d => ({ ...d, plantillasEmail: d.plantillasEmail.filter(p => p.id !== id) }));
-    await eliminarDeSupa("plantillas", id);
+    await eliminarDeSupa("plantillasEmail", id);
   };
   
   const handleUploadHtml = (e) => {
