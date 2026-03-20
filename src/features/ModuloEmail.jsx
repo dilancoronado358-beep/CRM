@@ -529,16 +529,28 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa, cargando
       {/* 3. LECTOR DE MENSAJES */}
       {emailFocus ? (
         <div style={{ flex: 1, display: "flex", flexDirection: "column", background: "rgba(255,255,255,0.01)" }}>
-          <div style={{ padding: "40px", borderBottom: `1px solid ${T.whiteFade}05` }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 32 }}>
-              <h2 style={{ margin: 0, fontSize: 32, fontWeight: 900, color: T.white, letterSpacing: "-0.03em", lineHeight: 1.1, flex: 1 }}>{emailFocus.asunto}</h2>
+          <div style={{ padding: "24px 40px", borderBottom: `1px solid ${T.whiteFade}05`, background: "rgba(255,255,255,0.01)" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+              <h2 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: T.white, letterSpacing: "-0.02em", lineHeight: 1.2, flex: 1 }}>{emailFocus.asunto}</h2>
               <div style={{ display: "flex", gap: 8, paddingLeft: 24 }}>
                 <button onClick={() => setShowConv(true)} 
-                  style={{ height: 40, padding: "0 16px", borderRadius: 12, background: "rgba(20,184,166,0.1)", border: `1.5px solid ${T.teal}30`, color: T.teal, cursor: "pointer", fontSize: 12, fontWeight: 700, display: "flex", alignItems: "center", gap: 8 }}>
-                  <Ico k="lightning" size={16} /> CONVERTIR A LEAD
+                  style={{ height: 32, padding: "0 12px", borderRadius: 8, background: T.tealSoft, border: `1px solid ${T.teal}40`, color: T.teal, cursor: "pointer", fontSize: 11, fontWeight: 800, display: "flex", alignItems: "center", gap: 6, transition: "all 0.2s" }}
+                  onMouseEnter={e => { e.currentTarget.style.background = T.tealSoft.replace('0.1', '0.15'); e.currentTarget.style.transform = "scale(1.02)"; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = T.tealSoft; e.currentTarget.style.transform = "none"; }}>
+                  <Ico k="lightning" size={14} /> CONVERTIR A LEAD
                 </button>
-                <button onClick={() => setEmailFocus(null)} style={{ width: 40, height: 40, borderRadius: 12, background: "rgba(255,255,255,0.05)", border: "none", color: T.white, cursor: "pointer" }}><Ico k="x" size={18} /></button>
-                <button onClick={() => { eliminarDeSupa("emails", emailFocus.id); setEmailFocus(null); }} style={{ width: 40, height: 40, borderRadius: 12, background: "rgba(239,68,68,0.1)", border: "none", color: T.red, cursor: "pointer" }}><Ico k="trash" size={18} /></button>
+                <button onClick={() => setEmailFocus(null)} 
+                  style={{ width: 32, height: 32, borderRadius: 8, background: "rgba(255,255,255,0.05)", border: "none", color: T.whiteDim, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }}
+                  onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,255,255,0.1)"; e.currentTarget.style.color = T.white; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = "rgba(255,255,255,0.05)"; e.currentTarget.style.color = T.whiteDim; }}>
+                  <Ico k="x" size={16} />
+                </button>
+                <button onClick={() => { eliminarDeSupa("emails", emailFocus.id); setEmailFocus(null); }} 
+                  style={{ width: 32, height: 32, borderRadius: 8, background: T.redS, border: "none", color: T.red, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }}
+                  onMouseEnter={e => { e.currentTarget.style.background = T.redS.replace('0.12', '0.18'); e.currentTarget.style.transform = "scale(1.05)"; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = T.redS; e.currentTarget.style.transform = "none"; }}>
+                  <Ico k="trash" size={16} />
+                </button>
               </div>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
