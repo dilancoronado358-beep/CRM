@@ -8,8 +8,18 @@ export { Ico, SpotlightSearch, ConfirmModal };
 
 
 export const Av = ({ text = "?", color = T.teal, size = 36, fs }) => (
-  <div style={{ width: size, height: size, borderRadius: "50%", background: color + "18", border: `1.5px solid ${color}40`, color, fontWeight: 700, fontSize: fs || size * .36, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-    {(text || "?").slice(0, 2).toUpperCase()}
+  <div style={{ 
+    width: size, height: size, borderRadius: "50%", 
+    background: `linear-gradient(135deg, ${color}20, ${color}35)`, 
+    border: `1.5px solid ${color}40`, 
+    color, fontWeight: 800, fontSize: fs || size * .38, 
+    display: "flex", alignItems: "center", justifyContent: "center", 
+    flexShrink: 0, overflow: "hidden", 
+    boxShadow: `inset 0 2px 4px rgba(255,255,255,0.1), 0 4px 12px ${color}15`,
+    textShadow: `0 0 10px ${color}40`,
+    userSelect: "none"
+  }}>
+    {(text || "?").slice(0, 1).toUpperCase() + ((text || "").split(" ")[1] || text || "").slice(0, 1).toUpperCase()}
   </div>
 );
 

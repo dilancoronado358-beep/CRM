@@ -221,12 +221,13 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa, cargando
   };
 
   return (
-    <div style={{ display: "flex", height: "calc(100vh - 110px)", background: T.bg0, borderRadius: 28, overflow: "hidden", border: `1px solid ${T.whiteFade}10`, boxShadow: "0 25px 60px rgba(0,0,0,0.3)", position: "relative" }}>
+    <div style={{ display: "flex", height: "calc(100vh - 110px)", background: T.bg0, borderRadius: 32, overflow: "hidden", border: `1.5px solid ${T.whiteFade}10`, boxShadow: "0 30px 80px rgba(0,0,0,0.15)", position: "relative" }}>
       {/* Background glass effect enhancement */}
-      <div style={{ position: "absolute", top: -100, right: -100, width: 300, height: 300, background: T.teal, filter: "blur(150px)", opacity: 0.05, pointerEvents: "none" }} />
-      <div style={{ position: "absolute", bottom: -100, left: -100, width: 300, height: 300, background: T.purple || "#A78BFA", filter: "blur(150px)", opacity: 0.05, pointerEvents: "none" }} />
+      <div style={{ position: "absolute", top: -150, right: -150, width: 400, height: 400, background: T.teal, filter: "blur(180px)", opacity: 0.1, pointerEvents: "none" }} />
+      <div style={{ position: "absolute", bottom: -150, left: -150, width: 400, height: 400, background: T.purple || "#A78BFA", filter: "blur(180px)", opacity: 0.1, pointerEvents: "none" }} />
+      
       {/* 1. SIDEBAR (GLASS PANEL) */}
-      <div style={{ width: 240, background: "rgba(255,255,255,0.02)", backdropFilter: "blur(20px)", borderRight: `1px solid ${T.whiteFade}08`, display: "flex", flexDirection: "column", padding: "24px 16px" }}>
+      <div style={{ width: 260, background: "rgba(255,255,255,0.03)", backdropFilter: "blur(30px)", borderRight: `1.5px solid ${T.whiteFade}08`, display: "flex", flexDirection: "column", padding: "32px 20px" }}>
         <button onClick={() => setShowRedactar(true)}
           style={{ width: "100%", height: 48, background: "linear-gradient(135deg, #14B8A6, #0D9488)", border: "none", borderRadius: 12, color: "#fff", fontWeight: 800, fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, cursor: "pointer", transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)", boxShadow: `0 8px 20px ${T.teal}40`, marginBottom: 12 }}
           onMouseEnter={e => { e.currentTarget.style.transform = "scale(1.02) translateY(-2px)"; e.currentTarget.style.boxShadow = `0 12px 25px ${T.teal}60`; }}
@@ -288,8 +289,8 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa, cargando
 
         <div style={{ flex: 1, overflowY: "auto", padding: "12px" }}>
           {cargandoFondo && msgs.length === 0 ? (
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              {[1, 2, 3, 4, 5].map(i => <div key={i} style={{ height: 100, background: "rgba(255,255,255,0.02)", borderRadius: 16, animation: "pulse 1.5s infinite" }} />)}
+            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              {[1, 2, 3, 4, 5].map(i => <div key={i} style={{ height: 110, background: "rgba(255,255,255,0.02)", borderRadius: 20, animation: "pulse 1.5s infinite" }} />)}
             </div>
           ) : msgs.length === 0 ? <Vacio text="No hay mensajes" /> : msgs.map(e => {
             const isSel = emailFocus?.id === e.id;
@@ -300,39 +301,38 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa, cargando
               <div key={e.id} onClick={() => { setEmailFocus(e); marcarLeido(e.id); }}
                 style={{ 
                   position: "relative", 
-                  padding: "14px 18px", 
-                  borderRadius: 14, 
-                  marginBottom: 6, 
+                  padding: "20px 24px", 
+                  borderRadius: 18, 
+                  marginBottom: 10, 
                   cursor: "pointer", 
-                  background: isSel ? "rgba(255,255,255,0.04)" : "transparent",
-                  border: `1px solid ${isSel ? T.whiteFade + "15" : "transparent"}`,
-                  boxShadow: isSel ? `0 10px 25px -5px rgba(0,0,0,0.2)` : "none",
-                  transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+                  background: isSel ? T.bg1 : "transparent",
+                  border: `1.5px solid ${isSel ? T.teal + "40" : "transparent"}`,
+                  boxShadow: isSel ? `0 20px 40px -10px rgba(0,0,0,0.1)` : "none",
+                  transform: isSel ? "scale(1.02)" : "none",
+                  transition: "all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
                   display: "flex",
-                  gap: 12,
+                  gap: 16,
                   alignItems: "center",
                   overflow: "hidden"
                 }}
-                onMouseEnter={e => { if (!isSel) e.currentTarget.style.background = "rgba(255,255,255,0.02)"; }}
-                onMouseLeave={e => { if (!isSel) e.currentTarget.style.background = "transparent"; }}
+                onMouseEnter={e => { if (!isSel) { e.currentTarget.style.background = "rgba(255,255,255,0.02)"; e.currentTarget.style.transform = "translateX(5px)"; } }}
+                onMouseLeave={e => { if (!isSel) { e.currentTarget.style.background = "transparent"; e.currentTarget.style.transform = "none"; } }}
               >
                 {!e.leido && (
-                  <div style={{ position: "absolute", left: 0, top: "50%", transform: "translateY(-50%)", width: 4, height: 18, background: T.teal, borderRadius: "0 4px 4px 0", boxShadow: `0 0 10px ${T.teal}80` }} />
+                  <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 5, background: T.teal, boxShadow: `0 0 15px ${T.teal}` }} />
                 )}
                 
-                <div style={{ transform: isSel ? "scale(1.05)" : "scale(1)", transition: "transform 0.3s" }}>
-                  <Av text={deStr} size={40} color={avClr} />
-                </div>
+                <Av text={deStr} size={48} color={avClr} />
                 
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 2 }}>
-                    <span style={{ fontSize: 13, fontWeight: !e.leido ? 800 : 600, color: !e.leido ? T.white : T.whiteOff, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {deStr.split("@")[0].substring(0, 20)}
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                    <span style={{ fontSize: 14, fontWeight: !e.leido ? 900 : 700, color: !e.leido ? T.white : T.whiteOff, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", letterSpacing: "-0.01em" }}>
+                      {deStr.split("@")[0]}
                     </span>
-                    <span style={{ fontSize: 10, color: T.whiteDim, opacity: 0.7, fontWeight: 500 }}>{fdate(e.fecha)}</span>
+                    <span style={{ fontSize: 11, color: T.whiteDim, fontWeight: 700, letterSpacing: ".02em", opacity: 0.6 }}>{fdate(e.fecha).toUpperCase()}</span>
                   </div>
-                  <div style={{ fontSize: 13, fontWeight: !e.leido ? 700 : 500, color: T.white, marginBottom: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{e.asunto}</div>
-                  <div style={{ fontSize: 12, color: T.whiteDim, overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical", opacity: 0.5 }}>{e.cuerpo}</div>
+                  <div style={{ fontSize: 14, fontWeight: !e.leido ? 800 : 600, color: T.white, marginBottom: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", letterSpacing: "-0.01em" }}>{e.asunto}</div>
+                  <div style={{ fontSize: 13, color: T.whiteDim, overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical", opacity: 0.6, lineHeight: 1.4 }}>{e.cuerpo}</div>
                 </div>
               </div>
             );
