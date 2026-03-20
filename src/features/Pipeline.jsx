@@ -51,25 +51,18 @@ const FormDeal = ({ db, setDb, f, setF, editDeal, onGuardar, onCancelar, guardar
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 24, minHeight: 600 }}>
-      {/* STAGE SELECTOR (BITRIX STYLE) */}
-      <div style={{ display: "flex", width: "100%", gap: 4, paddingBottom: 10 }}>
+      {/* STAGE SELECTOR (MODERN CHEVRON FLOW) */}
+      <div style={{ display: "flex", width: "100%", gap: 2, paddingBottom: 10, height: 38 }}>
         {stages.map((st, idx) => {
           const isActive = st.id === f.etapa_id;
           const isPast = idx < currentEtIdx;
+          const isFirst = idx === 0;
+          const isLast = idx === stages.length - 1;
 
-          let bg = "#eef2f4";
-          let color = "#666";
-          let borderColor = "#d4dde1";
-
-          if (isActive) {
-            bg = st.color || T.teal;
-            color = "#fff";
-            borderColor = st.color || T.teal;
-          } else if (isPast) {
-            bg = T.bg3;
-            color = st.color || T.teal;
-            borderColor = T.borderHi;
-          }
+          let bg = T.bg2;
+          let color = T.whiteDim;
+          if (isActive) { bg = st.color || T.teal; color = "#fff"; }
+          else if (isPast) { bg = (st.color || T.teal) + "40"; color = st.color || T.teal; }
 
           return (
             <div
@@ -83,11 +76,28 @@ const FormDeal = ({ db, setDb, f, setF, editDeal, onGuardar, onCancelar, guardar
                 }
               }}
               style={{
-                flex: 1, height: 32, display: "flex", alignItems: "center", justifyContent: "center",
-                fontSize: 11, fontWeight: 700, cursor: "pointer", background: bg, color: color,
-                border: `1px solid ${borderColor}`, borderRadius: 4, transition: "all .2s",
-                textAlign: "center", padding: "0 4px", textTransform: "uppercase", letterSpacing: ".02em",
-                boxShadow: isActive ? "var(--shadow-sm)" : "none"
+                flex: 1, 
+                height: "100%", 
+                display: "flex", 
+                alignItems: "center", 
+                justifyContent: "center",
+                fontSize: 10, 
+                fontWeight: 800, 
+                cursor: "pointer", 
+                background: bg, 
+                color: color,
+                transition: "all .3s cubic-bezier(0.4, 0, 0.2, 1)",
+                textAlign: "center", 
+                padding: "0 10px 0 15px", 
+                textTransform: "uppercase", 
+                letterSpacing: ".05em",
+                clipPath: isFirst ? "polygon(0% 0%, 95% 0%, 100% 50%, 95% 100%, 0% 100%)" : 
+                          isLast  ? "polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%, 5% 50%)" :
+                          "polygon(0% 0%, 95% 0%, 100% 50%, 95% 100%, 0% 100%, 5% 50%)",
+                marginLeft: isFirst ? 0 : -8,
+                zIndex: isActive ? 10 : stages.length - idx,
+                boxShadow: isActive ? `0 4px 12px ${bg}40` : "none",
+                position: "relative"
               }}
             >
               {st.nombre}
@@ -107,9 +117,15 @@ const FormDeal = ({ db, setDb, f, setF, editDeal, onGuardar, onCancelar, guardar
 
       <div style={{ display: "flex", gap: 32, flexWrap: "wrap" }}>
         {/* COLUMNA IZQUIERDA: INFORMACIÓN Y CAMPOS */}
-        <div style={{ flex: "1 1 440px", maxWidth: 440, display: "flex", flexDirection: "column", gap: 20 }}>
-          <div style={{ background: T.bg1, border: `1px solid ${T.border}`, borderRadius: 16, padding: 24 }}>
-            <Campo label="Título del Deal *" style={{ marginBottom: 20 }}>
+        <div style={{ flex: "1 1 440px", maxWidth: 440, display: "flex", flexDirection: "column", gap: 24 }}>
+          {/* SECCIÓN 1: DETALLES PRINCIPALES */}
+          <div style={{ background: T.bg1, border: `1px solid ${T.border}`, borderRadius: 20, padding: 24, boxShadow: "var(--shadow-sm)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 20 }}>
+              <div style={{ width: 4, height: 16, background: T.teal, borderRadius: 4 }} />
+              <span style={{ fontSize: 13, fontWeight: 800, color: T.whiteOff, textTransform: "uppercase", letterSpacing: ".05em" }}>Información del Negocio</span>
+            </div>
+            
+            <Campo label="Título del Deal *" style={{ marginBottom: 24 }}>
               <LocalInput value={f.titulo} onCommit={v => {
                 const nf = { ...f, titulo: v };
                 setF(nf);
@@ -117,24 +133,23 @@ const FormDeal = ({ db, setDb, f, setF, editDeal, onGuardar, onCancelar, guardar
               }} placeholder="ej. Acme — Plan Enterprise" style={{ fontSize: 16, fontWeight: 800 }} />
             </Campo>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 20 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 24 }}>
               <Campo label="Monto ($)">
                 <LocalInput type="number" value={f.valor} onCommit={v => {
                   const nf = { ...f, valor: v };
                   setF(nf);
                   if (editDeal) guardarEnSupa("deals", { ...editDeal, ...nf });
-                }} style={{ fontWeight: 800, color: T.green }} />
+                }} style={{ fontWeight: 800, color: T.green, fontSize: 16 }} />
               </Campo>
               <Campo label="Probabilidad (%)">
                 <LocalInput type="number" value={f.prob} onCommit={v => {
                   const nf = { ...f, prob: v };
                   setF(nf);
                   if (editDeal) guardarEnSupa("deals", { ...editDeal, ...nf });
-                }} style={{ fontWeight: 800 }} />
+                }} style={{ fontWeight: 800, fontSize: 16 }} />
               </Campo>
             </div>
-
-            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
               <Campo label="Pipeline"><Sel value={f.pipeline_id} onChange={async e => {
                 const plId = e.target.value;
                 const pl = db.pipelines.find(p => p.id === plId);
@@ -155,7 +170,17 @@ const FormDeal = ({ db, setDb, f, setF, editDeal, onGuardar, onCancelar, guardar
                   if (val !== f.etapa_id) await ejecutarAutomaciones(editDeal, val);
                 }
               }}>{plActual?.etapas.map(e => <option key={e.id} value={e.id}>{e.nombre}</option>)}</Sel></Campo>
+            </div>
+          </div>
 
+          {/* SECCIÓN 2: ASIGNACIÓN Y CONTACTO */}
+          <div style={{ background: T.bg1, border: `1px solid ${T.border}`, borderRadius: 20, padding: 24, boxShadow: "var(--shadow-sm)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 20 }}>
+              <div style={{ width: 4, height: 16, background: T.teal, borderRadius: 4 }} />
+              <span style={{ fontSize: 13, fontWeight: 800, color: T.whiteOff, textTransform: "uppercase", letterSpacing: ".05em" }}>Relaciones y Responsable</span>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
               <Campo label="Contacto Asociado"><Sel value={f.contacto_id} onChange={async e => {
                 const val = e.target.value;
                 const nextF = { ...f, contacto_id: val };
@@ -177,37 +202,52 @@ const FormDeal = ({ db, setDb, f, setF, editDeal, onGuardar, onCancelar, guardar
                 if (editDeal) await guardarEnSupa("deals", { ...editDeal, ...nextF });
               }}>{db.usuariosApp?.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}</Sel></Campo>
             </div>
-
-            {/* Lead Scoring Breakdown */}
-            <div style={{ background: T.bg2, border: `1px solid ${T.borderHi}`, borderRadius: 16, padding: 18, marginTop: 20 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <div style={{ fontSize: 18 }}>{calculateLeadScore(db, f) >= 80 ? "🔥" : "📊"}</div>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: T.white }}>Lead Intelligence Score</span>
-                </div>
-                <div style={{ fontSize: 24, fontWeight: 900, color: T.teal }}>{calculateLeadScore(db, f)}<span style={{ fontSize: 12, color: T.whiteDim }}>/100</span></div>
-              </div>
-              <Barra value={calculateLeadScore(db, f)} color={T.teal} height={6} />
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 12 }}>
-                {[
-                  { l: "Perfil Completo", v: (db.contactos.find(c => c.id === f.contacto_id)?.telefono && f.valor > 0), p: "+35" },
-                  { l: "Empresa B2B", v: !!f.empresa_id || !!f.empresa, p: "+15" },
-                  { l: "Actividad", v: (db.actividades || []).some(a => a.deal_id === editDeal?.id), p: "+30" },
-                  { l: "Interacción WA", v: (db.whatsapp_messages || []).some(m => m.deal_id === editDeal?.id), p: "+20" }
-                ].map((it, i) => (
-                  <div key={i} style={{ fontSize: 10, color: it.v ? T.white : T.whiteDim, display: "flex", alignItems: "center", gap: 5 }}>
-                    <div style={{ width: 6, height: 6, borderRadius: "50%", background: it.v ? T.green : "rgba(255,255,255,0.1)" }} />
-                    {it.l} <span style={{ color: it.v ? T.green : T.whiteDim, fontWeight: 700 }}>{it.p}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
           </div>
 
-          <div style={{ background: T.bg1, border: `1px solid ${T.border}`, borderRadius: 16, padding: 24 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-              <span style={{ fontSize: 11, fontWeight: 700, color: T.whiteDim, textTransform: "uppercase" }}>Campos Personalizados</span>
-              <Btn variant="fantasma" size="sm" onClick={() => setShowConfigCampos(true)}><Ico k="plus" size={12} /> Configurar</Btn>
+          {/* Lead Scoring Rediseñado */}
+          <div style={{ background: `linear-gradient(135deg, ${T.bg2}, ${T.bg1})`, border: `2px solid ${T.teal}30`, borderRadius: 20, padding: 24, position: "relative", overflow: "hidden" }}>
+             {/* Decorative indicator */}
+             <div style={{ position: "absolute", top: 0, right: 0, width: 80, height: 80, background: T.teal, opacity: 0.05, borderRadius: "0 0 0 100%" }} />
+             
+             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <div style={{ width: 44, height: 44, borderRadius: 12, background: T.tealSoft, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>{calculateLeadScore(db, f) >= 80 ? "🔥" : "📊"}</div>
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 800, color: T.white }}>Score Inteligente</div>
+                    <div style={{ fontSize: 11, color: T.whiteDim }}>IA Lead Intelligence</div>
+                  </div>
+                </div>
+                <div style={{ textAlign: "right" }}>
+                  <div style={{ fontSize: 28, fontWeight: 900, color: T.teal, lineHeight: 1 }}>{calculateLeadScore(db, f)}<span style={{ fontSize: 13, color: T.whiteDim, fontWeight: 500 }}>/100</span></div>
+                </div>
+             </div>
+
+             <Barra value={calculateLeadScore(db, f)} color={T.teal} h={8} />
+             
+             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 20 }}>
+                {[
+                  { l: "Perfil Rico", v: (db.contactos.find(c => c.id === f.contacto_id)?.telefono && f.valor > 0), p: "+35" },
+                  { l: "Empresa B2B", v: !!f.empresa_id || !!f.empresa, p: "+15" },
+                  { l: "Compromiso", v: (db.actividades || []).some(a => a.deal_id === editDeal?.id), p: "+30" },
+                  { l: "Interacción", v: (db.whatsapp_messages || []).some(m => m.deal_id === editDeal?.id), p: "+20" }
+                ].map((it, i) => (
+                  <div key={i} style={{ fontSize: 11, color: it.v ? T.whiteOff : T.whiteFade, display: "flex", alignItems: "center", gap: 8, background: it.v ? T.white + "05" : "transparent", padding: "6px 10px", borderRadius: 8, border: `1px solid ${it.v ? T.white + "08" : "transparent"}` }}>
+                    <div style={{ width: 6, height: 6, borderRadius: "50%", background: it.v ? T.green : T.whiteFade }} />
+                    <span style={{ flex: 1 }}>{it.l}</span>
+                    <span style={{ color: it.v ? T.green : T.whiteFade, fontWeight: 700 }}>{it.p}</span>
+                  </div>
+                ))}
+             </div>
+          </div>
+
+          {/* SECCIÓN 3: CAMPOS PERSONALIZADOS */}
+          <div style={{ background: T.bg1, border: `1px solid ${T.border}`, borderRadius: 20, padding: 24, boxShadow: "var(--shadow-sm)" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <div style={{ width: 4, height: 16, background: T.teal, borderRadius: 4 }} />
+                <span style={{ fontSize: 11, fontWeight: 800, color: T.whiteOff, textTransform: "uppercase", letterSpacing: ".05em" }}>Campos Extra</span>
+              </div>
+              <Btn variant="fantasma" size="xs" onClick={() => setShowConfigCampos(true)} style={{ color: T.teal }}><Ico k="cog" size={12} /></Btn>
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               {customFieldsDef.map(cf => {
@@ -224,11 +264,6 @@ const FormDeal = ({ db, setDb, f, setF, editDeal, onGuardar, onCancelar, guardar
                       </Sel>
                     ) : cf.tipo === "fecha" ? (
                       <LocalInput type="date" value={val} onCommit={v => { handleChange(v); handleBlur(); }} />
-                    ) : cf.tipo === "dinero" ? (
-                      <div style={{ position: "relative" }}>
-                        <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: T.green }}>$</span>
-                        <LocalInput type="number" value={val} onCommit={v => { handleChange(v); handleBlur(); }} style={{ paddingLeft: 24 }} />
-                      </div>
                     ) : (
                       <LocalInput value={val} onCommit={v => { handleChange(v); handleBlur(); }} placeholder={`Ingresar ${cf.nombre.toLowerCase()}...`} />
                     )}
@@ -238,19 +273,21 @@ const FormDeal = ({ db, setDb, f, setF, editDeal, onGuardar, onCancelar, guardar
             </div>
           </div>
 
-          {/* Archivos / Attachments */}
-          <div style={{ background: T.bg1, border: `2px dashed ${dragActive ? T.teal : T.border}`, borderRadius: 16, padding: 24, textAlign: "center" }}
+          {/* SECCIÓN 4: ARCHIVOS Y DOCUMENTOS */}
+          <div style={{ background: `linear-gradient(to bottom, ${T.bg1}, ${T.bg2}30)`, border: `2px dashed ${dragActive ? T.teal : T.border}`, borderRadius: 20, padding: 24, textAlign: "center", transition: "all .2s" }}
             onDragOver={e => { e.preventDefault(); setDragActive(true); }}
             onDragLeave={() => setDragActive(false)}
             onDrop={handleDrop}
           >
-            <Ico k="upload" size={24} style={{ color: T.whiteDim, marginBottom: 12 }} />
-            <div style={{ fontSize: 13, color: T.white, fontWeight: 700 }}>Documentos y Archivos</div>
-            <div style={{ fontSize: 11, color: T.whiteDim, marginTop: 4 }}>Arrastra archivos aquí para subirlos al deal</div>
+            <div style={{ width: 48, height: 48, borderRadius: "50%", background: T.bg2, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 12px", border: `1px solid ${T.borderHi}` }}>
+              <Ico k="upload" size={20} style={{ color: T.teal }} />
+            </div>
+            <div style={{ fontSize: 13, color: T.white, fontWeight: 800 }}>Documentos</div>
+            <div style={{ fontSize: 11, color: T.whiteDim, marginTop: 4 }}>Arrastra archivos para subir</div>
             
             <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 8 }}>
               {(f.archivos || []).map(a => (
-                <div key={a.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: T.bg2, padding: "8px 12px", borderRadius: 8, border: `1px solid ${T.border}` }}>
+                <div key={a.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: T.bg1, padding: "8px 12px", borderRadius: 10, border: `1px solid ${T.borderHi}`, boxShadow: "var(--shadow-sm)" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 10, overflow: "hidden" }}>
                     <Ico k={a.tipo === "img" ? "image" : "file"} size={14} style={{ color: T.teal }} />
                     <span style={{ fontSize: 12, color: T.whiteOff, whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden" }}>{a.nombre}</span>

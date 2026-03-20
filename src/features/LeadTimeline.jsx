@@ -560,27 +560,34 @@ export function LeadTimeline({ deal = {}, contacto = {}, db = {}, setDb, guardar
       )}
 
       {/* HEADER COMPOSER */}
+      {/* HEADER COMPOSER - MODERN TABS */}
       <div style={{ padding: "0 20px", borderBottom: `1px solid ${T.borderHi}`, background: T.bg1, flexShrink: 0 }}>
-        <div style={{ display: "flex", gap: 24 }}>
-          {["Comentario", "WhatsApp", "Email", "Tarea"].map(t => (
-            <button key={t}
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                console.info("Tab switch to:", t);
-                setComposerTab(t);
-                setFiltro(t === "WhatsApp" ? "whatsapp" : (t === "Email" ? "email" : "all"));
-                if (t === "WhatsApp") setTimeout(() => chatBottomRef.current?.scrollIntoView({ behavior: 'auto' }), 50);
-              }}
-              style={{
-                background: "none", border: "none", color: t === composerTab ? (t === "Email" ? T.teal : (t === "WhatsApp" ? "#25D366" : "#00bbd3")) : "#666",
-                fontWeight: 600, fontSize: 13, cursor: "pointer",
-                borderBottom: `3px solid ${t === composerTab ? (t === "Email" ? T.teal : (t === "WhatsApp" ? "#25D366" : "#00bbd3")) : "transparent"}`,
-                padding: "16px 4px", position: "relative", top: 1
-              }}>
-              {t}
-            </button>
-          ))}
+        <div style={{ display: "flex", gap: 12, padding: "12px 0" }}>
+          {["Comentario", "WhatsApp", "Email", "Tarea"].map(t => {
+            const isActive = t === composerTab;
+            const activeColor = t === "Email" ? T.teal : (t === "WhatsApp" ? "#25D366" : T.teal);
+            return (
+              <button key={t}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setComposerTab(t);
+                  setFiltro(t === "WhatsApp" ? "whatsapp" : (t === "Email" ? "email" : "all"));
+                  if (t === "WhatsApp") setTimeout(() => chatBottomRef.current?.scrollIntoView({ behavior: 'auto' }), 50);
+                }}
+                style={{
+                  background: isActive ? `${activeColor}15` : "transparent", 
+                  border: `1px solid ${isActive ? activeColor + "40" : "transparent"}`, 
+                  color: isActive ? activeColor : T.whiteDim,
+                  fontWeight: 700, fontSize: 13, cursor: "pointer",
+                  padding: "8px 16px", borderRadius: 100, transition: "all .2s ease",
+                  display: "flex", alignItems: "center", gap: 8
+                }}>
+                <Ico k={t === "Comentario" ? "note" : (t === "WhatsApp" ? "phone" : (t === "Email" ? "mail" : "check"))} size={14} />
+                {t}
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -749,33 +756,32 @@ export function LeadTimeline({ deal = {}, contacto = {}, db = {}, setDb, guardar
                 <div key={it.id + idx} style={{ display: "flex", gap: 20, marginBottom: 20, animation: "fadeIn .3s ease" }}>
                   {/* ICON NODE */}
                   <div style={{ 
-                    width: 36, height: 36, borderRadius: 10, 
-                    background: "rgba(255,255,255,0.05)", 
+                    width: 38, height: 38, borderRadius: 12, 
+                    background: it.type === 'whatsapp' ? "#25D36615" : T.bg2, 
                     color: colors[it.type] || T.teal, 
                     display: "flex", alignItems: "center", justifyContent: "center", 
-                    border: `1px solid ${colors[it.type] || T.teal}`, 
+                    border: `1px solid ${it.type === 'whatsapp' ? "#25D36630" : T.borderHi}`, 
                     flexShrink: 0, zIndex: 2,
-                    boxShadow: "var(--shadow-sm)",
-                    backdropFilter: "blur(4px)"
+                    boxShadow: "0 2px 5px rgba(0,0,0,0.05)",
                   }}>
-                    <Ico k={iconMap[it.type]} size={16} />
+                    <Ico k={iconMap[it.type]} size={18} />
                   </div>
 
                   {/* GLASS CARD */}
                   <div style={{ 
                     flex: 1, 
-                    background: "rgba(255,255,255,0.03)", 
-                    backdropFilter: "blur(12px)",
-                    border: `1px solid ${T.borderHi}`, 
-                    borderRadius: 14, 
-                    padding: "14px 18px",
-                    boxShadow: "0 4px 15px rgba(0,0,0,0.05)",
-                    transition: "all .2s",
-                    cursor: it.type === 'email' ? 'pointer' : 'default'
+                    background: T.bg1, 
+                    border: `1px solid ${T.border}`, 
+                    borderRadius: 16, 
+                    padding: "16px 20px",
+                    boxShadow: "0 4px 12px rgba(0,0,0,0.03)",
+                    transition: "all .3s cubic-bezier(0.4, 0, 0.2, 1)",
+                    cursor: it.type === 'email' ? 'pointer' : 'default',
+                    position: "relative",
                   }}
                   onClick={() => it.type === 'email' ? setEmailExpandido(emailExpandido === it.id ? null : it.id) : null}
-                  onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,255,255,0.06)"; e.currentTarget.style.transform = "translateX(4px)"; }}
-                  onMouseLeave={e => { e.currentTarget.style.background = "rgba(255,255,255,0.03)"; e.currentTarget.style.transform = "none"; }}>
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = T.teal; e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 8px 20px rgba(0,0,0,0.06)"; }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.03)"; }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                         <span style={{ fontSize: 10, fontWeight: 900, color: colors[it.type], textTransform: "uppercase", letterSpacing: ".05em" }}>{it.type}</span>
