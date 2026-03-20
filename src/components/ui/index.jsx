@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { T } from "../../theme";
 import { Ico } from "./Ico";
 import { SpotlightSearch } from "./Spotlight";
@@ -178,8 +179,8 @@ export const Campo = ({ label, children, col = 1, style = {} }) => (
 export const Modal = ({ open, onClose, title, children, width = 640 }) => {
   if (open) console.log("🔘 [DEBUG] Abriendo Modal:", title);
   if (!open) return null;
-  return (
-    <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(17,24,39,.7)", backdropFilter: "blur(12px)", zIndex: 9000, display: "flex", alignItems: "center", justifyContent: "center", padding: 20, animation: "fadeIn .3s" }}>
+  return createPortal(
+    <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(17,24,39,.7)", backdropFilter: "blur(12px)", zIndex: 90000, display: "flex", alignItems: "center", justifyContent: "center", padding: 20, animation: "fadeIn .3s" }}>
       <div onClick={e => e.stopPropagation()} style={{ background: T.bg1, border: `1px solid ${T.borderHi}`, borderRadius: 20, width: "100%", maxWidth: `min(${width}px, 94vw)`, maxHeight: "92vh", display: "flex", flexDirection: "column", boxShadow: "var(--shadow-premium)", animation: "slideIn .3s cubic-bezier(0.16, 1, 0.3, 1)" }}>
         <div style={{ padding: "20px 28px", borderBottom: `1px solid ${T.border}`, display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
           <span style={{ fontWeight: 800, fontSize: 18, color: T.white, letterSpacing: "-.02em" }}>{title}</span>
@@ -187,7 +188,8 @@ export const Modal = ({ open, onClose, title, children, width = 640 }) => {
         </div>
         <div style={{ padding: 28, overflowY: "auto", flex: 1 }}>{children}</div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 
