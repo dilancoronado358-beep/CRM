@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { T } from "../../theme";
 import { Ico } from "./Ico";
 import { SpotlightSearch } from "./Spotlight";
@@ -89,39 +89,49 @@ export const LocalInput = ({ value, onChange, onCommit, type = "text", ...props 
   );
 };
 
-export const Sel = ({ value, onChange, children, style = {}, defaultValue, ...props }) => (
-  <div style={{ position: "relative", width: style.width || "100%", display: "inline-block", ...style }}>
-    <select 
-      value={value} 
-      defaultValue={defaultValue} 
-      onChange={onChange} 
-      {...props} 
-      style={{ 
-        appearance: "none",
-        WebkitAppearance: "none",
-        MozAppearance: "none",
-        background: T.bg1, 
-        border: `1px solid ${T.borderHi}`, 
-        borderRadius: 10, 
-        color: T.white, 
-        fontSize: 13, 
-        padding: "9px 34px 9px 12px", 
-        outline: "none", 
-        width: "100%", 
-        boxSizing: "border-box", 
-        fontFamily: "inherit", 
-        cursor: "pointer",
-        colorScheme: "dark",
-        transition: "border-color 0.2s, box-shadow 0.2s"
-      }}
-    >
-      {children}
-    </select>
-    <div style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", pointerEvents: "none", color: T.whiteDim, display: "flex", alignItems: "center" }}>
-      <Ico k="chevron-down" size={12} />
+export const Sel = ({ value, onChange, children, style = {}, placeholder = "Seleccionar..." }) => {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    const clickAfuera = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener("mousedown", clickAfuera);
+    return () => document.removeEventListener("mousedown", clickAfuera);
+  }, []);
+
+  const options = React.Children.toArray(children).map(c => ({
+    val: c.props.value,
+    lab: c.props.children
+  }));
+
+  const sel = options.find(o => o.val === value) || { lab: placeholder };
+
+  return (
+    <div ref={ref} style={{ position: "relative", width: "100%", ...style }}>
+      <div onClick={() => setOpen(!open)}
+        style={{ background: "rgba(255,255,255,0.03)", border: `1px solid ${T.whiteFade}15`, borderRadius: 12, padding: "10px 16px", display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", backdropFilter: "blur(12px)", transition: "all 0.2s" }}
+        onMouseEnter={e => e.currentTarget.style.borderColor = T.teal + "80"}
+        onMouseLeave={e => e.currentTarget.style.borderColor = T.whiteFade + "15"}
+      >
+        <span style={{ fontSize: 13, color: T.whiteOff, fontWeight: 700 }}>{sel.lab}</span>
+        <Ico k="chevron-down" size={14} style={{ transform: open ? "rotate(180deg)" : "none", transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)", color: open ? T.teal : T.whiteDim }} />
+      </div>
+      {open && (
+        <div style={{ position: "absolute", top: "calc(100% + 8px)", left: 0, right: 0, background: T.bg2, border: `1px solid ${T.borderHi}`, borderRadius: 12, zIndex: 10000, boxShadow: "0 15px 35px rgba(0,0,0,0.4)", padding: 6, maxHeight: 220, overflowY: "auto", animation: "slideIn .2s" }}>
+          {options.map(o => (
+            <div key={o.val} onClick={() => { onChange({ target: { value: o.val } }); setOpen(false); }}
+              style={{ padding: "10px 14px", borderRadius: 8, fontSize: 13, color: o.val === value ? T.teal : T.whiteOff, background: o.val === value ? T.teal + "15" : "transparent", cursor: "pointer", transition: "all 0.15s", fontWeight: o.val === value ? 800 : 500 }}
+              onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,255,255,0.05)"; e.currentTarget.style.paddingLeft = "18px"; }}
+              onMouseLeave={e => { e.currentTarget.style.background = o.val === value ? T.teal + "15" : "transparent"; e.currentTarget.style.paddingLeft = "14px"; }}
+            >
+              {o.lab}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
-  </div>
-);
+  );
+};
 
 export const Lbl = ({ children }) => <label style={{ fontSize: 10.5, fontWeight: 700, color: T.whiteDim, textTransform: "uppercase", letterSpacing: ".05em", display: "block", marginBottom: 5 }}>{children}</label>;
 

@@ -145,7 +145,10 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa, cargando
   };
 
   return (
-    <div style={{ display: "flex", height: "calc(100vh - 110px)", background: T.bg0, borderRadius: 24, overflow: "hidden", border: `1px solid ${T.whiteFade}10`, boxShadow: "0 20px 50px rgba(0,0,0,0.2)" }}>
+    <div style={{ display: "flex", height: "calc(100vh - 110px)", background: T.bg0, borderRadius: 28, overflow: "hidden", border: `1px solid ${T.whiteFade}10`, boxShadow: "0 25px 60px rgba(0,0,0,0.3)", position: "relative" }}>
+      {/* Background glass effect enhancement */}
+      <div style={{ position: "absolute", top: -100, right: -100, width: 300, height: 300, background: T.teal, filter: "blur(150px)", opacity: 0.05, pointerEvents: "none" }} />
+      <div style={{ position: "absolute", bottom: -100, left: -100, width: 300, height: 300, background: T.purple || "#A78BFA", filter: "blur(150px)", opacity: 0.05, pointerEvents: "none" }} />
       {/* 1. SIDEBAR (GLASS PANEL) */}
       <div style={{ width: 240, background: "rgba(255,255,255,0.02)", backdropFilter: "blur(20px)", borderRight: `1px solid ${T.whiteFade}08`, display: "flex", flexDirection: "column", padding: "24px 16px" }}>
         <button onClick={() => setShowRedactar(true)}
@@ -211,23 +214,49 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa, cargando
           {cargandoFondo && msgs.length === 0 ? (
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {[1, 2, 3, 4, 5].map(i => <div key={i} style={{ height: 100, background: "rgba(255,255,255,0.03)", borderRadius: 16, animation: "pulse 1.5s infinite" }} />)}
-              <style>{`@keyframes pulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 0.2; } }`}</style>
             </div>
-          ) : msgs.length === 0 ? <Vacio text="No hay mensajes" /> : msgs.map(e => (
-            <div key={e.id} onClick={() => { setEmailFocus(e); marcarLeido(e.id); }}
-              style={{ position: "relative", padding: "16px 20px", borderRadius: 16, marginBottom: 4, cursor: "pointer", background: emailFocus?.id === e.id ? "rgba(255,255,255,0.06)" : "transparent", transition: "all 0.2s" }}
-              onMouseEnter={e => { if (emailFocus?.id !== e.id) e.currentTarget.style.background = "rgba(255,255,255,0.02)"; }}
-              onMouseLeave={e => { if (emailFocus?.id !== e.id) e.currentTarget.style.background = "transparent"; }}
-            >
-              {!e.leido && carpeta === "entrada" && <div style={{ position: "absolute", left: 8, top: 22, width: 6, height: 6, borderRadius: "50%", background: T.teal, boxShadow: `0 0 8px ${T.teal}` }} />}
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                <span style={{ fontSize: 13, fontWeight: !e.leido ? 800 : 600, color: !e.leido ? T.white : T.whiteOff, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{carpeta === "entrada" ? e.de : e.para}</span>
-                <span style={{ fontSize: 11, color: T.whiteDim, opacity: 0.6 }}>{fdate(e.fecha)}</span>
+          ) : msgs.length === 0 ? <Vacio text="No hay mensajes" /> : msgs.map(e => {
+            const isSel = emailFocus?.id === e.id;
+            const deStr = (carpeta === "entrada" ? e.de : e.para) || "Sin remitente";
+            return (
+              <div key={e.id} onClick={() => { setEmailFocus(e); marcarLeido(e.id); }}
+                style={{ 
+                  position: "relative", 
+                  padding: "18px 20px", 
+                  borderRadius: 20, 
+                  marginBottom: 8, 
+                  cursor: "pointer", 
+                  background: isSel ? "rgba(255,255,255,0.06)" : "rgba(255,255,255,0.015)", 
+                  border: `1px solid ${isSel ? T.teal + "30" : "transparent"}`,
+                  boxShadow: isSel ? `0 8px 20px rgba(0,0,0,0.1)` : "none",
+                  transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                  display: "flex",
+                  gap: 14,
+                  alignItems: "flex-start",
+                  overflow: "hidden"
+                }}
+                onMouseEnter={e => { if (!isSel) { e.currentTarget.style.background = "rgba(255,255,255,0.03)"; e.currentTarget.style.transform = "translateY(-2px)"; } }}
+                onMouseLeave={e => { if (!isSel) { e.currentTarget.style.background = "rgba(255,255,255,0.015)"; e.currentTarget.style.transform = "translateY(0)"; } }}
+              >
+                {!e.leido && carpeta === "entrada" && (
+                  <div style={{ position: "absolute", left: -2, top: "50%", transform: "translateY(-50%)", width: 4, height: 32, background: T.teal, borderRadius: 4, boxShadow: `0 0 12px ${T.teal}` }} />
+                )}
+                
+                <Av text={deStr} size={42} color={!e.leido ? T.teal : T.whiteFade} />
+                
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4, alignItems: "center" }}>
+                    <span style={{ fontSize: 13, fontWeight: !e.leido ? 900 : 700, color: !e.leido ? T.white : T.whiteOff, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {deStr.split("@")[0]}
+                    </span>
+                    <span style={{ fontSize: 11, color: T.whiteDim, fontWeight: 600 }}>{fdate(e.fecha)}</span>
+                  </div>
+                  <div style={{ fontSize: 13, fontWeight: !e.leido ? 800 : 600, color: T.white, marginBottom: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", letterSpacing: "-0.01em" }}>{e.asunto}</div>
+                  <div style={{ fontSize: 12, color: T.whiteDim, overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical", opacity: 0.6 }}>{e.cuerpo}</div>
+                </div>
               </div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: T.white, marginBottom: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{e.asunto}</div>
-              <div style={{ fontSize: 12, color: T.whiteDim, overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", opacity: 0.5 }}>{e.cuerpo}</div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
