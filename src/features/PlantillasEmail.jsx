@@ -130,8 +130,34 @@ export const PlantillasEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) =>
             {/* TOOLBAR MODERNA */}
             <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 24px", background: "rgba(255,255,255,0.03)", borderBottom: `1.5px solid ${T.whiteFade}08`, backdropFilter: "blur(10px)" }}>
               <div style={{ display: "flex", background: "rgba(0,0,0,0.2)", borderRadius: 10, padding: 3, gap: 2 }}>
-                <button onClick={() => setF({ ...f, tipo: "texto" })} style={{ padding: "6px 12px", borderRadius: 8, border: "none", background: f.tipo === "texto" ? T.teal : "transparent", color: f.tipo === "texto" ? "#000" : T.whiteDim, fontSize: 11, fontWeight: 800, cursor: "pointer", transition: "all 0.2s" }}>TEXTO</button>
-                <button onClick={() => setF({ ...f, tipo: "html" })} style={{ padding: "6px 12px", borderRadius: 8, border: "none", background: f.tipo === "html" ? T.teal : "transparent", color: f.tipo === "html" ? "#000" : T.whiteDim, fontSize: 11, fontWeight: 800, cursor: "pointer", transition: "all 0.2s" }}>HTML PRO</button>
+                <button 
+                  onClick={() => {
+                    if (f.tipo === "html") {
+                      const tmp = document.createElement("DIV");
+                      tmp.innerHTML = f.cuerpo;
+                      const txt = tmp.textContent || tmp.innerText || "";
+                      setF({ ...f, tipo: "texto", cuerpo: txt.trim() });
+                    } else {
+                      setF({ ...f, tipo: "texto" });
+                    }
+                  }} 
+                  style={{ padding: "6px 12px", borderRadius: 8, border: "none", background: f.tipo === "texto" ? T.teal : "transparent", color: f.tipo === "texto" ? "#000" : T.whiteDim, fontSize: 11, fontWeight: 800, cursor: "pointer", transition: "all 0.2s" }}
+                >
+                  TEXTO
+                </button>
+                <button 
+                  onClick={() => {
+                    if (f.tipo === "texto" && f.cuerpo.trim() && !f.cuerpo.includes("<")) {
+                      const html = `<!DOCTYPE html>\n<html>\n<body style="font-family: sans-serif; line-height: 1.6; color: #333; padding: 20px;">\n  ${f.cuerpo.replace(/\n/g, '<br>\n  ')}\n</body>\n</html>`;
+                      setF({ ...f, tipo: "html", cuerpo: html });
+                    } else {
+                      setF({ ...f, tipo: "html" });
+                    }
+                  }} 
+                  style={{ padding: "6px 12px", borderRadius: 8, border: "none", background: f.tipo === "html" ? T.teal : "transparent", color: f.tipo === "html" ? "#000" : T.whiteDim, fontSize: 11, fontWeight: 800, cursor: "pointer", transition: "all 0.2s" }}
+                >
+                  HTML PRO
+                </button>
               </div>
 
               <div style={{ width: 1.5, height: 20, background: T.whiteFade + "15" }} />
