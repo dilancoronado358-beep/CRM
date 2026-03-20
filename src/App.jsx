@@ -503,12 +503,37 @@ export default function App() {
                   };
                   return (
                     <button key={m.id} onClick={() => setModulo(m.id)} title={!menuAbierto ? m.label : undefined}
-                      style={{ display: "flex", alignItems: "center", gap: 12, padding: menuAbierto ? "10px 14px" : "12px", width: "100%", border: "none", background: act ? T.tealSoft : "transparent", color: act ? T.teal : T.whiteOff, borderRadius: 8, cursor: "pointer", transition: "all .15s", fontFamily: "inherit", fontWeight: act ? 700 : 500, justifyContent: menuAbierto ? "flex-start" : "center" }}
-                      onMouseEnter={e => { if (!act) e.currentTarget.style.background = T.bg2; e.currentTarget.style.color = act ? T.teal : T.white; }}
-                      onMouseLeave={e => { if (!act) e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = act ? T.teal : T.whiteOff; }}>
-                      <Ico k={icons[m.id]} size={18} style={{ color: act ? T.teal : T.whiteDim }} />
-                      {menuAbierto && <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.label}</span>}
-                      {menuAbierto && act && <div style={{ marginLeft: "auto", width: 4, height: 4, borderRadius: "50%", background: T.teal }} />}
+                      style={{ 
+                        display: "flex", 
+                        alignItems: "center", 
+                        gap: 12, 
+                        padding: menuAbierto ? "12px 16px" : "12px", 
+                        width: "100%", 
+                        border: "none", 
+                        background: act ? T.tealSoft : "transparent", 
+                        color: act ? T.teal : T.whiteOff, 
+                        borderRadius: 12, 
+                        cursor: "pointer", 
+                        transition: "all .25s cubic-bezier(0.4, 0, 0.2, 1)", 
+                        fontFamily: "inherit", 
+                        fontWeight: act ? 800 : 500, 
+                        justifyContent: menuAbierto ? "flex-start" : "center",
+                        position: "relative",
+                        overflow: "hidden"
+                      }}
+                      onMouseEnter={e => { 
+                        if (!act) e.currentTarget.style.background = "rgba(255,255,255,0.04)"; 
+                        e.currentTarget.style.color = act ? T.teal : T.white; 
+                      }}
+                      onMouseLeave={e => { 
+                        if (!act) e.currentTarget.style.background = "transparent"; 
+                        e.currentTarget.style.color = act ? T.teal : T.whiteOff; 
+                      }}>
+                      {/* Indicador Vertical Animado */}
+                      {act && <div style={{ position: "absolute", left: 0, top: "20%", bottom: "20%", width: 3, background: T.teal, borderRadius: "0 4px 4px 0", animation: "fadeIn .3s" }} />}
+                      
+                      <Ico k={icons[m.id]} size={18} style={{ color: act ? T.teal : T.whiteDim, transition: "transform .2s", transform: act ? "scale(1.1)" : "none" }} />
+                      {menuAbierto && <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginLeft: act ? 2 : 0, transition: "margin .2s" }}>{m.label}</span>}
                     </button>
                   );
                 })}
@@ -541,7 +566,21 @@ export default function App() {
       <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
 
         {/* TOPBAR */}
-        <div style={{ height: 72, background: T.bg1, borderBottom: `1px solid ${T.border}`, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 32px", flexShrink: 0, boxShadow: "0 2px 10px rgba(0,0,0,0.02)" }}>
+        <div style={{ 
+          height: 72, 
+          background: T.bg1 + "CC", 
+          borderBottom: `1px solid ${T.border}`, 
+          display: "flex", 
+          alignItems: "center", 
+          justifyContent: "space-between", 
+          padding: "0 32px", 
+          flexShrink: 0, 
+          boxShadow: "var(--shadow-sm)",
+          backdropFilter: "blur(12px)",
+          position: "sticky",
+          top: 0,
+          zindex: 40
+        }}>
           <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
             <div style={{ fontWeight: 800, fontSize: 20, color: T.white }}>
               {MODULOS.find(m => m.id === modulo)?.label || t("Cargando...")}

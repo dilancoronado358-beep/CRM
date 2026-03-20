@@ -180,13 +180,13 @@ export const Modal = ({ open, onClose, title, children, width = 640 }) => {
   if (open) console.log("🔘 [DEBUG] Abriendo Modal:", title);
   if (!open) return null;
   return (
-    <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(17,24,39,.6)", backdropFilter: "blur(8px)", zIndex: 9000, display: "flex", alignItems: "center", justifyContent: "center", padding: 20, animation: "fadeIn .3s" }}>
-      <div onClick={e => e.stopPropagation()} style={{ background: T.bg1, border: `1px solid ${T.border}`, borderRadius: 16, width: "100%", maxWidth: width, maxHeight: "92vh", display: "flex", flexDirection: "column", boxShadow: "0 25px 50px -12px rgba(0,0,0,0.5)", animation: "slideIn .3s cubic-bezier(0.16, 1, 0.3, 1)" }}>
-        <div style={{ padding: "18px 24px", borderBottom: `1px solid ${T.border}`, display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
-          <span style={{ fontWeight: 800, fontSize: 17, color: T.white }}>{title}</span>
-          <button onClick={onClose} style={{ background: "rgba(255,255,255,0.05)", border: "none", color: T.whiteDim, cursor: "pointer", padding: 6, borderRadius: 8, display: "flex", transition: "all .2s" }} onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,255,255,0.1)"; e.currentTarget.style.color = T.white; }} onMouseLeave={e => { e.currentTarget.style.background = "rgba(255,255,255,0.05)"; e.currentTarget.style.color = T.whiteDim; }}><Ico k="x" size={18} /></button>
+    <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(17,24,39,.7)", backdropFilter: "blur(12px)", zIndex: 9000, display: "flex", alignItems: "center", justifyContent: "center", padding: 20, animation: "fadeIn .3s" }}>
+      <div onClick={e => e.stopPropagation()} style={{ background: T.bg1, border: `1px solid ${T.borderHi}`, borderRadius: 20, width: "100%", maxWidth: width, maxHeight: "92vh", display: "flex", flexDirection: "column", boxShadow: "var(--shadow-premium)", animation: "slideIn .3s cubic-bezier(0.16, 1, 0.3, 1)" }}>
+        <div style={{ padding: "20px 28px", borderBottom: `1px solid ${T.border}`, display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
+          <span style={{ fontWeight: 800, fontSize: 18, color: T.white, letterSpacing: "-.02em" }}>{title}</span>
+          <button onClick={onClose} style={{ background: "rgba(255,255,255,0.05)", border: "none", color: T.whiteDim, cursor: "pointer", padding: 8, borderRadius: 10, display: "flex", transition: "all .2s" }} onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,255,255,0.1)"; e.currentTarget.style.color = T.white; }} onMouseLeave={e => { e.currentTarget.style.background = "rgba(255,255,255,0.05)"; e.currentTarget.style.color = T.whiteDim; }}><Ico k="x" size={20} /></button>
         </div>
-        <div style={{ padding: 24, overflowY: "auto", flex: 1 }}>{children}</div>
+        <div style={{ padding: 28, overflowY: "auto", flex: 1 }}>{children}</div>
       </div>
     </div>
   );
@@ -194,22 +194,31 @@ export const Modal = ({ open, onClose, title, children, width = 640 }) => {
 
 export const Tarjeta = ({ children, style = {}, onClick, brillo }) => (
   <div onClick={onClick} 
-    onMouseEnter={e => { if (onClick) { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 12px 30px rgba(0,0,0,0.2)"; e.currentTarget.style.borderColor = T.teal + "40"; } }}
-    onMouseLeave={e => { if (onClick) { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = brillo ? "0 4px 15px rgba(37,99,235,0.08)" : "0 1px 3px rgba(0,0,0,0.05)"; e.currentTarget.style.borderColor = T.border; } }}
-    style={{ background: T.bg1, border: `1px solid ${T.border}`, borderRadius: 14, boxShadow: brillo ? "0 4px 15px rgba(37,99,235,0.08)" : "0 1px 3px rgba(0,0,0,0.05)", ...style, cursor: onClick ? "pointer" : undefined, transition: "all .3s cubic-bezier(0.16, 1, 0.3, 1)" }}>
+    onMouseEnter={e => { if (onClick) { e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = "var(--shadow-xl)"; e.currentTarget.style.borderColor = T.teal + "50"; } }}
+    onMouseLeave={e => { if (onClick) { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = brillo ? "0 4px 15px rgba(37,99,235,0.08)" : "var(--shadow-sm)"; e.currentTarget.style.borderColor = T.border; } }}
+    style={{ background: T.bg1, border: `1px solid ${T.border}`, borderRadius: 16, boxShadow: brillo ? "0 4px 15px rgba(37,99,235,0.08)" : "var(--shadow-sm)", ...style, cursor: onClick ? "pointer" : undefined, transition: "all .4s cubic-bezier(0.16, 1, 0.3, 1)", position: "relative", overflow: "hidden" }}>
     {children}
   </div>
 );
 
 export const KPI = ({ label, value, sub, color = T.teal, icon }) => (
-  <Tarjeta style={{ padding: "17px 19px", flex: 1, minWidth: 140 }}>
-    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+  <Tarjeta style={{ padding: "20px 22px", flex: 1, minWidth: 160, overflow: "hidden" }}>
+    {/* Patrón de fondo sutil */}
+    <div style={{ position: "absolute", inset: 0, opacity: 0.03, pointerEvents: "none", backgroundImage: `radial-gradient(${T.white} 1px, transparent 1px)`, backgroundSize: "16px 16px" }} />
+    
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", position: "relative", zIndex: 1 }}>
       <div style={{ minWidth: 0, flex: 1 }}>
-        <div style={{ fontSize: 11, fontWeight: 700, color: T.whiteDim, textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 7, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{label}</div>
-        <div style={{ fontSize: 26, fontWeight: 800, color: T.white, lineHeight: 1, marginBottom: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={value}>{value}</div>
-        {sub && <div style={{ fontSize: 12, color: T.whiteDim, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={sub}>{sub}</div>}
+        <div style={{ fontSize: 11, fontWeight: 800, color: T.whiteDim, textTransform: "uppercase", letterSpacing: ".1em", marginBottom: 10, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{label}</div>
+        <div style={{ fontSize: 30, fontWeight: 900, color: T.white, lineHeight: 1, marginBottom: 6, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", letterSpacing: "-.03em" }} title={value}>{value}</div>
+        {sub && <div style={{ fontSize: 13, color: color, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={sub}>{sub}</div>}
       </div>
-      {icon && <div style={{ width: 36, height: 36, borderRadius: 8, background: color + "1A", color, display: "flex", alignItems: "center", justifyContent: "center", marginLeft: 12, flexShrink: 0 }}><Ico k={icon} size={18} /></div>}
+      {icon && (
+        <div style={{ position: "relative", marginLeft: 12 }}>
+          {/* Aura / Glow */}
+          <div style={{ position: "absolute", inset: -8, background: color, borderRadius: 12, opacity: 0.15, filter: "blur(12px)" }} />
+          <div style={{ width: 44, height: 44, borderRadius: 12, background: `linear-gradient(135deg, ${color}22, ${color}11)`, border: `1px solid ${color}33`, color, display: "flex", alignItems: "center", justifyContent: "center", position: "relative", zIndex: 1 }}><Ico k={icon} size={22} /></div>
+        </div>
+      )}
     </div>
   </Tarjeta>
 );
@@ -223,9 +232,17 @@ export const CabeceraTabla = ({ cols }) => (
 );
 
 export const FilaTabla = ({ children, onClick }) => (
-  <tr onClick={onClick} style={{ cursor: onClick ? "pointer" : undefined, transition: "background .15s" }}
-    onMouseEnter={e => { if (onClick) e.currentTarget.style.background = T.bg3; }}
-    onMouseLeave={e => { e.currentTarget.style.background = ""; }}>
+  <tr onClick={onClick} style={{ cursor: onClick ? "pointer" : undefined, transition: "all .2s cubic-bezier(0.4, 0, 0.2, 1)", position: "relative" }}
+    onMouseEnter={e => { 
+      if (onClick) {
+        e.currentTarget.style.background = T.bg2;
+        e.currentTarget.style.boxShadow = "inset 4px 0 0 " + T.teal;
+      } 
+    }}
+    onMouseLeave={e => { 
+      e.currentTarget.style.background = ""; 
+      e.currentTarget.style.boxShadow = "none";
+    }}>
     {children}
   </tr>
 );
