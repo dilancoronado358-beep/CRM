@@ -25,6 +25,7 @@ body {
   padding: 0;
   overflow-y: auto;
   background: #F4F7FE;
+  zoom: 0.9;
 }
 
 * {
