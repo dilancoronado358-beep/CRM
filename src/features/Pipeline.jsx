@@ -708,7 +708,7 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
       )}
 
 
-      <div style={{ display: "flex", gap: 10, marginBottom: 12, alignItems: "center", flexWrap: "wrap" }}>
+      <div style={{ display: "flex", gap: 10, marginBottom: 12, alignItems: "center", flexWrap: "wrap", transform: "scale(0.85)", transformOrigin: "left top" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, background: T.bg1, border: `1px solid ${T.borderHi}`, borderRadius: 10, padding: "0px 12px", boxShadow: "0 2px 4px rgba(0,0,0,0.02)", minWidth: 180 }}>
           <span style={{ fontSize: 13, fontWeight: 700, color: T.whiteDim, whiteSpace: "nowrap" }}>Pipeline Activo:</span>
           <Sel 
@@ -783,7 +783,7 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
 
       {/* KANBAN — ESTILO BITRIX24 DARK */}
       {tab === "kanban" && pipeline && (
-        <div style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 16, minHeight: "85vh", alignItems: "flex-start" }}>
+        <div style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 16, minHeight: "85vh", alignItems: "flex-start", transform: "scale(0.85)", transformOrigin: "left top", width: "117.6%", marginBottom: "-15%" }}>
           {pipeline.etapas.map((etapa, etapaIdx) => {
             const etDeals = plDeals.filter(d => d.etapa_id === etapa.id);
             const isOver = dragSobre === etapa.id;

@@ -20,7 +20,6 @@ body {
   padding: 0;
   overflow-y: auto;
   background: #F4F7FE; /* Light mode default bg */
-  zoom: 0.8; /* Global Zoom as requested */
 }
 
 * {
