@@ -342,7 +342,7 @@ export function ChatWhatsApp({ db, setDb, guardarEnSupa, eliminarDeSupa, t }) {
         )}
 
         {window.location.hostname === "localhost" && !db.usuario?.waServerUrl && (
-          <div style={{ padding: 12, borderRadius: 8, background: T.amber + "20", border: `1px solid ${T.amber}`, color: T.amber, fontSize: 12, maxWidth: 400, textAlign: "center" }}>
+          <div style={{ padding: 12, borderRadius: 8, background: T.amberS, border: `1px solid ${T.amber}`, color: T.amber, fontSize: 12, maxWidth: 400, textAlign: "center" }}>
             ⚠️ Estás accediendo vía <b>localhost</b>. Si estás en otro dispositivo, cambia la configuración por la IP de tu PC o un túnel.
           </div>
         )}
@@ -375,7 +375,7 @@ export function ChatWhatsApp({ db, setDb, guardarEnSupa, eliminarDeSupa, t }) {
         <button onClick={() => setTab("chats")} style={{ background: "none", border: "none", color: tab === "chats" ? T.teal : T.whiteDim, fontSize: 16, fontWeight: tab === "chats" ? 700 : 500, cursor: "pointer", pb: 5 }}>Conversaciones en Vivo</button>
         <button onClick={() => setTab("automatizacion")} style={{ background: "none", border: "none", color: tab === "automatizacion" ? T.teal : T.whiteDim, fontSize: 16, fontWeight: tab === "automatizacion" ? 700 : 500, cursor: "pointer", pb: 5 }}>Bot & Auto-Respuestas</button>
         <div style={{ marginLeft: "auto", display: "flex", gap: 10, alignItems: "center" }}>
-          <Chip label="Conexión Activa" color={T.green} bg={T.green + "20"} />
+          <Chip label="Conexión Activa" color={T.green} bg={T.greenS} />
           <Btn variant="secundario" size="sm" onClick={() => { setSyncError("Re-sincronizando..."); socketRef.current?.emit('get_whatsapp_chats'); }}><Ico k="refresh" size={14} /> Sincronizar</Btn>
         </div>
       </div>

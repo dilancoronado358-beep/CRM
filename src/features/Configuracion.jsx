@@ -741,7 +741,7 @@ export const Configuracion = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) => {
                 <Campo label="Fuerza de Moneda (BETA)"><Sel disabled style={{ fontSize: 14 }}><option>USD ($) - Multi-Currency Ready</option><option>MXN ($)</option><option>EUR (€)</option></Sel></Campo>
                 <Campo label="Región de Procesamiento de Datos"><Sel disabled style={{ fontSize: 14 }}><option>us-east-1 (N. Virginia)</option><option>eu-central-1 (Frankfurt)</option></Sel></Campo>
               </div>
-              <div style={{ padding: 20, background: T.teal + "10", border: `1px solid ${T.tealSoft}`, borderRadius: 10 }}>
+              <div style={{ padding: 20, background: T.tealSoft, border: `1px solid ${T.tealSoft}`, borderRadius: 10 }}>
                 <div style={{ fontSize: 14, fontWeight: 800, color: T.teal, marginBottom: 6 }}>Ambiente Enterprise Activado</div>
                 <div style={{ fontSize: 13, color: T.whiteDim }}>Este tenant posee un clúster dedicado de base de datos garantizando 99.99% SLA para la infraestructura configurada.</div>
               </div>
@@ -760,7 +760,7 @@ export const Configuracion = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) => {
             </div>
 
             {(!db.organizacion || db.organizacion.length === 0) && (
-              <div style={{ background: T.amber + "10", border: `1px solid ${T.amber}40`, borderRadius: 12, padding: 20, marginBottom: 24 }}>
+              <div style={{ background: T.amberS, border: `1px solid rgba(245, 158, 11, 0.25)`, borderRadius: 12, padding: 20, marginBottom: 24 }}>
                 <div style={{ fontSize: 15, fontWeight: 800, color: T.amber, marginBottom: 8, display: "flex", alignItems: "center", gap: 8 }}><Ico k="lightning" size={18} /> Acción Requerida: Migración de Base de Datos</div>
                 <div style={{ fontSize: 13, color: T.whiteOff, lineHeight: 1.5 }}>
                   Para activar la funcionalidad multi-empresa, debes ejecutar el script de migración en tu panel de Supabase. Esto añadirá el campo <code>org_id</code> a todas tus tablas.
@@ -813,7 +813,7 @@ ALTER TABLE usuariosApp ADD COLUMN IF NOT EXISTS org_id UUID REFERENCES organiza
           <Tarjeta style={{ padding: 32 }}>
             {db.usuario?.role !== "admin" ? (
               <div style={{ textAlign: "center", padding: "60px 20px" }}>
-                <div style={{ display: "inline-flex", padding: 20, background: T.red + "15", borderRadius: "50%", marginBottom: 16 }}>
+                <div style={{ display: "inline-flex", padding: 20, background: T.redS, borderRadius: "50%", marginBottom: 16 }}>
                   <Ico k="lock" size={48} style={{ color: T.red }} />
                 </div>
                 <div style={{ fontSize: 24, fontWeight: 800, color: T.white }}>Acceso Restringido</div>
@@ -842,7 +842,7 @@ ALTER TABLE usuariosApp ADD COLUMN IF NOT EXISTS org_id UUID REFERENCES organiza
                             <div style={{ color: T.whiteDim, fontSize: 11 }}>{u.email}</div>
                           </Celda>
                           <Celda>
-                            <select value={u.role} onChange={e => handleChangeRole(u.id, u.email, e.target.value)} disabled={u.email === db.usuario?.email} style={{ background: u.role === "admin" ? T.teal + "20" : T.bg2, color: u.role === "admin" ? T.teal : u.role === "manager" ? T.amber : T.white, border: `1px solid ${T.borderHi}`, padding: "4px 8px", borderRadius: 6, fontSize: 11, fontWeight: 700, textTransform: "uppercase", outline: "none", cursor: u.email === db.usuario?.email ? "not-allowed" : "pointer" }}>
+                            <select value={u.role} onChange={e => handleChangeRole(u.id, u.email, e.target.value)} disabled={u.email === db.usuario?.email} style={{ background: u.role === "admin" ? T.tealSoft : T.bg2, color: u.role === "admin" ? T.teal : u.role === "manager" ? T.amber : T.white, border: `1px solid ${T.borderHi}`, padding: "4px 8px", borderRadius: 6, fontSize: 11, fontWeight: 700, textTransform: "uppercase", outline: "none", cursor: u.email === db.usuario?.email ? "not-allowed" : "pointer" }}>
                               <option value="ventas">VENTAS</option>
                               <option value="manager">MANAGER</option>
                               <option value="admin">ADMIN</option>
@@ -876,7 +876,7 @@ ALTER TABLE usuariosApp ADD COLUMN IF NOT EXISTS org_id UUID REFERENCES organiza
                 <div style={{ fontSize: 20, fontWeight: 800, color: T.white, display: "flex", alignItems: "center", gap: 10 }}><Ico k="mail" size={24} style={{ color: T.teal }} /> Conexión de Correo v2.0</div>
                 <div style={{ fontSize: 13, color: T.whiteDim, marginTop: 4 }}>Conexión segura de Gmail y Outlook (Personal).</div>
               </div>
-              <div style={{ padding: "4px 8px", background: T.teal + "20", color: T.teal, borderRadius: 6, fontSize: 10, fontWeight: 800 }}>SISTEMA V2 ACTIVO</div>
+              <div style={{ padding: "4px 8px", background: T.tealSoft, color: T.teal, borderRadius: 6, fontSize: 10, fontWeight: 800 }}>SISTEMA V2 ACTIVO</div>
             </div>
 
             {db.email_accounts?.filter(a => a.active)?.length > 0 ? (
@@ -884,7 +884,7 @@ ALTER TABLE usuariosApp ADD COLUMN IF NOT EXISTS org_id UUID REFERENCES organiza
               <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
                 {db.email_accounts.filter(a => a.active).map(acc => (
                   <div key={acc.id} style={{ display: "flex", background: T.bg2, borderRadius: 12, border: `1px solid ${T.tealSoft}`, overflow: "hidden" }}>
-                    <div style={{ width: 80, background: T.teal + "15", display: "flex", alignItems: "center", justifyContent: "center", borderRight: `1px solid ${T.borderHi}` }}>
+                    <div style={{ width: 80, background: T.tealSoft, display: "flex", alignItems: "center", justifyContent: "center", borderRight: `1px solid ${T.borderHi}` }}>
                       <Ico k={acc.provider === 'gmail' ? 'mail' : acc.provider === 'outlook' ? 'mail' : 'mail'} size={32} style={{ color: T.teal }} />
                     </div>
                     <div style={{ flex: 1, padding: 20, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -986,7 +986,7 @@ ALTER TABLE usuariosApp ADD COLUMN IF NOT EXISTS org_id UUID REFERENCES organiza
                     style={{
                       fontFamily: "monospace",
                       color: db.api_settings?.[0]?.api_token ? T.teal : T.whiteDim,
-                      backgroundColor: T.teal + "10",
+                      backgroundColor: T.tealSoft,
                       border: `1px solid ${T.tealSoft}`,
                       fontSize: 13,
                       flex: 1,
@@ -998,9 +998,9 @@ ALTER TABLE usuariosApp ADD COLUMN IF NOT EXISTS org_id UUID REFERENCES organiza
                     variant="peligro"
                     style={{
                       fontSize: 13,
-                      background: db.api_settings?.[0]?.api_token ? T.red + "20" : T.teal + "20",
+                      background: db.api_settings?.[0]?.api_token ? T.redS : T.tealSoft,
                       color: db.api_settings?.[0]?.api_token ? T.red : T.teal,
-                      border: `1px solid ${db.api_settings?.[0]?.api_token ? T.red : T.teal}40`,
+                      border: `1px solid ${db.api_settings?.[0]?.api_token ? 'rgba(239, 68, 68, 0.25)' : 'rgba(20, 184, 166, 0.25)'}`,
                       minWidth: 140
                     }}
                     onClick={rotateApiToken}
@@ -1027,7 +1027,7 @@ ALTER TABLE usuariosApp ADD COLUMN IF NOT EXISTS org_id UUID REFERENCES organiza
                       <div>
                         <div style={{ fontSize: 14, fontWeight: 800, color: T.white, marginBottom: 6, fontFamily: "monospace" }}>POST {wh.url}</div>
                         <div style={{ display: "flex", gap: 8 }}>
-                          <Chip label={wh.evento} color={T.teal} bg={T.teal + "20"} />
+                          <Chip label={wh.evento} color={T.teal} bg={T.tealSoft} />
                           <span style={{ fontSize: 11, color: T.whiteDim }}>Activo desde {fdtm(wh.creado)}</span>
                         </div>
                       </div>
@@ -1082,7 +1082,7 @@ ALTER TABLE usuariosApp ADD COLUMN IF NOT EXISTS org_id UUID REFERENCES organiza
                   <div>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
                       <div style={{ fontSize: 16, fontWeight: 800, color: T.white }}>WhatsApp Business API (Local Bot)</div>
-                      <Chip label={waConnected ? "Conectado" : "Desconectado"} color={waConnected ? T.green : T.whiteOff} bg={waConnected ? T.green + "20" : T.bg1} />
+                      <Chip label={waConnected ? "Conectado" : "Desconectado"} color={waConnected ? T.green : T.whiteOff} bg={waConnected ? T.greenS : T.bg1} />
                     </div>
                     <div style={{ fontSize: 13, color: T.whiteDim, marginBottom: 8 }}>Vincula tu número mediante código QR para capturar mensajes entrantes, enviar notificaciones de citas y utilizar plantillas aprobadas.</div>
 
@@ -1099,7 +1099,7 @@ ALTER TABLE usuariosApp ADD COLUMN IF NOT EXISTS org_id UUID REFERENCES organiza
                         <div style={{ marginBottom: 4 }}>Conectando a: <button style={{ color: T.white }}>{fWaUrl || getApiUrl(db)}</button></div>
 
                         {testResult && (
-                          <div style={{ marginTop: 8, padding: 6, borderRadius: 4, background: testResult.success ? T.green + "20" : T.red + "20", color: testResult.success ? T.green : T.red, border: `1px solid ${testResult.success ? T.green : T.red}40` }}>
+                          <div style={{ marginTop: 8, padding: 6, borderRadius: 4, background: testResult.success ? T.greenS : T.redS, color: testResult.success ? T.green : T.red, border: `1px solid ${testResult.success ? 'rgba(16, 185, 129, 0.25)' : 'rgba(239, 68, 68, 0.25)'}` }}>
                             {testResult.success ? "✅ " : "❌ "} {testResult.msg}
                           </div>
                         )}
@@ -1183,7 +1183,7 @@ ALTER TABLE usuariosApp ADD COLUMN IF NOT EXISTS org_id UUID REFERENCES organiza
             <div style={{ fontSize: 14, color: T.whiteDim, marginBottom: 32 }}>Monitorización activa de accesos, MFA y prevención de exfiltración de datos (DLP).</div>
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 32 }}>
-              <div style={{ padding: 24, background: T.amber + "10", border: `1px solid ${T.amber}40`, borderRadius: 12 }}>
+              <div style={{ padding: 24, background: T.amberS, border: `1px solid rgba(245, 158, 11, 0.25)`, borderRadius: 12 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 16 }}><div style={{ fontSize: 16, fontWeight: 800, color: T.amber }}>Multi-Factor Auth (MFA)</div><Chip label="Required" color={T.red} /></div>
                 <div style={{ fontSize: 13, color: T.whiteDim, marginBottom: 16 }}>Todos los perfiles de administrador están forzados a usar TOTP.</div>
                 <Btn variant="secundario" style={{ color: T.amber, borderColor: T.amber }}>Configurar Políticas</Btn>
@@ -1213,7 +1213,7 @@ ALTER TABLE usuariosApp ADD COLUMN IF NOT EXISTS org_id UUID REFERENCES organiza
         )}
 
         {tab === "avanzado" && esAdminGlobal && (
-          <Tarjeta style={{ padding: 32, background: T.red + "05", borderColor: T.red + "30" }}>
+          <Tarjeta style={{ padding: 32, background: "rgba(239, 68, 68, 0.05)", borderColor: "rgba(239, 68, 68, 0.15)" }}>
             <div style={{ fontSize: 20, fontWeight: 800, color: T.red, marginBottom: 12, display: "flex", alignItems: "center", gap: 10 }}><Ico k="cog" size={24} /> Database Local / Wipe Data (Root Mode)</div>
             <div style={{ fontSize: 14, color: T.whiteOff, marginBottom: 24, lineHeight: 1.6 }}>Precaución Severa: Esta acción purgará todo el árbol de IndexedDB/localStorage de este nodo de origen. Elimina deals, logs de auditoría, pipelines y credenciales inyectadas, forzando un resync forzoso o dejándolo en blando si Supabase está truncado.</div>
 
@@ -1256,7 +1256,7 @@ ALTER TABLE usuariosApp ADD COLUMN IF NOT EXISTS org_id UUID REFERENCES organiza
         <Campo label="Nombre de la Empresa"><Inp value={fOrg.nombre} onChange={e => setFOrg({ ...fOrg, nombre: e.target.value })} placeholder="ej. Mi Segunda Empresa" style={{ fontSize: 15 }} /></Campo>
         <Campo label="Identificador (Slug)"><Inp value={fOrg.slug} onChange={e => setFOrg({ ...fOrg, slug: e.target.value.toLowerCase().replace(/\s+/g, '-') })} placeholder="ej. mi-segunda-empresa" style={{ fontSize: 15 }} /></Campo>
 
-        <div style={{ padding: 16, background: T.teal + "10", border: `1px solid ${T.tealSoft}`, borderRadius: 8, marginTop: 16 }}>
+        <div style={{ padding: 16, background: T.tealSoft, border: `1px solid ${T.tealSoft}`, borderRadius: 8, marginTop: 16 }}>
           <div style={{ fontSize: 12, color: T.whiteOff }}>Nota: Al crear una nueva organización, esta aparecerá en la lista y los usuarios que vincules a ella tendrán un panel totalmente independiente.</div>
         </div>
 

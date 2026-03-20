@@ -149,11 +149,11 @@ export const SpotlightSearch = ({ db, open, onClose, onNavigate, onLogout, apply
                     borderRadius: 10,
                     cursor: "pointer",
                     transition: "all .15s",
-                    background: i === sel ? T.teal + "1A" : "transparent",
+                    background: i === sel ? T.tealSoft : "transparent",
                     boxShadow: i === sel ? `inset 2px 0 0 ${T.teal}` : "none"
                   }}
                   onMouseEnter={() => setSel(i)}>
-                  <div style={{ width: 32, height: 32, borderRadius: 8, background: r.color + "1A", color: r.color, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <div style={{ width: 32, height: 32, borderRadius: 8, background: r.color.startsWith("#") ? r.color + "1A" : r.color, color: r.color, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                     <Ico k={r.icon} size={16} />
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>

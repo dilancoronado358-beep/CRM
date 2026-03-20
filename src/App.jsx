@@ -379,7 +379,7 @@ export default function App() {
   if (loggingOut) {
     return (
       <div style={{ display: "flex", flexDirection: "column", height: "100vh", width: "100vw", alignItems: "center", justifyContent: "center", background: T.bg0, color: T.white }}>
-        <div style={{ width: 48, height: 48, borderRadius: 12, background: T.red + "20", display: "flex", alignItems: "center", justifyContent: "center", border: `1px solid ${T.red}40`, marginBottom: 24 }}>
+        <div style={{ width: 48, height: 48, borderRadius: 12, background: T.redS, display: "flex", alignItems: "center", justifyContent: "center", border: `1px solid rgba(239, 68, 68, 0.3)`, marginBottom: 24 }}>
           <Ico k="lock" size={28} style={{ color: T.red }} />
         </div>
         <div style={{ fontWeight: 800, fontSize: 24, letterSpacing: "-.02em", marginBottom: 16 }}>

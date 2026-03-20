@@ -491,7 +491,7 @@ export const Websites = ({ db, guardarEnSupa, eliminarDeSupa }) => {
                           <button onClick={() => moveBlock(idx, -1)} disabled={idx === 0} style={smBtn}>↑</button>
                           <button onClick={() => moveBlock(idx, 1)} disabled={idx === (activo.blocks || []).length - 1} style={smBtn}>↓</button>
                           <button onClick={() => setExpandedBlock(isExp ? null : blockId)} style={{ ...smBtn, background: isExp ? T.teal : "transparent", color: isExp ? "#000" : T.teal, border: `1px solid ${T.teal}` }}>✏️</button>
-                          <button onClick={() => toggleBloque(blockId)} style={{ ...smBtn, color: T.red, borderColor: T.red + "40" }}>✕</button>
+                          <button onClick={() => toggleBloque(blockId)} style={{ ...smBtn, color: T.red, borderColor: "rgba(239, 68, 68, 0.25)" }}>✕</button>
                         </div>
                       </div>
                       {isExp && renderBlockEditor(blockId)}
@@ -649,7 +649,7 @@ export const Websites = ({ db, guardarEnSupa, eliminarDeSupa }) => {
               const nuevoEstado = { ...activo, activo: !activo.activo };
               updateActivo({ activo: !activo.activo });
               await guardar(nuevoEstado);
-            }} style={{ fontSize: 12, background: activo.activo ? T.green + "22" : "transparent", color: activo.activo ? T.green : T.whiteDim, border: `1px solid ${activo.activo ? T.green : T.borderHi}` }}>
+            }} style={{ fontSize: 12, background: activo.activo ? T.greenS : "transparent", color: activo.activo ? T.green : T.whiteDim, border: `1px solid ${activo.activo ? T.green : T.borderHi}` }}>
               {activo.activo ? "● LIVE" : "Publicar"}
             </Btn>
           </div>
@@ -692,8 +692,8 @@ export const Websites = ({ db, guardarEnSupa, eliminarDeSupa }) => {
               switch (blockId) {
                 case "hero":
                   return (
-                    <div key="hero" style={{ padding: "80px 24px", textAlign: "center", background: `linear-gradient(180deg, ${accent}0D 0%, #fff 100%)`, borderBottom: "1px solid #E5E7EB" }}>
-                      <div style={{ display: "inline-block", background: accent + "18", color: accent, padding: "5px 16px", borderRadius: 20, fontSize: 11, fontWeight: 700, marginBottom: 20, border: `1px solid ${accent}33`, textTransform: "uppercase", letterSpacing: ".08em" }}>🚀 Plataforma CRM #1</div>
+                    <div key="hero" style={{ padding: "80px 24px", textAlign: "center", background: `linear-gradient(180deg, ${accent.startsWith("#") ? accent + "0D" : accent} 0%, #fff 100%)`, borderBottom: "1px solid #E5E7EB" }}>
+                      <div style={{ display: "inline-block", background: accent.startsWith("#") ? accent + "18" : accent, color: accent, padding: "5px 16px", borderRadius: 20, fontSize: 11, fontWeight: 700, marginBottom: 20, border: `1px solid ${accent.startsWith("#") ? accent + "33" : accent}`, textTransform: "uppercase", letterSpacing: ".08em" }}>🚀 Plataforma CRM #1</div>
                       <h1 style={{ fontSize: "clamp(30px, 5vw, 54px)", fontWeight: 900, color: "#111827", margin: "0 0 16px", letterSpacing: "-.04em", lineHeight: 1.08, maxWidth: 700, marginInline: "auto" }}>{activo.heroTitle || "Genera más negocios hoy"}</h1>
                       <p style={{ fontSize: 17, color: "#6B7280", margin: "0 auto 32px", maxWidth: 540, lineHeight: 1.7 }}>{activo.heroSub || "La plataforma líder para captar leads."}</p>
                       <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
@@ -719,7 +719,7 @@ export const Websites = ({ db, guardarEnSupa, eliminarDeSupa }) => {
                       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 20, maxWidth: 900, margin: "0 auto" }}>
                         {(activo.features || []).map((f, i) => (
                           <div key={i} style={{ background: "#fff", padding: 24, borderRadius: 14, border: "1px solid #E5E7EB" }}>
-                            <div style={{ width: 42, height: 42, borderRadius: 12, background: accent + "18", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, marginBottom: 14 }}>{f.icon}</div>
+                            <div style={{ width: 42, height: 42, borderRadius: 12, background: accent.startsWith("#") ? accent + "18" : accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, marginBottom: 14 }}>{f.icon}</div>
                             <h3 style={{ fontSize: 14, fontWeight: 800, margin: "0 0 8px", color: "#111827" }}>{f.title}</h3>
                             <p style={{ fontSize: 13, color: "#6B7280", margin: 0, lineHeight: 1.6 }}>{f.desc}</p>
                           </div>

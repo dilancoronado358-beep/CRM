@@ -61,7 +61,7 @@ export const Tareas = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) => {
             <div key={c.id} style={{ minWidth: 300, maxWidth: 300, flexShrink: 0, display: "flex", flexDirection: "column", gap: 12 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: c.bg, padding: "12px 16px", borderRadius: 8, border: `1px solid ${T.borderHi}` }}>
                 <span style={{ fontSize: 13, fontWeight: 800, color: T.white, textTransform: "uppercase", letterSpacing: ".05em" }}>{c.label}</span>
-                <span style={{ background: c.color + "20", color: c.color, borderRadius: 10, padding: "2px 8px", fontSize: 11, fontWeight: 800 }}>{tareas.length}</span>
+                <span style={{ background: c.id === "pendiente" ? "rgba(156, 163, 175, 0.12)" : c.id === "en_progreso" ? T.tealSoft : T.greenS, color: c.color, borderRadius: 10, padding: "2px 8px", fontSize: 11, fontWeight: 800 }}>{tareas.length}</span>
               </div>
 
               {tareas.map(t => {

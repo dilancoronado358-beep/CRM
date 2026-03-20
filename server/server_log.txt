@@ -36502,3 +36502,438 @@
 [2026-03-20T05:14:38.539Z] ⏱️ [CRON] Iniciando sync automático...
 [2026-03-20T05:15:08.551Z] ⏱️ [CRON] Iniciando sync automático...
 [2026-03-20T05:15:15.160Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6322
+[2026-03-20T05:15:38.558Z] ⏱️ [CRON] Iniciando sync automático...
+[2026-03-20T05:16:08.571Z] ⏱️ [CRON] Iniciando sync automático...
+[2026-03-20T05:16:15.155Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6338
+[2026-03-20T05:16:35.192Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6338
+[2026-03-20T05:16:36.171Z] ❌ Error al buscar cuentas: upstream request timeout
+[2026-03-20T05:16:38.576Z] ⏱️ [CRON] Iniciando sync automático...
+[2026-03-20T05:16:51.796Z] [CAL] 📅 Iniciando sincronización de calendario para acc_64696c616e636f72...
+[2026-03-20T05:16:51.816Z] ❌ Error al buscar cuentas: upstream request timeout
+[2026-03-20T05:16:51.819Z] ❌ Error al buscar cuentas: upstream request timeout
+[2026-03-20T05:16:55.188Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6290
+[2026-03-20T05:17:04.654Z] [CAL] ⚠️ Cuenta no elegible para calendario (o sin token)
+[2026-03-20T05:17:08.586Z] ⏱️ [CRON] Iniciando sync automático...
+[2026-03-20T05:17:11.761Z] [CAL] 📅 Iniciando sincronización de calendario para acc_64696c616e636f72...
+[2026-03-20T05:17:15.151Z] ❌ Error al buscar cuentas: upstream request timeout
+[2026-03-20T05:17:15.173Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6418
+[2026-03-20T05:17:30.425Z] ❌ Error al buscar cuentas: upstream request timeout
+[2026-03-20T05:17:35.188Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6378
+[2026-03-20T05:17:38.586Z] ⏱️ [CRON] Iniciando sync automático...
+[2026-03-20T05:18:08.599Z] ⏱️ [CRON] Iniciando sync automático...
+[2026-03-20T05:18:08.773Z] ❌ Error al buscar cuentas: <!DOCTYPE html>
+<!--[if lt IE 7]> <html class="no-js ie6 oldie" lang="en-US"> <![endif]-->
+<!--[if IE 7]>    <html class="no-js ie7 oldie" lang="en-US"> <![endif]-->
+<!--[if IE 8]>    <html class="no-js ie8 oldie" lang="en-US"> <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en-US"> <!--<![endif]-->
+<head>
+
+
+<title>eoylgxwlhsmwqgadahvk.supabase.co | 522: Connection timed out</title>
+<meta charset="UTF-8" />
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+<meta name="robots" content="noindex, nofollow" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<link rel="stylesheet" id="cf_styles-css" href="/cdn-cgi/styles/main.css" />
+
+
+</head>
+<body>
+<div id="cf-wrapper">
+    <div id="cf-error-details" class="p-0">
+        <header class="mx-auto pt-10 lg:pt-6 lg:px-8 w-240 lg:w-full mb-8">
+            <h1 class="inline-block sm:block sm:mb-2 font-light text-60 lg:text-4xl text-black-dark leading-tight mr-2">
+              <span class="inline-block">Connection timed out</span>
+              <span class="code-label">Error code 522</span>
+            </h1>
+            <div>
+               Visit <a href="https://www.cloudflare.com/5xx-error-landing?utm_source=errorcode_522&utm_campaign=eoylgxwlhsmwqgadahvk.supabase.co" target="_blank" rel="noopener noreferrer">cloudflare.com</a> for more information.
+            </div>
+            <div class="mt-3">2026-03-20 05:18:07 UTC</div>
+        </header>
+        <div class="my-8 bg-gradient-gray">
+            <div class="w-240 lg:w-full mx-auto">
+                <div class="clearfix md:px-8">
+                  
+<div id="cf-browser-status" class=" relative w-1/3 md:w-full py-15 md:p-0 md:py-8 md:text-left md:border-solid md:border-0 md:border-b md:border-gray-400 overflow-hidden float-left md:float-none text-center">
+  <div class="relative mb-10 md:m-0">
+    
+    <span class="cf-icon-browser block md:hidden h-20 bg-center bg-no-repeat"></span>
+    <span class="cf-icon-ok w-12 h-12 absolute left-1/2 md:left-auto md:right-0 md:top-0 -ml-6 -bottom-4"></span>
+    
+  </div>
+  <span class="md:block w-full truncate">You</span>
+  <h3 class="md:inline-block mt-3 md:mt-0 text-2xl text-gray-600 font-light leading-1.3">
+    
+    Browser
+    
+  </h3>
+  <span class="leading-1.3 text-2xl text-green-success">Working</span>
+</div>
+
+<div id="cf-cloudflare-status" class=" relative w-1/3 md:w-full py-15 md:p-0 md:py-8 md:text-left md:border-solid md:border-0 md:border-b md:border-gray-400 overflow-hidden float-left md:float-none text-center">
+  <div class="relative mb-10 md:m-0">
+    <a href="https://www.cloudflare.com/5xx-error-landing?utm_source=errorcode_522&utm_campaign=eoylgxwlhsmwqgadahvk.supabase.co" target="_blank" rel="noopener noreferrer">
+    <span class="cf-icon-cloud block md:hidden h-20 bg-center bg-no-repeat"></span>
+    <span class="cf-icon-ok w-12 h-12 absolute left-1/2 md:left-auto md:right-0 md:top-0 -ml-6 -bottom-4"></span>
+    </a>
+  </div>
+  <span class="md:block w-full truncate">Guayaquil</span>
+  <h3 class="md:inline-block mt-3 md:mt-0 text-2xl text-gray-600 font-light leading-1.3">
+    <a href="https://www.cloudflare.com/5xx-error-landing?utm_source=errorcode_522&utm_campaign=eoylgxwlhsmwqgadahvk.supabase.co" target="_blank" rel="noopener noreferrer">
+    Cloudflare
+    </a>
+  </h3>
+  <span class="leading-1.3 text-2xl text-green-success">Working</span>
+</div>
+
+<div id="cf-host-status" class="cf-error-source relative w-1/3 md:w-full py-15 md:p-0 md:py-8 md:text-left md:border-solid md:border-0 md:border-b md:border-gray-400 overflow-hidden float-left md:float-none text-center">
+  <div class="relative mb-10 md:m-0">
+    
+    <span class="cf-icon-server block md:hidden h-20 bg-center bg-no-repeat"></span>
+    <span class="cf-icon-error w-12 h-12 absolute left-1/2 md:left-auto md:right-0 md:top-0 -ml-6 -bottom-4"></span>
+    
+  </div>
+  <span class="md:block w-full truncate">eoylgxwlhsmwqgadahvk.supabase.co</span>
+  <h3 class="md:inline-block mt-3 md:mt-0 text-2xl text-gray-600 font-light leading-1.3">
+    
+    Host
+    
+  </h3>
+  <span class="leading-1.3 text-2xl text-red-error">Error</span>
+</div>
+
+                </div>
+            </div>
+        </div>
+
+        <div class="w-240 lg:w-full mx-auto mb-8 lg:px-8">
+            <div class="clearfix">
+                <div class="w-1/2 md:w-full float-left pr-6 md:pb-10 md:pr-0 leading-relaxed">
+                    <h2 class="text-3xl font-normal leading-1.3 mb-4">What happened?</h2>
+                    <p>The initial connection between Cloudflare's network and the origin web server timed out. As a result, the web page can not be displayed.</p>
+                </div>
+                <div class="w-1/2 md:w-full float-left leading-relaxed">
+                    <h2 class="text-3xl font-normal leading-1.3 mb-4">What can I do?</h2>
+                          <h3 class="text-15 font-semibold mb-2">If you're a visitor of this website:</h3>
+      <p class="mb-6">Please try again in a few minutes.</p>
+
+      <h3 class="text-15 font-semibold mb-2">If you're the owner of this website:</h3>
+      <p>Please refer to the <a rel="noopener noreferrer" href="https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-5xx-errors/error-522/">Error 522</a> article:</p>
+      <ul class="ml-4">
+        <li>Contact your hosting provider; let them know your web server is not completing requests.</li>
+        <li>Make sure your origin allows <a rel="noopener noreferrer" href="https://www.cloudflare.com/ips/">all Cloudflare IP ranges</a>.</li>
+      </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="cf-error-footer cf-wrapper w-240 lg:w-full py-10 sm:py-4 sm:px-8 mx-auto text-center sm:text-left border-solid border-0 border-t border-gray-300">
+  <p class="text-13">
+    <span class="cf-footer-item sm:block sm:mb-1">Cloudflare Ray ID: <strong class="font-semibold">9df23cbba61c325e</strong></span>
+    <span class="cf-footer-separator sm:hidden">&bull;</span>
+    <span id="cf-footer-item-ip" class="cf-footer-item hidden sm:block sm:mb-1">
+      Your IP:
+      <button type="button" id="cf-footer-ip-reveal" class="cf-footer-ip-reveal-btn">Click to reveal</button>
+      <span class="hidden" id="cf-footer-ip">157.100.134.63</span>
+      <span class="cf-footer-separator sm:hidden">&bull;</span>
+    </span>
+    <span class="cf-footer-item sm:block sm:mb-1"><span>Performance &amp; security by</span> <a rel="noopener noreferrer" href="https://www.cloudflare.com/5xx-error-landing?utm_source=errorcode_522&utm_campaign=eoylgxwlhsmwqgadahvk.supabase.co" id="brand_link" target="_blank">Cloudflare</a></span>
+    
+  </p>
+  <script>(function(){function d(){var b=a.getElementById("cf-footer-item-ip"),c=a.getElementById("cf-footer-ip-reveal");b&&"classList"in b&&(b.classList.remove("hidden"),c.addEventListener("click",function(){c.classList.add("hidden");a.getElementById("cf-footer-ip").classList.remove("hidden")}))}var a=document;document.addEventListener&&a.addEventListener("DOMContentLoaded",d)})();</script>
+</div><!-- /.error-footer -->
+
+
+    </div>
+</div>
+</body>
+</html>
+
+[2026-03-20T05:18:23.605Z] ❌ Error al buscar cuentas: upstream request timeout
+[2026-03-20T05:18:38.611Z] ⏱️ [CRON] Iniciando sync automático...
+[2026-03-20T05:18:44.913Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6378
+[2026-03-20T05:19:04.139Z] [CAL] ⚠️ Cuenta no elegible para calendario (o sin token)
+[2026-03-20T05:19:04.143Z] ❌ Error al buscar cuentas: upstream request timeout
+[2026-03-20T05:19:08.617Z] ⏱️ [CRON] Iniciando sync automático...
+[2026-03-20T05:19:22.430Z] [CAL] ⚠️ Cuenta no elegible para calendario (o sin token)
+[2026-03-20T05:19:22.436Z] ❌ Error al buscar cuentas: upstream request timeout
+[2026-03-20T05:19:38.620Z] ⏱️ [CRON] Iniciando sync automático...
+[2026-03-20T05:19:39.373Z] ❌ Error al buscar cuentas: upstream request timeout
+[2026-03-20T05:19:44.928Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6362
+[2026-03-20T05:19:50.310Z] ❌ Error al buscar cuentas: upstream request timeout
+[2026-03-20T05:20:04.960Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6310
+[2026-03-20T05:20:08.622Z] ⏱️ [CRON] Iniciando sync automático...
+[2026-03-20T05:20:21.304Z] ❌ Error al buscar cuentas: upstream request timeout
+[2026-03-20T05:20:23.472Z] ❌ Error al buscar cuentas: upstream request timeout
+[2026-03-20T05:20:24.950Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6290
+[2026-03-20T05:20:38.635Z] ⏱️ [CRON] Iniciando sync automático...
+[2026-03-20T05:20:44.947Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6282
+[2026-03-20T05:20:45.379Z] ❌ Error al buscar cuentas: upstream request timeout
+[2026-03-20T05:21:04.951Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6378
+[2026-03-20T05:21:08.645Z] ⏱️ [CRON] Iniciando sync automático...
+[2026-03-20T05:21:16.869Z] ❌ Error al buscar cuentas: upstream request timeout
+[2026-03-20T05:21:38.658Z] ⏱️ [CRON] Iniciando sync automático...
+[2026-03-20T05:22:07.566Z] ❌ Error al buscar cuentas: upstream request timeout
+[2026-03-20T05:22:08.671Z] ⏱️ [CRON] Iniciando sync automático...
+[2026-03-20T05:22:15.701Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6282
+[2026-03-20T05:22:21.896Z] ❌ Error al buscar cuentas: upstream request timeout
+[2026-03-20T05:22:38.677Z] ⏱️ [CRON] Iniciando sync automático...
+[2026-03-20T05:22:43.867Z] ❌ Error al buscar cuentas: upstream request timeout
+[2026-03-20T05:23:08.678Z] ⏱️ [CRON] Iniciando sync automático...
+[2026-03-20T05:23:15.496Z] ❌ Error al buscar cuentas: upstream request timeout
+[2026-03-20T05:23:15.694Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6358
+[2026-03-20T05:23:35.733Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6282
+[2026-03-20T05:23:38.682Z] ⏱️ [CRON] Iniciando sync automático...
+[2026-03-20T05:23:55.726Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6350
+[2026-03-20T05:24:08.693Z] ⏱️ [CRON] Iniciando sync automático...
+[2026-03-20T05:24:15.739Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6354
+[2026-03-20T05:24:22.827Z] ❌ Error al buscar cuentas: upstream request timeout
+[2026-03-20T05:24:32.392Z] ❌ Error al buscar cuentas: upstream request timeout
+[2026-03-20T05:24:35.726Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6210
+[2026-03-20T05:24:38.701Z] ⏱️ [CRON] Iniciando sync automático...
+[2026-03-20T05:24:46.391Z] ❌ Error al buscar cuentas: upstream request timeout
+[2026-03-20T05:25:08.712Z] ⏱️ [CRON] Iniciando sync automático...
+[2026-03-20T05:25:32.533Z] ❌ Error al buscar cuentas: upstream request timeout
+[2026-03-20T05:25:38.725Z] ⏱️ [CRON] Iniciando sync automático...
+[2026-03-20T05:25:46.570Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6334
+[2026-03-20T05:26:08.731Z] ⏱️ [CRON] Iniciando sync automático...
+[2026-03-20T05:26:18.537Z] ❌ Error al buscar cuentas: upstream request timeout
+[2026-03-20T05:26:38.734Z] ⏱️ [CRON] Iniciando sync automático...
+[2026-03-20T05:26:46.544Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6294
+[2026-03-20T05:26:47.945Z] ❌ Error al buscar cuentas: upstream request timeout
+[2026-03-20T05:26:47.986Z] ❌ Error al buscar cuentas: upstream request timeout
+[2026-03-20T05:26:49.909Z] ℹ️ [CRON] Se encontraron 1 cuentas activas para sincronizar.
+[2026-03-20T05:26:49.909Z] Syncing for acc_64696c616e636f72...
+[2026-03-20T05:26:50.583Z] ℹ️ [CRON] Se encontraron 1 cuentas activas para sincronizar.
+[2026-03-20T05:26:50.584Z] Syncing for acc_64696c616e636f72...
+[2026-03-20T05:27:06.563Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6302
+[2026-03-20T05:27:08.747Z] ⏱️ [CRON] Iniciando sync automático...
+[2026-03-20T05:27:17.096Z] ℹ️ [CRON] Se encontraron 1 cuentas activas para sincronizar.
+[2026-03-20T05:27:17.099Z] Syncing for acc_64696c616e636f72...
+[2026-03-20T05:27:26.576Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6402
+[2026-03-20T05:27:38.414Z] ℹ️ [CRON] Se encontraron 1 cuentas activas para sincronizar.
+[2026-03-20T05:27:38.415Z] Syncing for acc_64696c616e636f72...
+[2026-03-20T05:27:38.761Z] ⏱️ [CRON] Iniciando sync automático...
+[2026-03-20T05:27:46.592Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6338
+[2026-03-20T05:28:06.591Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6314
+[2026-03-20T05:28:08.764Z] ⏱️ [CRON] Iniciando sync automático...
+[2026-03-20T05:28:38.769Z] ⏱️ [CRON] Iniciando sync automático...
+[2026-03-20T05:28:57.311Z] ❌ Error al buscar cuentas: upstream request timeout
+[2026-03-20T05:29:08.774Z] ⏱️ [CRON] Iniciando sync automático...
+[2026-03-20T05:29:17.222Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6226
+[2026-03-20T05:29:38.777Z] ⏱️ [CRON] Iniciando sync automático...
+[2026-03-20T05:29:39.149Z] [CAL] 📅 Iniciando sincronización de calendario para acc_64696c616e636f72...
+[2026-03-20T05:29:39.452Z] [CAL] 📅 Iniciando sincronización de calendario para acc_64696c616e636f72...
+[2026-03-20T05:29:39.672Z] [CAL] 📅 Iniciando sincronización de calendario para acc_64696c616e636f72...
+[2026-03-20T05:29:51.982Z] [CAL] 📅 Iniciando sincronización de calendario para acc_64696c616e636f72...
+[2026-03-20T05:29:52.050Z] ❌ Error al buscar cuentas: upstream request timeout
+[2026-03-20T05:30:08.792Z] ⏱️ [CRON] Iniciando sync automático...
+[2026-03-20T05:30:17.305Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6286
+[2026-03-20T05:30:37.225Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6246
+[2026-03-20T05:30:38.799Z] ⏱️ [CRON] Iniciando sync automático...
+[2026-03-20T05:30:57.250Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6270
+[2026-03-20T05:31:08.803Z] ⏱️ [CRON] Iniciando sync automático...
+[2026-03-20T05:31:12.053Z] ❌ Error al buscar cuentas: upstream request timeout
+[2026-03-20T05:31:12.534Z] ❌ Error al buscar cuentas: upstream request timeout
+[2026-03-20T05:31:17.243Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6314
+[2026-03-20T05:31:21.841Z] ❌ Error al buscar cuentas: upstream request timeout
+[2026-03-20T05:31:37.256Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6334
+[2026-03-20T05:31:38.812Z] ⏱️ [CRON] Iniciando sync automático...
+[2026-03-20T05:31:44.445Z] ❌ Error al buscar cuentas: upstream request timeout
+[2026-03-20T05:31:56.903Z] [CAL] ⚠️ Cuenta no elegible para calendario (o sin token)
+[2026-03-20T05:31:56.911Z] [CAL] ⚠️ Cuenta no elegible para calendario (o sin token)
+[2026-03-20T05:31:56.918Z] [CAL] ⚠️ Cuenta no elegible para calendario (o sin token)
+[2026-03-20T05:32:08.817Z] ⏱️ [CRON] Iniciando sync automático...
+[2026-03-20T05:32:16.489Z] ❌ Error al buscar cuentas: upstream request timeout
+[2026-03-20T05:32:38.820Z] ⏱️ [CRON] Iniciando sync automático...
+[2026-03-20T05:32:47.845Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6358
+[2026-03-20T05:33:02.492Z] [CAL] ⚠️ Cuenta no elegible para calendario (o sin token)
+[2026-03-20T05:33:08.827Z] ⏱️ [CRON] Iniciando sync automático...
+[2026-03-20T05:33:16.877Z] ❌ Error al buscar cuentas: upstream request timeout
+[2026-03-20T05:33:22.739Z] ❌ Error al buscar cuentas: upstream request timeout
+[2026-03-20T05:33:38.839Z] ⏱️ [CRON] Iniciando sync automático...
+[2026-03-20T05:33:45.487Z] ❌ Error al buscar cuentas: upstream request timeout
+[2026-03-20T05:33:47.855Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6326
+[2026-03-20T05:34:07.868Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6382
+[2026-03-20T05:34:08.842Z] ⏱️ [CRON] Iniciando sync automático...
+[2026-03-20T05:34:16.723Z] ❌ Error al buscar cuentas: upstream request timeout
+[2026-03-20T05:34:27.871Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6270
+[2026-03-20T05:34:38.855Z] ⏱️ [CRON] Iniciando sync automático...
+[2026-03-20T05:34:44.044Z] ❌ Error al buscar cuentas: upstream request timeout
+[2026-03-20T05:34:47.883Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6462
+[2026-03-20T05:35:07.911Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6286
+[2026-03-20T05:35:08.854Z] ⏱️ [CRON] Iniciando sync automático...
+[2026-03-20T05:35:22.330Z] ❌ Error al buscar cuentas: upstream request timeout
+[2026-03-20T05:35:38.869Z] ⏱️ [CRON] Iniciando sync automático...
+[2026-03-20T05:36:08.884Z] ⏱️ [CRON] Iniciando sync automático...
+[2026-03-20T05:36:14.299Z] ❌ Error al buscar cuentas: upstream request timeout
+[2026-03-20T05:36:19.046Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6246
+[2026-03-20T05:36:29.861Z] ❌ Error al buscar cuentas: upstream request timeout
+[2026-03-20T05:36:38.886Z] ⏱️ [CRON] Iniciando sync automático...
+[2026-03-20T05:36:44.140Z] ❌ Error al buscar cuentas: upstream request timeout
+[2026-03-20T05:37:08.901Z] ⏱️ [CRON] Iniciando sync automático...
+[2026-03-20T05:37:14.357Z] ❌ Error al buscar cuentas: upstream request timeout
+[2026-03-20T05:37:19.053Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6298
+[2026-03-20T05:37:38.913Z] ⏱️ [CRON] Iniciando sync automático...
+[2026-03-20T05:37:39.065Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6314
+[2026-03-20T05:37:49.864Z] ❌ Error al buscar cuentas: upstream request timeout
+[2026-03-20T05:37:59.064Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6358
+[2026-03-20T05:38:08.918Z] ⏱️ [CRON] Iniciando sync automático...
+[2026-03-20T05:38:14.149Z] ❌ Error al buscar cuentas: upstream request timeout
+[2026-03-20T05:38:19.074Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6402
+[2026-03-20T05:38:38.919Z] ⏱️ [CRON] Iniciando sync automático...
+[2026-03-20T05:38:39.091Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6242
+[2026-03-20T05:38:44.051Z] ❌ Error al buscar cuentas: upstream request timeout
+[2026-03-20T05:39:08.921Z] ⏱️ [CRON] Iniciando sync automático...
+[2026-03-20T05:39:14.154Z] ❌ Error al buscar cuentas: upstream request timeout
+[2026-03-20T05:39:38.929Z] ⏱️ [CRON] Iniciando sync automático...
+[2026-03-20T05:39:44.989Z] ❌ Error al buscar cuentas: upstream request timeout
+[2026-03-20T05:39:49.833Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6446
+[2026-03-20T05:40:08.934Z] ⏱️ [CRON] Iniciando sync automático...
+[2026-03-20T05:40:14.754Z] ❌ Error al buscar cuentas: upstream request timeout
+[2026-03-20T05:40:38.935Z] ⏱️ [CRON] Iniciando sync automático...
+[2026-03-20T05:40:44.920Z] ❌ Error al buscar cuentas: upstream request timeout
+[2026-03-20T05:40:49.847Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6306
+[2026-03-20T05:41:08.946Z] ⏱️ [CRON] Iniciando sync automático...
+[2026-03-20T05:41:09.844Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6330
+[2026-03-20T05:41:14.231Z] ❌ Error al buscar cuentas: upstream request timeout
+[2026-03-20T05:41:29.855Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6382
+[2026-03-20T05:41:31.870Z] ℹ️ [CRON] Se encontraron 1 cuentas activas para sincronizar.
+[2026-03-20T05:41:31.872Z] Syncing for acc_64696c616e636f72...
+[2026-03-20T05:41:34.963Z] ℹ️ [CRON] Se encontraron 1 cuentas activas para sincronizar.
+[2026-03-20T05:41:34.965Z] Syncing for acc_64696c616e636f72...
+[2026-03-20T05:41:35.003Z] ℹ️ [CRON] Se encontraron 1 cuentas activas para sincronizar.
+[2026-03-20T05:41:35.005Z] Syncing for acc_64696c616e636f72...
+[2026-03-20T05:41:38.959Z] ⏱️ [CRON] Iniciando sync automático...
+[2026-03-20T05:41:44.104Z] 📍 Org ID: 00000000-0000-0000-0000-000000000001
+[2026-03-20T05:41:44.105Z] 🔄 [IMAP] Token expirado para acc_64696c616e636f72. Refrescando...
+[2026-03-20T05:41:44.108Z] ℹ️ [CRON] Se encontraron 1 cuentas activas para sincronizar.
+[2026-03-20T05:41:44.109Z] Syncing for acc_64696c616e636f72...
+[2026-03-20T05:41:44.458Z] 📍 Org ID: 00000000-0000-0000-0000-000000000001
+[2026-03-20T05:41:44.460Z] ⚠️ Ya hay una sincronización en marcha para acc_64696c616e636f72.
+[2026-03-20T05:41:44.462Z] [CAL] 📅 Iniciando sincronización de calendario para acc_64696c616e636f72...
+[2026-03-20T05:41:44.598Z] [CAL] 📍 Org ID: 00000000-0000-0000-0000-000000000001
+[2026-03-20T05:41:49.029Z] 📍 Org ID: 00000000-0000-0000-0000-000000000001
+[2026-03-20T05:41:49.030Z] 🔄 [IMAP] Token expirado para acc_64696c616e636f72. Refrescando...
+[2026-03-20T05:41:49.043Z] ℹ️ [CRON] Se encontraron 1 cuentas activas para sincronizar.
+[2026-03-20T05:41:49.044Z] Syncing for acc_64696c616e636f72...
+[2026-03-20T05:41:49.200Z] 📍 Org ID: 00000000-0000-0000-0000-000000000001
+[2026-03-20T05:41:49.201Z] ⚠️ Ya hay una sincronización en marcha para acc_64696c616e636f72.
+[2026-03-20T05:41:49.201Z] [CAL] 📅 Iniciando sincronización de calendario para acc_64696c616e636f72...
+[2026-03-20T05:41:49.869Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6470
+[2026-03-20T05:41:59.492Z] ✅ [Refresh] Token renovado con éxito para acc_64696c616e636f72
+[2026-03-20T05:41:59.494Z] [CAL] 📅 [Calendar] Solicitando eventos a Google API...
+[2026-03-20T05:41:59.496Z] ✅ [Refresh] Token renovado con éxito para acc_64696c616e636f72
+[2026-03-20T05:41:59.497Z] 📡 [IMAP] Conectando a imap.gmail.com:993...
+[2026-03-20T05:41:59.501Z] [CAL] 📍 Org ID: 00000000-0000-0000-0000-000000000001
+[2026-03-20T05:42:01.042Z] 📍 Org ID: 00000000-0000-0000-0000-000000000001
+[2026-03-20T05:42:01.043Z] 🔄 [IMAP] Token expirado para acc_64696c616e636f72. Refrescando...
+[2026-03-20T05:42:08.638Z] ✅ [Refresh] Token renovado con éxito para acc_64696c616e636f72
+[2026-03-20T05:42:08.640Z] 📡 [IMAP] Conectando a imap.gmail.com:993...
+[2026-03-20T05:42:08.960Z] ⏱️ [CRON] Iniciando sync automático...
+[2026-03-20T05:42:09.870Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6318
+[2026-03-20T05:42:10.376Z] ℹ️ [CRON] Se encontraron 1 cuentas activas para sincronizar.
+[2026-03-20T05:42:10.377Z] Syncing for acc_64696c616e636f72...
+[2026-03-20T05:42:11.933Z] 📍 Org ID: 00000000-0000-0000-0000-000000000001
+[2026-03-20T05:42:11.935Z] ⚠️ Ya hay una sincronización en marcha para acc_64696c616e636f72.
+[2026-03-20T05:42:11.937Z] [CAL] 📅 Iniciando sincronización de calendario para acc_64696c616e636f72...
+[2026-03-20T05:42:12.069Z] [CAL] 📍 Org ID: 00000000-0000-0000-0000-000000000001
+[2026-03-20T05:42:12.071Z] [CAL] 📅 [Calendar] Solicitando eventos a Google API...
+[2026-03-20T05:42:17.672Z] ✅ [Calendar] 10 eventos sincronizados.
+[2026-03-20T05:42:20.212Z] 📂 [IMAP] Abriendo carpeta: INBOX...
+[2026-03-20T05:42:29.342Z] 📂 [IMAP] Abriendo carpeta: INBOX...
+[2026-03-20T05:42:38.972Z] ⏱️ [CRON] Iniciando sync automático...
+[2026-03-20T05:42:45.056Z] ℹ️ [CRON] Se encontraron 1 cuentas activas para sincronizar.
+[2026-03-20T05:42:45.057Z] Syncing for acc_64696c616e636f72...
+[2026-03-20T05:42:47.005Z] 📍 Org ID: 00000000-0000-0000-0000-000000000001
+[2026-03-20T05:42:47.007Z] 📡 [IMAP] Conectando a imap.gmail.com:993...
+[2026-03-20T05:43:05.249Z] ✅ [Refresh] Token renovado con éxito para acc_64696c616e636f72
+[2026-03-20T05:43:05.250Z] [CAL] 📅 [Calendar] Solicitando eventos a Google API...
+[2026-03-20T05:43:05.253Z] ✅ [Refresh] Token renovado con éxito para acc_64696c616e636f72
+[2026-03-20T05:43:05.254Z] 📡 [IMAP] Conectando a imap.gmail.com:993...
+[2026-03-20T05:43:07.677Z] 📂 [IMAP] Abriendo carpeta: INBOX...
+[2026-03-20T05:43:08.973Z] ⏱️ [CRON] Iniciando sync automático...
+[2026-03-20T05:43:14.593Z] ✅ [Calendar] 10 eventos sincronizados.
+[2026-03-20T05:43:16.618Z] ℹ️ [CRON] Se encontraron 1 cuentas activas para sincronizar.
+[2026-03-20T05:43:16.620Z] Syncing for acc_64696c616e636f72...
+[2026-03-20T05:43:18.387Z] 📍 Org ID: 00000000-0000-0000-0000-000000000001
+[2026-03-20T05:43:18.388Z] ⚠️ Ya hay una sincronización en marcha para acc_64696c616e636f72.
+[2026-03-20T05:43:18.388Z] [CAL] 📅 Iniciando sincronización de calendario para acc_64696c616e636f72...
+[2026-03-20T05:43:19.270Z] [CAL] 📍 Org ID: 00000000-0000-0000-0000-000000000001
+[2026-03-20T05:43:19.271Z] [CAL] 📅 [Calendar] Solicitando eventos a Google API...
+[2026-03-20T05:43:20.588Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6362
+[2026-03-20T05:43:23.836Z] ✅ [Calendar] 10 eventos sincronizados.
+[2026-03-20T05:43:25.986Z] 📂 [IMAP] Abriendo carpeta: INBOX...
+[2026-03-20T05:43:27.203Z] ✅ [Calendar] 10 eventos sincronizados.
+[2026-03-20T05:43:33.684Z] 📥 [IMAP] INBOX: Procesando 50 correos.
+[2026-03-20T05:43:38.986Z] ⏱️ [CRON] Iniciando sync automático...
+[2026-03-20T05:43:39.803Z] ℹ️ [CRON] Se encontraron 1 cuentas activas para sincronizar.
+[2026-03-20T05:43:39.804Z] Syncing for acc_64696c616e636f72...
+[2026-03-20T05:43:40.455Z] 📍 Org ID: 00000000-0000-0000-0000-000000000001
+[2026-03-20T05:43:40.456Z] 📡 [IMAP] Conectando a imap.gmail.com:993...
+[2026-03-20T05:43:42.168Z] 📥 [IMAP] INBOX: Procesando 50 correos.
+[2026-03-20T05:44:01.367Z] 📂 [IMAP] Abriendo carpeta: INBOX...
+[2026-03-20T05:44:08.991Z] ⏱️ [CRON] Iniciando sync automático...
+[2026-03-20T05:44:20.452Z] 📥 [IMAP] INBOX: Procesando 50 correos.
+[2026-03-20T05:44:20.602Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6282
+[2026-03-20T05:44:38.809Z] 📥 [IMAP] INBOX: Procesando 50 correos.
+[2026-03-20T05:44:38.999Z] ⏱️ [CRON] Iniciando sync automático...
+[2026-03-20T05:44:40.597Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6206
+[2026-03-20T05:45:00.607Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6342
+[2026-03-20T05:45:09.001Z] ⏱️ [CRON] Iniciando sync automático...
+[2026-03-20T05:45:14.585Z] 📥 [IMAP] INBOX: Procesando 50 correos.
+[2026-03-20T05:45:20.613Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6306
+[2026-03-20T05:45:39.012Z] ⏱️ [CRON] Iniciando sync automático...
+[2026-03-20T05:45:40.638Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6302
+[2026-03-20T05:46:08.643Z] ℹ️ [CRON] Se encontraron 1 cuentas activas para sincronizar.
+[2026-03-20T05:46:08.643Z] Syncing for acc_64696c616e636f72...
+[2026-03-20T05:46:08.644Z] ℹ️ [CRON] Se encontraron 1 cuentas activas para sincronizar.
+[2026-03-20T05:46:08.645Z] Syncing for acc_64696c616e636f72...
+[2026-03-20T05:46:08.646Z] ℹ️ [CRON] Se encontraron 1 cuentas activas para sincronizar.
+[2026-03-20T05:46:08.647Z] Syncing for acc_64696c616e636f72...
+[2026-03-20T05:46:09.027Z] ⏱️ [CRON] Iniciando sync automático...
+[2026-03-20T05:46:11.247Z] 📍 Org ID: 00000000-0000-0000-0000-000000000001
+[2026-03-20T05:46:11.248Z] ⚠️ Ya hay una sincronización en marcha para acc_64696c616e636f72.
+[2026-03-20T05:46:11.249Z] [CAL] 📅 Iniciando sincronización de calendario para acc_64696c616e636f72...
+[2026-03-20T05:46:11.920Z] ℹ️ [CRON] Se encontraron 1 cuentas activas para sincronizar.
+[2026-03-20T05:46:11.922Z] Syncing for acc_64696c616e636f72...
+[2026-03-20T05:46:15.982Z] 📍 Org ID: 00000000-0000-0000-0000-000000000001
+[2026-03-20T05:46:15.983Z] 📡 [IMAP] Conectando a imap.gmail.com:993...
+[2026-03-20T05:46:16.587Z] 📍 Org ID: 00000000-0000-0000-0000-000000000001
+[2026-03-20T05:46:16.587Z] ⚠️ Ya hay una sincronización en marcha para acc_64696c616e636f72.
+[2026-03-20T05:46:16.588Z] [CAL] 📅 Iniciando sincronización de calendario para acc_64696c616e636f72...
+[2026-03-20T05:46:16.597Z] ℹ️ [CRON] Se encontraron 1 cuentas activas para sincronizar.
+[2026-03-20T05:46:16.598Z] Syncing for acc_64696c616e636f72...
+[2026-03-20T05:46:27.600Z] [CAL] 📍 Org ID: 00000000-0000-0000-0000-000000000001
+[2026-03-20T05:46:27.601Z] [CAL] 📅 [Calendar] Solicitando eventos a Google API...
+[2026-03-20T05:46:27.605Z] [CAL] 📍 Org ID: 00000000-0000-0000-0000-000000000001
+[2026-03-20T05:46:27.606Z] [CAL] 📅 [Calendar] Solicitando eventos a Google API...
+[2026-03-20T05:46:31.297Z] 📍 Org ID: 00000000-0000-0000-0000-000000000001
+[2026-03-20T05:46:31.299Z] 📡 [IMAP] Conectando a imap.gmail.com:993...
+[2026-03-20T05:46:31.326Z] 📍 Org ID: 00000000-0000-0000-0000-000000000001
+[2026-03-20T05:46:31.326Z] ⚠️ Ya hay una sincronización en marcha para acc_64696c616e636f72.
+[2026-03-20T05:46:31.327Z] [CAL] 📅 Iniciando sincronización de calendario para acc_64696c616e636f72...
+[2026-03-20T05:46:32.025Z] 🔄 [IMAP] Credenciales inválidas. Forzando refresco de token...
+[2026-03-20T05:46:36.602Z] 📂 [IMAP] Abriendo carpeta: INBOX...
+[2026-03-20T05:46:39.030Z] ⏱️ [CRON] Iniciando sync automático...
+[2026-03-20T05:46:42.708Z] [CAL] 📍 Org ID: 00000000-0000-0000-0000-000000000001
+[2026-03-20T05:46:42.709Z] [CAL] 📅 [Calendar] Solicitando eventos a Google API...
+[2026-03-20T05:46:44.675Z] ℹ️ [CRON] Se encontraron 1 cuentas activas para sincronizar.
+[2026-03-20T05:46:44.676Z] Syncing for acc_64696c616e636f72...
+[2026-03-20T05:46:51.426Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6398
+[2026-03-20T05:46:51.510Z] 📍 Org ID: 00000000-0000-0000-0000-000000000001
+[2026-03-20T05:46:51.510Z] 📡 [IMAP] Conectando a imap.gmail.com:993...
+[2026-03-20T05:46:52.054Z] 🔄 [IMAP] Credenciales inválidas. Forzando refresco de token...
+[2026-03-20T05:47:09.032Z] ⏱️ [CRON] Iniciando sync automático...
+[2026-03-20T05:47:21.139Z] ✅ [Refresh] Token renovado con éxito para acc_64696c616e636f72
+[2026-03-20T05:47:21.722Z] ❌ [IMAP Error]: Too many simultaneous connections. (Failure)
+[2026-03-20T05:47:21.724Z] [CAL] 📅 Iniciando sincronización de calendario para acc_64696c616e636f72...
+[2026-03-20T05:47:39.041Z] ⏱️ [CRON] Iniciando sync automático...
+[2026-03-20T05:47:49.336Z] 📥 [IMAP] INBOX: Procesando 50 correos.
+[2026-03-20T05:47:51.440Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6338
+[2026-03-20T05:48:09.043Z] ⏱️ [CRON] Iniciando sync automático...
+[2026-03-20T05:48:10.030Z] [CAL] 📍 Org ID: 00000000-0000-0000-0000-000000000001
+[2026-03-20T05:48:10.031Z] [CAL] 📅 [Calendar] Solicitando eventos a Google API...
+[2026-03-20T05:48:11.443Z] ✨ [WhatsApp] QR Generado y Guardado. Longitud: 6310

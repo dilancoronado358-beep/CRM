@@ -820,7 +820,7 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
                 {/* BOTÓN AGREGAR */}
                 <button onClick={() => { setEditDeal(null); setPreEtapa(etapa.id); setShowDealForm(true); }}
                   style={{ background: "transparent", border: "none", borderBottom: `1px solid ${T.borderHi}`, padding: "9px 14px", color: etapa.color, cursor: "pointer", fontSize: 12, fontWeight: 700, display: "flex", alignItems: "center", gap: 5, fontFamily: "inherit", textAlign: "left", width: "100%", transition: "background .15s" }}
-                  onMouseEnter={e => e.currentTarget.style.background = etapa.color + "12"}
+                  onMouseEnter={e => e.currentTarget.style.background = etapa.color.startsWith("#") ? etapa.color + "12" : etapa.color}
                   onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
                   <span style={{ fontSize: 18, lineHeight: 1, fontWeight: 900 }}>+</span> Agregar
                 </button>
@@ -1017,9 +1017,9 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
                 return (
                   <tr key={deal.id} 
                     onClick={() => { setEditDeal(deal); setShowDealForm(true); }}
-                    style={{ borderBottom: `1px solid ${T.borderHi}`, cursor: "pointer", transition: "background 0.2s", background: isSelected ? T.teal + "05" : "transparent" }}
+                    style={{ borderBottom: `1px solid ${T.borderHi}`, cursor: "pointer", transition: "background 0.2s", background: isSelected ? T.tealGlow : "transparent" }}
                     onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.03)"}
-                    onMouseLeave={e => e.currentTarget.style.background = isSelected ? T.teal + "05" : "transparent"}
+                    onMouseLeave={e => e.currentTarget.style.background = isSelected ? T.tealGlow : "transparent"}
                   >
                     <td style={{ padding: "12px 16px" }} onClick={e => e.stopPropagation()}>
                       <input type="checkbox" 
@@ -1038,7 +1038,7 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
                     <td style={{ padding: "12px 16px", color: T.whiteOff }}>{contacto?.nombre || "—"}</td>
                     <td style={{ padding: "12px 16px", fontWeight: 800, color: T.green }}>{money(deal.valor)}</td>
                     <td style={{ padding: "12px 16px" }}>
-                      <div style={{ display: "inline-block", background: etapa.color + "20", color: etapa.color, border: `1px solid ${etapa.color}`, padding: "2px 8px", borderRadius: 12, fontSize: 10, fontWeight: 800, textTransform: "uppercase" }}>
+                      <div style={{ display: "inline-block", background: etapa.color.startsWith("#") ? etapa.color + "20" : etapa.color, color: etapa.color, border: `1px solid ${etapa.color}`, padding: "2px 8px", borderRadius: 12, fontSize: 10, fontWeight: 800, textTransform: "uppercase" }}>
                         {etapa.nombre}
                       </div>
                     </td>

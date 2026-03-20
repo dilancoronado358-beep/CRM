@@ -25,7 +25,7 @@ logFile("🚀 SERVER CRM INICIANDO...");
 // Configuración Supabase (Copiada del frontend para conveniencia)
 const SUPA_URL = process.env.SUPA_URL || "https://eoylgxwlhsmwqgadahvk.supabase.co";
 const SUPA_KEY = process.env.SUPA_KEY || "sb_publishable_wKUbf7IFOoH4HIUayIAJdQ_Boj1jgZa";
-const supabase = createClient(process.env.SUPA_URL, process.env.SUPA_KEY);
+const supabase = createClient(SUPA_URL, SUPA_KEY);
 
 // Bloqueo global de sincronización por cuenta
 const syncingAccounts = {};

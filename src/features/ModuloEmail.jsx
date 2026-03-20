@@ -637,8 +637,8 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, carga
           
           <div style={{ display: "flex", gap: 12, alignItems: "flex-end" }}>
             <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
-              <button onClick={() => setShowCCReply(!showCCReply)} style={{ background: showCCReply ? T.teal + "20" : "transparent", border: `1px solid ${showCCReply ? T.teal : T.whiteFade + "15"}`, borderRadius: 8, padding: "4px 8px", color: showCCReply ? T.teal : T.whiteDim, fontSize: 10, fontWeight: 800, cursor: "pointer" }}>CC</button>
-              <button onClick={() => setShowBCCReply(!showBCCReply)} style={{ background: showBCCReply ? T.teal + "20" : "transparent", border: `1px solid ${showBCCReply ? T.teal : T.whiteFade + "15"}`, borderRadius: 8, padding: "4px 8px", color: showBCCReply ? T.teal : T.whiteDim, fontSize: 10, fontWeight: 800, cursor: "pointer" }}>BCC</button>
+              <button onClick={() => setShowCCReply(!showCCReply)} style={{ background: showCCReply ? T.tealSoft : "transparent", border: `1px solid ${showCCReply ? T.teal : T.whiteFade}`, borderRadius: 8, padding: "4px 8px", color: showCCReply ? T.teal : T.whiteDim, fontSize: 10, fontWeight: 800, cursor: "pointer" }}>CC</button>
+              <button onClick={() => setShowBCCReply(!showBCCReply)} style={{ background: showBCCReply ? T.tealSoft : "transparent", border: `1px solid ${showBCCReply ? T.teal : T.whiteFade}`, borderRadius: 8, padding: "4px 8px", color: showBCCReply ? T.teal : T.whiteDim, fontSize: 10, fontWeight: 800, cursor: "pointer" }}>BCC</button>
             </div>
             
             <div style={{ position: "relative", flex: 1 }}>
@@ -680,8 +680,8 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, carga
             <div style={{ display: "flex", gap: 12, alignItems: "flex-end" }}>
               <div style={{ flex: 1 }}><Campo label="Para"><Inp value={f.para} onChange={s("para")} placeholder="ej@ejemplo.com" style={{ background: "rgba(255,255,255,0.02)", border: `1px solid ${T.whiteFade}10` }} /></Campo></div>
               <div style={{ display: "flex", gap: 6, paddingBottom: 6 }}>
-                <button onClick={() => setShowCC(!showCC)} style={{ background: showCC ? T.teal + "20" : "transparent", border: `1px solid ${showCC ? T.teal : T.whiteFade + "20"}`, borderRadius: 8, padding: "4px 10px", color: showCC ? T.teal : T.whiteDim, fontSize: 11, fontWeight: 700, cursor: "pointer", transition: "all 0.2s" }}>CC</button>
-                <button onClick={() => setShowBCC(!showBCC)} style={{ background: showBCC ? T.teal + "20" : "transparent", border: `1px solid ${showBCC ? T.teal : T.whiteFade + "20"}`, borderRadius: 8, padding: "4px 10px", color: showBCC ? T.teal : T.whiteDim, fontSize: 11, fontWeight: 700, cursor: "pointer", transition: "all 0.2s" }}>BCC</button>
+                <button onClick={() => setShowCC(!showCC)} style={{ background: showCC ? T.tealSoft : "transparent", border: `1px solid ${showCC ? T.teal : 'rgba(255,255,255,0.1)'}`, borderRadius: 8, padding: "4px 10px", color: showCC ? T.teal : T.whiteDim, fontSize: 11, fontWeight: 700, cursor: "pointer", transition: "all 0.2s" }}>CC</button>
+                <button onClick={() => setShowBCC(!showBCC)} style={{ background: showBCC ? T.tealSoft : "transparent", border: `1px solid ${showBCC ? T.teal : 'rgba(255,255,255,0.1)'}`, borderRadius: 8, padding: "4px 10px", color: showBCC ? T.teal : T.whiteDim, fontSize: 11, fontWeight: 700, cursor: "pointer", transition: "all 0.2s" }}>BCC</button>
               </div>
             </div>
             {showCC && <div style={{ animation: "fadeIn 0.2s" }}><Campo label="CC (Copia)"><Inp value={f.cc} onChange={s("cc")} placeholder="cc@ejemplo.com" style={{ background: "rgba(255,255,255,0.02)", border: `1px solid ${T.whiteFade}10` }} /></Campo></div>}
@@ -723,7 +723,7 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, carga
                  <button onMouseDown={e => e.preventDefault()} onClick={() => setF({ ...f, tipo: "html" })} style={{ padding: "4px 8px", borderRadius: 6, border: "none", background: f.tipo === "html" ? T.teal : "transparent", color: f.tipo === "html" ? "#000" : T.whiteDim, fontSize: 10, fontWeight: 800, cursor: "pointer" }}>CODE</button>
                </div>
 
-               <div style={{ width: 1, height: 16, background: T.whiteFade + "15" }} />
+               <div style={{ width: 1, height: 16, background: T.whiteFade }} />
 
                <div style={{ display: "flex", gap: 2 }}>
                  {[
@@ -735,7 +735,7 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, carga
                  ))}
                </div>
 
-               <div style={{ width: 1, height: 16, background: T.whiteFade + "15" }} />
+               <div style={{ width: 1, height: 16, background: T.whiteFade }} />
 
                <div style={{ display: "flex", gap: 2 }}>
                  {[
@@ -757,8 +757,8 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, carga
                   ].map(b => (
                     <button key={b.k} onMouseDown={e => e.preventDefault()} onClick={() => { if (f.tipo === "texto") { let v = b.val || null; if (b.prompt) v = prompt(b.prompt); if (v || !b.prompt) { document.execCommand(b.cmd, false, v); checkStyles(); } } }} style={{ width: 28, height: 28, borderRadius: 6, border: "none", background: "transparent", color: T.whiteOff, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }} onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.05)"} onMouseLeave={e => e.currentTarget.style.background = "transparent"}><Ico k={b.k} size={13} /></button>
                   ))}
-                  <div style={{ width: 1, height: 16, background: T.whiteFade + "15", margin: "0 4px" }} />
-                  <button onMouseDown={e => e.preventDefault()} onClick={redactarIA} style={{ background: T.teal + "20", color: T.teal, border: "none", borderRadius: 6, height: 28, padding: "0 10px", fontSize: 10, fontWeight: 800, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}><Ico k="lightning" size={12} /> IA</button>
+                  <div style={{ width: 1, height: 16, background: T.whiteFade, margin: "0 4px" }} />
+                  <button onMouseDown={e => e.preventDefault()} onClick={redactarIA} style={{ background: T.tealSoft, color: T.teal, border: "none", borderRadius: 6, height: 28, padding: "0 10px", fontSize: 10, fontWeight: 800, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}><Ico k="lightning" size={12} /> IA</button>
                </div>
              </div>
 

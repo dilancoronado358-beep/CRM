@@ -5,9 +5,7 @@ import { useSupaState } from "../hooks/useSupaState";
 import { createClient } from "@supabase/supabase-js";
 
 // Necesitamos crear un cliente rápido para esta vista si no queremos exponer useSupaState entero para queries dinámicas
-const SUPA_URL = "https://eoylgxwlhsmwqgadahvk.supabase.co";
-const SUPA_KEY = "sb_publishable_wKUbf7IFOoH4HIUayIAJdQ_Boj1jgZa";
-const sb = createClient(SUPA_URL, SUPA_KEY);
+import { sb } from "../hooks/useSupaState";
 
 export function WhatsAppHistoryLead({ telefono }) {
   const [messages, setMessages] = useState([]);

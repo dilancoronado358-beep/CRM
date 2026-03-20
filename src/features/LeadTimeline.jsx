@@ -7,9 +7,7 @@ import { io } from "socket.io-client";
 import { sileo as toast } from "../utils/sileo";
 import axios from "axios";
 
-const SUPA_URL = "https://eoylgxwlhsmwqgadahvk.supabase.co";
-const SUPA_KEY = "sb_publishable_wKUbf7IFOoH4HIUayIAJdQ_Boj1jgZa";
-const sb = createClient(SUPA_URL, SUPA_KEY);
+import { sb } from "../hooks/useSupaState";
 
 export function LeadTimeline({ deal = {}, contacto = {}, db = {}, setDb, guardarEnSupa, setModulo, focusEmailId, setFocusEmailId }) {
   const [items, setItems] = useState([]);

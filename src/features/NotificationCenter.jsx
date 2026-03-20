@@ -52,7 +52,7 @@ export const NotificationCenter = ({ db, guardarEnSupa, setModulo }) => {
               {notis.length === 0 && <div style={{ padding: 40, textAlign: "center", color: T.whiteDim, fontSize: 12 }}>No tienes notificaciones.</div>}
               {notis.map(n => (
                 <div key={n.id} onClick={() => { marcarLeida(n.id); if (n.url) setModulo(n.url); setIsOpen(false); }}
-                  style={{ padding: "16px 18px", borderBottom: `1px solid ${T.borderHi}`, cursor: "pointer", transition: "all .15s", background: n.leida ? "transparent" : T.tealSoft + "10", borderLeft: `3px solid ${n.leida ? "transparent" : T.teal}` }}
+                  style={{ padding: "16px 18px", borderBottom: `1px solid ${T.borderHi}`, cursor: "pointer", transition: "all .15s", background: n.leida ? "transparent" : T.tealSoft, borderLeft: `3px solid ${n.leida ? "transparent" : T.teal}` }}
                   onMouseEnter={e => e.currentTarget.style.background = T.bg3}>
                   <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
                     <div style={{ fontWeight: 700, fontSize: 12, color: n.leida ? T.whiteDim : T.white }}>{n.titulo}</div>

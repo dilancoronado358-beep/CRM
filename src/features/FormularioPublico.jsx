@@ -2,9 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { sileo as toast } from "../utils/sileo";
 import { createClient } from "@supabase/supabase-js";
 
-const SUPA_URL = "https://eoylgxwlhsmwqgadahvk.supabase.co";
-const SUPA_KEY = "sb_publishable_wKUbf7IFOoH4HIUayIAJdQ_Boj1jgZa";
-const supa = createClient(SUPA_URL, SUPA_KEY);
+import { sb as supa } from "../hooks/useSupaState";
 
 // Default built-in forms (same as FormBuilder)
 const DEFAULT_FORMS = [
@@ -185,7 +183,7 @@ export const FormularioPublico = ({ formId, embed = false }) => {
   if (enviado) {
     const successContent = (
       <>
-        <div style={{ width: 64, height: 64, borderRadius: "50%", background: accent + "22", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px", fontSize: 32 }}>✅</div>
+        <div style={{ width: 64, height: 64, borderRadius: "50%", background: accent.startsWith("#") ? accent + "22" : accent, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px", fontSize: 32 }}>✅</div>
         <h2 style={{ color: "#111827", margin: "0 0 12px", fontSize: 24, fontWeight: 800 }}>¡Mensaje recibido!</h2>
         <p style={{ color: "#6B7280", fontSize: 15, lineHeight: 1.7, margin: 0 }}>
           Gracias por contactarnos. Un asesor se comunicará contigo en breve.
@@ -204,7 +202,7 @@ export const FormularioPublico = ({ formId, embed = false }) => {
     <div style={{ textAlign: "left" }}>
       {!embed && (
         <div style={{ textAlign: "center", marginBottom: 28 }}>
-          <div style={{ width: 48, height: 48, borderRadius: 14, background: accent + "22", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px", fontSize: 24 }}>📋</div>
+          <div style={{ width: 48, height: 48, borderRadius: 14, background: accent.startsWith("#") ? accent + "22" : accent, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px", fontSize: 24 }}>📋</div>
           <h1 style={{ margin: 0, fontSize: 24, fontWeight: 800, color: "#111827" }}>{form.nombre}</h1>
           <p style={{ margin: "8px 0 0", color: "#6B7280", fontSize: 14 }}>Completa el formulario y te contactaremos pronto.</p>
         </div>

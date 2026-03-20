@@ -2,9 +2,7 @@ import { useState, useEffect } from "react";
 import { createClient } from "@supabase/supabase-js";
 import { FormularioPublico } from "./FormularioPublico";
 
-const SUPA_URL = "https://eoylgxwlhsmwqgadahvk.supabase.co";
-const SUPA_KEY = "sb_publishable_wKUbf7IFOoH4HIUayIAJdQ_Boj1jgZa";
-const supa = createClient(SUPA_URL, SUPA_KEY);
+import { sb as supa } from "../hooks/useSupaState";
 
 // ─── Form inside landing page ─────────────────────────────────────────────────
 const LeadForm = ({ accent, org_id }) => {
@@ -173,12 +171,12 @@ export const LandingPagePublica = ({ siteSlug }) => {
     switch (blockId) {
       case "hero":
         return (
-          <div key="hero" style={{ padding: "90px 24px", textAlign: "center", background: `linear-gradient(180deg, ${accent}0D 0%, #fff 100%)`, borderBottom: "1px solid #E5E7EB" }}>
-            <div style={{ display: "inline-block", background: accent + "18", color: accent, padding: "5px 16px", borderRadius: 20, fontSize: 11, fontWeight: 700, marginBottom: 24, border: `1px solid ${accent}33`, textTransform: "uppercase" }}>🚀 Plataforma CRM #1</div>
+          <div key="hero" style={{ padding: "90px 24px", textAlign: "center", background: `linear-gradient(180deg, ${accent.startsWith("#") ? accent + "0D" : accent} 0%, #fff 100%)`, borderBottom: "1px solid #E5E7EB" }}>
+            <div style={{ display: "inline-block", background: accent.startsWith("#") ? accent + "18" : accent, color: accent, padding: "5px 16px", borderRadius: 20, fontSize: 11, fontWeight: 700, marginBottom: 24, border: `1px solid ${accent.startsWith("#") ? accent + "33" : accent}`, textTransform: "uppercase" }}>🚀 Plataforma CRM #1</div>
             <h1 style={{ fontSize: "clamp(32px, 5vw, 56px)", fontWeight: 900, color: "#111827", margin: "0 0 18px", letterSpacing: "-.04em", lineHeight: 1.06, maxWidth: 700, marginInline: "auto" }}>{page.heroTitle}</h1>
             {page.heroSub && <p style={{ fontSize: 18, color: "#6B7280", margin: "0 auto 36px", maxWidth: 560, lineHeight: 1.7 }}>{page.heroSub}</p>}
             <div style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap" }}>
-              <a href={page.heroCTAUrl || "#form-section"} target={page.heroCTAUrl?.startsWith("http") ? "_blank" : undefined} rel="noopener noreferrer" style={{ display: "inline-block", background: accent, color: "#fff", border: "none", padding: "15px 30px", borderRadius: 12, fontSize: 15, fontWeight: 700, textDecoration: "none", boxShadow: `0 8px 24px ${accent}44` }}>{page.heroCTA}</a>
+              <a href={page.heroCTAUrl || "#form-section"} target={page.heroCTAUrl?.startsWith("http") ? "_blank" : undefined} rel="noopener noreferrer" style={{ display: "inline-block", background: accent, color: "#fff", border: "none", padding: "15px 30px", borderRadius: 12, fontSize: 15, fontWeight: 700, textDecoration: "none", boxShadow: `0 8px 24px ${accent.startsWith("#") ? accent + "44" : "rgba(0,0,0,0.2)"}` }}>{page.heroCTA}</a>
               {page.heroCTA2 && <a href={page.heroCTA2Url || "#features-section"} target={page.heroCTA2Url?.startsWith("http") ? "_blank" : undefined} rel="noopener noreferrer" style={{ display: "inline-block", background: "#F3F4F6", color: "#374151", border: "none", padding: "15px 26px", borderRadius: 12, fontSize: 15, fontWeight: 700, textDecoration: "none" }}>{page.heroCTA2} →</a>}
             </div>
           </div>
@@ -198,7 +196,7 @@ export const LandingPagePublica = ({ siteSlug }) => {
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 20, maxWidth: 900, margin: "0 auto" }}>
               {(page.features || []).map((f, i) => (
                 <div key={i} style={{ background: "#fff", padding: 24, borderRadius: 14, border: "1px solid #E5E7EB" }}>
-                  <div style={{ width: 42, height: 42, borderRadius: 12, background: accent + "18", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, marginBottom: 14 }}>{f.icon}</div>
+                  <div style={{ width: 42, height: 42, borderRadius: 12, background: accent.startsWith("#") ? accent + "18" : accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, marginBottom: 14 }}>{f.icon}</div>
                   <h3 style={{ fontSize: 14, fontWeight: 800, margin: "0 0 8px", color: "#111827" }}>{f.title}</h3>
                   <p style={{ fontSize: 13, color: "#6B7280", margin: 0, lineHeight: 1.6 }}>{f.desc}</p>
                 </div>
@@ -212,7 +210,7 @@ export const LandingPagePublica = ({ siteSlug }) => {
             <h2 style={{ fontSize: 28, fontWeight: 800, color: "#111827", margin: "0 0 40px" }}>Planes simples y transparentes</h2>
             <div style={{ display: "flex", gap: 20, justifyContent: "center", flexWrap: "wrap" }}>
               {[{ p: "Starter", price: "$29", f: ["5 usuarios", "1 pipeline", "Email básico"], h: false }, { p: "Pro", price: "$79", f: ["25 usuarios", "Pipelines ilimitados", "IA & Automations"], h: true }, { p: "Enterprise", price: "Custom", f: ["Usuarios ilimitados", "SSO", "SLA 99.9%"], h: false }].map((pl, i) => (
-                <div key={i} style={{ background: pl.h ? accent : "#fff", padding: 28, borderRadius: 16, border: `2px solid ${pl.h ? "transparent" : "#E5E7EB"}`, width: 200, boxShadow: pl.h ? `0 10px 30px ${accent}40` : "none" }}>
+                <div key={i} style={{ background: pl.h ? accent : "#fff", padding: 28, borderRadius: 16, border: `2px solid ${pl.h ? "transparent" : "#E5E7EB"}`, width: 200, boxShadow: pl.h ? `0 10px 30px ${accent.startsWith("#") ? accent + "40" : "rgba(0,0,0,0.1)"}` : "none" }}>
                   <div style={{ fontSize: 12, fontWeight: 700, color: pl.h ? "rgba(255,255,255,.8)" : "#6B7280", marginBottom: 8 }}>{pl.p}</div>
                   <div style={{ fontSize: 32, fontWeight: 900, color: pl.h ? "#fff" : "#111827", marginBottom: 14 }}>{pl.price}</div>
                   {pl.f.map((ft, j) => <div key={j} style={{ fontSize: 12, color: pl.h ? "rgba(255,255,255,.85)" : "#374151", marginBottom: 5 }}>✓ {ft}</div>)}
@@ -328,7 +326,7 @@ export const LandingPagePublica = ({ siteSlug }) => {
         <div style={{ fontWeight: 900, fontSize: 18, color: "#111827", letterSpacing: "-.03em" }}>
           <span style={{ color: accent }}>●</span> {(page.heroTitle || "").split(" ").slice(0, 2).join(" ") || "ENSING"}
         </div>
-        <a href="#form-section" style={{ background: accent, color: "#fff", padding: "9px 20px", borderRadius: 8, fontSize: 13, fontWeight: 700, textDecoration: "none", boxShadow: `0 4px 12px ${accent}44` }}>
+        <a href="#form-section" style={{ background: accent, color: "#fff", padding: "9px 20px", borderRadius: 8, fontSize: 13, fontWeight: 700, textDecoration: "none", boxShadow: `0 4px 12px ${accent.startsWith("#") ? accent + "44" : "rgba(0,0,0,0.1)"}` }}>
           {page.heroCTA} →
         </a>
       </nav>
@@ -349,7 +347,8 @@ export const LandingPagePublica = ({ siteSlug }) => {
           return <img key={f.id} src={f.content} alt="Libre" style={{ position: "absolute", left: f.x, top: f.y, width: f.width || 150, height: "auto", borderRadius: 8, zIndex: 40 }} />;
         } else if (f.type === "button") {
           const fz = f.fontSize || 14;
-          return <a key={f.id} href={f.url || "#"} target={f.url?.startsWith("http") ? "_blank" : undefined} rel="noopener noreferrer" style={{ position: "absolute", left: f.x, top: f.y, background: f.bg || accent, color: "#fff", padding: `${fz * 0.8}px ${fz * 1.5}px`, borderRadius: (fz * 0.7), fontSize: fz, fontWeight: 700, textDecoration: "none", boxShadow: `0 8px 24px ${(f.bg || accent)}44`, zIndex: 40 }}>{f.content}</a>;
+          const fbg = f.bg || accent;
+          return <a key={f.id} href={f.url || "#"} target={f.url?.startsWith("http") ? "_blank" : undefined} rel="noopener noreferrer" style={{ position: "absolute", left: f.x, top: f.y, background: fbg, color: "#fff", padding: `${fz * 0.8}px ${fz * 1.5}px`, borderRadius: (fz * 0.7), fontSize: fz, fontWeight: 700, textDecoration: "none", boxShadow: `0 8px 24px ${fbg.startsWith("#") ? fbg + "44" : "rgba(0,0,0,0.15)"}`, zIndex: 40 }}>{f.content}</a>;
         }
         return null;
       })}

@@ -69,7 +69,7 @@ export const Documentos = ({ db, setDb }) => {
         </Tarjeta>
 
         <Tarjeta style={{ padding: 24, background: T.bg1, border: `1px dashed ${T.borderHi}`, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", cursor: "pointer", transition: "all .2s" }} onClick={() => setShowSubir(true)} onMouseEnter={e => e.currentTarget.style.borderColor = T.teal} onMouseLeave={e => e.currentTarget.style.borderColor = T.borderHi}>
-          <div style={{ width: 48, height: 48, borderRadius: "50%", background: T.teal + "1A", color: T.teal, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 16 }}>
+          <div style={{ width: 48, height: 48, borderRadius: "50%", background: T.tealSoft, color: T.teal, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 16 }}>
             <Ico k="upload" size={24} />
           </div>
           <div style={{ fontSize: 16, fontWeight: 800, color: T.white, marginBottom: 6 }}>Arrastra tus archivos aquí</div>
@@ -88,7 +88,7 @@ export const Documentos = ({ db, setDb }) => {
                 <FilaTabla key={doc.id}>
                   <Celda>
                     <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-                      <div style={{ width: 32, height: 32, borderRadius: 8, background: cfg.color + "15", color: cfg.color, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      <div style={{ width: 32, height: 32, borderRadius: 8, background: cfg.color.startsWith("#") ? cfg.color + "15" : cfg.color, color: cfg.color, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                         <Ico k={cfg.icon} size={16} />
                       </div>
                       <div>

@@ -212,7 +212,7 @@ export const Formularios = ({ db, guardarEnSupa, eliminarDeSupa }) => {
             <Btn size="sm" onClick={guardar} style={{ flex: 1, background: T.teal, color: "#000" }} disabled={saving}>
               {saving ? "Guardando..." : <><Ico k="check" size={12} /> Guardar</>}
             </Btn>
-            {activo && <button onClick={() => eliminarFormulario(activo.id)} style={{ background: "transparent", border: `1px solid ${T.red}40`, color: T.red, borderRadius: 6, padding: "4px 8px", fontSize: 11, cursor: "pointer" }}>🗑</button>}
+            {activo && <button onClick={() => eliminarFormulario(activo.id)} style={{ background: "transparent", border: `1px solid rgba(239, 68, 68, 0.25)`, color: T.red, borderRadius: 6, padding: "4px 8px", fontSize: 11, cursor: "pointer" }}>🗑</button>}
           </div>
         </div>
 
@@ -267,7 +267,7 @@ export const Formularios = ({ db, guardarEnSupa, eliminarDeSupa }) => {
                       <div style={{ display: "flex", gap: 3 }}>
                         <button onClick={() => moveField(idx, -1)} disabled={idx === 0} style={btnSm}>↑</button>
                         <button onClick={() => moveField(idx, 1)} disabled={idx === activo.campos.length - 1} style={btnSm}>↓</button>
-                        <button onClick={() => delCampo(c.id)} style={{ ...btnSm, color: T.red, borderColor: T.red + "40" }}>✕</button>
+                        <button onClick={() => delCampo(c.id)} style={{ ...btnSm, color: T.red, borderColor: "rgba(239, 68, 68, 0.25)" }}>✕</button>
                       </div>
                     </div>
                   </div>
@@ -376,7 +376,7 @@ export const Formularios = ({ db, guardarEnSupa, eliminarDeSupa }) => {
           {activo && (
             <div style={{ background: A.bgColor || "#FFFFFF", borderRadius: 20, padding: 36, width: "100%", maxWidth: 440, boxShadow: "0 25px 60px rgba(0,0,0,0.25)", fontFamily: A.fontFamily || "Inter, system-ui, sans-serif", color: A.textColor || "#111827" }}>
               <div style={{ textAlign: "center", marginBottom: 24 }}>
-                <div style={{ width: 46, height: 46, borderRadius: 12, background: (A.accentColor || "#06B6D4") + "22", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px", fontSize: 22 }}>📋</div>
+                <div style={{ width: 46, height: 46, borderRadius: 12, background: (A.accentColor || "#06B6D4") + ( (A.accentColor || "#06B6D4").startsWith("#") ? "22" : "" ), display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px", fontSize: 22 }}>📋</div>
                 <h2 style={{ margin: "0 0 6px", fontSize: 20, fontWeight: 800, color: A.textColor || "#111827" }}>{activo.nombre}</h2>
                 {A.subtitulo && <p style={{ margin: 0, fontSize: 13, color: "#6B7280" }}>{A.subtitulo}</p>}
               </div>

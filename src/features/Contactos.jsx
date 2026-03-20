@@ -71,7 +71,7 @@ export const Contactos = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) => {
       <div style={{ display: "flex", gap: 8, marginBottom: 20, flexWrap: "wrap" }}>
         {[["todos", "Todos"], ["cliente", "Clientes"], ["lead", "Leads"], ["prospecto", "Prospectos"], ["inactivo", "Inactivos"]].map(([k, label]) => (
           <button key={k} onClick={() => setEstadoF(k)}
-            style={{ padding: "6px 16px", borderRadius: 20, border: `1px solid ${estadoF === k ? (ESTADO_CFG[k]?.color || T.teal) : T.border}`, background: estadoF === k ? (ESTADO_CFG[k]?.color || T.teal) + "15" : T.bg1, color: estadoF === k ? (ESTADO_CFG[k]?.color || T.teal) : T.whiteDim, fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", transition: "all .2s" }}
+            style={{ padding: "6px 16px", borderRadius: 20, border: `1px solid ${estadoF === k ? (ESTADO_CFG[k]?.color || T.teal) : T.border}`, background: estadoF === k ? ((ESTADO_CFG[k]?.color || T.teal).startsWith("#") ? (ESTADO_CFG[k]?.color || T.teal) + "15" : (ESTADO_CFG[k]?.color || T.teal)) : T.bg1, color: estadoF === k ? (ESTADO_CFG[k]?.color || T.teal) : T.whiteDim, fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", transition: "all .2s" }}
             onMouseEnter={e => { if (estadoF !== k) e.currentTarget.style.background = T.bg2; }}
             onMouseLeave={e => { if (estadoF !== k) e.currentTarget.style.background = T.bg1; }}>
             {label} <span style={{ opacity: .6, marginLeft: 6 }}>{k === "todos" ? db.contactos.length : db.contactos.filter(c => c.estado === k).length}</span>
@@ -119,7 +119,7 @@ export const Contactos = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) => {
             const ec = ESTADO_CFG[c.estado] || ESTADO_CFG.lead;
             return (
               <Tarjeta key={c.id} onClick={() => setDetalle(c)} style={{ padding: 20, cursor: "pointer", transition: "all .2s", display: "flex", flexDirection: "column" }}
-                onMouseEnter={e => { e.currentTarget.style.borderColor = c.color + "60"; e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 10px 25px rgba(0,0,0,0.05)"; }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = c.color.startsWith("#") ? c.color + "60" : c.color; e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 10px 25px rgba(0,0,0,0.05)"; }}
                 onMouseLeave={e => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = "0 1px 3px rgba(0,0,0,0.05)"; }}>
                 <div style={{ display: "flex", gap: 12, marginBottom: 16, alignItems: "flex-start" }}>
                   <Av text={c.avatar} color={c.color} size={48} fs={16} />
@@ -175,7 +175,7 @@ export const Contactos = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) => {
                 <div style={{ fontSize: 12, fontWeight: 600, color: T.whiteDim, marginTop: 8 }}>Score de Calificación: <span style={{ color: T.white }}>{detalle.score}/100</span></div>
               </Tarjeta>
             </div>
-            {detalle.notas && <Tarjeta style={{ padding: 16, marginBottom: 16, background: T.tealGlow, borderColor: T.teal + "30" }}><div style={{ fontSize: 11, fontWeight: 700, color: T.teal, textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 8 }}>Notas</div><div style={{ fontSize: 13, color: T.whiteOff, lineHeight: 1.7 }}>{detalle.notas}</div></Tarjeta>}
+            {detalle.notas && <Tarjeta style={{ padding: 16, marginBottom: 16, background: T.tealGlow, borderColor: "rgba(20, 184, 166, 0.2)" }}><div style={{ fontSize: 11, fontWeight: 700, color: T.teal, textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 8 }}>Notas</div><div style={{ fontSize: 13, color: T.whiteOff, lineHeight: 1.7 }}>{detalle.notas}</div></Tarjeta>}
             <div style={{ display: "flex", gap: 12, justifyContent: "flex-end", marginTop: 24, paddingTop: 16, borderTop: `1px solid ${T.border}` }}>
               <Btn variant="secundario" onClick={() => setDetalle(null)}>Cerrar</Btn>
               <Btn onClick={() => { setEditando(detalle); setDetalle(null); setShowForm(true); }}><Ico k="edit" size={14} />Editar Contacto</Btn>

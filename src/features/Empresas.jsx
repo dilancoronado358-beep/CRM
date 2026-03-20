@@ -65,7 +65,7 @@ export const Empresas = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) => {
         {filtrados.map(emp => (
           <Tarjeta key={emp.id} style={{ display: "flex", flexDirection: "column", padding: 24, transition: "all .2s" }} onMouseEnter={e => { e.currentTarget.style.borderColor = emp.color; e.currentTarget.style.boxShadow = "0 8px 25px rgba(0,0,0,0.06)"; }} onMouseLeave={e => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.boxShadow = "0 1px 3px rgba(0,0,0,0.05)"; }}>
             <div style={{ display: "flex", gap: 16, alignItems: "center", marginBottom: 20 }}>
-              <div style={{ width: 56, height: 56, borderRadius: 14, background: emp.color + "15", border: `2px solid ${emp.color}30`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, fontWeight: 800, color: emp.color, flexShrink: 0 }}>{emp.logo}</div>
+              <div style={{ width: 56, height: 56, borderRadius: 14, background: emp.color.startsWith("#") ? emp.color + "15" : emp.color, border: `2px solid ${emp.color.startsWith("#") ? emp.color + "30" : emp.color}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, fontWeight: 800, color: emp.color, flexShrink: 0 }}>{emp.logo}</div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 18, fontWeight: 800, color: T.white, marginBottom: 4, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{emp.nombre}</div>
                 {emp.sitio && <a href={`https://${emp.sitio}`} target="_blank" rel="noreferrer" style={{ fontSize: 13, color: T.teal, textDecoration: "none", fontWeight: 600 }}>{emp.sitio}</a>}

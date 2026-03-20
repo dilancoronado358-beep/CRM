@@ -56,7 +56,7 @@ export const Notas = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) => {
           const contacto = db.contactos.find(c => c.id === n.contactoId);
           const deal = db.deals.find(d => d.id === n.dealId);
           return (
-            <Tarjeta key={n.id} style={{ padding: 20, borderTop: n.fijada ? `3px solid ${T.amber}` : `1px solid ${T.border}`, background: n.fijada ? T.amber + "05" : T.bg1 }}>
+            <Tarjeta key={n.id} style={{ padding: 20, borderTop: n.fijada ? `3px solid ${T.amber}` : `1px solid ${T.border}`, background: n.fijada ? "rgba(245, 158, 11, 0.05)" : T.bg1 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
                 <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                   <Av text={n.autor} color={T.teal} size={28} fs={11} />

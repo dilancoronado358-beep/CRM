@@ -205,7 +205,7 @@ export const PlantillasEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) =>
                 </button>
               </div>
 
-              <div style={{ width: 1.5, height: 20, background: T.whiteFade + "15" }} />
+              <div style={{ width: 1.5, height: 20, background: T.whiteFade }} />
 
               <div style={{ display: "flex", gap: 4, flexWrap: "wrap", flex: 1 }}>
                 {[
@@ -231,7 +231,7 @@ export const PlantillasEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) =>
                   </button>
                 ))}
 
-                <div style={{ width: 1, height: 24, background: T.whiteFade + "15", margin: "0 8px" }} />
+                <div style={{ width: 1, height: 24, background: T.whiteFade, margin: "0 8px" }} />
 
                 {[
                   { k: "align-left", cmd: "justifyLeft" },
@@ -277,7 +277,7 @@ export const PlantillasEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) =>
                    </div>
                 </div>
 
-                <div style={{ width: 1, height: 24, background: T.whiteFade + "15", margin: "0 8px" }} />
+                <div style={{ width: 1, height: 24, background: "rgba(107, 114, 128, 0.15)", margin: "0 8px" }} />
 
                 {[
                   { k: "list", cmd: "insertUnorderedList" },
@@ -313,7 +313,7 @@ export const PlantillasEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) =>
                     <Ico k="paperclip" size={14} /> IMPORTAR HTML
                   </button>
                 )}
-                <button onClick={() => setShowPreview(true)} style={{ background: "rgba(20,184,166,0.15)", color: T.teal, border: `1px solid ${T.teal}40`, borderRadius: 8, padding: "0 16px", height: 34, fontSize: 11, fontWeight: 800, cursor: "pointer", display: "flex", alignItems: "center", gap: 8 }} onMouseEnter={e => e.currentTarget.style.background = T.teal + "30"}>
+                <button onClick={() => setShowPreview(true)} style={{ background: "rgba(20,184,166,0.15)", color: T.teal, border: `1px solid rgba(20, 184, 166, 0.25)`, borderRadius: 8, padding: "0 16px", height: 34, fontSize: 11, fontWeight: 800, cursor: "pointer", display: "flex", alignItems: "center", gap: 8 }} onMouseEnter={e => e.currentTarget.style.background = T.tealSoft}>
                   <Ico k="eye" size={14} /> VISTA PREVIA
                 </button>
               </div>

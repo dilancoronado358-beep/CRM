@@ -86,7 +86,7 @@ export const Calendario = ({ db }) => {
           
           <div style={{ display: "flex", flexDirection: "column", gap: 4, maxHeight: 85, overflowY: "auto" }}>
             {evts.slice(0, 3).map((ev, i) => (
-              <div key={i} style={{ background: ev.color + "15", borderLeft: `3px solid ${ev.color}`, padding: "4px 8px", borderRadius: 4, display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: T.white }}>
+              <div key={i} style={{ background: ev.color.startsWith("#") ? ev.color + "15" : ev.color, borderLeft: `3px solid ${ev.color}`, padding: "4px 8px", borderRadius: 4, display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: T.white }}>
                 <Ico k={ev.icono} size={10} style={{ color: ev.color }} />
                 <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, fontWeight: 600 }}>{ev.titulo}</span>
               </div>

@@ -115,7 +115,7 @@ export const Dashboard = ({ db, t = s => s }) => {
         errorMsg = "⏳ El análisis está tomando más tiempo de lo esperado (timeout). Por favor, intenta de nuevo.";
       } else if (!e.response) {
         errorMsg = "🔌 Error de conexión con el servidor de IA (puerto 3001). Asegúrate de que 'node server/index.js' esté corriendo.";
-        if (protocol === "https:") {
+        if (window.location.protocol === "https:") {
           errorMsg += "\n\n⚠️ Tip: Estás usando HTTPS pero el servidor local es HTTP. Prueba entrando por http://localhost:5173";
         }
       } else {
@@ -133,12 +133,12 @@ export const Dashboard = ({ db, t = s => s }) => {
 
   const esGanado = d => {
     const pl = db.pipelines.find(p => p.id == d.pipeline_id);
-    const et = pl?.etapas.find(e => e.id == d.etapa_id);
+    const et = pl?.etapas?.find(e => e.id == d.etapa_id);
     return et?.es_ganado;
   };
   const esPerdido = d => {
     const pl = db.pipelines.find(p => p.id == d.pipeline_id);
-    const et = pl?.etapas.find(e => e.id == d.etapa_id);
+    const et = pl?.etapas?.find(e => e.id == d.etapa_id);
     return et?.es_perdido;
   };
   const activos = userDeals.filter(d => !esGanado(d) && !esPerdido(d));
@@ -151,7 +151,7 @@ export const Dashboard = ({ db, t = s => s }) => {
 
   // Pipeline funnel data for selected pipeline
   const plSel = db.pipelines.find(p => p.id == plFiltro) || db.pipelines[0];
-  const totalPipeline = plSel?.etapas.reduce((s, e) => {
+  const totalPipeline = (plSel?.etapas || []).reduce((s, e) => {
     const v = userDeals.filter(d => d.pipeline_id == plSel?.id && d.etapa_id == e.id).reduce((ss, d) => ss + d.valor, 0);
     return s + v;
   }, 0) || 1;
@@ -490,7 +490,7 @@ export const Dashboard = ({ db, t = s => s }) => {
           </div>
         ) : (
           <div style={{ color: T.whiteOff, lineHeight: 1.6, fontSize: 14 }}>
-            <div style={{ whiteSpace: "pre-wr ap", background: T.bg2, padding: 24, borderRadius: 12, border: `1px solid ${analisisIA.includes("Error") ? T.red + "30" : T.borderHi}` }}>
+            <div style={{ whiteSpace: "pre-wrap", background: T.bg2, padding: 24, borderRadius: 12, border: `1px solid ${analisisIA.includes("Error") ? "rgba(239,68,68,0.3)" : T.borderHi}` }}>
               {analisisIA}
             </div>
             {analisisIA.includes("Error") && (

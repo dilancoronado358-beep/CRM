@@ -98,7 +98,9 @@ export function useSupaState() {
       const fetchData = async (tablas) => {
         const promesas = tablas.map((tabla) => {
           let q = sb.from(tabla).select("*");
-          if (oi && !["organizacion", "recordatorios"].includes(tabla)) {
+          // Only filter by org_id if it exists. Avoiding it for organization itself and other potential system tables.
+          const tablasSinOrg = ["organizacion", "recordatorios", "usuariosApp", "empresaConfigs", "api_settings", "webhook_subscriptions"];
+          if (oi && !tablasSinOrg.includes(tabla)) {
             q = q.eq("org_id", oi);
             if (["emails", "email_accounts"].includes(tabla)) q = q.eq("user_id", db.usuario?.id);
           }
@@ -174,11 +176,11 @@ export function useSupaState() {
       // Temporizador estricto de seguridad: máximo 2.5 segundos de pantalla de carga
       const timeoutFallback = setTimeout(() => {
         if (montado) {
-          console.warn("⚠️ Tiempo de carga excedido (5s). Forzando isAppReady a true.");
+          console.warn("⚠️ Tiempo de carga excedido (30s). Forzando isAppReady a true.");
           setCargando(false);
           setIsAppReady(true);
         }
-      }, 5000);
+      }, 30000);
 
       try {
         let uLocal = null;
