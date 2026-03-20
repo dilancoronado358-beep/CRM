@@ -127,11 +127,11 @@ export const Sel = ({ value, onChange, children, style = {}, placeholder = "Sele
         <Ico k="chevron-down" size={14} style={{ transform: open ? "rotate(180deg)" : "none", transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)", color: open ? T.teal : T.whiteDim, flexShrink: 0 }} />
       </div>
       {open && (
-        <div style={{ position: "absolute", top: "calc(100% + 8px)", left: 0, right: 0, background: T.bg2, border: `1px solid ${T.borderHi}`, borderRadius: 12, zIndex: 10000, boxShadow: "0 15px 35px rgba(0,0,0,0.4)", padding: 6, maxHeight: 220, overflowY: "auto", animation: "slideIn .2s" }}>
+        <div style={{ position: "absolute", top: "calc(100% + 8px)", left: 0, right: 0, background: T.bg1, border: `1px solid ${T.whiteFade}25`, borderRadius: 12, zIndex: 10000, boxShadow: "0 20px 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.05)", padding: 6, maxHeight: 220, overflowY: "auto", animation: "slideIn .2s" }}>
           {options.map(o => (
             <div key={o.val} onClick={() => { onChange({ target: { value: o.val } }); setOpen(false); }}
               style={{ padding: "10px 14px", borderRadius: 8, fontSize: 13, color: o.val === value ? T.teal : T.whiteOff, background: o.val === value ? T.teal + "15" : "transparent", cursor: "pointer", transition: "all 0.15s", fontWeight: o.val === value ? 800 : 500 }}
-              onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,255,255,0.05)"; e.currentTarget.style.paddingLeft = "18px"; }}
+              onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,255,255,0.08)"; e.currentTarget.style.paddingLeft = "18px"; }}
               onMouseLeave={e => { e.currentTarget.style.background = o.val === value ? T.teal + "15" : "transparent"; e.currentTarget.style.paddingLeft = "14px"; }}
             >
               {o.lab}

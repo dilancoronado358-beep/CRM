@@ -17,11 +17,11 @@ export const PlantillasEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) =>
   const guardar = async () => {
     if (!f.titulo.trim() || !f.cuerpo.trim()) return;
     if (editando) {
-      const act = { ...editando, ...f };
+      const { creador, ...act } = { ...editando, ...f };
       setDb(d => ({ ...d, plantillasEmail: d.plantillasEmail.map(p => p.id === editando.id ? act : p) }));
       await guardarEnSupa("plantillasEmail", act);
     } else {
-      const nv = { ...f, id: "tpl" + uid(), creador: db.usuario?.name || "Usuario" };
+      const nv = { ...f, id: "tpl" + uid() };
       setDb(d => ({ ...d, plantillasEmail: [nv, ...(d.plantillasEmail || [])] }));
       await guardarEnSupa("plantillasEmail", nv);
     }
@@ -82,7 +82,7 @@ export const PlantillasEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) =>
         <div style={{ position: "relative", padding: "8px 12px 24px" }}>
           
           {/* SECCIÓN DE DATOS (GLASS CARD) */}
-          <div style={{ background: "rgba(255,255,255,0.02)", backdropFilter: "blur(20px)", borderRadius: 24, padding: "28px 32px", border: `1.5px solid ${T.whiteFade}08`, marginBottom: 24, boxShadow: "0 15px 35px rgba(0,0,0,0.2)" }}>
+          <div style={{ background: T.bg2, backdropFilter: "blur(20px)", borderRadius: 24, padding: "28px 32px", border: `1.5px solid ${T.whiteFade}20`, marginBottom: 24, boxShadow: "0 15px 35px rgba(0,0,0,0.2)" }}>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 200px", gap: 32 }}>
               <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
                 <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -92,14 +92,14 @@ export const PlantillasEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) =>
                 
                 <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                   <label style={{ fontSize: 10, fontWeight: 800, color: T.whiteDim, textTransform: "uppercase", letterSpacing: "0.1em" }}>Asunto Estratégico</label>
-                  <Inp value={f.asunto} onChange={s("asunto")} placeholder="Atrapa la atención con un gran asunto..." style={{ background: "rgba(255,255,255,0.03)", border: `1.5px solid ${T.whiteFade}08`, borderRadius: 12, padding: "12px 16px", fontSize: 14 }} />
+                  <Inp value={f.asunto} onChange={s("asunto")} placeholder="Atrapa la atención con un gran asunto..." style={{ background: T.bg1, border: `1.5px solid ${T.whiteFade}15`, borderRadius: 12, padding: "12px 16px", fontSize: 14 }} />
                 </div>
               </div>
 
               <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
                 <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                   <label style={{ fontSize: 10, fontWeight: 800, color: T.whiteDim, textTransform: "uppercase", letterSpacing: "0.1em" }}>Propósito / Categoría</label>
-                  <Sel value={f.categoria} onChange={s("categoria")} style={{ height: 44, background: "rgba(255,255,255,0.03)", borderRadius: 12 }}>
+                  <Sel value={f.categoria} onChange={s("categoria")} style={{ height: 44, borderRadius: 12 }}>
                     {Object.entries(TPL_CATS).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
                   </Sel>
                 </div>
