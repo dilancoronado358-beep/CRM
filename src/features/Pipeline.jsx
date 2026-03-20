@@ -246,7 +246,7 @@ const FormDeal = ({ db, setDb, f, setF, editDeal, onGuardar, onCancelar, guardar
             {rightTab === "timeline" && (
               <LeadTimeline
                 deal={editDeal}
-                contacto={db.contactos.find(c => c.id === f.contacto_id) || {}}
+                contacto={db.contactos?.find(c => c.id === f.contacto_id) || {}}
                 db={db} setDb={setDb} guardarEnSupa={guardarEnSupa} setModulo={setModulo}
                 focusEmailId={focusEmailId} setFocusEmailId={setFocusEmailId}
               />
@@ -380,7 +380,7 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
 
   const pipeline = db.pipelines?.find(p => p.id === plActivo);
 
-  const plDeals = db.deals.filter(d => {
+  const plDeals = db.deals?.filter(d => {
     if (d.pipeline_id !== plActivo) return false;
 
     // RBAC: Los vendedores solo ven sus propios leads
@@ -461,8 +461,8 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
 
   const agregarEtapa = () => {
     if (!nuevaEt.nombre.trim()) return;
-    const et = { id: "e" + uid(), nombre: nuevaEt.nombre, color: nuevaEt.color, probabilidad: +nuevaEt.probabilidad, orden: pipeline.etapas.length };
-    actPipeline({ ...pipeline, etapas: [...pipeline.etapas, et] });
+    const et = { id: "e" + uid(), nombre: nuevaEt.nombre, color: nuevaEt.color, probabilidad: +nuevaEt.probabilidad, orden: pipeline?.etapas?.length || 0 };
+    if (pipeline) actPipeline({ ...pipeline, etapas: [...(pipeline.etapas || []), et] });
     setShowNuevaEt(false); setNuevaEt({ nombre: "", color: T.teal, probabilidad: 50 });
   };
 
@@ -490,8 +490,8 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
           // Si es etapa_id, intentamos poner el nombre de la etapa para que sea humano
           if (c === "etapa_id") {
             const pl = db.pipelines?.find(p => p.id === editDeal.pipeline_id);
-            log.valor_anterior = pl?.etapas.find(e => e.id === editDeal[c])?.nombre || editDeal[c];
-            log.valor_nuevo = pl?.etapas.find(e => e.id === form[c])?.nombre || form[c];
+            log.valor_anterior = pl?.etapas?.find(e => e.id === editDeal[c])?.nombre || editDeal[c];
+            log.valor_nuevo = pl?.etapas?.find(e => e.id === form[c])?.nombre || form[c];
           }
           await guardarEnSupa("auditoria", log);
         }
@@ -500,7 +500,7 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
       // 4. NOTIFICACIONES & WEBHOOKS (Phase 40 & 42)
       // DISPARAR WEBHOOKS SEGÚN ETAPA (Phase 42)
       const pl = db.pipelines?.find(p => p.id === form.pipeline_id);
-      const etapa = pl?.etapas.find(e => e.id === form.etapa_id);
+      const etapa = pl?.etapas?.find(e => e.id === form.etapa_id);
 
       if (etapa && etapa.id !== editDeal.etapa_id) {
         let event = null;
@@ -692,7 +692,7 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
             style={{ flex: 1 }}
             innerStyle={{ background: "transparent", border: "none", padding: "6px 0", height: "auto" }}
           >
-            {db.pipelines?.map(pl => <option key={pl.id} value={pl.id}>{pl.nombre} ({db.deals.filter(d => d.pipeline_id === pl.id).length})</option>)}
+            {db.pipelines?.map(pl => <option key={pl.id} value={pl.id}>{pl.nombre} ({db.deals?.filter(d => d.pipeline_id === pl.id).length})</option>)}
           </Sel>
         </div>
 
