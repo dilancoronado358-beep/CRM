@@ -12,7 +12,7 @@ import { io } from "socket.io-client";
 // El socket se inicializará dinámicamente según la configuración
 // (Se usa una ref dentro del componente)
 
-export const Configuracion = ({ db, setDb, guardarEnSupa }) => {
+export const Configuracion = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) => {
   const API_URL = getApiUrl(db);
 
   const [tab, setTab] = useState("perfil");
@@ -906,7 +906,7 @@ ALTER TABLE usuariosApp ADD COLUMN IF NOT EXISTS org_id UUID REFERENCES organiza
                         <Btn variant="secundario" size="sm" onClick={() => syncEmails(acc.id)} disabled={probandoEmail}>
                           <Ico k="refresh" size={14} className={probandoEmail ? "spin" : ""} /> {probandoEmail ? "Syncing..." : "Sync Now"}
                         </Btn>
-                        <Btn variant="fantasma" size="sm" style={{ color: T.red }} onClick={() => eliminarDeSupa("email_accounts", acc.id)}>
+                        <Btn variant="fantasma" size="sm" style={{ color: T.red }} onClick={() => { if (confirm(`¿Seguro que deseas eliminar la cuenta ${acc.email}? Esta acción es irreversible.`)) eliminarDeSupa("email_accounts", acc.id); }}>
                           <Ico k="trash" size={16} />
                         </Btn>
                       </div>
