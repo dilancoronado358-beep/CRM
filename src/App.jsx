@@ -568,7 +568,7 @@ export default function App() {
         {/* TOPBAR */}
         <div style={{ 
           height: 72, 
-          background: T.bg1 + "CC", 
+          background: T.bg1, 
           borderBottom: `1px solid ${T.border}`, 
           display: "flex", 
           alignItems: "center", 
@@ -579,7 +579,7 @@ export default function App() {
           backdropFilter: "blur(12px)",
           position: "sticky",
           top: 0,
-          zindex: 40
+          zIndex: 40
         }}>
           <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
             <div style={{ fontWeight: 800, fontSize: 20, color: T.white }}>

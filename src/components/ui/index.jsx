@@ -65,7 +65,7 @@ export const Inp = ({ value, onChange, placeholder, type = "text", style = {}, r
     value, onChange, placeholder, readOnly, defaultValue, 
     onFocus: (e) => {
       e.target.style.borderColor = T.teal;
-      e.target.style.boxShadow = `0 0 0 3px ${T.teal}25`;
+      e.target.style.boxShadow = "0 0 0 3px rgba(20, 184, 166, 0.1)"; 
       if (props.onFocus) props.onFocus(e);
     },
     onBlur: (e) => {
@@ -154,9 +154,9 @@ export const Sel = ({ value, onChange, children, style = {}, innerStyle = {}, pl
         <div style={{ position: "absolute", top: "calc(100% + 8px)", left: 0, right: 0, background: T.bg1, border: `1px solid ${T.whiteFade}25`, borderRadius: 12, zIndex: 10000, boxShadow: "0 20px 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.05)", padding: 6, maxHeight: 220, overflowY: "auto", animation: "slideIn .2s forwards" }}>
           {options.map(o => (
             <div key={o.val} onClick={() => { onChange({ target: { value: o.val } }); setOpen(false); }}
-              style={{ padding: "10px 14px", borderRadius: 8, fontSize: 13, color: o.val === value ? T.teal : T.whiteOff, background: o.val === value ? T.teal + "15" : "transparent", cursor: "pointer", transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)", fontWeight: o.val === value ? 800 : 500 }}
+              style={{ padding: "10px 14px", borderRadius: 8, fontSize: 13, color: o.val === value ? T.teal : T.whiteOff, background: o.val === value ? T.bg2 : "transparent", cursor: "pointer", transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)", fontWeight: o.val === value ? 800 : 500 }}
               onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,255,255,0.08)"; }}
-              onMouseLeave={e => { e.currentTarget.style.background = o.val === value ? T.teal + "15" : "transparent"; }}
+              onMouseLeave={e => { e.currentTarget.style.background = o.val === value ? T.bg2 : "transparent"; }}
             >
               {o.lab}
             </div>
@@ -194,7 +194,7 @@ export const Modal = ({ open, onClose, title, children, width = 640 }) => {
 
 export const Tarjeta = ({ children, style = {}, onClick, brillo }) => (
   <div onClick={onClick} 
-    onMouseEnter={e => { if (onClick) { e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = "var(--shadow-xl)"; e.currentTarget.style.borderColor = T.teal + "50"; } }}
+    onMouseEnter={e => { if (onClick) { e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = "var(--shadow-xl)"; e.currentTarget.style.borderColor = T.borderHi; } }}
     onMouseLeave={e => { if (onClick) { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = brillo ? "0 4px 15px rgba(37,99,235,0.08)" : "var(--shadow-sm)"; e.currentTarget.style.borderColor = T.border; } }}
     style={{ background: T.bg1, border: `1px solid ${T.border}`, borderRadius: 16, boxShadow: brillo ? "0 4px 15px rgba(37,99,235,0.08)" : "var(--shadow-sm)", ...style, cursor: onClick ? "pointer" : undefined, transition: "all .4s cubic-bezier(0.16, 1, 0.3, 1)", position: "relative", overflow: "hidden" }}>
     {children}
