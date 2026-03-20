@@ -67,6 +67,8 @@ export const Configuracion = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) => {
   // Estados API & Webhooks
   const [showWebhookModal, setShowWebhookModal] = useState(false);
   const [showOrgModal, setShowOrgModal] = useState(false);
+  const [showDelEmailModal, setShowDelEmailModal] = useState(false);
+  const [selectedEmailAcc, setSelectedEmailAcc] = useState(null);
   const [fWebhook, setFWebhook] = useState({ url: "", evento: "deal.ganado" });
   const [fOrg, setFOrg] = useState({ nombre: "", slug: "" });
   const [showSwitchModal, setShowSwitchModal] = useState(false);
@@ -906,7 +908,7 @@ ALTER TABLE usuariosApp ADD COLUMN IF NOT EXISTS org_id UUID REFERENCES organiza
                         <Btn variant="secundario" size="sm" onClick={() => syncEmails(acc.id)} disabled={probandoEmail}>
                           <Ico k="refresh" size={14} className={probandoEmail ? "spin" : ""} /> {probandoEmail ? "Syncing..." : "Sync Now"}
                         </Btn>
-                        <Btn variant="fantasma" size="sm" style={{ color: T.red }} onClick={() => { if (confirm(`¿Seguro que deseas eliminar la cuenta ${acc.email}? Esta acción es irreversible.`)) eliminarDeSupa("email_accounts", acc.id); }}>
+                        <Btn variant="fantasma" size="sm" style={{ color: T.red }} onClick={() => { setSelectedEmailAcc(acc); setShowDelEmailModal(true); }}>
                           <Ico k="trash" size={16} />
                         </Btn>
                       </div>
@@ -1278,6 +1280,25 @@ ALTER TABLE usuariosApp ADD COLUMN IF NOT EXISTS org_id UUID REFERENCES organiza
             </div>
           }
           variant="info"
+        />
+      )}
+      {showDelEmailModal && (
+        <ConfirmModal
+          open={true}
+          onClose={() => { setShowDelEmailModal(false); setSelectedEmailAcc(null); }}
+          onConfirm={() => {
+            eliminarDeSupa("email_accounts", selectedEmailAcc.id);
+            setShowDelEmailModal(false);
+            setSelectedEmailAcc(null);
+          }}
+          title="Eliminar Cuenta de Correo"
+          description={`¿Estás seguro de que deseas desconectar y eliminar la cuenta ${selectedEmailAcc?.email}?`}
+          extraContent={
+            <div style={{ fontSize: 13, color: T.whiteDim, background: 'rgba(255,255,255,0.05)', padding: 12, borderRadius: 8, border: `1px solid ${T.borderHi}` }}>
+              Esta acción detendrá la sincronización de correos y calendario para esta cuenta de forma inmediata.
+            </div>
+          }
+          variant="danger"
         />
       )}
     </div>
