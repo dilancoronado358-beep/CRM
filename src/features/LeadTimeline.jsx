@@ -367,6 +367,7 @@ export function LeadTimeline({ deal = {}, contacto = {}, db = {}, setDb, guardar
         contacto_id: contacto?.id,
         account_id: accId,
         user_id: db.usuario?.id, // CRITICAL: Filtered by user_id in cargarDeSupa
+        creado_at: new Date().toISOString(),
         adjuntos: emailAttachments
       };
       await guardarEnSupa("emails", sentEmail);
