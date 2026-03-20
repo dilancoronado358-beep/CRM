@@ -37,6 +37,8 @@ const FormDeal = ({ db, setDb, f, setF, editDeal, onGuardar, onCancelar, guardar
   const stages = plActual?.etapas || [];
   const currentEtIdx = stages.findIndex(s => s.id === f.etapa_id);
 
+  const selContacto = db.contactos.find(c => c.id === f.contacto_id);
+
   const handleDrop = e => {
     e.preventDefault(); setDragActive(false);
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
@@ -50,14 +52,13 @@ const FormDeal = ({ db, setDb, f, setF, editDeal, onGuardar, onCancelar, guardar
   const quitarArchivo = id => setF(p => ({ ...p, archivos: p.archivos.filter(a => a.id !== id) }));
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 32, minHeight: 800, padding: 24, background: T.bg0, borderRadius: 28, color: T.white }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 32, minHeight: 850, padding: 24, background: T.bg0, borderRadius: 28, color: T.white }}>
       {/* ENSING "LIQUID-RIBBON" COMPACT */}
       <div style={{ position: "relative", marginBottom: 12 }}>
         <div style={{ display: "flex", background: "rgba(255,255,255,0.03)", padding: 4, borderRadius: 16, border: `1px solid ${T.white}08`, position: "relative", overflow: "hidden" }}>
           {stages.map((st, idx) => {
             const isActive = st.id === f.etapa_id;
             const isPast = idx < currentEtIdx;
-            
             return (
               <div key={st.id} onClick={async () => {
                   const nextF = { ...f, etapa_id: st.id, prob: st.probabilidad };
@@ -86,13 +87,13 @@ const FormDeal = ({ db, setDb, f, setF, editDeal, onGuardar, onCancelar, guardar
       <div style={{ display: "flex", gap: 40, flexWrap: "wrap" }}>
         
         {/* COLUMNA IZQUIERDA: FULL INFO (SCROLLABLE AREA) */}
-        <div style={{ flex: "1 1 440px", display: "flex", flexDirection: "column", gap: 32, maxHeight: "75vh", overflowY: "auto", paddingRight: 10 }}>
+        <div style={{ flex: "1 1 440px", display: "flex", flexDirection: "column", gap: 32, maxHeight: "78vh", overflowY: "auto", paddingRight: 10 }}>
           
           {/* SECTION 1: INFORMACIÓN ESENCIAL */}
           <div style={{ background: "rgba(255,255,255,0.02)", border: `1px solid ${T.white}08`, borderRadius: 28, padding: 28 }}>
              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
                 <div style={{ fontSize: 13, fontWeight: 900, color: T.teal, letterSpacing: ".15em", textTransform: "uppercase" }}>Información Esencial</div>
-                <div style={{ background: "rgba(255,255,255,0.05)", padding: "4px 10px", borderRadius: 8, fontSize: 12, fontWeight: 800, color: T.whiteDim }}>Score: {calculateLeadScore(db, f)}</div>
+                <div style={{ background: "rgba(255,255,255,0.05)", padding: "4px 10px", borderRadius: 8, fontSize: 11, fontWeight: 800, color: T.whiteDim }}>Predictive Score: {calculateLeadScore(db, f)}</div>
              </div>
 
              <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
@@ -113,6 +114,18 @@ const FormDeal = ({ db, setDb, f, setF, editDeal, onGuardar, onCancelar, guardar
                    if (editDeal) guardarEnSupa("deals", { ...editDeal, ...nf });
                  }} style={{ fontWeight: 800, background: "rgba(255,255,255,0.02)", border: `1px solid ${T.white}10`, borderRadius: 12 }} /></Campo>
                </div>
+
+               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+                 <Campo label="Fecha Cierre"><LocalInput type="date" value={f.fecha_cierre || ""} onCommit={v => {
+                   const nf = { ...f, fecha_cierre: v }; setF(nf);
+                   if (editDeal) guardarEnSupa("deals", { ...editDeal, ...nf });
+                 }} style={{ background: "rgba(255,255,255,0.02)", border: `1px solid ${T.white}10`, borderRadius: 12 }} /></Campo>
+                 <Campo label="Etiquetas (separar por coma)"><LocalInput value={f.etiquetas?.join(", ") || ""} onCommit={v => {
+                   const tags = v.split(",").map(t => t.trim()).filter(Boolean);
+                   const nf = { ...f, etiquetas: tags }; setF(nf);
+                   if (editDeal) guardarEnSupa("deals", { ...editDeal, ...nf });
+                 }} style={{ background: "rgba(255,255,255,0.02)", border: `1px solid ${T.white}10`, borderRadius: 12 }} /></Campo>
+               </div>
              </div>
           </div>
 
@@ -120,10 +133,27 @@ const FormDeal = ({ db, setDb, f, setF, editDeal, onGuardar, onCancelar, guardar
           <div style={{ background: "rgba(255,255,255,0.02)", border: `1px solid ${T.white}08`, borderRadius: 28, padding: 28 }}>
             <div style={{ fontSize: 11, fontWeight: 900, color: T.whiteFade, marginBottom: 20, letterSpacing: ".15em", textTransform: "uppercase" }}>Relaciones & Staff</div>
             <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-              <Campo label="Contacto Principal"><Sel value={f.contacto_id} onChange={async e => {
-                const val = e.target.value; const nextF = { ...f, contacto_id: val }; setF(nextF);
-                if (editDeal) await guardarEnSupa("deals", { ...editDeal, ...nextF });
-              }} style={{ background: "transparent", border: `1px solid ${T.white}10`, borderRadius: 12, height: 44 }}><option value="">— Ninguno —</option>{db.contactos.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}</Sel></Campo>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+                 <Campo label="Contacto Principal"><Sel value={f.contacto_id} onChange={async e => {
+                   const val = e.target.value; const nextF = { ...f, contacto_id: val }; setF(nextF);
+                   if (editDeal) await guardarEnSupa("deals", { ...editDeal, ...nextF });
+                 }} style={{ background: "transparent", border: `1px solid ${T.white}10`, borderRadius: 12, height: 44 }}><option value="">— Ninguno —</option>{db.contactos.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}</Sel></Campo>
+                 <Campo label="Empresa"><Sel value={f.empresa_id} onChange={async e => {
+                   const val = e.target.value; const nextF = { ...f, empresa_id: val }; setF(nextF);
+                   if (editDeal) await guardarEnSupa("deals", { ...editDeal, ...nextF });
+                 }} style={{ background: "transparent", border: `1px solid ${T.white}10`, borderRadius: 12, height: 44 }}><option value="">— Ninguna —</option>{db.empresas.map(e => <option key={e.id} value={e.id}>{e.nombre}</option>)}</Sel></Campo>
+              </div>
+
+              {selContacto && (
+                <div style={{ background: "rgba(255,255,255,0.02)", padding: 16, borderRadius: 16, display: "flex", flexDirection: "column", gap: 8 }}>
+                   <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 12, color: T.whiteOff }}>
+                     <Ico k="mail" size={12} style={{ color: T.teal, opacity: 0.7 }} /> {selContacto.email || "Sin email"}
+                   </div>
+                   <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 12, color: T.whiteOff }}>
+                     <Ico k="phone" size={12} style={{ color: T.teal, opacity: 0.7 }} /> {selContacto.telefono || "Sin teléfono"}
+                   </div>
+                </div>
+              )}
               
               <Campo label="Responsable"><Sel value={f.responsable} onChange={async e => {
                 const val = e.target.value; const nextF = { ...f, responsable: val }; setF(nextF);
@@ -135,7 +165,7 @@ const FormDeal = ({ db, setDb, f, setF, editDeal, onGuardar, onCancelar, guardar
           {/* SECTION 3: ATRIBUTOS EXTRA */}
           <div style={{ background: "rgba(255,255,255,0.02)", border: `1px solid ${T.white}08`, borderRadius: 28, padding: 28 }}>
              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
-                <div style={{ fontSize: 11, fontWeight: 900, color: T.whiteFade, letterSpacing: ".15em", textTransform: "uppercase" }}>Atributos Extra</div>
+                <div style={{ fontSize: 11, fontWeight: 900, color: T.whiteFade, letterSpacing: ".15em", textTransform: "uppercase" }}>Atributos Avanzados</div>
                 <Btn variant="fantasma" size="xs" onClick={() => setShowConfigCampos(true)} style={{ color: T.teal }}><Ico k="cog" size={12} /></Btn>
              </div>
              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
@@ -160,7 +190,19 @@ const FormDeal = ({ db, setDb, f, setF, editDeal, onGuardar, onCancelar, guardar
              </div>
           </div>
 
-          {/* SECTION 4: VAULT DE DOCUMENTOS */}
+          {/* SECTION 4: NOTAS ESTRATÉGICAS */}
+          <div style={{ background: "rgba(255,255,255,0.02)", border: `1px solid ${T.white}08`, borderRadius: 28, padding: 28 }}>
+             <div style={{ fontSize: 11, fontWeight: 900, color: T.whiteFade, marginBottom: 20, letterSpacing: ".15em", textTransform: "uppercase" }}>Notas & Descripción</div>
+             <textarea 
+                value={f.notas || ""} 
+                onChange={e => setF(prev => ({ ...prev, notas: e.target.value }))}
+                onBlur={async () => { if (editDeal) await guardarEnSupa("deals", { ...editDeal, notas: f.notas }); }}
+                placeholder="Escriba aquí notas estratégicas del negocio..."
+                style={{ width: "100%", minHeight: 120, background: "rgba(255,255,255,0.02)", border: `1px solid ${T.white}10`, borderRadius: 16, padding: 16, color: T.white, fontSize: 14, fontFamily: "inherit", resize: "none", outline: "none" }}
+             />
+          </div>
+
+          {/* SECTION 5: VAULT DE DOCUMENTOS */}
           <div style={{ background: "rgba(255,255,255,0.02)", border: `1px solid ${T.white}08`, borderRadius: 28, padding: 28 }}>
             <div style={{ fontSize: 11, fontWeight: 900, color: T.whiteFade, marginBottom: 20, letterSpacing: ".15em", textTransform: "uppercase" }}>Vault de Documentos</div>
             <div style={{ flex: 1, border: `1px dashed ${dragActive ? T.teal : T.white + "10"}`, borderRadius: 20, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, padding: 32, background: dragActive ? T.teal + "05" : "transparent", transition: "all .3s" }} 
@@ -190,7 +232,7 @@ const FormDeal = ({ db, setDb, f, setF, editDeal, onGuardar, onCancelar, guardar
         </div>
 
         {/* COLUMNA DERECHA: ACTIVITY FEED & MATRIX */}
-        <div style={{ flex: "1.2 1 540px", minHeight: "75vh", background: "rgba(255,255,255,0.01)", borderRadius: 32, border: `1px solid ${T.white}05`, overflow: "hidden", display: "flex", flexDirection: "column" }}>
+        <div style={{ flex: "1.2 1 540px", minHeight: "78vh", background: "rgba(255,255,255,0.01)", borderRadius: 32, border: `1px solid ${T.white}05`, overflow: "hidden", display: "flex", flexDirection: "column" }}>
           
           <div style={{ display: "flex", background: "rgba(255,255,255,0.02)", padding: 4, gap: 4 }}>
              {["timeline", "whatsapp", "finanzas", "historial"].map(tk => (
