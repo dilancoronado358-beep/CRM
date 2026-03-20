@@ -289,50 +289,55 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa, cargando
 
         <div style={{ flex: 1, overflowY: "auto", padding: "12px" }}>
           {cargandoFondo && msgs.length === 0 ? (
-            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-              {[1, 2, 3, 4, 5].map(i => <div key={i} style={{ height: 110, background: "rgba(255,255,255,0.02)", borderRadius: 20, animation: "pulse 1.5s infinite" }} />)}
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              {[1, 2, 3, 4, 5, 6, 7, 8].map(i => <div key={i} style={{ height: 42, borderBottom: `1px solid ${T.whiteFade}10`, animation: "pulse 1.5s infinite" }} />)}
             </div>
           ) : msgs.length === 0 ? <Vacio text="No hay mensajes" /> : msgs.map(e => {
             const isSel = emailFocus?.id === e.id;
             const deStr = (carpeta === "entrada" ? e.de : e.para) || "Sin remitente";
-            const avClr = getAvClr(deStr);
             
             return (
               <div key={e.id} onClick={() => { setEmailFocus(e); marcarLeido(e.id); }}
                 style={{ 
-                  position: "relative", 
-                  padding: "20px 24px", 
-                  borderRadius: 18, 
-                  marginBottom: 10, 
-                  cursor: "pointer", 
-                  background: isSel ? T.bg1 : "transparent",
-                  border: `1.5px solid ${isSel ? T.teal + "40" : "transparent"}`,
-                  boxShadow: isSel ? `0 20px 40px -10px rgba(0,0,0,0.1)` : "none",
-                  transform: isSel ? "scale(1.02)" : "none",
-                  transition: "all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
                   display: "flex",
-                  gap: 16,
                   alignItems: "center",
-                  overflow: "hidden"
+                  padding: "0 16px",
+                  height: 42,
+                  cursor: "pointer",
+                  background: isSel ? "rgba(20,184,166,0.1)" : "transparent",
+                  borderBottom: `1px solid ${T.whiteFade}08`,
+                  transition: "background 0.1s",
+                  fontSize: 13,
+                  position: "relative",
+                  color: !e.leido ? T.white : T.whiteOff
                 }}
-                onMouseEnter={e => { if (!isSel) { e.currentTarget.style.background = "rgba(255,255,255,0.02)"; e.currentTarget.style.transform = "translateX(5px)"; } }}
-                onMouseLeave={e => { if (!isSel) { e.currentTarget.style.background = "transparent"; e.currentTarget.style.transform = "none"; } }}
+                onMouseEnter={e => { if (!isSel) e.currentTarget.style.background = "rgba(255,255,255,0.02)"; }}
+                onMouseLeave={e => { if (!isSel) e.currentTarget.style.background = "transparent"; }}
               >
                 {!e.leido && (
-                  <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 5, background: T.teal, boxShadow: `0 0 15px ${T.teal}` }} />
+                  <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 3, background: T.teal }} />
                 )}
-                
-                <Av text={deStr} size={48} color={avClr} />
-                
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-                    <span style={{ fontSize: 14, fontWeight: !e.leido ? 900 : 700, color: !e.leido ? T.white : T.whiteOff, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", letterSpacing: "-0.01em" }}>
-                      {deStr.split("@")[0]}
-                    </span>
-                    <span style={{ fontSize: 11, color: T.whiteDim, fontWeight: 700, letterSpacing: ".02em", opacity: 0.6 }}>{fdate(e.fecha).toUpperCase()}</span>
-                  </div>
-                  <div style={{ fontSize: 14, fontWeight: !e.leido ? 800 : 600, color: T.white, marginBottom: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", letterSpacing: "-0.01em" }}>{e.asunto}</div>
-                  <div style={{ fontSize: 13, color: T.whiteDim, overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical", opacity: 0.6, lineHeight: 1.4 }}>{e.cuerpo}</div>
+
+                {/* GMAIL-STYLE ICONS */}
+                <div style={{ display: "flex", gap: 12, marginRight: 16, color: T.whiteFade, opacity: 0.5 }}>
+                  <div style={{ width: 14, height: 14, border: `1.5px solid ${T.whiteFade}`, borderRadius: 3 }} />
+                  <Ico k="star" size={14} />
+                </div>
+
+                {/* SENDER */}
+                <div style={{ width: 160, fontWeight: !e.leido ? 800 : 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flexShrink: 0, marginRight: 16 }}>
+                  {deStr.split("@")[0]}
+                </div>
+
+                {/* CONTENT (Subject - Snippet) */}
+                <div style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  <span style={{ fontWeight: !e.leido ? 800 : 600, color: T.white }}>{e.asunto}</span>
+                  <span style={{ color: T.whiteDim, marginLeft: 8, opacity: 0.6 }}>— {e.cuerpo}</span>
+                </div>
+
+                {/* DATE */}
+                <div style={{ width: 80, textAlign: "right", fontSize: 11, fontWeight: 700, color: T.whiteDim, opacity: 0.6, flexShrink: 0 }}>
+                  {fdate(e.fecha)}
                 </div>
               </div>
             );
