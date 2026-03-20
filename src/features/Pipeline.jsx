@@ -105,9 +105,9 @@ const FormDeal = ({ db, setDb, f, setF, editDeal, onGuardar, onCancelar, guardar
         ))}
       </div>
 
-      <div style={{ display: "flex", gap: 32 }}>
+      <div style={{ display: "flex", gap: 32, flexWrap: "wrap" }}>
         {/* COLUMNA IZQUIERDA: INFORMACIÓN Y CAMPOS */}
-        <div style={{ width: 440, display: "flex", flexDirection: "column", gap: 20, flexShrink: 0 }}>
+        <div style={{ flex: "1 1 440px", maxWidth: 440, display: "flex", flexDirection: "column", gap: 20 }}>
           <div style={{ background: T.bg1, border: `1px solid ${T.border}`, borderRadius: 16, padding: 24 }}>
             <Campo label="Título del Deal *" style={{ marginBottom: 20 }}>
               <LocalInput value={f.titulo} onCommit={v => {
@@ -267,7 +267,7 @@ const FormDeal = ({ db, setDb, f, setF, editDeal, onGuardar, onCancelar, guardar
           </div>
         </div>
 
-        <div style={{ flex: 1.2, borderLeft: `1px solid ${T.borderHi}`, minHeight: "65vh" }}>
+        <div style={{ flex: "1.2 1 500px", borderLeft: `1px solid ${T.borderHi}`, minHeight: "65vh" }}>
           {leadTab === "timeline" && (
             <LeadTimeline
               deal={editDeal}
@@ -1155,7 +1155,7 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
         </div>
       </Modal>
 
-      <Modal open={showDealForm} onClose={() => { setShowDealForm(false); setEditDeal(null); }} title={editDeal ? "Editar Deal" : "Nuevo Deal"} width={editDeal ? 1300 : 720}>
+      <Modal open={showDealForm} onClose={() => { setShowDealForm(false); setEditDeal(null); }} title={editDeal ? "Editar Deal" : "Nuevo Deal"} width={editDeal ? 1200 : 680}>
         <FormDeal 
           db={db}
           setDb={setDb}
