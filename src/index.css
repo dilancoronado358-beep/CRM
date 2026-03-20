@@ -71,3 +71,20 @@ button {
 input, select, textarea {
   font-family: inherit;
 }
+
+/* Premium Select Styling */
+select {
+  color-scheme: dark;
+}
+
+option {
+  background-color: #111827;
+  color: #F9FAFB;
+  padding: 8px;
+}
+
+/* Custom styles for the native select used in Sel component */
+select:focus {
+  border-color: var(--teal) !important;
+  box-shadow: 0 0 0 2px var(--tealSoft) !important;
+}

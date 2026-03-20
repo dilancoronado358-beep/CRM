@@ -258,10 +258,10 @@ export const Dashboard = ({ db, t = s => s }) => {
         </div>
         <div style={{ display: "flex", gap: 12 }}>
           {db.pipelines.length > 1 && (
-            <select value={plFiltro} onChange={e => setPlFiltro(e.target.value)}
-              style={{ background: T.bg2, color: T.teal, border: `1px solid ${T.borderHi}`, borderRadius: 10, padding: "8px 14px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", outline: "none" }}>
+            <Sel value={plFiltro} onChange={e => setPlFiltro(e.target.value)}
+              style={{ width: "auto", minWidth: 160 }}>
               {db.pipelines.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
-            </select>
+            </Sel>
           )}
           <Btn variant="fantasma" onClick={() => setShowConfig(true)}>
             <Ico k="edit" size={16} /> Personalizar

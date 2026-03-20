@@ -90,9 +90,37 @@ export const LocalInput = ({ value, onChange, onCommit, type = "text", ...props 
 };
 
 export const Sel = ({ value, onChange, children, style = {}, defaultValue, ...props }) => (
-  <select value={value} defaultValue={defaultValue} onChange={onChange} {...props} style={{ background: T.bg1, border: `1px solid ${T.borderHi}`, borderRadius: 7, color: T.white, fontSize: 13, padding: "9px 11px", outline: "none", width: "100%", boxSizing: "border-box", fontFamily: "inherit", ...style }}>
-    {children}
-  </select>
+  <div style={{ position: "relative", width: style.width || "100%", display: "inline-block", ...style }}>
+    <select 
+      value={value} 
+      defaultValue={defaultValue} 
+      onChange={onChange} 
+      {...props} 
+      style={{ 
+        appearance: "none",
+        WebkitAppearance: "none",
+        MozAppearance: "none",
+        background: T.bg1, 
+        border: `1px solid ${T.borderHi}`, 
+        borderRadius: 10, 
+        color: T.white, 
+        fontSize: 13, 
+        padding: "9px 34px 9px 12px", 
+        outline: "none", 
+        width: "100%", 
+        boxSizing: "border-box", 
+        fontFamily: "inherit", 
+        cursor: "pointer",
+        colorScheme: "dark",
+        transition: "border-color 0.2s, box-shadow 0.2s"
+      }}
+    >
+      {children}
+    </select>
+    <div style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", pointerEvents: "none", color: T.whiteDim, display: "flex", alignItems: "center" }}>
+      <Ico k="chevron-down" size={12} />
+    </div>
+  </div>
 );
 
 export const Lbl = ({ children }) => <label style={{ fontSize: 10.5, fontWeight: 700, color: T.whiteDim, textTransform: "uppercase", letterSpacing: ".05em", display: "block", marginBottom: 5 }}>{children}</label>;
