@@ -89,6 +89,7 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa, cargando
   const [adjuntosSubiendo, setAdjuntosSubiendo] = useState(false);
   const [adjuntosLocal, setAdjuntosLocal] = useState([]);
   const [selectedAccountId, setSelectedAccountId] = useState(db.email_accounts?.[0]?.id || null);
+  const [selectedIds, setSelectedIds] = useState([]);
 
   useEffect(() => {
     if (!selectedAccountId && db.email_accounts?.length > 0) {
@@ -152,8 +153,50 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa, cargando
     if (!item || item.leido) return;
     const n = { ...item, leido: true };
     setDb(d => ({ ...d, emails: d.emails.map(e => e.id === id ? n : e) }));
-    await guardarEnSupa("emails", n);
+    try {
+      await guardarEnSupa("emails", n);
+    } catch (e) {
+      console.error("Error guardando estado leido", e);
+    }
     if (emailFocus?.id === id) setEmailFocus(n);
+  };
+
+  const toggleSeleccion = (id) => {
+    setSelectedIds(p => p.includes(id) ? p.filter(x => x !== id) : [...p, id]);
+  };
+
+  const seleccionarTodo = () => {
+    if (selectedIds.length === msgs.length && msgs.length > 0) setSelectedIds([]);
+    else setSelectedIds(msgs.map(m => m.id));
+  };
+
+  const eliminarSeleccionados = async () => {
+    if (selectedIds.length === 0) return;
+    if (!window.confirm(`¿Seguro que quieres eliminar ${selectedIds.length} correos?`)) return;
+    const ids = [...selectedIds];
+    setSelectedIds([]);
+    setDb(d => ({ ...d, emails: d.emails.filter(e => !ids.includes(e.id)) }));
+    try {
+      for (const id of ids) {
+        await eliminarDeSupa("emails", { id });
+      }
+      toast.success(`${ids.length} correos eliminados.`);
+    } catch (e) {
+      toast.error("Error al eliminar algunos correos.");
+    }
+    if (ids.includes(emailFocus?.id)) setEmailFocus(null);
+  };
+
+  const marcarSeleccionadosLeidos = async (leido = true) => {
+    const ids = [...selectedIds];
+    const nuevosEmails = db.emails.map(e => ids.includes(e.id) ? { ...e, leido } : e);
+    setDb(d => ({ ...d, emails: nuevosEmails }));
+    setSelectedIds([]);
+    for (const id of ids) {
+      const item = nuevosEmails.find(e => e.id === id);
+      await guardarEnSupa("emails", item);
+    }
+    toast.success(`${ids.length} correos marcados.`);
   };
 
   const handleSync = async () => {
@@ -287,13 +330,34 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa, cargando
           </button>
         </div>
 
-        <div style={{ flex: 1, overflowY: "auto", padding: "12px" }}>
+        {/* 2.1 TOOLBAR DE ACCIONES MASIVAS */}
+        <div style={{ height: 48, borderBottom: `1px solid ${T.whiteFade}10`, display: "flex", alignItems: "center", padding: "0 16px", background: selectedIds.length > 0 ? "rgba(20,184,166,0.1)" : "transparent", transition: "all 0.3s" }}>
+          <div onClick={seleccionarTodo} style={{ width: 18, height: 18, border: `1.5px solid ${selectedIds.length === msgs.length && msgs.length > 0 ? T.teal : T.whiteFade}`, borderRadius: 4, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", marginRight: 20, background: selectedIds.length === msgs.length && msgs.length > 0 ? T.teal : "transparent" }}>
+            {selectedIds.length === msgs.length && msgs.length > 0 && <Ico k="check" size={12} color="#fff" />}
+          </div>
+          
+          {selectedIds.length > 0 ? (
+            <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+              <span style={{ fontSize: 13, fontWeight: 700, color: T.white, marginRight: 8 }}>{selectedIds.length} seleccionados</span>
+              <button onClick={eliminarSeleccionados} style={{ background: "none", border: "none", color: T.red, cursor: "pointer", display: "flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 700 }}><Ico k="trash" size={14} /> Eliminar</button>
+              <button onClick={() => marcarSeleccionadosLeidos(true)} style={{ background: "none", border: "none", color: T.teal, cursor: "pointer", display: "flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 700 }}><Ico k="eye" size={14} /> Marcar leído</button>
+              <button onClick={() => setSelectedIds([])} style={{ background: "none", border: "none", color: T.whiteDim, cursor: "pointer", fontSize: 12, fontWeight: 700 }}>Cancelar</button>
+            </div>
+          ) : (
+            <div style={{ display: "flex", alignItems: "center", gap: 16, color: T.whiteDim }}>
+              <button onClick={handleSync} style={{ background: "none", border: "none", color: "inherit", cursor: "pointer", display: "flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 600 }}><Ico k="refresh" size={14} /> Sincronizar</button>
+            </div>
+          )}
+        </div>
+
+        <div style={{ flex: 1, overflowY: "auto", padding: "4px 0" }}>
           {cargandoFondo && msgs.length === 0 ? (
             <div style={{ display: "flex", flexDirection: "column" }}>
               {[1, 2, 3, 4, 5, 6, 7, 8].map(i => <div key={i} style={{ height: 42, borderBottom: `1px solid ${T.whiteFade}10`, animation: "pulse 1.5s infinite" }} />)}
             </div>
           ) : msgs.length === 0 ? <Vacio text="No hay mensajes" /> : msgs.map(e => {
             const isSel = emailFocus?.id === e.id;
+            const isChecked = selectedIds.includes(e.id);
             const deStr = (carpeta === "entrada" ? e.de : e.para) || "Sin remitente";
             
             return (
@@ -304,24 +368,27 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa, cargando
                   padding: "0 16px",
                   height: 42,
                   cursor: "pointer",
-                  background: isSel ? "rgba(20,184,166,0.1)" : "transparent",
-                  borderBottom: `1px solid ${T.whiteFade}08`,
+                  background: isChecked ? "rgba(20,184,166,0.08)" : isSel ? "rgba(255,255,255,0.05)" : "transparent",
+                  borderBottom: `1px solid ${T.whiteFade}05`,
                   transition: "background 0.1s",
                   fontSize: 13,
                   position: "relative",
                   color: !e.leido ? T.white : T.whiteOff
                 }}
-                onMouseEnter={e => { if (!isSel) e.currentTarget.style.background = "rgba(255,255,255,0.02)"; }}
-                onMouseLeave={e => { if (!isSel) e.currentTarget.style.background = "transparent"; }}
+                onMouseEnter={e => { if (!isSel && !isChecked) e.currentTarget.style.background = "rgba(255,255,255,0.02)"; }}
+                onMouseLeave={e => { if (!isSel && !isChecked) e.currentTarget.style.background = "transparent"; }}
               >
                 {!e.leido && (
                   <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 3, background: T.teal }} />
                 )}
 
                 {/* GMAIL-STYLE ICONS */}
-                <div style={{ display: "flex", gap: 12, marginRight: 16, color: T.whiteFade, opacity: 0.5 }}>
-                  <div style={{ width: 14, height: 14, border: `1.5px solid ${T.whiteFade}`, borderRadius: 3 }} />
-                  <Ico k="star" size={14} />
+                <div style={{ display: "flex", gap: 12, marginRight: 16, color: T.whiteFade, alignItems: "center" }}>
+                  <div onClick={(ev) => { ev.stopPropagation(); toggleSeleccion(e.id); }} 
+                    style={{ width: 14, height: 14, border: `1.5px solid ${isChecked ? T.teal : T.whiteFade}`, borderRadius: 3, display: "flex", alignItems: "center", justifyContent: "center", background: isChecked ? T.teal : "transparent", transition: "all 0.2s" }}>
+                    {isChecked && <Ico k="check" size={10} color="#fff" />}
+                  </div>
+                  <Ico k="star" size={14} style={{ opacity: 0.4 }} />
                 </div>
 
                 {/* SENDER */}
