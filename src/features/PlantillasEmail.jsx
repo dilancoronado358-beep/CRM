@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { T } from "../theme";
 import { uid, TPL_CATS } from "../utils";
 import { Chip, Btn, Inp, Sel, Campo, Modal, Tarjeta, Vacio, EncabezadoSeccion, BuscadorBar, Ico } from "../components/ui";
