@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { T } from "../theme";
 import { uid, fdtm, fdate, getApiUrl } from "../utils";
 import { Av, Chip, Btn, Inp, Sel, Campo, Modal, Tarjeta, Vacio, Ico } from "../components/ui";
@@ -8,6 +8,46 @@ import { sb } from "../hooks/useSupaState";
 
 export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa, cargandoFondo }) => {
   const [carpeta, setCarpeta] = useState("entrada");
+
+  const HtmlEmail = ({ html, cuerpo }) => {
+    const iframeRef = useRef(null);
+    const content = html || (cuerpo ? cuerpo.replace(/\n/g, '<br>') : "");
+
+    useEffect(() => {
+      const adjustHeight = () => {
+        const iframe = iframeRef.current;
+        if (iframe && iframe.contentWindow) {
+          iframe.style.height = '0px';
+          iframe.style.height = iframe.contentWindow.document.body.scrollHeight + 40 + 'px';
+        }
+      };
+      
+      const timeout = setTimeout(adjustHeight, 500); // Wait for images
+      return () => clearTimeout(timeout);
+    }, [content]);
+
+    return (
+      <iframe
+        ref={iframeRef}
+        title="Email Content"
+        srcDoc={`
+          <!DOCTYPE html>
+          <html>
+            <head>
+              <style>
+                body { font-family: 'Inter', -apple-system, sans-serif; color: #1e293b; margin: 0; padding: 24px; overflow-x: hidden; line-height: 1.6; background: #fff; }
+                img, table, div, p { max-width: 100% !important; height: auto !important; box-sizing: border-box !important; }
+                a { color: #06B6D4; text-decoration: none; }
+                * { word-wrap: break-word; }
+              </style>
+            </head>
+            <body>${content}</body>
+          </html>
+        `}
+        style={{ width: "100%", border: "none", background: "#FFFFFF", borderRadius: 16, overflow: "hidden", minHeight: 400, transition: "height 0.3s ease" }}
+      />
+    );
+  };
   const [showRedactar, setShowRedactar] = useState(false);
   const [emailFocus, setEmailFocus] = useState(null);
   const [f, setF] = useState({ para: "", asunto: "", cuerpo: "", cc: "", bcc: "", plantillaId: "" });
@@ -294,8 +334,8 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa, cargando
           </div>
 
           <div style={{ flex: 1, overflowY: "auto", padding: "0 40px 40px" }}>
-            <div style={{ background: "rgba(255,255,255,0.02)", borderRadius: 20, padding: 32, border: `1px solid ${T.whiteFade}08`, lineHeight: 1.7, fontSize: 16, color: T.whiteOff }}>
-              {emailFocus.html ? <div dangerouslySetInnerHTML={{ __html: emailFocus.html }} /> : <div style={{ whiteSpace: "pre-wrap" }}>{emailFocus.cuerpo}</div>}
+            <div style={{ background: "rgba(255,255,255,0.02)", borderRadius: 24, padding: 8, border: `1px solid ${T.whiteFade}08` }}>
+              <HtmlEmail html={emailFocus.html} cuerpo={emailFocus.cuerpo} />
 
               {/* Adjuntos en el lector */}
               {emailFocus.adjuntos && (
