@@ -12,16 +12,20 @@ export const PlantillasEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) =>
   const fileInputRef = useRef(null);
   const s = k => e => setF(p => ({ ...p, [k]: e.target.value }));
 
-  const filtradas = db.plantillasEmail?.filter(p => [p.titulo, p.asunto, p.cuerpo].some(v => v?.toLowerCase().includes(busqueda.toLowerCase()))) || [];
+  const filtradas = db.plantillasEmail?.filter(p => [p.nombre, p.asunto, p.cuerpo].some(v => v?.toLowerCase().includes(busqueda.toLowerCase()))) || [];
 
   const guardar = async () => {
     if (!f.titulo.trim() || !f.cuerpo.trim()) return;
+    const { tipo, ...restF } = f;
+    const dataObj = { ...restF, nombre: f.titulo, vars: { tipo } };
+    delete dataObj.titulo;
+
     if (editando) {
-      const { creador, ...act } = { ...editando, ...f };
+      const { creador, ...act } = { ...editando, ...dataObj };
       setDb(d => ({ ...d, plantillasEmail: d.plantillasEmail.map(p => p.id === editando.id ? act : p) }));
       await guardarEnSupa("plantillasEmail", act);
     } else {
-      const nv = { ...f, id: "tpl" + uid() };
+      const nv = { ...dataObj, id: "tpl" + uid() };
       setDb(d => ({ ...d, plantillasEmail: [nv, ...(d.plantillasEmail || [])] }));
       await guardarEnSupa("plantillasEmail", nv);
     }
@@ -58,19 +62,25 @@ export const PlantillasEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) =>
           return (
             <Tarjeta key={p.id} style={{ padding: 24, display: "flex", flexDirection: "column" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
-                <div style={{ display: "flex", gap: 8 }}>
-                  <Chip label={cinfo.label || p.categoria} color={cinfo.color} />
-                  {p.tipo === "html" && <Chip label="HTML" color={T.teal} variant="turquesa" />}
+                <div style={{ display: "flex", gap: 12 }}>
+                  <Chip label={p.categoria} color={T.teal} />
+                  <Chip label={p.vars?.tipo === "html" ? "HTML" : "TEXTO"} color={T.whiteDim} />
                 </div>
-                <div style={{ display: "flex", gap: 6 }}>
-                  <Btn variant="fantasma" size="sm" onClick={() => { setEditando(p); setF({ titulo: p.titulo, categoria: p.categoria, asunto: p.asunto, cuerpo: p.cuerpo, tipo: p.tipo || "texto" }); setShowForm(true); }}><Ico k="edit" size={14} /></Btn>
-                  <Btn variant="fantasma" size="sm" onClick={() => eliminar(p.id)}><Ico k="trash" size={14} style={{ color: T.red }} /></Btn>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <Btn variant="fantasma" size="sm" onClick={() => { setEditando(p); setF({ titulo: p.nombre, categoria: p.categoria, asunto: p.asunto, cuerpo: p.cuerpo, tipo: p.vars?.tipo || "texto" }); setShowForm(true); }}>
+                    <Ico k="edit" size={14} />
+                  </Btn>
+                  <Btn variant="fantasma" size="sm" onClick={() => eliminar(p.id)} style={{ color: T.red }}>
+                    <Ico k="trash" size={14} />
+                  </Btn>
                 </div>
               </div>
-              <div style={{ fontSize: 16, fontWeight: 800, color: T.white, marginBottom: 8 }}>{p.titulo}</div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: T.whiteDim, marginBottom: 12 }}>Asunto: <span style={{ color: T.teal }}>{p.asunto}</span></div>
-              <div style={{ background: T.bg2, borderRadius: 8, padding: 16, fontSize: 13, color: T.whiteOff, whiteSpace: "pre-wrap", flex: 1, fontFamily: "monospace", overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical", opacity: p.tipo === "html" ? 0.7 : 1 }}>
-                {p.tipo === "html" ? "<!-- Código HTML -->\n" + p.cuerpo : p.cuerpo}
+              <div style={{ marginTop: 12 }}>
+                <div style={{ fontSize: 18, fontWeight: 800, color: T.white, textTransform: "uppercase" }}>{p.nombre}</div>
+                <div style={{ fontSize: 13, color: T.teal, marginTop: 4 }}>Asunto: <span style={{ fontWeight: 800 }}>{p.asunto}</span></div>
+              </div>
+              <div style={{ background: T.bg2, borderRadius: 8, padding: 16, fontSize: 13, color: T.whiteOff, whiteSpace: "pre-wrap", flex: 1, fontFamily: "monospace", overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical", opacity: p.vars?.tipo === "html" ? 0.7 : 1 }}>
+                {p.vars?.tipo === "html" ? "<!-- Código HTML -->\n" + p.cuerpo : p.cuerpo}
               </div>
             </Tarjeta>
           );
@@ -82,7 +92,7 @@ export const PlantillasEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) =>
         <div style={{ position: "relative", padding: "8px 12px 24px" }}>
           
           {/* SECCIÓN DE DATOS (GLASS CARD) */}
-          <div style={{ background: T.bg2, backdropFilter: "blur(20px)", borderRadius: 24, padding: "28px 32px", border: `1.5px solid ${T.whiteFade}20`, marginBottom: 24, boxShadow: "0 15px 35px rgba(0,0,0,0.2)" }}>
+          <div style={{ background: T.bg2, backdropFilter: "blur(20px)", borderRadius: 24, padding: "28px 32px", border: `1.5px solid ${T.whiteFade}20`, marginBottom: 24, boxShadow: "0 15px 35px rgba(0,0,0,0.2)", position: "relative", zIndex: 10 }}>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 200px", gap: 32 }}>
               <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
                 <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -115,7 +125,7 @@ export const PlantillasEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) =>
           </div>
 
           {/* EDITOR SECTION */}
-          <div style={{ borderRadius: 24, overflow: "hidden", border: `1.5px solid ${T.whiteFade}10`, boxShadow: "0 20px 40px rgba(0,0,0,0.2)" }}>
+          <div style={{ borderRadius: 24, overflow: "hidden", border: `1.5px solid ${T.whiteFade}10`, boxShadow: "0 20px 40px rgba(0,0,0,0.2)", position: "relative", zIndex: 5 }}>
             {/* TOOLBAR MODERNA */}
             <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 24px", background: "rgba(255,255,255,0.03)", borderBottom: `1.5px solid ${T.whiteFade}08`, backdropFilter: "blur(10px)" }}>
               <div style={{ display: "flex", background: "rgba(0,0,0,0.2)", borderRadius: 10, padding: 3, gap: 2 }}>

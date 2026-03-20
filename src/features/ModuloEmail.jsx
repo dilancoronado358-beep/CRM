@@ -130,7 +130,7 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, carga
   const aplicarTpl = e => {
     const id = e.target.value;
     const tpl = db.plantillasEmail.find(p => p.id === id);
-    if (tpl) setF({ ...f, asunto: tpl.asunto, cuerpo: tpl.cuerpo, plantillaId: id, tipo: tpl.tipo || "texto" });
+    if (tpl) setF({ ...f, asunto: tpl.asunto, cuerpo: tpl.cuerpo, plantillaId: id, tipo: tpl.vars?.tipo || "texto" });
     else setF({ ...f, plantillaId: "", tipo: "texto" });
   };
 
