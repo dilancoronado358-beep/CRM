@@ -90,6 +90,20 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa, cargando
   const [adjuntosLocal, setAdjuntosLocal] = useState([]);
   const [selectedAccountId, setSelectedAccountId] = useState(db.email_accounts?.[0]?.id || null);
   const [selectedIds, setSelectedIds] = useState([]);
+  const [showConv, setShowConv] = useState(false);
+  const [cf, setCf] = useState({ titulo: "", pipeline_id: "", etapa_id: "" });
+
+  useEffect(() => {
+    if (showConv && emailFocus) {
+      const plId = db.pipelines[0]?.id || "";
+      const pl = db.pipelines.find(p => p.id === plId);
+      setCf({
+        titulo: emailFocus.asunto,
+        pipeline_id: plId,
+        etapa_id: pl?.etapas?.[0]?.id || ""
+      });
+    }
+  }, [showConv, emailFocus, db.pipelines]);
 
   useEffect(() => {
     if (!selectedAccountId && db.email_accounts?.length > 0) {
@@ -197,6 +211,40 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa, cargando
       await guardarEnSupa("emails", item);
     }
     toast.success(`${ids.length} correos marcados.`);
+  };
+
+  const handleConvert = async () => {
+    if (!emailFocus) return;
+    const emailStr = emailFocus.de;
+    let con = db.contactos.find(c => c.email === emailStr);
+    
+    if (!con) {
+      con = { id: "c" + uid(), nombre: emailStr.split("@")[0], email: emailStr, creado: new Date().toISOString() };
+      setDb(d => ({ ...d, contactos: [...(db.contactos || []), con] }));
+      await guardarEnSupa("contactos", con);
+    }
+    
+    const nd = {
+      id: "d" + uid(),
+      titulo: cf.titulo || emailFocus.asunto,
+      contacto_id: con.id,
+      pipeline_id: cf.pipeline_id,
+      etapa_id: cf.etapa_id,
+      valor: 0,
+      responsable: db.usuario?.name || "Admin",
+      creado: new Date().toISOString().slice(0, 10),
+      custom_fields: {}
+    };
+    
+    setDb(d => ({ ...d, deals: [nd, ...(db.deals || [])] }));
+    await guardarEnSupa("deals", nd);
+    
+    // Log actividad
+    const act = { id: "act" + uid(), deal_id: nd.id, tipo: "email", nota: `Convertido desde email: ${emailFocus.asunto}`, fecha: new Date().toISOString(), usuario_id: db.usuario?.id };
+    await guardarEnSupa("actividades", act);
+    
+    toast.success("🛰️ ¡Convertido a Negociación con éxito!");
+    setShowConv(false);
   };
 
   const handleSync = async () => {
@@ -419,6 +467,10 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa, cargando
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 32 }}>
               <h2 style={{ margin: 0, fontSize: 32, fontWeight: 900, color: T.white, letterSpacing: "-0.03em", lineHeight: 1.1, flex: 1 }}>{emailFocus.asunto}</h2>
               <div style={{ display: "flex", gap: 8, paddingLeft: 24 }}>
+                <button onClick={() => setShowConv(true)} 
+                  style={{ height: 40, padding: "0 16px", borderRadius: 12, background: "rgba(20,184,166,0.1)", border: `1.5px solid ${T.teal}30`, color: T.teal, cursor: "pointer", fontSize: 12, fontWeight: 700, display: "flex", alignItems: "center", gap: 8 }}>
+                  <Ico k="lightning" size={16} /> CONVERTIR A LEAD
+                </button>
                 <button onClick={() => setEmailFocus(null)} style={{ width: 40, height: 40, borderRadius: 12, background: "rgba(255,255,255,0.05)", border: "none", color: T.white, cursor: "pointer" }}><Ico k="x" size={18} /></button>
                 <button onClick={() => { eliminarDeSupa("emails", emailFocus.id); setEmailFocus(null); }} style={{ width: 40, height: 40, borderRadius: 12, background: "rgba(239,68,68,0.1)", border: "none", color: T.red, cursor: "pointer" }}><Ico k="trash" size={18} /></button>
               </div>
@@ -557,6 +609,47 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa, cargando
             <Btn onClick={enviarRealista} disabled={simulandoEnvio || adjuntosSubiendo} style={{ padding: "0 32px", height: 44, borderRadius: 12 }}>
               {simulandoEnvio ? "Enviando..." : <><Ico k="send" size={16} style={{ marginRight: 8 }} /> Enviar Ahora</>}
             </Btn>
+          </div>
+        </div>
+      </Modal>
+
+      {/* MODAL CONVERSION A LEAD */}
+      <Modal open={showConv} onClose={() => setShowConv(false)} title="Convertir Email en Negociación (Lead)" width={500}>
+        <div style={{ padding: 24, display: "flex", flexDirection: "column", gap: 20 }}>
+          <Campo label="Título de la Negociación">
+            <Inp value={cf.titulo} onChange={e => setCf({ ...cf, titulo: e.target.value })} placeholder="Ej. Propuesta Software Acme" />
+          </Campo>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+            <Campo label="Pipeline">
+              <Sel value={cf.pipeline_id} onChange={e => {
+                const pid = e.target.value;
+                const pl = db.pipelines.find(p => p.id === pid);
+                setCf({ ...cf, pipeline_id: pid, etapa_id: pl?.etapas?.[0]?.id || "" });
+              }}>
+                {db.pipelines.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
+              </Sel>
+            </Campo>
+
+            <Campo label="Etapa Inicial">
+              <Sel value={cf.etapa_id} onChange={e => setCf({ ...cf, etapa_id: e.target.value })}>
+                {db.pipelines.find(p => p.id === cf.pipeline_id)?.etapas.map(et => (
+                  <option key={et.id} value={et.id}>{et.nombre}</option>
+                ))}
+              </Sel>
+            </Campo>
+          </div>
+
+          <div style={{ background: "rgba(20,184,166,0.05)", padding: 16, borderRadius: 12, border: `1px solid ${T.teal}20`, display: "flex", gap: 12, alignItems: "center" }}>
+            <Av text={emailFocus?.de} size={32} color={T.teal} />
+            <div style={{ fontSize: 12, color: T.whiteDim }}>
+              Se asignará automáticamente al contacto: <strong style={{ color: T.white }}>{emailFocus?.de}</strong>
+            </div>
+          </div>
+
+          <div style={{ display: "flex", gap: 12, marginTop: 12 }}>
+            <Btn variant="secundario" onClick={() => setShowConv(false)} full>Cancelar</Btn>
+            <Btn onClick={handleConvert} full style={{ background: T.teal, color: "#000" }}>Crear Lead ahora</Btn>
           </div>
         </div>
       </Modal>
