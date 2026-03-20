@@ -65,7 +65,7 @@ const HtmlEmail = memo(({ html, cuerpo }) => {
   );
 });
 
-export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa, cargandoFondo }) => {
+export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa, cargandoFondo, setModulo, focusEmailId, setFocusEmailId }) => {
   const [carpeta, setCarpeta] = useState("entrada");
 
   const getAvClr = (s) => {
@@ -104,6 +104,19 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa, cargando
       });
     }
   }, [showConv, emailFocus, db.pipelines]);
+
+  // Manejar foco externo (desde Timeline)
+  useEffect(() => {
+    if (focusEmailId) {
+      const target = (db.emails || []).find(e => e.id === focusEmailId);
+      if (target) {
+        setEmailFocus(target);
+        // Marcamos como leído si corresponde
+        if (!target.leido) marcarLeido(target.id);
+      }
+      setFocusEmailId(null); // Consumimos el foco
+    }
+  }, [focusEmailId, db.emails]);
 
   useEffect(() => {
     if (!selectedAccountId && db.email_accounts?.length > 0) {
@@ -238,6 +251,11 @@ export const ModuloEmail = ({ db, setDb, guardarEnSupa, eliminarDeSupa, cargando
     
     setDb(d => ({ ...d, deals: [nd, ...(db.deals || [])] }));
     await guardarEnSupa("deals", nd);
+    
+    // Vincular email al deal
+    const updatedEmail = { ...emailFocus, deal_id: nd.id };
+    setDb(d => ({ ...d, emails: (d.emails || []).map(e => e.id === emailFocus.id ? updatedEmail : e) }));
+    await guardarEnSupa("emails", updatedEmail);
     
     // Log actividad
     const act = { id: "act" + uid(), deal_id: nd.id, tipo: "email", nota: `Convertido desde email: ${emailFocus.asunto}`, fecha: new Date().toISOString(), usuario_id: db.usuario?.id };

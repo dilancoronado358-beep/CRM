@@ -11,7 +11,7 @@ const SUPA_URL = "https://eoylgxwlhsmwqgadahvk.supabase.co";
 const SUPA_KEY = "sb_publishable_wKUbf7IFOoH4HIUayIAJdQ_Boj1jgZa";
 const sb = createClient(SUPA_URL, SUPA_KEY);
 
-export function LeadTimeline({ deal = {}, contacto = {}, db = {}, setDb, guardarEnSupa, setModulo }) {
+export function LeadTimeline({ deal = {}, contacto = {}, db = {}, setDb, guardarEnSupa, setModulo, focusEmailId, setFocusEmailId }) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
   const [filtro, setFiltro] = useState("all");
@@ -775,6 +775,18 @@ export function LeadTimeline({ deal = {}, contacto = {}, db = {}, setDb, guardar
                       <div style={{ marginTop: 4, display: "flex", flexWrap: "wrap", gap: 10, fontSize: 11, color: T.whiteDim }}>
                         <span>De: {it.de}</span>
                         <span>Para: {it.para}</span>
+                      </div>
+                    )}
+
+                    {it.type === 'email' && (
+                      <div style={{ marginTop: 12, display: "flex", justifyContent: "flex-end" }}>
+                        <Btn size="xs" onClick={(e) => { 
+                          e.stopPropagation(); 
+                          setFocusEmailId(it.id); 
+                          setModulo("email");
+                        }} style={{ background: "rgba(20,184,166,0.1)", color: T.teal, border: `1px solid ${T.teal}40`, fontSize: 10, fontWeight: 800 }}>
+                          <Ico k="mail" size={12} /> VER EN BANDEJA / RESPONDER
+                        </Btn>
                       </div>
                     )}
 

@@ -28,7 +28,7 @@ const calculateLeadScore = (db, deal) => {
   return Math.min(100, score);
 };
 
-const FormDeal = ({ db, setDb, f, setF, editDeal, onGuardar, onCancelar, guardarEnSupa, ejecutarAutomaciones, setModulo, setShowConfigCampos }) => {
+const FormDeal = ({ db, setDb, f, setF, editDeal, onGuardar, onCancelar, guardarEnSupa, ejecutarAutomaciones, setModulo, setShowConfigCampos, focusEmailId, setFocusEmailId }) => {
   const customFieldsDef = db.campos_personalizados || [];
   const [leadTab, setLeadTab] = useState("timeline"); // timeline, info, tareas, whatsapp, cotizacion, historial
   const [dragActive, setDragActive] = useState(false);
@@ -276,6 +276,8 @@ const FormDeal = ({ db, setDb, f, setF, editDeal, onGuardar, onCancelar, guardar
               setDb={setDb}
               guardarEnSupa={guardarEnSupa}
               setModulo={setModulo}
+              focusEmailId={focusEmailId}
+              setFocusEmailId={setFocusEmailId}
             />
           )}
           {leadTab === "cotizacion" && <Cotizaciones db={db} deal={editDeal} onCerrar={() => setLeadTab("timeline")} guardarEnSupa={guardarEnSupa} />}
@@ -312,7 +314,7 @@ const FormDeal = ({ db, setDb, f, setF, editDeal, onGuardar, onCancelar, guardar
   );
 };
 
-export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModulo }) => {
+export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModulo, focusEmailId, setFocusEmailId }) => {
   const [plActivo, setPlActivo] = useState(db.pipelines[0]?.id || "");
   const [tab, setTab] = useState("kanban");
   const [showConfetti, setShowConfetti] = useState(false);
@@ -1081,6 +1083,8 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
           ejecutarAutomaciones={ejecutarAutomaciones}
           setModulo={setModulo}
           setShowConfigCampos={setShowConfigCampos}
+          focusEmailId={focusEmailId}
+          setFocusEmailId={setFocusEmailId}
         />
       </Modal>
       {/* CONFIGURACIÓN DE CAMPOS PERSONALIZADOS */}

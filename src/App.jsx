@@ -237,6 +237,7 @@ const DICT = {
 export default function App() {
   const { db, setDb, session, estadoSupa, cargando, cargandoFondo, isAppReady, guardarEnSupa, eliminarDeSupa, sendBroadcast } = useSupaState();
   const [modulo, setModulo] = useState("dashboard");
+  const [focusEmailId, setFocusEmailId] = useState(null);
   const [menuAbierto, setMenuAbierto] = useState(true);
   const [spotlightOpen, setSpotlightOpen] = useState(false);
   const [hashURL, setHashURL] = useState(window.location.hash);
@@ -462,7 +463,7 @@ export default function App() {
   const grp = MODULOS.reduce((acc, m) => { (acc[m.role] = acc[m.role] || []).push(m); return acc; }, {});
   const ModuloActivo = MODULOS.find(m => m.id === modulo)?.comp || Dashboard;
 
-  const propsModulo = { db, setDb, guardarEnSupa, eliminarDeSupa, t, setModulo, cargandoFondo };
+  const propsModulo = { db, setDb, guardarEnSupa, eliminarDeSupa, t, setModulo, cargandoFondo, focusEmailId, setFocusEmailId };
 
   return (
     <div style={{ display: "flex", height: "100vh", background: T.bg0, color: T.white }}>
