@@ -236,7 +236,8 @@ const DICT = {
 
 export default function App() {
   const { db, setDb, session, estadoSupa, cargando, cargandoFondo, isAppReady, guardarEnSupa, eliminarDeSupa, sendBroadcast } = useSupaState();
-  const [modulo, setModulo] = useState("dashboard");
+  const [modulo, setModulo] = useState(localStorage.getItem("crm_active_module") || "dashboard");
+  useEffect(() => { localStorage.setItem("crm_active_module", modulo); }, [modulo]);
   const [focusEmailId, setFocusEmailId] = useState(null);
   const [menuAbierto, setMenuAbierto] = useState(true);
   const [spotlightOpen, setSpotlightOpen] = useState(false);

@@ -331,7 +331,8 @@ const FormDeal = ({ db, setDb, f, setF, editDeal, onGuardar, onCancelar, guardar
 };
 
 export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModulo, focusEmailId, setFocusEmailId }) => {
-  const [plActivo, setPlActivo] = useState(db.pipelines?.[0]?.id || "");
+  const [plActivo, setPlActivo] = useState(localStorage.getItem("crm_active_pipeline") || db.pipelines?.[0]?.id || "");
+  useEffect(() => { if (plActivo) localStorage.setItem("crm_active_pipeline", plActivo); }, [plActivo]);
   const [tab, setTab] = useState("kanban");
   const [showConfetti, setShowConfetti] = useState(false);
 
