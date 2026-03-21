@@ -87,102 +87,134 @@ const FormDeal = ({ db, setDb, f, setF, editDeal, onGuardar, onCancelar, guardar
       <div style={{ display: "flex", gap: 40, flexWrap: "wrap" }}>
         
         {/* COLUMNA IZQUIERDA: FULL INFO (SCROLLABLE AREA) */}
-        <div style={{ flex: "1 1 440px", display: "flex", flexDirection: "column", gap: 32, maxHeight: "78vh", overflowY: "auto", paddingRight: 10 }}>
+        <div className="custom-scrollbar" style={{ flex: "1 1 480px", display: "flex", flexDirection: "column", gap: 24, maxHeight: "82vh", overflowY: "auto", paddingRight: 12 }}>
           
-          {/* SECTION 1: INFORMACIÓN ESENCIAL */}
-          <div style={{ background: "rgba(255,255,255,0.02)", border: `1px solid ${T.white}08`, borderRadius: 28, padding: 28 }}>
-             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
-                <div style={{ fontSize: 13, fontWeight: 900, color: T.teal, letterSpacing: ".15em", textTransform: "uppercase" }}>Información Esencial</div>
-                <div style={{ background: "rgba(255,255,255,0.05)", padding: "4px 10px", borderRadius: 8, fontSize: 11, fontWeight: 800, color: T.whiteDim }}>Predictive Score: {calculateLeadScore(db, f)}</div>
+          <style>{`
+            .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+            .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+            .custom-scrollbar::-webkit-scrollbar-thumb { background: ${T.white}10; borderRadius: 10px; }
+            .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: ${T.teal}40; }
+          `}</style>
+
+          {/* SECTION 1: CABECERA PREMIUM */}
+          <div style={{ background: `linear-gradient(135deg, ${T.bg1}, ${T.bg2}60)`, border: `1px solid ${T.white}08`, borderRadius: 24, padding: 32, boxShadow: "0 10px 40px rgba(0,0,0,0.1)" }}>
+             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 28 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <div style={{ width: 32, height: 32, borderRadius: 10, background: T.tealSoft, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <Ico k="board" size={16} style={{ color: T.teal }} />
+                  </div>
+                  <div style={{ fontSize: 13, fontWeight: 900, color: T.teal, letterSpacing: ".15em", textTransform: "uppercase" }}>Información Central</div>
+                </div>
+                <div style={{ background: "rgba(255,255,255,0.05)", padding: "6px 14px", borderRadius: 12, fontSize: 10, fontWeight: 900, color: T.whiteDim, border: `1px solid ${T.white}10` }}>AI SCORE: {calculateLeadScore(db, f)}</div>
              </div>
 
-             <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-               <Campo label="Título del Negocio">
+             <div style={{ display: "flex", flexDirection: "column", gap: 28 }}>
+               <Campo label="TÍTULO DEL NEGOCIO">
                  <LocalInput value={f.titulo} onCommit={v => {
                    const nf = { ...f, titulo: v }; setF(nf);
                    if (editDeal) guardarEnSupa("deals", { ...editDeal, ...nf });
-                 }} style={{ fontSize: 15, fontWeight: 700, background: "rgba(255,255,255,0.02)", border: `1px solid ${T.white}10`, borderRadius: 12, height: 44 }} />
+                 }} style={{ fontSize: 24, fontWeight: 900, background: "transparent", border: "none", borderBottom: `2px solid ${T.white}10`, borderRadius: 0, height: 50, padding: "0 0 8px 0", color: T.white }} placeholder="Ej: Proyecto Expansión Q2" />
                </Campo>
 
-               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
-                 <Campo label="Valor ($)"><LocalInput type="number" value={f.valor} onCommit={v => {
-                   const nf = { ...f, valor: v }; setF(nf);
-                   if (editDeal) guardarEnSupa("deals", { ...editDeal, ...nf });
-                 }} style={{ color: T.teal, fontSize: 16, fontWeight: 900, background: "rgba(255,255,255,0.02)", border: `1px solid ${T.white}10`, borderRadius: 12 }} /></Campo>
-                 <Campo label="Confianza %"><LocalInput type="number" value={f.prob} onCommit={v => {
-                   const nf = { ...f, prob: v }; setF(nf);
-                   if (editDeal) guardarEnSupa("deals", { ...editDeal, ...nf });
-                 }} style={{ fontWeight: 800, background: "rgba(255,255,255,0.02)", border: `1px solid ${T.white}10`, borderRadius: 12 }} /></Campo>
+               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 32 }}>
+                 <Campo label="VALOR PROYECTADO">
+                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                     <span style={{ fontSize: 20, fontWeight: 900, color: T.teal }}>$</span>
+                     <LocalInput type="number" value={f.valor} onCommit={v => {
+                       const nf = { ...f, valor: v }; setF(nf);
+                       if (editDeal) guardarEnSupa("deals", { ...editDeal, ...nf });
+                     }} style={{ color: T.white, fontSize: 32, fontWeight: 900, background: "transparent", border: "none", padding: 0, width: "100%" }} />
+                   </div>
+                 </Campo>
+                 <Campo label="CONFIANZA DEL CIERRE">
+                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                     <LocalInput type="number" value={f.prob} onCommit={v => {
+                       const nf = { ...f, prob: v }; setF(nf);
+                       if (editDeal) guardarEnSupa("deals", { ...editDeal, ...nf });
+                     }} style={{ fontWeight: 900, fontSize: 32, background: "transparent", border: "none", padding: 0, textAlign: "right", width: "100%", color: T.whiteOff }} />
+                     <span style={{ fontSize: 20, fontWeight: 900, color: T.whiteFade }}>%</span>
+                   </div>
+                 </Campo>
                </div>
 
-               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
-                 <Campo label="Fecha Cierre"><LocalInput type="date" value={f.fecha_cierre || ""} onCommit={v => {
+               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 32, paddingTop: 12, borderTop: `1px solid ${T.white}05` }}>
+                 <Campo label="FECHA ESTIMADA CIERRE"><LocalInput type="date" value={f.fecha_cierre || ""} onCommit={v => {
                    const nf = { ...f, fecha_cierre: v }; setF(nf);
                    if (editDeal) guardarEnSupa("deals", { ...editDeal, ...nf });
-                 }} style={{ background: "rgba(255,255,255,0.02)", border: `1px solid ${T.white}10`, borderRadius: 12 }} /></Campo>
-                 <Campo label="Etiquetas (separar por coma)"><LocalInput value={Array.isArray(f.etiquetas) ? f.etiquetas.join(", ") : (f.etiquetas || "")} onCommit={v => {
+                 }} style={{ background: "rgba(255,255,255,0.03)", border: `1px solid ${T.white}10`, borderRadius: 14, height: 44, padding: "0 14px", fontSize: 13, fontWeight: 700 }} /></Campo>
+                 <Campo label="ETIQUETAS"><LocalInput value={Array.isArray(f.etiquetas) ? f.etiquetas.join(", ") : (f.etiquetas || "")} onCommit={v => {
                    const tags = typeof v === "string" ? v.split(",").map(t => t.trim()).filter(Boolean) : [];
                    const nf = { ...f, etiquetas: tags }; setF(nf);
                    if (editDeal) guardarEnSupa("deals", { ...editDeal, ...nf });
-                 }} style={{ background: "rgba(255,255,255,0.02)", border: `1px solid ${T.white}10`, borderRadius: 12 }} /></Campo>
+                 }} style={{ background: "rgba(255,255,255,0.03)", border: `1px solid ${T.white}10`, borderRadius: 14, height: 44, padding: "0 14px", fontSize: 13, fontWeight: 700 }} placeholder="vip, prospecto, urgente" /></Campo>
                </div>
              </div>
           </div>
 
           {/* SECTION 2: RELACIONES & STAFF */}
-          <div style={{ background: "rgba(255,255,255,0.02)", border: `1px solid ${T.white}08`, borderRadius: 28, padding: 28 }}>
-            <div style={{ fontSize: 11, fontWeight: 900, color: T.whiteFade, marginBottom: 20, letterSpacing: ".15em", textTransform: "uppercase" }}>Relaciones & Staff</div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
-                 <Campo label="Contacto Principal"><Sel value={f.contacto_id} onChange={async e => {
+          <div style={{ background: T.bg1, border: `1px solid ${T.white}08`, borderRadius: 24, padding: 32 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 24 }}>
+               <Ico k="users" size={14} style={{ color: T.whiteFade }} />
+               <div style={{ fontSize: 11, fontWeight: 900, color: T.whiteFade, letterSpacing: ".15em", textTransform: "uppercase" }}>Relaciones & Staff</div>
+            </div>
+            
+            <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
+                 <Campo label="CONTACTO PRINCIPAL"><Sel value={f.contacto_id} onChange={async e => {
                    const val = e.target.value; const nextF = { ...f, contacto_id: val }; setF(nextF);
                    if (editDeal) await guardarEnSupa("deals", { ...editDeal, ...nextF });
-                 }} style={{ background: "transparent", border: `1px solid ${T.white}10`, borderRadius: 12, height: 44 }}><option value="">— Ninguno —</option>{db.contactos?.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}</Sel></Campo>
-                 <Campo label="Empresa"><Sel value={f.empresa_id} onChange={async e => {
+                 }} style={{ background: "rgba(255,255,255,0.03)", border: `1px solid ${T.white}15`, borderRadius: 14, height: 48 }}><option value="">— Sin Asignar —</option>{db.contactos?.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}</Sel></Campo>
+                 <Campo label="EMPRESA ASOCIADA"><Sel value={f.empresa_id} onChange={async e => {
                    const val = e.target.value; const nextF = { ...f, empresa_id: val }; setF(nextF);
                    if (editDeal) await guardarEnSupa("deals", { ...editDeal, ...nextF });
-                 }} style={{ background: "transparent", border: `1px solid ${T.white}10`, borderRadius: 12, height: 44 }}><option value="">— Ninguna —</option>{db.empresas?.map(e => <option key={e.id} value={e.id}>{e.nombre}</option>)}</Sel></Campo>
+                 }} style={{ background: "rgba(255,255,255,0.03)", border: `1px solid ${T.white}15`, borderRadius: 14, height: 48 }}><option value="">— Independiente —</option>{db.empresas?.map(e => <option key={e.id} value={e.id}>{e.nombre}</option>)}</Sel></Campo>
               </div>
 
               {selContacto && (
-                <div style={{ background: "rgba(255,255,255,0.02)", padding: 16, borderRadius: 16, display: "flex", flexDirection: "column", gap: 8 }}>
-                   <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 12, color: T.whiteOff }}>
-                     <Ico k="mail" size={12} style={{ color: T.teal, opacity: 0.7 }} /> {selContacto.email || "Sin email"}
+                <div style={{ background: "rgba(255,255,255,0.02)", padding: 20, borderRadius: 20, border: `1px solid ${T.white}05`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                   <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                     <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 13, color: T.whiteOff, fontWeight: 600 }}>
+                       <Ico k="mail" size={12} style={{ color: T.teal }} /> {selContacto.email || "Sin email"}
+                     </div>
+                     <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 13, color: T.whiteOff, fontWeight: 600 }}>
+                       <Ico k="phone" size={12} style={{ color: T.teal }} /> {selContacto.telefono || "Sin teléfono"}
+                     </div>
                    </div>
-                   <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 12, color: T.whiteOff }}>
-                     <Ico k="phone" size={12} style={{ color: T.teal, opacity: 0.7 }} /> {selContacto.telefono || "Sin teléfono"}
-                   </div>
+                   <Btn variant="fantasma" size="xs" style={{ color: T.teal }}>Ver ficha</Btn>
                 </div>
               )}
               
-              <Campo label="Responsable"><Sel value={f.responsable} onChange={async e => {
+              <Campo label="RESPONSABLE DEL CIERRE"><Sel value={f.responsable} onChange={async e => {
                 const val = e.target.value; const nextF = { ...f, responsable: val }; setF(nextF);
                 if (editDeal) await guardarEnSupa("deals", { ...editDeal, ...nextF });
-              }} style={{ background: "transparent", border: `1px solid ${T.white}10`, borderRadius: 12, height: 44 }}>{db.usuariosApp?.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}</Sel></Campo>
+              }} style={{ background: "rgba(255,255,255,0.03)", border: `1px solid ${T.white}15`, borderRadius: 14, height: 48 }}>{db.usuariosApp?.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}</Sel></Campo>
             </div>
           </div>
 
-          {/* SECTION 3: ATRIBUTOS EXTRA */}
-          <div style={{ background: "rgba(255,255,255,0.02)", border: `1px solid ${T.white}08`, borderRadius: 28, padding: 28 }}>
-             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
-                <div style={{ fontSize: 11, fontWeight: 900, color: T.whiteFade, letterSpacing: ".15em", textTransform: "uppercase" }}>Atributos Avanzados</div>
-                <Btn variant="fantasma" size="xs" onClick={() => setShowConfigCampos(true)} style={{ color: T.teal }}><Ico k="cog" size={12} /></Btn>
+          {/* SECTION 3: ATRIBUTOS AVANZADOS */}
+          <div style={{ background: T.bg1, border: `1px solid ${T.white}08`, borderRadius: 24, padding: 32 }}>
+             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 28 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                   <Ico k="cog" size={14} style={{ color: T.whiteFade }} />
+                   <div style={{ fontSize: 11, fontWeight: 900, color: T.whiteFade, letterSpacing: ".15em", textTransform: "uppercase" }}>Atributos Avanzados</div>
+                </div>
+                <Btn variant="fantasma" size="xs" onClick={() => setShowConfigCampos(true)} style={{ color: T.teal }}><Ico k="plus" size={12} /></Btn>
              </div>
-             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
                 {customFieldsDef.map(cf => {
                   const val = f.custom_fields?.[cf.id] || "";
                   const handleChange = (v) => setF(prev => ({ ...prev, custom_fields: { ...(prev.custom_fields || {}), [cf.id]: v } }));
                   const handleBlur = async () => { if (editDeal) await guardarEnSupa("deals", { ...editDeal, custom_fields: f.custom_fields }); };
 
                   return (
-                    <Campo key={cf.id} label={cf.nombre}>
+                    <Campo key={cf.id} label={cf.nombre.toUpperCase()}>
                       {cf.tipo === "lista" ? (
-                        <Sel value={val} onChange={e => handleChange(e.target.value)} onBlur={handleBlur} style={{ background: "rgba(255,255,255,0.02)", border: `1px solid ${T.white}10`, borderRadius: 10 }}>
+                        <Sel value={val} onChange={e => handleChange(e.target.value)} onBlur={handleBlur} style={{ background: "rgba(255,255,255,0.03)", border: `1px solid ${T.white}15`, borderRadius: 14 }}>
                           <option value="">— Seleccionar —</option>
                           {cf.opciones?.map(opt => <option key={opt} value={opt}>{opt}</option>)}
                         </Sel>
                       ) : (
-                        <LocalInput value={val} onCommit={v => { handleChange(v); handleBlur(); }} style={{ background: "rgba(255,255,255,0.02)", border: `1px solid ${T.white}10`, borderRadius: 10, color: T.white }} />
+                        <LocalInput value={val} onCommit={v => { handleChange(v); handleBlur(); }} style={{ background: "rgba(255,255,255,0.03)", border: `1px solid ${T.white}15`, borderRadius: 14, color: T.white, height: 44, fontSize: 13, fontWeight: 600 }} />
                       )}
                     </Campo>
                   );
@@ -191,32 +223,41 @@ const FormDeal = ({ db, setDb, f, setF, editDeal, onGuardar, onCancelar, guardar
           </div>
 
           {/* SECTION 4: NOTAS ESTRATÉGICAS */}
-          <div style={{ background: "rgba(255,255,255,0.02)", border: `1px solid ${T.white}08`, borderRadius: 28, padding: 28 }}>
-             <div style={{ fontSize: 11, fontWeight: 900, color: T.whiteFade, marginBottom: 20, letterSpacing: ".15em", textTransform: "uppercase" }}>Notas & Descripción</div>
+          <div style={{ background: T.bg1, border: `1px solid ${T.white}08`, borderRadius: 24, padding: 32 }}>
+             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 24 }}>
+                <Ico k="file" size={14} style={{ color: T.whiteFade }} />
+                <div style={{ fontSize: 11, fontWeight: 900, color: T.whiteFade, letterSpacing: ".15em", textTransform: "uppercase" }}>Notas Estratégicas</div>
+             </div>
              <textarea 
                 value={f.notas || ""} 
                 onChange={e => setF(prev => ({ ...prev, notas: e.target.value }))}
                 onBlur={async () => { if (editDeal) await guardarEnSupa("deals", { ...editDeal, notas: f.notas }); }}
-                placeholder="Escriba aquí notas estratégicas del negocio..."
-                style={{ width: "100%", minHeight: 120, background: "rgba(255,255,255,0.02)", border: `1px solid ${T.white}10`, borderRadius: 16, padding: 16, color: T.white, fontSize: 14, fontFamily: "inherit", resize: "none", outline: "none" }}
+                placeholder="Describa aquí el plan de acción, puntos de dolor detectados o próximos pasos críticos del negocio..."
+                style={{ width: "100%", minHeight: 140, background: "rgba(255,255,255,0.03)", border: `1px solid ${T.white}10`, borderRadius: 18, padding: 20, color: T.white, fontSize: 14, fontFamily: "inherit", resize: "none", outline: "none", lineHeight: 1.6 }}
              />
           </div>
 
           {/* SECTION 5: VAULT DE DOCUMENTOS */}
-          <div style={{ background: "rgba(255,255,255,0.02)", border: `1px solid ${T.white}08`, borderRadius: 28, padding: 28 }}>
-            <div style={{ fontSize: 11, fontWeight: 900, color: T.whiteFade, marginBottom: 20, letterSpacing: ".15em", textTransform: "uppercase" }}>Vault de Documentos</div>
-            <div style={{ flex: 1, border: `1px dashed ${dragActive ? T.teal : T.white + "10"}`, borderRadius: 20, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, padding: 32, background: dragActive ? T.teal + "05" : "transparent", transition: "all .3s" }} 
+          <div style={{ background: T.bg1, border: `1px solid ${T.white}08`, borderRadius: 24, padding: 32 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 24 }}>
+                <Ico k="upload" size={14} style={{ color: T.whiteFade }} />
+                <div style={{ fontSize: 11, fontWeight: 900, color: T.whiteFade, letterSpacing: ".15em", textTransform: "uppercase" }}>Vault de Documentos</div>
+            </div>
+            <div style={{ flex: 1, border: `2px dashed ${dragActive ? T.teal : T.white + "10"}`, borderRadius: 20, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 14, padding: 40, background: dragActive ? T.teal + "05" : "rgba(255,255,255,0.01)", transition: "all .3s" }} 
                  onDragOver={e => { e.preventDefault(); setDragActive(true); }} onDragLeave={() => setDragActive(false)} onDrop={handleDrop}>
-               <Ico k="upload" size={24} style={{ color: T.whiteFade }} />
-               <div style={{ fontSize: 12, color: T.whiteFade, textAlign: "center" }}>Suelte archivos aquí para adjuntar.</div>
+               <Ico k="upload" size={32} style={{ color: T.whiteFade, opacity: 0.5 }} />
+               <div style={{ fontSize: 13, color: T.whiteFade, textAlign: "center", fontWeight: 600 }}>Suelte archivos aquí para adjuntar al negocio.</div>
             </div>
             {f.archivos?.length > 0 && (
-              <div style={{ marginTop: 20, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <div style={{ marginTop: 24, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                 {(f.archivos || []).map(a => (
-                  <div key={a.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "rgba(255,255,255,0.03)", padding: "10px 14px", borderRadius: 12, border: `1px solid ${T.white}08` }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10, overflow: "hidden" }}>
-                      <Ico k={a.tipo === "img" ? "image" : "file"} size={14} style={{ color: T.teal }} />
-                      <span style={{ fontSize: 12, color: T.whiteOff, whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden" }}>{a.nombre}</span>
+                  <div key={a.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "rgba(255,255,255,0.03)", padding: "12px 16px", borderRadius: 16, border: `1px solid ${T.white}08` }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 12, overflow: "hidden" }}>
+                      <Ico k={a.tipo === "img" ? "image" : "file"} size={16} style={{ color: T.teal }} />
+                      <div style={{ display: "flex", flexDirection: "column", overflow: "hidden" }}>
+                        <span style={{ fontSize: 12, color: T.whiteOff, fontWeight: 700, whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden" }}>{a.nombre}</span>
+                        <span style={{ fontSize: 9, color: T.whiteFade, fontWeight: 700 }}>{a.size}</span>
+                      </div>
                     </div>
                     <Btn variant="fantasma" size="xs" onClick={() => quitarArchivo(a.id)} style={{ color: T.red, opacity: 0.6 }}><Ico k="trash" size={14} /></Btn>
                   </div>
@@ -225,9 +266,9 @@ const FormDeal = ({ db, setDb, f, setF, editDeal, onGuardar, onCancelar, guardar
             )}
           </div>
 
-          <div style={{ display: "flex", gap: 16, marginTop: 8 }}>
-            <Btn variant="fantasma" onClick={onCancelar} full style={{ height: 50, borderRadius: 16 }}>Descartar</Btn>
-            <Btn onClick={() => onGuardar(f)} full style={{ height: 50, borderRadius: 16, background: T.teal, color: "#000", border: "none", fontWeight: 900 }}>GUARDAR CAMBIOS</Btn>
+          <div style={{ display: "flex", gap: 20, marginTop: 12 }}>
+            <Btn variant="fantasma" onClick={onCancelar} full style={{ height: 56, borderRadius: 18, fontWeight: 800 }}>Descartar</Btn>
+            <Btn onClick={() => onGuardar(f)} full style={{ height: 56, borderRadius: 18, background: T.teal, color: "#000", border: "none", fontWeight: 900, boxShadow: `0 10px 20px ${T.teal}40` }}>GUARDAR CAMBIOS</Btn>
           </div>
         </div>
 
