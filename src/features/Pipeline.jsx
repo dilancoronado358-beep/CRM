@@ -120,8 +120,8 @@ const FormDeal = ({ db, setDb, f, setF, editDeal, onGuardar, onCancelar, guardar
                    const nf = { ...f, fecha_cierre: v }; setF(nf);
                    if (editDeal) guardarEnSupa("deals", { ...editDeal, ...nf });
                  }} style={{ background: "rgba(255,255,255,0.02)", border: `1px solid ${T.white}10`, borderRadius: 12 }} /></Campo>
-                 <Campo label="Etiquetas (separar por coma)"><LocalInput value={f.etiquetas?.join(", ") || ""} onCommit={v => {
-                   const tags = v.split(",").map(t => t.trim()).filter(Boolean);
+                 <Campo label="Etiquetas (separar por coma)"><LocalInput value={Array.isArray(f.etiquetas) ? f.etiquetas.join(", ") : (f.etiquetas || "")} onCommit={v => {
+                   const tags = typeof v === "string" ? v.split(",").map(t => t.trim()).filter(Boolean) : [];
                    const nf = { ...f, etiquetas: tags }; setF(nf);
                    if (editDeal) guardarEnSupa("deals", { ...editDeal, ...nf });
                  }} style={{ background: "rgba(255,255,255,0.02)", border: `1px solid ${T.white}10`, borderRadius: 12 }} /></Campo>
