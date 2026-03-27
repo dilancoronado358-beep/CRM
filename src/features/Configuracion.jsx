@@ -542,8 +542,7 @@ export const Configuracion = ({ db, setDb, guardarEnSupa, eliminarDeSupa, estado
     }
   };
 
-  const MASTER_ORG_ID = '00000000-0000-0000-0000-000000000001';
-  const esAdminGlobal = db.usuario?.org_id === MASTER_ORG_ID;
+
 
   const TABS = [
     { id: "perfil", label: "Mi Perfil", icon: "user" },
