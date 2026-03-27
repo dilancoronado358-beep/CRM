@@ -186,9 +186,39 @@ export function useSupaState() {
         let uLocal = null;
         // 1. Obtener sesión actual
         const { data: { session }, error: sessionError } = await sb.auth.getSession();
-        if (sessionError) console.warn("Supabase auth error:", sessionError);
+
+        // ── CRITICAL: If the refresh token is invalid, sign out immediately ──
+        if (sessionError) {
+          console.warn("Supabase auth error:", sessionError.message);
+          // Any auth error: clear stale state and show login
+          console.warn("🔑 Error de sesión. Limpiando datos para ir al login...");
+          await sb.auth.signOut();
+          localStorage.removeItem("crm_usuario_activo");
+          localStorage.removeItem("crm_theme");
+          if (montado) {
+            // Clear db.usuario so App.jsx shows Login instead of hanging
+            setDb((d) => ({ ...d, usuario: null }));
+            setSession(null);
+            setCargando(false);
+            setIsAppReady(true);
+          }
+          clearTimeout(timeoutFallback);
+          return;
+        }
+
         if (!montado) return;
         setSession(session);
+
+        // If no session at all, show login immediately (don't hang)
+        if (!session) {
+          // Also clear stale user from localStorage so Login renders
+          localStorage.removeItem("crm_usuario_activo");
+          setDb((d) => ({ ...d, usuario: null }));
+          setCargando(false);
+          setIsAppReady(true);
+          clearTimeout(timeoutFallback);
+          return;
+        }
 
         if (session) {
           // Mostrar nombre provisional (evita usuario vacío temporalmente)
@@ -253,14 +283,31 @@ export function useSupaState() {
 
     iniciarApp();
 
-    const { data: { subscription } } = sb.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = sb.auth.onAuthStateChange((event, session) => {
       if (!montado) return;
+
+      // Handle token refresh failures gracefully — prevents blue screen hang
+      if (event === "TOKEN_REFRESH_FAILED" || event === "SIGNED_OUT") {
+        if (event === "TOKEN_REFRESH_FAILED") {
+          console.warn("🔑 TOKEN_REFRESH_FAILED: limpiando sesión y redirigiendo al login...");
+          localStorage.removeItem("crm_usuario_activo");
+          sb.auth.signOut();
+        }
+        setSession(null);
+        setDb((d) => ({ ...d, usuario: null }));
+        setCargando(false);
+        setIsAppReady(true);
+        return;
+      }
+
       setSession(session);
       if (!session) {
         setDb((d) => {
           if (d.usuario && !localStorage.getItem("crm_usuario_activo")) return { ...d, usuario: null };
           return d;
         });
+        setCargando(false);
+        setIsAppReady(true);
       }
     });
 

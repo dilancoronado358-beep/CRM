@@ -108,7 +108,7 @@ const ALL_RULES = [
   { cat: "pago", id: "check_payment", label: "Verificar pago", sub: "Consulta el estado de la transacción en la pasarela.", icon: "sync", color: "#6366F1" },
   { cat: "pago", id: "record_refund", label: "Registrar reembolso", sub: "Anota una devolución en el historial financiero.", icon: "undo", color: "#6366F1" },
   { cat: "pago", id: "tax_calc", label: "Calcular impuestos", sub: "Ajusta el monto total según la región impositiva.", icon: "percentage", color: "#6366F1" },
-...
+
   // ANUNCIO (4 Reglas)
   { cat: "anuncio", id: "fb_pixel", label: "Facebook Pixel", sub: "Envía evento de conversión a Facebook.", icon: "facebook", color: "#4F46E5" }, // Deep Indigo
   { cat: "anuncio", id: "google_ads", label: "Google Ads Offline", sub: "Sube conversión offline a Google Ads.", icon: "google", color: "#4F46E5" },
