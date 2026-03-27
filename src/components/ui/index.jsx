@@ -346,3 +346,36 @@ export const IndSupa = ({ estado }) => {
     </div>
   );
 };
+
+export const MenuDatos = ({ onImport, onExport }) => {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+  useEffect(() => {
+    const clickAfuera = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener("mousedown", clickAfuera);
+    return () => document.removeEventListener("mousedown", clickAfuera);
+  }, []);
+  return (
+    <div ref={ref} style={{ position: "relative" }}>
+      <Btn variant="secundario" onClick={() => setOpen(!open)}>
+        <Ico k="database" size={14} /> Datos <Ico k="chevron-down" size={12} style={{ opacity: 0.5, transform: open ? "rotate(180deg)" : "none", transition: "all 0.3s" }} />
+      </Btn>
+      {open && (
+        <div style={{ position: "absolute", top: "calc(100% + 8px)", right: 0, background: T.bg1, border: `1px solid ${T.borderHi}`, borderRadius: 12, zIndex: 10000, boxShadow: "var(--shadow-xl)", padding: 6, minWidth: 170, animation: "slideIn .2s forwards" }}>
+          <div onClick={() => { onImport(); setOpen(false); }}
+            style={{ padding: "10px 14px", borderRadius: 8, fontSize: 13, color: T.whiteOff, cursor: "pointer", display: "flex", alignItems: "center", gap: 10 }}
+            onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.08)"}
+            onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+            <Ico k="upload" size={14} style={{ color: T.teal }} /> Importar Datos
+          </div>
+          <div onClick={() => { onExport(); setOpen(false); }}
+            style={{ padding: "10px 14px", borderRadius: 8, fontSize: 13, color: T.whiteOff, cursor: "pointer", display: "flex", alignItems: "center", gap: 10 }}
+            onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.08)"}
+            onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+            <Ico k="download" size={14} style={{ color: T.teal }} /> Exportar a Excel
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};

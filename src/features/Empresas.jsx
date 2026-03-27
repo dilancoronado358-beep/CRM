@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { T } from "../theme";
 import { uid, PRIO_CFG, fdate } from "../utils";
-import { Av, Chip, Btn, Inp, Sel, Campo, Modal, Tarjeta, KPI, BuscadorBar, Vacio, EncabezadoSeccion, ControlSegmentado, Ico } from "../components/ui";
+import { Av, Chip, Btn, Inp, Sel, Campo, Modal, Tarjeta, KPI, BuscadorBar, Vacio, EncabezadoSeccion, ControlSegmentado, Ico, MenuDatos } from "../components/ui";
 import { BulkImport } from "../components/BulkImport";
 import { sileo } from "../utils/sileo";
+import { exportToExcel } from "../utils/export";
 
 export const Empresas = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) => {
   const [busqueda, setBusqueda] = useState("");
@@ -79,12 +80,26 @@ export const Empresas = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) => {
     sileo.success(`${nuevasEmpresas.length} empresas importadas correctamente`);
   };
 
+  const handleExport = () => {
+    const data = filtrados.map(e => ({
+      Nombre: e.nombre,
+      Industria: e.industria,
+      Tamaño: e.tamaño,
+      "Sitio Web": e.sitio,
+      Ingresos: e.ingresos,
+      Ciudad: e.ciudad,
+      Contactos: e.contactos.length,
+      Negocios: e.deals.length
+    }));
+    exportToExcel(data, "empresas", "Empresas");
+  };
+
   return (
     <div>
       <EncabezadoSeccion title="Directorio de Empresas" sub={`${db.empresas.length} organizaciones registradas`} 
         actions={
           <div style={{ display: "flex", gap: 12 }}>
-            <Btn variant="secunadrio" onClick={() => setShowImport(true)}><Ico k="upload" size={14} /> Importar</Btn>
+            <MenuDatos onImport={() => setShowImport(true)} onExport={handleExport} />
             <Btn onClick={() => { setEditando(null); setShowForm(true); }}><Ico k="plus" size={14} />Nueva Empresa</Btn>
           </div>
         } />

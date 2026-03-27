@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { T } from "../theme";
 import { uid, money, fdate, ESTADO_CFG } from "../utils";
-import { Av, Chip, Btn, Inp, Sel, Campo, Modal, Tarjeta, CabeceraTabla, FilaTabla, Celda, Barra, AnilloScore, BuscadorBar, Vacio, EncabezadoSeccion, ControlSegmentado, Ico } from "../components/ui";
+import { Av, Chip, Btn, Inp, Sel, Campo, Modal, Tarjeta, CabeceraTabla, FilaTabla, Celda, Barra, AnilloScore, BuscadorBar, Vacio, EncabezadoSeccion, ControlSegmentado, Ico, MenuDatos } from "../components/ui";
 import { BulkImport } from "../components/BulkImport";
 import { sileo } from "../utils/sileo";
+import { exportToExcel } from "../utils/export";
 
 export const Contactos = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) => {
   const [busqueda, setBusqueda] = useState("");
@@ -96,12 +97,31 @@ export const Contactos = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) => {
     sileo.success(`${nuevosContactos.length} contactos importados correctamente`);
   };
 
+  const handleExport = () => {
+    const data = filtrados.map(c => ({
+      Nombre: c.nombre,
+      Email: c.email,
+      Teléfono: c.telefono,
+      Empresa: c.empresa,
+      Cargo: c.cargo,
+      Estado: c.estado,
+      Fuente: c.fuente,
+      Valor: c.valor,
+      Score: c.score,
+      Etiquetas: c.etiquetas.join(", "),
+      Notas: c.notas,
+      Creado: c.creado,
+      "Último Contacto": c.ultimo_contacto
+    }));
+    exportToExcel(data, "contactos", "Contactos");
+  };
+
   return (
     <div>
       <EncabezadoSeccion title="Contactos" sub={`${db.contactos.length} contactos en total`}
         actions={
           <div style={{ display: "flex", gap: 12 }}>
-            <Btn variant="secundario" onClick={() => setShowImport(true)}><Ico k="upload" size={14} /> Importar</Btn>
+            <MenuDatos onImport={() => setShowImport(true)} onExport={handleExport} />
             <Btn onClick={() => { setEditando(null); setShowForm(true); }}><Ico k="plus" size={14} />Nuevo Contacto</Btn>
           </div>
         } />
