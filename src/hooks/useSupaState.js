@@ -64,6 +64,7 @@ export function useSupaState() {
   const [cargandoFondo, setCargandoFondo] = useState(true);
   const [isAppReady, setIsAppReady] = useState(false);
   const [session, setSession] = useState(null);
+  const [isRecoveryMode, setIsRecoveryMode] = useState(false);
   const channelRef = useRef(null);
   const [intentoCarga, setIntentoCarga] = useState(0); // Para forzar reintentos si falla algo crítico
 
@@ -286,6 +287,11 @@ export function useSupaState() {
     const { data: { subscription } } = sb.auth.onAuthStateChange((event, session) => {
       if (!montado) return;
 
+      if (event === "PASSWORD_RECOVERY") {
+        console.log("🔑 PASSWORD_RECOVERY event received");
+        setIsRecoveryMode(true);
+      }
+
       // Handle token refresh failures gracefully — prevents blue screen hang
       if (event === "TOKEN_REFRESH_FAILED" || event === "SIGNED_OUT") {
         if (event === "TOKEN_REFRESH_FAILED") {
@@ -445,5 +451,5 @@ export function useSupaState() {
     }
   };
 
-  return { db, setDb, session, estadoSupa, cargando, cargandoFondo, isAppReady, guardarEnSupa, eliminarDeSupa, sendBroadcast, recargar: cargarDeSupa };
+  return { db, setDb, session, estadoSupa, cargando, cargandoFondo, isAppReady, guardarEnSupa, eliminarDeSupa, sendBroadcast, recargar: cargarDeSupa, isRecoveryMode, setIsRecoveryMode };
 }

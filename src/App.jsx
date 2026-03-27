@@ -235,7 +235,7 @@ const DICT = {
 
 
 export default function App() {
-  const { db, setDb, session, estadoSupa, cargando, cargandoFondo, isAppReady, guardarEnSupa, eliminarDeSupa, sendBroadcast } = useSupaState();
+  const { db, setDb, session, estadoSupa, cargando, cargandoFondo, isAppReady, guardarEnSupa, eliminarDeSupa, sendBroadcast, isRecoveryMode, setIsRecoveryMode } = useSupaState();
   const [modulo, setModulo] = useState(localStorage.getItem("crm_active_module") || "dashboard");
   useEffect(() => { localStorage.setItem("crm_active_module", modulo); }, [modulo]);
   const [focusEmailId, setFocusEmailId] = useState(null);
@@ -338,6 +338,25 @@ export default function App() {
     }
   }, [isJustLoggedIn, cargando]);
 
+  // 2. Si es una redirección de recuperación de contraseña de Supabase (o error de la misma)
+  const isUrlRecovering = (
+    window.location.href.includes("type=recovery") ||
+    window.location.hash.includes("type=recovery") ||
+    window.location.hash.includes("recovery-confirm") ||
+    window.location.search.includes("type=recovery") ||
+    window.location.href.includes("error_code=otp_expired") ||
+    window.location.href.includes("error_code=access_denied")
+  );
+
+  useEffect(() => {
+    if (isUrlRecovering) setIsRecoveryMode(true);
+  }, [isUrlRecovering]);
+
+  if (isUrlRecovering || isRecoveryMode) {
+    const isExpired = window.location.href.includes("otp_expired");
+    return <Login forceView={isExpired ? "recovery" : "new-password"} />;
+  }
+
   if (isJustLoggedIn && cargando) {
     return (
       <div style={{ display: "flex", flexDirection: "column", height: "100vh", width: "100vw", alignItems: "center", justifyContent: "center", background: T.bg0, color: T.white }}>
@@ -359,6 +378,7 @@ export default function App() {
     );
   }
 
+
   if (hashURL.startsWith("#/f/")) {
     const formId = hashURL.replace("#/f/", "");
     return <FormularioPublico formId={formId} />;
@@ -366,22 +386,6 @@ export default function App() {
   if (hashURL.startsWith("#/sites/")) {
     const siteSlug = hashURL.replace("#/sites/", "");
     return <LandingPagePublica siteSlug={siteSlug} />;
-  }
-
-  // 2. Si es una redirección de recuperación de contraseña de Supabase (o error de la misma)
-  const isRecovering = (
-    window.location.href.includes("type=recovery") ||
-    window.location.hash.includes("type=recovery") ||
-    window.location.hash.includes("recovery-confirm") ||
-    window.location.search.includes("type=recovery") ||
-    window.location.href.includes("error_code=otp_expired") ||
-    window.location.href.includes("error_code=access_denied")
-  );
-
-  if (isRecovering) {
-    // Si hay error de OTP expirado, nos aseguramos de ir a la vista de recovery con el error
-    const isExpired = window.location.href.includes("otp_expired");
-    return <Login forceView={isExpired ? "recovery" : "new-password"} />;
   }
 
   if (loggingOut) {

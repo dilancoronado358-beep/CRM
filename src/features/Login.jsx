@@ -4,7 +4,7 @@ import { sb, useSupaState } from '../hooks/useSupaState';
 import { Btn, Ico } from '../components/ui';
 
 export function Login({ forceView }) {
-  const { db, setDb } = useSupaState();
+  const { db, setDb, setIsRecoveryMode } = useSupaState();
   const [view, setView] = useState(forceView || 'login'); // 'login' | 'recovery' | 'new-password'
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -105,7 +105,14 @@ export function Login({ forceView }) {
       setError('No se pudo actualizar: ' + error.message);
     } else {
       setSuccess('¡Contraseña actualizada con éxito! Ya puedes entrar.');
-      setTimeout(() => setView('login'), 2000);
+      // Forzar salida para obligar a login manual
+      await sb.auth.signOut();
+      if (setIsRecoveryMode) setIsRecoveryMode(false);
+      setTimeout(() => {
+        window.location.hash = "";
+        window.location.search = "";
+        setView('login');
+      }, 2000);
     }
     setCargando(false);
   };
