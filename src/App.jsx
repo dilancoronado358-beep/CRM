@@ -485,7 +485,8 @@ export default function App() {
   const grp = MODULOS.reduce((acc, m) => { (acc[m.role] = acc[m.role] || []).push(m); return acc; }, {});
   const ModuloActivo = MODULOS.find(m => m.id === modulo)?.comp || Dashboard;
 
-  const propsModulo = { db, setDb, guardarEnSupa, eliminarDeSupa, t, setModulo, cargandoFondo, focusEmailId, setFocusEmailId };
+  const esAdminGlobal = db.usuario?.org_id === '00000000-0000-0000-0000-000000000001';
+  const propsModulo = { db, setDb, guardarEnSupa, eliminarDeSupa, t, setModulo, cargandoFondo, focusEmailId, setFocusEmailId, estadoSupa, esAdminGlobal };
 
   return (
     <div style={{ display: "flex", height: "100vh", background: T.bg0, color: T.white }}>
@@ -581,7 +582,7 @@ export default function App() {
             <div style={{ fontWeight: 800, fontSize: 20, color: T.white }}>
               {MODULOS.find(m => m.id === modulo)?.label || t("Cargando...")}
             </div>
-            <IndSupa estado={estadoSupa} />
+            {esAdminGlobal && <IndSupa estado={estadoSupa} />}
           </div>
           <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
             <NotificationCenter db={db} guardarEnSupa={guardarEnSupa} setModulo={setModulo} />

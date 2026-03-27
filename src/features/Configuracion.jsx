@@ -12,7 +12,7 @@ import { io } from "socket.io-client";
 // El socket se inicializará dinámicamente según la configuración
 // (Se usa una ref dentro del componente)
 
-export const Configuracion = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) => {
+export const Configuracion = ({ db, setDb, guardarEnSupa, eliminarDeSupa, estadoSupa, esAdminGlobal }) => {
   const API_URL = getApiUrl(db);
 
   const [tab, setTab] = useState("perfil");
@@ -556,6 +556,7 @@ export const Configuracion = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) => {
     { id: "api", label: "API & Webhooks", icon: "code" },
     { id: "chatbots", label: "Chatbots", icon: "message" },
     { id: "security", label: "Seguridad", icon: "eye" },
+    esAdminGlobal && { id: "supabase", label: "Conexión Supabase", icon: "database" },
     esAdminGlobal && { id: "avanzado", label: "Avanzado", icon: "cog" },
   ].filter(Boolean);
 
@@ -1209,6 +1210,35 @@ ALTER TABLE usuariosApp ADD COLUMN IF NOT EXISTS org_id UUID REFERENCES organiza
                 ))}
               </tbody>
             </table>
+          </Tarjeta>
+        )}
+
+        {tab === "supabase" && esAdminGlobal && (
+          <Tarjeta style={{ padding: 32 }}>
+            <div style={{ fontSize: 20, fontWeight: 800, color: T.white, marginBottom: 8, display: "flex", alignItems: "center", gap: 10 }}>
+              <Ico k="database" size={24} style={{ color: T.teal }} /> Conexión con Supabase
+            </div>
+            <div style={{ fontSize: 14, color: T.whiteDim, marginBottom: 32 }}>
+              Estado de la conexión en tiempo real con el clúster de base de datos de Supabase.
+            </div>
+
+            <div style={{ padding: 24, background: T.bg2, border: `1px solid ${T.borderHi}`, borderRadius: 16, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <div>
+                <div style={{ fontSize: 16, fontWeight: 800, color: T.white, marginBottom: 4 }}>Estado del Servidor</div>
+                <div style={{ fontSize: 13, color: T.whiteDim }}>Motor de base de datos y autenticación (Supabase Auth & DB)</div>
+              </div>
+              <IndSupa estado={estadoSupa} />
+            </div>
+
+            <div style={{ marginTop: 24, padding: 20, background: "rgba(37, 99, 235, 0.05)", borderRadius: 12, border: `1px solid rgba(37, 99, 235, 0.1)` }}>
+              <div style={{ fontSize: 13, color: T.whiteOff, display: "flex", gap: 10 }}>
+                <Ico k="lightning" size={16} style={{ color: T.teal, flexShrink: 0 }} />
+                <div>
+                  <div style={{ fontWeight: 700, marginBottom: 4 }}>Información de Conectividad</div>
+                  El sistema utiliza una conexión persistente a Supabase. Si el estado cambia a "Sin conexión", las operaciones de escritura se encolarán localmente hasta que se restablezca el servicio.
+                </div>
+              </div>
+            </div>
           </Tarjeta>
         )}
 
