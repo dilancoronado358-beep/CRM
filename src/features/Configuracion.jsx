@@ -927,7 +927,7 @@ ALTER TABLE usuariosApp ADD COLUMN IF NOT EXISTS org_id UUID REFERENCES organiza
                   onClick={() => handleConnectEmail('google')}
                   style={{ cursor: "pointer", padding: 32, background: T.bg2, borderRadius: 16, border: `1px solid ${T.borderHi}`, textAlign: "center", transition: "all .2s", hover: { borderColor: T.teal } }}
                 >
-                  <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_Logo.svg" alt="Google" style={{ height: 40, marginBottom: 16 }} />
+                  <img src="/brand/google_logo.png" alt="Google" style={{ height: 40, marginBottom: 16 }} />
                   <div style={{ fontSize: 18, fontWeight: 800, color: T.white }}>Gmail / Google Workspace</div>
                   <div style={{ fontSize: 12, color: T.whiteDim, marginTop: 8 }}>Sincronización de Correo y Calendario</div>
                 </div>
@@ -937,7 +937,7 @@ ALTER TABLE usuariosApp ADD COLUMN IF NOT EXISTS org_id UUID REFERENCES organiza
                   onClick={() => handleConnectEmail('azure')}
                   style={{ cursor: "pointer", padding: 32, background: T.bg2, borderRadius: 16, border: `1px solid ${T.borderHi}`, textAlign: "center", transition: "all .2s" }}
                 >
-                  <img src="https://upload.wikimedia.org/wikipedia/commons/4/44/Microsoft_logo.svg" alt="Outlook" style={{ height: 40, marginBottom: 16 }} />
+                  <img src="/brand/microsoft_logo.png" alt="Outlook" style={{ height: 40, marginBottom: 16 }} />
                   <div style={{ fontSize: 18, fontWeight: 800, color: T.white }}>Microsoft Outlook / Office 365</div>
                   <div style={{ fontSize: 12, color: T.whiteDim, marginTop: 8 }}>Sincronización de Correo y Calendario</div>
                 </div>
