@@ -582,7 +582,7 @@ export default function App() {
             <div style={{ fontWeight: 800, fontSize: 20, color: T.white }}>
               {MODULOS.find(m => m.id === modulo)?.label || t("Cargando...")}
             </div>
-            {esAdminGlobal && <IndSupa estado={estadoSupa} />}
+
           </div>
           <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
             <NotificationCenter db={db} guardarEnSupa={guardarEnSupa} setModulo={setModulo} />

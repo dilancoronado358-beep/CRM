@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { T, THEMES, applyTheme } from "../theme";
-import { Btn, Inp, Sel, Campo, Tarjeta, EncabezadoSeccion, Celda, CabeceraTabla, FilaTabla, Chip, Ico, Modal, ConfirmModal } from "../components/ui";
+import { Btn, Inp, Sel, Campo, Tarjeta, EncabezadoSeccion, Celda, CabeceraTabla, FilaTabla, Chip, Ico, Modal, ConfirmModal, IndSupa } from "../components/ui";
 import { fdtm, uid, getApiUrl } from "../utils";
 import { sb } from "../hooks/useSupaState";
 import axios from "axios";
