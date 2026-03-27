@@ -10,8 +10,8 @@ const TG_SOFT  = "rgba(0,136,204,0.12)";
 
 const STEPS = [
   { icon: "paper-plane", title: "Abre Telegram", desc: "En tu teléfono o escritorio, busca el contacto @BotFather." },
-  { icon: "chat",       title: "Escribe /newbot", desc: "Sigue las instrucciones para darle un nombre y un @username a tu bot." },
-  { icon: "code",       title: "Copia el Token",  desc: "BotFather te dará un token (ej: 7123456789:AAH...). Pégalo abajo." },
+  { icon: "bell",        title: "Escribe /newbot", desc: "Sigue las instrucciones para darle un nombre y un @username a tu bot." },
+  { icon: "code",        title: "Copia el Token",  desc: "BotFather te dará un token (ej: 7123456789:AAH...). Pégalo abajo." },
 ];
 
 export function ChatTelegram({ db, t = s => s }) {
