@@ -17,6 +17,19 @@ export function Login({ forceView }) {
   // Sincronizar vista si cambia la prop (ej: al detectar hash de recuperación)
   React.useEffect(() => {
     if (forceView) setView(forceView);
+
+    // Detectar errores de OTP en la URL
+    const params = new URLSearchParams(window.location.search);
+    const hashParams = new URLSearchParams(window.location.hash.replace("#", "?"));
+    const errCode = params.get("error_code") || hashParams.get("error_code");
+
+    if (errCode === "otp_expired") {
+      setError("Su enlace para restablecer la contraseña ha expirado. Por favor, solicite uno nuevo.");
+      setView("recovery");
+    } else if (errCode) {
+      setError("Hubo un problema con el enlace de recuperación. Inténtelo de nuevo.");
+      setView("recovery");
+    }
   }, [forceView]);
 
   const handleLogin = async (e) => {
@@ -60,7 +73,7 @@ export function Login({ forceView }) {
     setSuccess('');
 
     const { error } = await sb.auth.resetPasswordForEmail(email, {
-      redirectTo: window.location.origin + window.location.pathname + "#/recovery-confirm",
+      redirectTo: window.location.origin + window.location.pathname,
     });
 
     if (error) {
@@ -76,6 +89,15 @@ export function Login({ forceView }) {
     setCargando(true);
     setError('');
     setSuccess('');
+
+    // Verificar sesión antes de actualizar
+    const { data: { session } } = await sb.auth.getSession();
+    
+    if (!session) {
+      setError('No hay una sesión activa de recuperación. Por favor, vuelva a usar el enlace de su correo.');
+      setCargando(false);
+      return;
+    }
 
     const { error } = await sb.auth.updateUser({ password: newPassword });
 

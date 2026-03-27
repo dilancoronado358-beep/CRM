@@ -368,13 +368,20 @@ export default function App() {
     return <LandingPagePublica siteSlug={siteSlug} />;
   }
 
-  // 2. Si es una redirección de recuperación de contraseña de Supabase
-  const isRecovering = window.location.href.includes("type=recovery") ||
+  // 2. Si es una redirección de recuperación de contraseña de Supabase (o error de la misma)
+  const isRecovering = (
+    window.location.href.includes("type=recovery") ||
+    window.location.hash.includes("type=recovery") ||
     window.location.hash.includes("recovery-confirm") ||
-    window.location.search.includes("type=recovery");
+    window.location.search.includes("type=recovery") ||
+    window.location.href.includes("error_code=otp_expired") ||
+    window.location.href.includes("error_code=access_denied")
+  );
 
   if (isRecovering) {
-    return <Login forceView="new-password" />;
+    // Si hay error de OTP expirado, nos aseguramos de ir a la vista de recovery con el error
+    const isExpired = window.location.href.includes("otp_expired");
+    return <Login forceView={isExpired ? "recovery" : "new-password"} />;
   }
 
   if (loggingOut) {
