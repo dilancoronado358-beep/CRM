@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { T } from "../theme";
 import { uid, uuid } from "../utils";
 import { Chip, Btn, Inp, Sel, Campo, Modal, Tarjeta, EncabezadoSeccion, Ico, Vacio } from "../components/ui";
+import { sileo } from "../utils/sileo";
 
 // ─── CATÁLOGO DE CATEGORÍAS ──────────────────────────────────────────────────
 const CATEGORIES = [
@@ -102,23 +103,17 @@ const ALL_RULES = [
   { cat: "control", id: "quota_check", label: "Verificar cuotas", sub: "Comprueba si el usuario ha cumplido sus objetivos.", icon: "check-circle", color: "#F59E0B" },
 
   // PAGO (5 Reglas)
-  { cat: "pago", id: "gen_invoice", label: "Generar factura", sub: "Crea un borrador de factura automáticamente.", icon: "file-invoice", color: "#3B82F6" },
-  { cat: "pago", id: "send_payment_link", label: "Enviar link de pago", sub: "Envía enlace de PayPal/Stripe por email/WA.", icon: "credit-card", color: "#3B82F6" },
-  { cat: "pago", id: "check_payment", label: "Verificar pago", sub: "Consulta el estado de la transacción en la pasarela.", icon: "sync", color: "#3B82F6" },
-  { cat: "pago", id: "record_refund", label: "Registrar reembolso", sub: "Anota una devolución en el historial financiero.", icon: "undo", color: "#3B82F6" },
-  { cat: "pago", id: "tax_calc", label: "Calcular impuestos", sub: "Ajusta el monto total según la región impositiva.", icon: "percentage", color: "#3B82F6" },
-
-  // RECURRENTES (4 Reglas)
-  { cat: "recurrentes", id: "repeat_deal", label: "Repetir negociación", sub: "Crea una copia del deal para el próximo ciclo.", icon: "refresh", color: "#8B5CF6" },
-  { cat: "recurrentes", id: "sub_invoice", label: "Suscripción mensual", sub: "Genera cobros recurrentes cada 30 días.", icon: "calendar-alt", color: "#8B5CF6" },
-  { cat: "recurrentes", id: "renew_reminder", label: "Recordatorio de renovación", sub: "Avisa 15 días antes del vencimiento.", icon: "bell", color: "#8B5CF6" },
-  { cat: "recurrentes", id: "stop_recurrence", label: "Detener recurrencia", sub: "Cancela las repeticiones automáticas.", icon: "ban", color: "#8B5CF6" },
-
+  { cat: "pago", id: "gen_invoice", label: "Generar factura", sub: "Crea un borrador de factura automáticamente.", icon: "file-invoice", color: "#6366F1" }, // Indigo
+  { cat: "pago", id: "send_payment_link", label: "Enviar link de pago", sub: "Envía enlace de PayPal/Stripe por email/WA.", icon: "credit-card", color: "#6366F1" },
+  { cat: "pago", id: "check_payment", label: "Verificar pago", sub: "Consulta el estado de la transacción en la pasarela.", icon: "sync", color: "#6366F1" },
+  { cat: "pago", id: "record_refund", label: "Registrar reembolso", sub: "Anota una devolución en el historial financiero.", icon: "undo", color: "#6366F1" },
+  { cat: "pago", id: "tax_calc", label: "Calcular impuestos", sub: "Ajusta el monto total según la región impositiva.", icon: "percentage", color: "#6366F1" },
+...
   // ANUNCIO (4 Reglas)
-  { cat: "anuncio", id: "fb_pixel", label: "Facebook Pixel", sub: "Envía evento de conversión a Facebook.", icon: "facebook", color: "#1D4ED8" },
-  { cat: "anuncio", id: "google_ads", label: "Google Ads Offline", sub: "Sube conversión offline a Google Ads.", icon: "google", color: "#1D4ED8" },
-  { cat: "anuncio", id: "retarget_list", label: "Añadir a lista retargeting", sub: "Sincroniza el email con audiencias de ads.", icon: "users", color: "#1D4ED8" },
-  { cat: "anuncio", id: "lead_source_track", label: "Track de fuente", sub: "Atribuye la conversión a la campaña original.", icon: "link", color: "#1D4ED8" },
+  { cat: "anuncio", id: "fb_pixel", label: "Facebook Pixel", sub: "Envía evento de conversión a Facebook.", icon: "facebook", color: "#4F46E5" }, // Deep Indigo
+  { cat: "anuncio", id: "google_ads", label: "Google Ads Offline", sub: "Sube conversión offline a Google Ads.", icon: "google", color: "#4F46E5" },
+  { cat: "anuncio", id: "retarget_list", label: "Añadir a lista retargeting", sub: "Sincroniza el email con audiencias de ads.", icon: "users", color: "#4F46E5" },
+  { cat: "anuncio", id: "lead_source_track", label: "Track de fuente", sub: "Atribuye la conversión a la campaña original.", icon: "link", color: "#4F46E5" },
 
   // WORKFLOW (12 Reglas)
   { cat: "workflow", id: "mod_item", label: "Modificar elemento", sub: "Actualiza los campos de la negociación.", icon: "edit", color: "#6B7280" },
@@ -179,6 +174,7 @@ export const Automatizaciones = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t }
   // INSPECTOR STATE
   const [editRule, setEditRule] = useState(null);
   const [showFieldMenu, setShowFieldMenu] = useState(false);
+  const [testMode, setTestMode] = useState(false);
 
   // ─── COMPUTAR CAMPOS DINÁMICOS (ALINEADOS CON ESQUEMA REAL) ────────────────
   const crmFields = [
@@ -294,8 +290,19 @@ export const Automatizaciones = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t }
             </div>
           </div>
           <div style={{ display: "flex", gap: 12 }}>
-            <Btn variant="secundario" size="sm" style={{ fontWeight: 700, borderRadius: 10, borderColor: T.borderHi }}>EXTENSIONES</Btn>
-            <Btn style={{ background: T.teal, color: "#000", fontWeight: 800, borderRadius: 10, border: "none" }} size="sm">MODO PRUEBA</Btn>
+            <Btn variant="secundario" size="sm" style={{ fontWeight: 700, borderRadius: 10, borderColor: T.borderHi }}
+              onClick={() => sileo.info("Extensiones", { description: "Próximamente: Mercado de extensiones para automatizaciones externas." })}>
+              EXTENSIONES
+            </Btn>
+            <Btn style={{ background: testMode ? T.amber : T.teal, color: "#000", fontWeight: 800, borderRadius: 10, border: "none" }} size="sm"
+              onClick={() => {
+                setTestMode(!testMode);
+                sileo.warning(!testMode ? "Modo Prueba Activado" : "Modo Prueba Desactivado", { 
+                  description: !testMode ? "Las automatizaciones no enviarán emails reales durante este modo." : "El sistema ha vuelto a modo producción." 
+                });
+              }}>
+              {testMode ? "SALIR DE PRUEBA" : "MODO PRUEBA"}
+            </Btn>
           </div>
         </div>
 
@@ -413,7 +420,10 @@ export const Automatizaciones = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t }
                 <Ico k="plus" size={28} />
               </div>
               <div style={{ fontWeight: 800, color: T.white, fontSize: 16 }}>Crear Nueva Variable</div>
-              <Btn style={{ background: T.teal, color: "#000", fontWeight: 800, padding: "10px 24px", borderRadius: 12 }} size="sm">INICIAR</Btn>
+              <Btn style={{ background: T.teal, color: "#000", fontWeight: 800, padding: "10px 24px", borderRadius: 12 }} size="sm" 
+                onClick={() => sileo.info("Funcionalidad Pro", { description: "La creación de variables personalizadas se habilita una vez que tengas un flujo activo." })}>
+                INICIAR
+              </Btn>
             </Tarjeta>
             {[
               { n: "descuento_promo", v: "20%", t: "Porcentaje" },
@@ -488,7 +498,7 @@ export const Automatizaciones = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t }
               </Tarjeta>
             ))}
             <div style={{ textAlign: "center", marginTop: 24 }}>
-              <Btn variant="fantasma" size="sm" style={{ color: T.teal, fontWeight: 800 }}>EXPLORAR HISTORIAL</Btn>
+              <Btn variant="fantasma" size="sm" style={{ color: T.teal, fontWeight: 800 }} onClick={() => setTab("logs")}>EXPLORAR HISTORIAL</Btn>
             </div>
           </div>
         </div>
