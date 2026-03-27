@@ -245,6 +245,8 @@ export default function App() {
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [logoutGlobal, setLogoutGlobal] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
+  const userMenuRef = useRef(null);
   const socketRef = useRef(null);
 
 
@@ -295,6 +297,14 @@ export default function App() {
       }
     }
   }, [db.tareas, db.usuario?.id]);
+
+  useEffect(() => {
+    const clickAfuera = (e) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target)) setShowUserMenu(false);
+    };
+    if (showUserMenu) document.addEventListener("mousedown", clickAfuera);
+    return () => document.removeEventListener("mousedown", clickAfuera);
+  }, [showUserMenu]);
 
   useEffect(() => {
     // Apply theme on mount and whenever user changes it
@@ -554,22 +564,10 @@ export default function App() {
           ))}
         </div>
 
-        {/* FOOTER SIDEBAR */}
-        <div style={{ padding: "16px 12px", borderTop: `1px solid ${T.borderHi}`, background: T.bg1, flexShrink: 0 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, justifyContent: menuAbierto ? "space-between" : "center" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, overflow: "hidden" }}>
-              {db.usuario?.profilePic ? (
-                <img src={db.usuario.profilePic} alt="avatar" style={{ width: 36, height: 36, borderRadius: "50%", objectFit: "cover", flexShrink: 0, border: `2px solid ${T.teal}` }} />
-              ) : (
-                <Av text={db.usuario?.avatar} color={T.teal} size={36} fs={14} />
-              )}
-              {menuAbierto && (
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: T.white, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{db.usuario?.name || "Usuario"}</div>
-                  <div style={{ fontSize: 11, color: T.whiteDim, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{db.usuario?.email}</div>
-                </div>
-              )}
-            </div>
+        {/* FOOTER SIDEBAR - SIMPLIFICADO */}
+        <div style={{ padding: "16px 12px", borderTop: `1px solid ${T.borderHi}`, background: T.bg1, flexShrink: 0, opacity: 0.5 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, justifyContent: "center", fontSize: 10, fontWeight: 700, color: T.whiteDim, textTransform: "uppercase", letterSpacing: ".1em" }}>
+            {menuAbierto ? "CRM v2.4.0" : "V2"}
           </div>
         </div>
       </div>
@@ -593,11 +591,54 @@ export default function App() {
               <input placeholder="Búsqueda rápida..." style={{ background: T.bg2, border: `1px solid ${T.borderHi}`, borderRadius: 20, padding: "8px 16px 8px 34px", fontSize: 13, color: T.white, width: 220, outline: "none", transition: "all .2s", fontFamily: "inherit" }} onFocus={e => e.target.style.background = T.bg1} onBlur={e => e.target.style.background = T.bg2} />
             </div>
             <Btn variant="secundario" style={{ padding: 8, borderRadius: "50%" }}><Ico k="refresh" size={16} /></Btn>
-            <Btn variant="secundario" style={{ padding: 8, borderRadius: "50%", color: T.red, borderColor: T.red }}
-              onClick={() => setShowLogoutConfirm(true)}
-              title={t("Cerrar sesión")}>
-              <Ico k="lock" size={16} />
-            </Btn>
+            {/* PERFIL DE USUARIO Y DROPDOWN */}
+            <div ref={userMenuRef} style={{ position: "relative" }}>
+              <div 
+                onClick={() => setShowUserMenu(!showUserMenu)}
+                style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", padding: "4px 8px", borderRadius: 12, transition: "all .2s", background: showUserMenu ? "rgba(255,255,255,0.05)" : "transparent" }}
+                onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.05)"}
+                onMouseLeave={e => { if (!showUserMenu) e.currentTarget.style.background = "transparent"; }}
+              >
+                <div style={{ textAlign: "right" }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: T.white }}>{db.usuario?.name?.split(" ")[0]}</div>
+                  <div style={{ fontSize: 10, color: T.whiteDim }}>{db.usuario?.role === 'admin' ? 'Administrador' : 'Agente'}</div>
+                </div>
+                {db.usuario?.profilePic ? (
+                  <img src={db.usuario.profilePic} alt="avatar" style={{ width: 34, height: 34, borderRadius: "50%", objectFit: "cover", border: `2px solid ${T.teal}` }} />
+                ) : (
+                  <Av text={db.usuario?.avatar} color={T.teal} size={34} fs={13} />
+                )}
+                <Ico k="chevron-down" size={12} style={{ color: T.whiteDim, transform: showUserMenu ? "rotate(180deg)" : "none", transition: "all .3s" }} />
+              </div>
+
+              {/* MENU DROPDOWN */}
+              {showUserMenu && (
+                <div style={{ position: "absolute", top: "calc(100% + 8px)", right: 0, width: 220, background: T.bg1, border: `1px solid ${T.borderHi}`, borderRadius: 16, boxShadow: "var(--shadow-premium)", zIndex: 1000, padding: 8, animation: "slideIn .2s cubic-bezier(0.16, 1, 0.3, 1)" }}>
+                  <div style={{ padding: "12px 16px", borderBottom: `1px solid ${T.border}`, marginBottom: 8 }}>
+                    <div style={{ fontSize: 13, fontWeight: 800, color: T.white }}>{db.usuario?.name}</div>
+                    <div style={{ fontSize: 11, color: T.whiteDim }}>{db.usuario?.email}</div>
+                  </div>
+                  
+                  <button 
+                    onClick={() => { setModulo('config'); setShowUserMenu(false); }}
+                    style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", background: "transparent", border: "none", color: T.whiteOff, fontSize: 13, fontWeight: 600, borderRadius: 10, cursor: "pointer", textAlign: "left", transition: "all .2s" }}
+                    onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,255,255,0.05)"; e.currentTarget.style.color = T.teal; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = T.whiteOff; }}
+                  >
+                    <Ico k="cog" size={16} /> Configuración de perfil
+                  </button>
+
+                  <button 
+                    onClick={() => { setShowLogoutConfirm(true); setShowUserMenu(false); }}
+                    style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", background: "transparent", border: "none", color: T.red, fontSize: 13, fontWeight: 600, borderRadius: 10, cursor: "pointer", textAlign: "left", transition: "all .2s", marginTop: 4 }}
+                    onMouseEnter={e => { e.currentTarget.style.background = "rgba(239, 68, 68, 0.08)"; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}
+                  >
+                    <Ico k="lock" size={16} /> Cerrar sesión
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
