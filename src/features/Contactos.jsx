@@ -2,6 +2,8 @@ import { useState } from "react";
 import { T } from "../theme";
 import { uid, money, fdate, ESTADO_CFG } from "../utils";
 import { Av, Chip, Btn, Inp, Sel, Campo, Modal, Tarjeta, CabeceraTabla, FilaTabla, Celda, Barra, AnilloScore, BuscadorBar, Vacio, EncabezadoSeccion, ControlSegmentado, Ico } from "../components/ui";
+import { BulkImport } from "../components/BulkImport";
+import { sileo } from "../utils/sileo";
 
 export const Contactos = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) => {
   const [busqueda, setBusqueda] = useState("");
@@ -10,6 +12,7 @@ export const Contactos = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) => {
   const [showForm, setShowForm] = useState(false);
   const [editando, setEditando] = useState(null);
   const [detalle, setDetalle] = useState(null);
+  const [showImport, setShowImport] = useState(false);
 
   const filtrados = db.contactos.filter(c =>
     (estadoF === "todos" || c.estado === estadoF) &&
@@ -63,10 +66,45 @@ export const Contactos = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) => {
     await eliminarDeSupa("contactos", id);
   };
 
+  const handleBulkImport = async (data) => {
+    const colores = [T.teal, T.green, T.amber, "#8B5CF6", "#EC4899", "#3B82F6"];
+    const nuevosContactos = data.map(item => {
+      const nombre = item.nombre || item.name || "Sin Nombre";
+      return {
+        id: "c" + uid(),
+        nombre,
+        email: item.email || item.correo || "",
+        telefono: item.telefono || item.phone || "",
+        empresa: item.empresa || item.company || "",
+        cargo: item.cargo || item.role || "",
+        estado: item.estado || item.status || "lead",
+        fuente: item.fuente || item.source || "Importado",
+        valor: Number(item.valor || item.value || 0),
+        score: Number(item.score || 50),
+        etiquetas: (item.etiquetas || item.tags || "").split(",").map(t => t.trim()).filter(Boolean),
+        notas: item.notas || item.notes || "",
+        creado: new Date().toISOString().slice(0, 10),
+        ultimo_contacto: new Date().toISOString().slice(0, 10),
+        color: colores[Math.floor(Math.random() * colores.length)],
+        avatar: nombre.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase()
+      };
+    });
+
+    setDb(d => ({ ...d, contactos: [...nuevosContactos, ...d.contactos] }));
+    // Insert array in Supabase
+    await guardarEnSupa("contactos", nuevosContactos);
+    sileo.success(`${nuevosContactos.length} contactos importados correctamente`);
+  };
+
   return (
     <div>
       <EncabezadoSeccion title="Contactos" sub={`${db.contactos.length} contactos en total`}
-        actions={<Btn onClick={() => { setEditando(null); setShowForm(true); }}><Ico k="plus" size={14} />Nuevo Contacto</Btn>} />
+        actions={
+          <div style={{ display: "flex", gap: 12 }}>
+            <Btn variant="secundario" onClick={() => setShowImport(true)}><Ico k="upload" size={14} /> Importar</Btn>
+            <Btn onClick={() => { setEditando(null); setShowForm(true); }}><Ico k="plus" size={14} />Nuevo Contacto</Btn>
+          </div>
+        } />
 
       <div style={{ display: "flex", gap: 8, marginBottom: 20, flexWrap: "wrap" }}>
         {[["todos", "Todos"], ["cliente", "Clientes"], ["lead", "Leads"], ["prospecto", "Prospectos"], ["inactivo", "Inactivos"]].map(([k, label]) => (
@@ -183,6 +221,8 @@ export const Contactos = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) => {
           </div>
         )}
       </Modal>
+
+      <BulkImport open={showImport} onClose={() => setShowImport(false)} onImport={handleBulkImport} type="contactos" />
     </div>
   );
 };

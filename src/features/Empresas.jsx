@@ -2,12 +2,15 @@ import { useState } from "react";
 import { T } from "../theme";
 import { uid, PRIO_CFG, fdate } from "../utils";
 import { Av, Chip, Btn, Inp, Sel, Campo, Modal, Tarjeta, KPI, BuscadorBar, Vacio, EncabezadoSeccion, ControlSegmentado, Ico } from "../components/ui";
+import { BulkImport } from "../components/BulkImport";
+import { sileo } from "../utils/sileo";
 
 export const Empresas = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) => {
   const [busqueda, setBusqueda] = useState("");
   const [vista, setVista] = useState("tarjetas");
   const [showForm, setShowForm] = useState(false);
   const [editando, setEditando] = useState(null);
+  const [showImport, setShowImport] = useState(false);
 
   const filtrados = db.empresas.filter(e =>
     [e.nombre, e.industria, e.sitio, e.ciudad].some(v => v?.toLowerCase().includes(busqueda.toLowerCase()))
@@ -52,9 +55,39 @@ export const Empresas = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) => {
     await eliminarDeSupa("empresas", id);
   };
 
+  const handleBulkImport = async (data) => {
+    const colores = [T.teal, T.green, T.amber, "#8B5CF6", "#EC4899", "#3B82F6"];
+    const nuevasEmpresas = data.map(item => {
+      const nombre = item.nombre || item.name || "Empresa Sin Nombre";
+      return {
+        id: "co" + uid(),
+        nombre,
+        industria: item.industria || item.industry || "Otra",
+        tamaño: item.tamaño || item.size || "1-10",
+        sitio: item.sitio_web || item.website || "",
+        ingresos: item.ingresos || item.revenue || "<$500K",
+        ciudad: item.ciudad || item.city || "",
+        color: colores[Math.floor(Math.random() * colores.length)],
+        logo: nombre.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase(),
+        contactos: [],
+        deals: []
+      };
+    });
+
+    setDb(d => ({ ...d, empresas: [...nuevasEmpresas, ...d.empresas] }));
+    await guardarEnSupa("empresas", nuevasEmpresas);
+    sileo.success(`${nuevasEmpresas.length} empresas importadas correctamente`);
+  };
+
   return (
     <div>
-      <EncabezadoSeccion title="Directorio de Empresas" sub={`${db.empresas.length} organizaciones registradas`} actions={<Btn onClick={() => { setEditando(null); setShowForm(true); }}><Ico k="plus" size={14} />Nueva Empresa</Btn>} />
+      <EncabezadoSeccion title="Directorio de Empresas" sub={`${db.empresas.length} organizaciones registradas`} 
+        actions={
+          <div style={{ display: "flex", gap: 12 }}>
+            <Btn variant="secunadrio" onClick={() => setShowImport(true)}><Ico k="upload" size={14} /> Importar</Btn>
+            <Btn onClick={() => { setEditando(null); setShowForm(true); }}><Ico k="plus" size={14} />Nueva Empresa</Btn>
+          </div>
+        } />
       
       <div style={{ display: "flex", gap: 12, marginBottom: 24, alignItems: "center" }}>
         <BuscadorBar value={busqueda} onChange={e => setBusqueda(e.target.value)} placeholder="Buscar empresas..." />
@@ -97,6 +130,8 @@ export const Empresas = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) => {
       
       {filtrados.length === 0 && <Vacio text="No se encontraron empresas con esos criterios." />}
       <Modal open={showForm} onClose={() => { setShowForm(false); setEditando(null); }} title={editando ? "Editar Empresa" : "Nueva Empresa"} width={500}><FormEmpresa init={editando || {}} onGuardar={guardar} onCancelar={() => { setShowForm(false); setEditando(null); }} /></Modal>
+
+      <BulkImport open={showImport} onClose={() => setShowImport(false)} onImport={handleBulkImport} type="empresas" />
     </div>
   );
 };

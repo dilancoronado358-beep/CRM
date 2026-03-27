@@ -3,6 +3,8 @@ import { T } from "../theme";
 import { uid, money, fdate, getApiUrl } from "../utils";
 import { Chip, Btn, Inp, Sel, LocalInput } from "../components/ui";
 import { Campo, Modal, Tarjeta, SelColor, EncabezadoSeccion, ControlSegmentado, Ico, Barra, Vacio } from "../components/ui";
+import { BulkImport } from "../components/BulkImport";
+import { sileo } from "../utils/sileo";
 import { LeadTimeline } from "./LeadTimeline";
 import { Cotizaciones } from "./Cotizaciones";
 
@@ -358,6 +360,7 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
   const [fFecha, setFFecha] = useState("todas");
   const [fEmpresa, setFEmpresa] = useState("todas");
   const [showFiltros, setShowFiltros] = useState(false);
+  const [showImport, setShowImport] = useState(false);
 
   // MOVE OUTSIDE LATER
 
@@ -680,12 +683,49 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
     setSelectedIds([]);
   };
 
+  const handleBulkImport = async (data) => {
+    const nuevosDeals = data.map(item => {
+      const titulo = item.titulo || item.title || "Negocio Sin Título";
+      
+      // Resolve Contact ID
+      const contactoNombre = item.contacto || item.contact || "";
+      const contacto = db.contactos?.find(c => c.nombre.toLowerCase() === contactoNombre.toLowerCase());
+      
+      // Resolve Company ID
+      const empresaNombre = item.empresa || item.company || "";
+      const empresa = db.empresas?.find(e => e.nombre.toLowerCase() === empresaNombre.toLowerCase());
+
+      return {
+        id: "d" + uid(),
+        titulo,
+        valor: Number(item.valor || item.value || 0),
+        prob: Number(item.probabilidad || item.probability || 50),
+        fecha_cierre: item.fecha_cierre || item.closing_date || "",
+        contacto_id: contacto?.id || "",
+        empresa_id: empresa?.id || "",
+        pipeline_id: plActivo,
+        etapa_id: pipeline?.etapas?.[0]?.id || "",
+        responsable: item.responsable || item.owner || db.usuario?.name || "",
+        etiquetas: (item.etiquetas || item.tags || "").split(",").map(t => t.trim()).filter(Boolean),
+        notas: item.notas || item.notes || "",
+        creado: new Date().toISOString().slice(0, 10),
+        archivos: [],
+        custom_fields: {}
+      };
+    });
+
+    setDb(d => ({ ...d, deals: [...nuevosDeals, ...d.deals] }));
+    await guardarEnSupa("deals", nuevosDeals);
+    sileo.success(`${nuevosDeals.length} negocios importados correctamente`);
+  };
+
   return (
     <div>
       <EncabezadoSeccion title="Pipeline CRM" sub="Gestiona tus oportunidades en etapas visuales"
         actions={
           <div style={{ display: "flex", gap: 12 }}>
             <ControlSegmentado value={tab} onChange={setTab} options={[{ value: "kanban", label: "Kanban", icon: "board" }, { value: "lista", label: "Lista", icon: "list" }, { value: "configurar", label: "Configurar", icon: "cog" }]} />
+            <Btn variant="secundario" onClick={() => setShowImport(true)}><Ico k="upload" size={14} /> Importar</Btn>
             <Btn onClick={() => { setEditDeal(null); setPreEtapa(null); setShowDealForm(true); }}><Ico k="plus" size={14} />Nuevo Deal</Btn>
           </div>
         } />
@@ -1208,6 +1248,8 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
           <style>{`@keyframes pop-up { from { opacity:0; transform:translate(-50%, 20px); } to { opacity:1; transform:translate(-50%, 0); } }`}</style>
         </div>
       )}
+
+      <BulkImport open={showImport} onClose={() => setShowImport(false)} onImport={handleBulkImport} type="deals" />
     </div>
   );
 };
