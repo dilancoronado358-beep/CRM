@@ -30,6 +30,12 @@ export function ChatFacebook({ db, t = s => s }) {
   const dummyRef = useRef(null);
   const API_URL  = getApiUrl(db);
 
+  const DEMO_CHATS = [
+    { id: "fb_301", name: "Roberto Silva",  last: "¿Cuánto cuesta el plan anual?",        time: "12:10", unread: 1 },
+    { id: "fb_302", name: "Laura Rivas",    last: "Gracias por la atención, muy amables.", time: "11:45", unread: 0 },
+    { id: "fb_303", name: "Diego Castillo", last: "Perfecto, nos vemos el lunes.",         time: "Ayer",  unread: 0 },
+  ];
+
   const connect = async () => {
     if (!token.trim() || !pageId.trim()) {
       toast.error("Datos incompletos", { description: "Ingresa el Token de Página y el Page ID." });
@@ -43,32 +49,26 @@ export function ChatFacebook({ db, t = s => s }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token, pageId }),
       });
-      if (!res.ok) throw new Error();
+      if (!res.ok) throw new Error("api error");
       const data = await res.json();
       setPageName(data.page?.name || "Mi Fanpage");
       localStorage.setItem("fb_token", token);
       localStorage.setItem("fb_page_id", pageId);
       localStorage.setItem("fb_page_name", data.page?.name || "Mi Fanpage");
-      setChats(data.conversations || demoChats());
-    } catch {
+      setChats(data.conversations || DEMO_CHATS);
+    } catch (e) {
       const name = "Mi Fanpage ENSING";
       setPageName(name);
       localStorage.setItem("fb_token", token);
       localStorage.setItem("fb_page_id", pageId);
       localStorage.setItem("fb_page_name", name);
-      setChats(demoChats());
+      setChats(DEMO_CHATS);
       toast.info("Modo demo activo", { description: "Conecta el backend para recibir mensajes reales de Messenger." });
     } finally {
       setConnected(true);
       setConnecting(false);
     }
   };
-
-  const demoChats = () => [
-    { id: "fb_301", name: "Roberto Silva",   last: "¿Cuánto cuesta el plan anual?",        time: "12:10", unread: 1 },
-    { id: "fb_302", name: "Laura Rivas",     last: "Gracias por la atención, muy amables.", time: "11:45", unread: 0 },
-    { id: "fb_303", name: "Diego Castillo",  last: "Perfecto, nos vemos el lunes.",         time: "Ayer",  unread: 0 },
-  ];
 
   const openChat = (chat) => {
     setActiveChat(chat);

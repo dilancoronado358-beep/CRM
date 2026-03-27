@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { T } from "../theme";
-import { Btn, Inp, Tarjeta, Chip, Ico, Modal } from "../components/ui";
+import { Btn, Inp, Tarjeta, Chip, Ico } from "../components/ui";
 import { getApiUrl } from "../utils";
 import { sileo as toast } from "../utils/sileo";
 
@@ -64,7 +64,7 @@ export function ChatTelegram({ db, t = s => s }) {
         ]);
         toast.success("Bot conectado (modo demo)", { description: "Conecta el backend para mensajes en tiempo real." });
       }
-    } catch {
+    } catch (e) {
       setBotInfo({ username: "MiCRMBot", first_name: "ENSING Bot" });
       setConnected(true);
       localStorage.setItem("tg_bot_token", tkn);
@@ -82,7 +82,7 @@ export function ChatTelegram({ db, t = s => s }) {
     try {
       const res = await fetch(`${API_URL}/telegram/chats?token=${tkn}`);
       if (res.ok) setChats(await res.json());
-    } catch { /* already set demo chats */ }
+    } catch (e) { /* already set demo chats */ }
   };
 
   const openChat = (chat) => {

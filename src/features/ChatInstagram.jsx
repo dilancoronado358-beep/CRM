@@ -28,6 +28,12 @@ export function ChatInstagram({ db, t = s => s }) {
   const dummyRef = useRef(null);
   const API_URL  = getApiUrl(db);
 
+  const DEMO_CHATS = [
+    { id: "ig_201", name: "valeria.designs",   last: "¡Me encantó el servicio! 🔥",       time: "11:05", unread: 3 },
+    { id: "ig_202", name: "startup.mx",        last: "¿Tienen plan mensual?",              time: "10:30", unread: 0 },
+    { id: "ig_203", name: "pedro_entrepreneur", last: "Sí, espero la propuesta. Gracias.", time: "Ayer",  unread: 0 },
+  ];
+
   const connect = async () => {
     if (!token.trim() || !igId.trim()) {
       toast.error("Datos incompletos", { description: "Ingresa el Token y el ID de tu cuenta." });
@@ -41,14 +47,14 @@ export function ChatInstagram({ db, t = s => s }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token, igId }),
       });
-      if (!res.ok) throw new Error();
+      if (!res.ok) throw new Error("api error");
       const data = await res.json();
       localStorage.setItem("ig_token", token);
       localStorage.setItem("ig_account_id", igId);
       setChats(data.conversations || demoChats());
-    } catch {
+    } catch (e) {
       // Demo mode
-      setChats(demoChats());
+      setChats(DEMO_CHATS);
       toast.info("Modo demo activo", { description: "Conecta el backend para recibir DMs reales." });
     } finally {
       setConnected(true);
@@ -57,12 +63,6 @@ export function ChatInstagram({ db, t = s => s }) {
       localStorage.setItem("ig_account_id", igId);
     }
   };
-
-  const demoChats = () => [
-    { id: "ig_201", name: "valeria.designs",  last: "¡Me encantó el servicio! 🔥",       time: "11:05", avatar: null, unread: 3 },
-    { id: "ig_202", name: "startup.mx",       last: "¿Tienen plan mensual?",              time: "10:30", avatar: null, unread: 0 },
-    { id: "ig_203", name: "pedro_entrepreneur",last: "Sí, espero la propuesta. Gracias.", time: "Ayer",  avatar: null, unread: 0 },
-  ];
 
   const openChat = (chat) => {
     setActiveChat(chat);
