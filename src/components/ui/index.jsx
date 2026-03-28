@@ -5,7 +5,7 @@ import { Ico } from "./Ico";
 import { SpotlightSearch } from "./Spotlight";
 import { ConfirmModal } from "./ConfirmModal";
 
-export { Ico, SpotlightSearch, ConfirmModal };
+export { Ico, SpotlightSearch, ConfirmModal, SidePanel };
 
 
 export const Av = ({ text = "?", color = T.teal, size = 36, fs }) => (
@@ -187,6 +187,57 @@ export const Modal = ({ open, onClose, title, children, width = 640 }) => {
           <button onClick={onClose} style={{ background: "rgba(255,255,255,0.05)", border: "none", color: T.whiteDim, cursor: "pointer", padding: 8, borderRadius: 10, display: "flex", transition: "all .2s" }} onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,255,255,0.1)"; e.currentTarget.style.color = T.white; }} onMouseLeave={e => { e.currentTarget.style.background = "rgba(255,255,255,0.05)"; e.currentTarget.style.color = T.whiteDim; }}><Ico k="x" size={20} /></button>
         </div>
         <div style={{ padding: 28, overflowY: "auto", flex: 1 }}>{children}</div>
+      </div>
+    </div>,
+    document.body
+  );
+};
+
+export const SidePanel = ({ open, onClose, title, children, width = "75%" }) => {
+  const [shouldRender, setShouldRender] = useState(open);
+
+  useEffect(() => {
+    if (open) setShouldRender(true);
+  }, [open]);
+
+  const handleAnimationEnd = () => { if (!open) setShouldRender(false); };
+
+  if (!shouldRender) return null;
+
+  return createPortal(
+    <div 
+        onClick={onClose} 
+        style={{ 
+            position: "fixed", inset: 0, zIndex: 90000, 
+            background: open ? "rgba(17,24,39,.4)" : "transparent", 
+            backdropFilter: open ? "blur(8px)" : "none",
+            transition: "all .4s ease-out",
+            pointerEvents: open ? "all" : "none"
+        }}
+    >
+      <div 
+        onClick={e => e.stopPropagation()} 
+        onAnimationEnd={handleAnimationEnd}
+        style={{ 
+            position: "absolute", top: 0, right: 0, height: "100%", 
+            width: `min(${width}, 100vw)`, 
+            background: T.bg1, 
+            borderLeft: `1px solid ${T.borderHi}`, 
+            boxShadow: "-10px 0 30px rgba(0,0,0,0.3)",
+            display: "flex", flexDirection: "column",
+            animation: `${open ? "slideFromRight" : "slideToRight"} .4s cubic-bezier(0.16, 1, 0.3, 1) forwards`
+        }}
+      >
+        <div style={{ padding: "16px 24px", borderBottom: `1px solid ${T.border}`, display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
+          <span style={{ fontWeight: 800, fontSize: 18, color: T.white }}>{title}</span>
+          <button onClick={onClose} style={{ background: "transparent", border: "none", color: T.whiteDim, cursor: "pointer", padding: 8, transition: "all .2s" }}><Ico k="x" size={20} /></button>
+        </div>
+        <div style={{ flex: 1, overflowY: "auto", background: T.bg0 }}>{children}</div>
+        
+        <style>{`
+          @keyframes slideFromRight { from { transform: translateX(100%); } to { transform: translateX(0); } }
+          @keyframes slideToRight { from { transform: translateX(0); } to { transform: translateX(100%); } }
+        `}</style>
       </div>
     </div>,
     document.body

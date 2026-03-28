@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { T } from "../theme";
 import { uid, money, fdate, getApiUrl } from "../utils";
 import { Chip, Btn, Inp, Sel, LocalInput } from "../components/ui";
-import { Campo, Modal, Tarjeta, SelColor, EncabezadoSeccion, ControlSegmentado, Ico, Barra, Vacio, MenuDatos } from "../components/ui";
+import { Campo, Modal, SidePanel, Tarjeta, SelColor, EncabezadoSeccion, ControlSegmentado, Ico, Barra, Vacio, MenuDatos } from "../components/ui";
 import { BulkImport } from "../components/BulkImport";
 import { sileo } from "../utils/sileo";
 import { exportToExcel } from "../utils/export";
@@ -55,7 +55,7 @@ const FormDeal = ({ db, setDb, f, setF, editDeal, onGuardar, onCancelar, guardar
   const quitarArchivo = id => setF(p => ({ ...p, archivos: p.archivos.filter(a => a.id !== id) }));
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 32, minHeight: 850, padding: 24, background: T.bg0, borderRadius: 28, color: T.white }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 24, padding: 24, background: T.bg0, color: T.white }}>
       {/* ACTION BAR: PRIORITIZED TOP BUTTONS */}
       <div style={{ display: "flex", justifyContent: "flex-end", gap: 16, marginBottom: -12 }}>
          <Btn variant="fantasma" onClick={onCancelar} style={{ height: 44, borderRadius: 14, fontWeight: 700, padding: "0 24px" }}>Descartar</Btn>
@@ -1210,7 +1210,7 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
         </div>
       </Modal>
 
-      <Modal open={showDealForm} onClose={() => { setShowDealForm(false); setEditDeal(null); }} title={editDeal ? "Editar Deal" : "Nuevo Deal"} width={editDeal ? 1200 : 680}>
+      <SidePanel open={showDealForm} onClose={() => { setShowDealForm(false); setEditDeal(null); }} title={editDeal ? "Editar Deal" : "Nuevo Deal"} width={editDeal ? "75%" : "40%"}>
         <FormDeal
           db={db}
           setDb={setDb}
@@ -1226,7 +1226,7 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
           focusEmailId={focusEmailId}
           setFocusEmailId={setFocusEmailId}
         />
-      </Modal>
+      </SidePanel>
       {/* CONFIGURACIÓN DE CAMPOS PERSONALIZADOS */}
       <Modal open={showConfigCampos} onClose={() => setShowConfigCampos(false)} title="Configurar Campos Globales" width={500}>
         <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
