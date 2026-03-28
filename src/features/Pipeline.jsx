@@ -336,6 +336,14 @@ const FormDeal = ({ db, setDb, f, setF, editDeal, onGuardar, onCancelar, guardar
 export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModulo, focusEmailId, setFocusEmailId }) => {
   const [plActivo, setPlActivo] = useState(localStorage.getItem("crm_active_pipeline") || db.pipelines?.[0]?.id || "");
   useEffect(() => { if (plActivo) localStorage.setItem("crm_active_pipeline", plActivo); }, [plActivo]);
+
+  // Si db.pipelines carga después y plActivo está vacío, inicializar con el primero
+  useEffect(() => {
+    if (!plActivo && db.pipelines?.length > 0) {
+      setPlActivo(db.pipelines[0].id);
+    }
+  }, [db.pipelines, plActivo]);
+
   const [tab, setTab] = useState("kanban");
   const [showConfetti, setShowConfetti] = useState(false);
 
@@ -502,13 +510,18 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
       ]
     };
     setDb(d => ({ ...d, pipelines: [...d.pipelines, np] }));
+    await guardarEnSupa("pipelines", np);
     setPlActivo(np.id); setShowNuevoPL(false); setNuevoPL({ nombre: "", color: T.teal });
   };
 
   const agregarEtapa = () => {
     if (!nuevaEt.nombre.trim()) return;
     const et = { id: "e" + uid(), nombre: nuevaEt.nombre, color: nuevaEt.color, probabilidad: +nuevaEt.probabilidad, orden: pipeline?.etapas?.length || 0 };
-    if (pipeline) actPipeline({ ...pipeline, etapas: [...(pipeline.etapas || []), et] });
+    if (pipeline) {
+      const updated = { ...pipeline, etapas: [...(pipeline.etapas || []), et] };
+      actPipeline(updated);
+      await guardarEnSupa("pipelines", updated);
+    }
     setShowNuevaEt(false); setNuevaEt({ nombre: "", color: T.teal, probabilidad: 50 });
   };
 
@@ -585,7 +598,13 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
       setDb(d => ({ ...d, deals: d.deals.map(deal => deal.id === editDeal.id ? act : deal) }));
       await guardarEnSupa("deals", act);
     } else {
-      const nv = { ...form, id: "d" + uid(), creado: new Date().toISOString().slice(0, 10) };
+      const nv = { 
+        ...form, 
+        id: "d" + uid(), 
+        creado: new Date().toISOString().slice(0, 10),
+        pipeline_id: form.pipeline_id || plActivo || db.pipelines?.[0]?.id,
+        etapa_id: form.etapa_id || db.pipelines?.find(p => p.id === (form.pipeline_id || plActivo))?.etapas?.[0]?.id
+      };
 
       // Notificación si se asigna a otro al crear
       if (nv.responsable && nv.responsable !== db.usuario?.name) {

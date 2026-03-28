@@ -14,7 +14,7 @@ export const sb = createClient(SUPA_URL, SUPA_KEY);
 // Tablas que se sincronizan con Supabase
 // Tablas críticas para el arranque inmediato
 const TABLAS_CRITICAS = [
-  "organizacion", "pipelines", "contactos", "deals", "tareas", "empresaConfigs", "usuariosApp"
+  "organizacion", "pipelines", "contactos", "deals", "tareas", "empresaConfigs", "usuariosApp", "empresas"
 ];
 
 // Tablas que pueden cargarse en segundo plano (histórico/pesadas)
@@ -23,7 +23,7 @@ const TABLAS_FONDO = [
   "plantillasEmail", "campos_personalizados", "automatizaciones",
   "whatsapp_automations", "whatsapp_messages", "finanzas_gastos", "finanzas_comisiones",
   "notificaciones", "auditoria", "api_settings", "webhook_subscriptions",
-  "landing_pages", "formularios_publicos"
+  "landing_pages", "formularios_publicos", "documentos"
 ];
 
 const TABLAS_SUPA = [...TABLAS_CRITICAS, ...TABLAS_FONDO];
