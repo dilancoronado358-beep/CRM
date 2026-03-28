@@ -233,11 +233,10 @@ export const SidePanel = ({ open, onClose, title, children, width = "75%" }) => 
           <button onClick={onClose} style={{ background: "transparent", border: "none", color: T.whiteDim, cursor: "pointer", padding: 8, transition: "all .2s" }}><Ico k="x" size={20} /></button>
         </div>
         <div style={{ flex: 1, overflowY: "auto", background: T.bg0 }}>{children}</div>
-        
-        <style>{`
+        <style dangerouslySetInnerHTML={{ __html: `
           @keyframes slideFromRight { from { transform: translateX(100%); } to { transform: translateX(0); } }
           @keyframes slideToRight { from { transform: translateX(0); } to { transform: translateX(100%); } }
-        `}</style>
+        ` }} />
       </div>
     </div>,
     document.body
