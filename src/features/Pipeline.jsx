@@ -56,6 +56,12 @@ const FormDeal = ({ db, setDb, f, setF, editDeal, onGuardar, onCancelar, guardar
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 32, minHeight: 850, padding: 24, background: T.bg0, borderRadius: 28, color: T.white }}>
+      {/* ACTION BAR: PRIORITIZED TOP BUTTONS */}
+      <div style={{ display: "flex", justifyContent: "flex-end", gap: 16, marginBottom: -12 }}>
+         <Btn variant="fantasma" onClick={onCancelar} style={{ height: 44, borderRadius: 14, fontWeight: 700, padding: "0 24px" }}>Descartar</Btn>
+         <Btn onClick={() => onGuardar(f)} style={{ height: 44, borderRadius: 14, background: T.teal, color: "#000", border: "none", fontWeight: 900, padding: "0 32px", boxShadow: `0 8px 20px ${T.teal}40` }}>GUARDAR CAMBIOS</Btn>
+      </div>
+
       {/* ENSING "LIQUID-RIBBON" COMPACT */}
       <div style={{ position: "relative", marginBottom: 12 }}>
         <div style={{ display: "flex", background: "rgba(255,255,255,0.03)", padding: 4, borderRadius: 16, border: `1px solid ${T.white}08`, position: "relative", overflow: "hidden" }}>
@@ -269,10 +275,7 @@ const FormDeal = ({ db, setDb, f, setF, editDeal, onGuardar, onCancelar, guardar
             )}
           </div>
 
-          <div style={{ display: "flex", gap: 20, marginTop: 12 }}>
-            <Btn variant="fantasma" onClick={onCancelar} full style={{ height: 56, borderRadius: 18, fontWeight: 800 }}>Descartar</Btn>
-            <Btn onClick={() => onGuardar(f)} full style={{ height: 56, borderRadius: 18, background: T.teal, color: "#000", border: "none", fontWeight: 900, boxShadow: `0 10px 20px ${T.teal}40` }}>GUARDAR CAMBIOS</Btn>
-          </div>
+          {/* SECCIÓN DE BOTONES MOVIDA ARRIBA */}
         </div>
 
         {/* COLUMNA DERECHA: ACTIVITY FEED & MATRIX */}
