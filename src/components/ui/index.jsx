@@ -5,7 +5,7 @@ import { Ico } from "./Ico";
 import { SpotlightSearch } from "./Spotlight";
 import { ConfirmModal } from "./ConfirmModal";
 
-export { Ico, SpotlightSearch, ConfirmModal, SidePanel };
+export { Ico, SpotlightSearch, ConfirmModal };
 
 
 export const Av = ({ text = "?", color = T.teal, size = 36, fs }) => (
