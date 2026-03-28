@@ -2,42 +2,52 @@ import * as XLSX from "xlsx";
 import { sileo } from "./sileo";
 
 /**
- * Exports data to an Excel file using a robust Blob method.
- * @param {Array} data - Array of objects to export.
- * @param {String} fileName - Name of the file (without extension).
- * @param {String} sheetName - Name of the worksheet.
+ * Robust Excel Export Utility with deep logging and fallback.
  */
 export const exportToExcel = (data, fileName = "export", sheetName = "Data") => {
-  console.log("📊 [Export] Iniciando exportación de", data?.length, "filas");
-  
+  const logPrefix = `[ExcelExport:${fileName}]`;
+  console.log(`${logPrefix} Iniciando...`, { rows: data?.length });
+
   if (!data || data.length === 0) {
-    sileo.info("No hay datos para exportar");
+    console.warn(`${logPrefix} Error: Sin datos para exportar.`);
+    sileo.warning("No hay información para exportar en el listado actual.");
     return;
   }
-  
+
   try {
+    // 1. Preparar el libro
     const ws = XLSX.utils.json_to_sheet(data);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, sheetName);
+
+    console.log(`${logPrefix} Libro preparado, intentando descarga...`);
+
+    // 2. Intentar descarga nativa de SheetJS (writeFile)
+    // Esto detecta automáticamente el entorno y dispara la descarga.
+    XLSX.writeFile(wb, `${fileName}.xlsx`);
     
-    // Generar buffer binario
-    const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-    
-    // Crear Blob y disparar descarga manual
-    const blob = new Blob([wbout], { type: 'application/octet-stream' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${fileName}.xlsx`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    window.URL.revokeObjectURL(url);
-    
-    sileo.success(`Archivo "${fileName}.xlsx" generado correctamente`);
-    console.log("✅ [Export] Archivo generado exitosamente");
+    console.log(`${logPrefix} XLSX.writeFile ejecutado.`);
+    sileo.success(`Exportando ${data.length} registros a ${fileName}.xlsx`);
+
   } catch (err) {
-    console.error("❌ [Export] Error:", err);
-    sileo.error("Error técnico al generar el Excel. Revisa la consola.");
+    console.error(`${logPrefix} Error crítico:`, err);
+    
+    // 3. Fallback: CSV manual si falla XLSX
+    try {
+      console.log(`${logPrefix} Intentando fallback a CSV...`);
+      const csv = XLSX.utils.sheet_to_csv(XLSX.utils.json_to_sheet(data));
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", `${fileName}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      sileo.info("Se ha descargado un CSV como alternativa.");
+    } catch (csvErr) {
+      console.error(`${logPrefix} Fallback fallido:`, csvErr);
+      sileo.error("No se pudo generar el archivo. Por favor, revisa la consola.");
+    }
   }
 };

@@ -98,20 +98,20 @@ export const Contactos = ({ db, setDb, guardarEnSupa, eliminarDeSupa }) => {
   };
 
   const handleExport = () => {
-    const data = filtrados.map(c => ({
-      Nombre: c.nombre,
-      Email: c.email,
-      Teléfono: c.telefono,
-      Empresa: c.empresa,
-      Cargo: c.cargo,
-      Estado: c.estado,
-      Fuente: c.fuente,
-      Valor: c.valor,
-      Score: c.score,
-      Etiquetas: c.etiquetas.join(", "),
-      Notas: c.notas,
-      Creado: c.creado,
-      "Último Contacto": c.ultimo_contacto
+    const data = (filtrados || []).map(c => ({
+      Nombre: c.nombre || "Sin nombre",
+      Email: c.email || "N/A",
+      Teléfono: c.telefono || "N/A",
+      Empresa: c.empresa || "N/A",
+      Cargo: c.cargo || "N/A",
+      Estado: c.estado || "N/A",
+      Fuente: c.fuente || "N/A",
+      Valor: c.valor || 0,
+      Score: c.score || 0,
+      Etiquetas: Array.isArray(c.etiquetas) ? c.etiquetas.join(", ") : "",
+      Notas: c.notas || "",
+      Creado: c.creado || "N/A",
+      "Último Contacto": c.ultimo_contacto || "N/A"
     }));
     exportToExcel(data, "contactos", "Contactos");
   };

@@ -722,26 +722,25 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
 
   const handleExport = () => {
     // Flatten deals and map Contact/Company names
-    const data = db.deals?.filter(d => d.pipeline_id === plActivo).map(d => {
-      const contacto = db.contactos?.find(c => c.id === d.contacto_id);
-      const empresa = db.empresas?.find(e => e.id === d.empresa_id);
-      const etapa = pipeline?.etapas?.find(et => et.id === d.etapa_id);
+    const data = (db.deals || []).filter(d => d.pipeline_id === plActivo).map(d => {
+      const contacto = (db.contactos || []).find(c => c.id === d.contacto_id);
+      const empresa = (db.empresas || []).find(e => e.id === d.empresa_id);
+      const etapa = (pipeline?.etapas || []).find(et => et.id === d.etapa_id);
 
       return {
-        Título: d.titulo,
-        Valor: d.valor,
-        Probabilidad: d.prob + "%",
+        Título: d.titulo || "Sin título",
+        Valor: d.valor || 0,
+        Probabilidad: (d.prob || 0) + "%",
         Etapa: etapa?.nombre || "N/A",
         Contacto: contacto?.nombre || "N/A",
         Empresa: empresa?.nombre || "N/A",
-        Responsable: d.responsable,
-        "Fecha Cierre": d.fecha_cierre,
-        Creado: d.creado,
-        Etiquetas: d.etiquetas?.join(", ") || "",
+        Responsable: d.responsable || "Sin asignar",
+        "Fecha Cierre": d.fecha_cierre || "N/A",
+        Creado: d.creado || "N/A",
+        Etiquetas: Array.isArray(d.etiquetas) ? d.etiquetas.join(", ") : "",
         Notas: d.notas || ""
       };
     });
-
     exportToExcel(data, `pipeline_${pipeline?.nombre || "ventas"}`, "Negocios");
   };
 

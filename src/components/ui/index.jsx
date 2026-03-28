@@ -352,8 +352,8 @@ export const MenuDatos = ({ onImport, onExport }) => {
   const ref = useRef(null);
   useEffect(() => {
     const clickAfuera = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
-    document.addEventListener("mousedown", clickAfuera);
-    return () => document.removeEventListener("mousedown", clickAfuera);
+    document.addEventListener("click", clickAfuera);
+    return () => document.removeEventListener("click", clickAfuera);
   }, []);
   return (
     <div ref={ref} style={{ position: "relative" }}>
