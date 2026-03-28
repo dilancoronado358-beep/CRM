@@ -692,7 +692,12 @@ export const Configuracion = ({ db, setDb, guardarEnSupa, eliminarDeSupa, estado
                   <div style={{ fontSize: 13, color: T.whiteDim, marginBottom: 16 }}>Haz clic en tu avatar para subir una foto desde tu dispositivo. Máximo 5MB.</div>
                   <div style={{ display: "flex", gap: 8 }}>
                     <Btn variant="secundario" size="sm" onClick={() => profilePicRef.current?.click()}>Cambiar Foto</Btn>
-                    {db.usuario?.profilePic && <Btn variant="fantasma" size="sm" style={{ color: T.red }} onClick={() => setDb(d => ({ ...d, usuario: { ...d.usuario, profilePic: null } }))}>Eliminar</Btn>}
+                    {db.usuario?.profilePic && <Btn variant="fantasma" size="sm" style={{ color: T.red }} onClick={async () => {
+                      const updatedUser = { ...db.usuario, profilePic: null };
+                      setDb(d => ({ ...d, usuario: updatedUser }));
+                      await guardarEnSupa("usuariosApp", updatedUser);
+                      sileo.success("Foto eliminada correctamente");
+                    }}>Eliminar</Btn>}
                   </div>
                 </div>
               </div>
@@ -701,7 +706,7 @@ export const Configuracion = ({ db, setDb, guardarEnSupa, eliminarDeSupa, estado
                 <Campo label="Correo Electrónico de Identidad (IdP)"><Inp value={fPerfil.email} disabled style={{ fontSize: 15, opacity: 0.7 }} /></Campo>
                 <Campo label="Idioma del Sistema / System Language"><Sel value={fPerfil.idioma} onChange={e => setFPerfil({ ...fPerfil, idioma: e.target.value })} style={{ fontSize: 15 }}><option value="es">Español (Principal)</option><option value="en">English (BETA)</option><option value="ru">Русский (Ruso)</option><option value="fr">Français (Francés)</option></Sel></Campo>
               </div>
-              <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 12 }}><Btn onClick={guardarPerfil} disabled={!fPerfil.name.trim()} style={{ fontSize: 14, padding: "10px 24px" }}><Ico k="check" size={16} /> Update Index</Btn></div>
+              <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 12 }}><Btn onClick={guardarPerfil} disabled={!fPerfil.name.trim()} style={{ fontSize: 14, padding: "10px 24px" }}><Ico k="check" size={16} /> Guardar Perfil</Btn></div>
             </div>
 
             <div style={{ marginTop: 40, paddingTop: 32, borderTop: `1px solid ${T.borderHi}` }}>
