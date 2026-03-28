@@ -209,9 +209,9 @@ export const SidePanel = ({ open, onClose, title, children, width = "75%" }) => 
         onClick={onClose} 
         style={{ 
             position: "fixed", inset: 0, zIndex: 90000, 
-            background: open ? "rgba(17,24,39,.4)" : "transparent", 
-            backdropFilter: open ? "blur(8px)" : "none",
-            transition: "all .4s ease-out",
+            background: open ? "rgba(11, 15, 25, 0.5)" : "transparent", 
+            backdropFilter: open ? "blur(12px)" : "none",
+            transition: "all .5s cubic-bezier(0.19, 1, 0.22, 1)",
             pointerEvents: open ? "all" : "none"
         }}
     >
@@ -222,20 +222,47 @@ export const SidePanel = ({ open, onClose, title, children, width = "75%" }) => 
             position: "absolute", top: 0, right: 0, height: "100%", 
             width: `min(${width}, 100vw)`, 
             background: T.bg1, 
-            borderLeft: `1px solid ${T.borderHi}`, 
-            boxShadow: "-10px 0 30px rgba(0,0,0,0.3)",
+            borderLeft: `1px solid ${T.white}10`, 
+            boxShadow: "-20px 0 60px rgba(0,0,0,0.5), inset 1px 0 0 rgba(255,255,255,0.05)",
             display: "flex", flexDirection: "column",
-            animation: `${open ? "slideFromRight" : "slideToRight"} .4s cubic-bezier(0.16, 1, 0.3, 1) forwards`
+            animation: `${open ? "slideFromRight" : "slideToRight"} .5s cubic-bezier(0.19, 1, 0.22, 1) forwards`
         }}
       >
-        <div style={{ padding: "16px 24px", borderBottom: `1px solid ${T.border}`, display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
-          <span style={{ fontWeight: 800, fontSize: 18, color: T.white }}>{title}</span>
-          <button onClick={onClose} style={{ background: "transparent", border: "none", color: T.whiteDim, cursor: "pointer", padding: 8, transition: "all .2s" }}><Ico k="x" size={20} /></button>
+        <div style={{ 
+            padding: "24px 32px", 
+            background: "rgba(255,255,255,0.01)", 
+            backdropFilter: "blur(30px)",
+            borderBottom: `1px solid ${T.white}08`, 
+            display: "flex", justifyContent: "space-between", alignItems: "center", 
+            flexShrink: 0,
+            zIndex: 10
+        }}>
+          <div>
+            <div style={{ fontSize: 10, fontWeight: 800, color: T.whiteDim, textTransform: "uppercase", letterSpacing: ".15em", marginBottom: 6, opacity: 0.6 }}>Pipeline Principal &nbsp; / &nbsp; Detalle</div>
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <div style={{ width: 8, height: 8, borderRadius: "50%", background: T.teal, boxShadow: `0 0 12px ${T.teal}` }} />
+              <span style={{ fontWeight: 900, fontSize: 24, color: T.white, letterSpacing: "-.03em" }}>{title}</span>
+            </div>
+          </div>
+          <button onClick={onClose} style={{ 
+            background: "rgba(255,255,255,0.05)", border: "none", color: T.whiteDim, 
+            cursor: "pointer", padding: 10, borderRadius: 14, display: "flex", 
+            transition: "all .2s", boxShadow: "0 4px 12px rgba(0,0,0,0.1)" 
+          }} onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,255,255,0.1)"; e.currentTarget.style.color = T.white; e.currentTarget.style.transform = "rotate(90deg)"; }} 
+          onMouseLeave={e => { e.currentTarget.style.background = "rgba(255,255,255,0.05)"; e.currentTarget.style.color = T.whiteDim; e.currentTarget.style.transform = "rotate(0deg)"; }}>
+            <Ico k="x" size={22} />
+          </button>
         </div>
-        <div style={{ flex: 1, overflowY: "auto", background: T.bg0 }}>{children}</div>
+        <div className="custom-scrollbar" style={{ flex: 1, overflowY: "auto", padding: 0, background: T.bg2 }}>
+          {children}
+        </div>
         <style dangerouslySetInnerHTML={{ __html: `
           @keyframes slideFromRight { from { transform: translateX(100%); } to { transform: translateX(0); } }
           @keyframes slideToRight { from { transform: translateX(0); } to { transform: translateX(100%); } }
+          .custom-scrollbar::-webkit-scrollbar { width: 5px; }
+          .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+          .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 10px; }
+          .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: ${T.teal}30; }
         ` }} />
       </div>
     </div>,
@@ -424,6 +451,57 @@ export const MenuDatos = ({ onImport, onExport }) => {
             onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
             <Ico k="download" size={14} style={{ color: T.teal }} /> Exportar a Excel
           </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export const MenuVistas = ({ value, onChange }) => {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+  useEffect(() => {
+    const cl = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener("click", cl);
+    return () => document.removeEventListener("click", cl);
+  }, []);
+
+  const options = [
+    { value: "kanban", label: "Vista Kanban", icon: "board" },
+    { value: "lista", label: "Vista de Lista", icon: "list" },
+    { value: "configurar", label: "Configurar Pipeline", icon: "cog" }
+  ];
+
+  const current = options.find(o => o.value === value) || options[0];
+
+  return (
+    <div ref={ref} style={{ position: "relative" }}>
+      <Btn variant="secundario" onClick={() => setOpen(!open)} style={{ minWidth: 140, justifyContent: "space-between", borderRadius: 12 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <Ico k="board" size={14} style={{ color: T.teal }} />
+          <span>Vistas</span>
+        </div>
+        <Ico k="chevron-down" size={12} style={{ opacity: 0.5, transform: open ? "rotate(180deg)" : "none", transition: "all 0.3s" }} />
+      </Btn>
+      {open && (
+        <div style={{ position: "absolute", top: "calc(100% + 8px)", right: 0, background: T.bg1, border: `1px solid ${T.borderHi}`, borderRadius: 12, zIndex: 10000, boxShadow: "var(--shadow-xl)", padding: 6, minWidth: 200, animation: "slideIn .2s forwards" }}>
+          {options.map(o => (
+            <div key={o.value} onClick={() => { onChange(o.value); setOpen(false); }}
+              style={{ 
+                padding: "10px 14px", borderRadius: 8, fontSize: 13, 
+                color: value === o.value ? T.white : T.whiteOff, 
+                background: value === o.value ? "rgba(255,255,255,0.05)" : "transparent",
+                cursor: "pointer", display: "flex", alignItems: "center", gap: 10,
+                fontWeight: value === o.value ? 700 : 500,
+                transition: "all 0.2s"
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.08)"}
+              onMouseLeave={e => e.currentTarget.style.background = value === o.value ? "rgba(255,255,255,0.05)" : "transparent"}>
+              <Ico k={o.icon} size={14} style={{ color: value === o.value ? T.teal : T.whiteFade }} /> 
+              <span>{o.label}</span>
+              {value === o.value && <div style={{ marginLeft: "auto", width: 4, height: 4, borderRadius: "50%", background: T.teal }} />}
+            </div>
+          ))}
         </div>
       )}
     </div>
