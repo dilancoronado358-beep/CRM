@@ -498,7 +498,7 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
   const actPipeline = up => setDb(d => ({ ...d, pipelines: d.pipelines.map(p => p.id === up.id ? up : p) }));
 
 
-  const crearPipeline = () => {
+  const crearPipeline = async () => {
     if (!nuevoPL.nombre.trim()) return;
     const np = {
       id: "pl" + uid(), nombre: nuevoPL.nombre, color: nuevoPL.color, es_principal: false, etapas: [
@@ -514,7 +514,7 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
     setPlActivo(np.id); setShowNuevoPL(false); setNuevoPL({ nombre: "", color: T.teal });
   };
 
-  const agregarEtapa = () => {
+  const agregarEtapa = async () => {
     if (!nuevaEt.nombre.trim()) return;
     const et = { id: "e" + uid(), nombre: nuevaEt.nombre, color: nuevaEt.color, probabilidad: +nuevaEt.probabilidad, orden: pipeline?.etapas?.length || 0 };
     if (pipeline) {
