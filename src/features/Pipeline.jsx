@@ -123,7 +123,7 @@ const FormDeal = ({ db, setDb, f, setF, editDeal, onGuardar, onCancelar, guardar
                   <div style={{ width: 32, height: 32, borderRadius: 10, background: T.tealSoft, display: "flex", alignItems: "center", justifyContent: "center" }}>
                     <Ico k="board" size={16} style={{ color: T.teal }} />
                   </div>
-                  <div style={{ fontSize: 13, fontWeight: 900, color: T.teal, letterSpacing: ".15em", textTransform: "uppercase" }}>InformaciÃ³n Central</div>
+                  <div style={{ fontSize: 13, fontWeight: 900, color: T.teal, letterSpacing: ".15em", textTransform: "uppercase" }}>Información Central</div>
                 </div>
                 <div style={{ background: "#F1F5F9", padding: "8px 16px", borderRadius: 12, fontSize: 11, fontWeight: 900, color: "#64748B", border: "1px solid #E2E8F0" }}>AI SCORE: {calculateLeadScore(db, f)}</div>
              </div>
@@ -133,7 +133,7 @@ const FormDeal = ({ db, setDb, f, setF, editDeal, onGuardar, onCancelar, guardar
                  <LocalInput value={f.titulo} onCommit={v => {
                    const nf = { ...f, titulo: v }; setF(nf);
                    if (editDeal) guardarEnSupa("deals", { ...editDeal, ...nf });
-                 }} style={{ fontSize: 26, fontWeight: 900, background: "transparent", border: "none", borderBottom: "2px solid #E2E8F0", borderRadius: 0, height: 50, padding: "0 0 8px 0", color: "#1E293B" }} placeholder="Ej: Proyecto ExpansiÃ³n Q2" />
+                 }} style={{ fontSize: 26, fontWeight: 900, background: "transparent", border: "none", borderBottom: "2px solid #E2E8F0", borderRadius: 0, height: 50, padding: "0 0 8px 0", color: "#1E293B" }} placeholder="Ej: Proyecto Expansión Q2" />
                </Campo>
 
                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 32 }}>
@@ -273,7 +273,7 @@ const FormDeal = ({ db, setDb, f, setF, editDeal, onGuardar, onCancelar, guardar
                  })}
                  {customFieldsDef.length === 0 && (
                    <div style={{ gridColumn: "1 / -1", textAlign: "center", padding: "40px", border: "2px dashed #E2E8F0", borderRadius: 24, background: "#F8FAFC" }}>
-                     <div style={{ color: "#64748B", fontSize: 14, fontWeight: 700, marginBottom: 16 }}>Personaliza tu flujo con campos Ãºnicos.</div>
+                     <div style={{ color: "#64748B", fontSize: 14, fontWeight: 700, marginBottom: 16 }}>Personaliza tu flujo con campos únicos.</div>
                      <Btn variant="turquesa" size="sm" onClick={() => setShowConfigCampos(true)} style={{ borderRadius: 12, padding: "10px 24px" }}>Configurar ahora</Btn>
                    </div>
                  )}
@@ -345,8 +345,8 @@ const FormDeal = ({ db, setDb, f, setF, editDeal, onGuardar, onCancelar, guardar
                  <Ico k="upload" size={32} style={{ color: "#10B981" }} />
                </div>
                <div style={{ textAlign: "center" }}>
-                 <div style={{ fontSize: 17, color: "#1E293B", fontWeight: 900, marginBottom: 8 }}>Subir DocumentaciÃ³n</div>
-                 <div style={{ fontSize: 13, color: "#64748B", fontWeight: 700 }}>Click para explorar o arrastra tus archivos aquÃ­</div>
+                 <div style={{ fontSize: 17, color: "#1E293B", fontWeight: 900, marginBottom: 8 }}>Subir Documentación</div>
+                 <div style={{ fontSize: 13, color: "#64748B", fontWeight: 700 }}>Click para explorar o arrastra tus archivos aquí</div>
                </div>
              </div>
 
@@ -394,7 +394,7 @@ const FormDeal = ({ db, setDb, f, setF, editDeal, onGuardar, onCancelar, guardar
               />
             )}
 
-            {rightTab === "whatsapp" && <div style={{ padding: 60, textAlign: "center", color: T.whiteFade, fontSize: 13 }}>SincronizaciÃ³n de WhatsApp pendiente.</div>}
+            {rightTab === "whatsapp" && <div style={{ padding: 60, textAlign: "center", color: T.whiteFade, fontSize: 13 }}>Sincronización de WhatsApp pendiente.</div>}
             
             {rightTab === "finanzas" && (
               <div style={{ padding: 40 }}>
@@ -418,7 +418,7 @@ const FormDeal = ({ db, setDb, f, setF, editDeal, onGuardar, onCancelar, guardar
                   <div key={a.id} style={{ display: "flex", gap: 16, padding: "16px 20px", background: "rgba(255,255,255,0.02)", borderRadius: 16, border: `1px solid ${T.white}05` }}>
                      <div style={{ width: 4, background: T.teal, borderRadius: 2, height: 16, marginTop: 4 }} />
                      <div style={{ fontSize: 13, color: T.whiteOff }}>
-                       <span style={{ fontWeight: 800, color: T.white }}>{a.usuario_nombre}</span> actualizÃ³ {a.campo} a <span style={{ color: T.teal }}>{a.valor_nuevo}</span>
+                       <span style={{ fontWeight: 800, color: T.white }}>{a.usuario_nombre}</span> actualizó {a.campo} a <span style={{ color: T.teal }}>{a.valor_nuevo}</span>
                      </div>
                   </div>
                 ))}
@@ -435,7 +435,7 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
   const [plActivo, setPlActivo] = useState(localStorage.getItem("crm_active_pipeline") || db.pipelines?.[0]?.id || "");
   useEffect(() => { if (plActivo) localStorage.setItem("crm_active_pipeline", plActivo); }, [plActivo]);
 
-  // Si db.pipelines carga despuÃ©s y plActivo estÃ¡ vacÃ­o, inicializar con el primero
+  // Si db.pipelines carga después y plActivo está vacío, inicializar con el primero
   useEffect(() => {
     if (!plActivo && db.pipelines?.length > 0) {
       setPlActivo(db.pipelines[0].id);
@@ -481,16 +481,16 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
 
     // TODO: Considerar mensajes de WhatsApp si estuvieran en db.whatsapp_messages
 
-    if (diff <= 86400000) return { label: "Hot", color: "#FF4500", icon: "ðŸ”¥", glow: "0 0 12px #FF450060", desc: "Actividad en las Ãºltimas 24h" };
-    if (diff <= 86400000 * 3) return { label: "Warm", color: T.amber, icon: "âš¡", glow: "none", desc: "Actividad en los Ãºltimos 3 dÃ­as" };
-    if (diff >= 86400000 * 5) return { label: "Cold", color: T.whiteDim, icon: "â„ï¸", glow: "none", desc: "Sin actividad por mÃ¡s de 5 dÃ­as", cold: true };
+    if (diff <= 86400000) return { label: "Hot", color: "#FF4500", icon: "ðŸ”¥", glow: "0 0 12px #FF450060", desc: "Actividad en las últimas 24h" };
+    if (diff <= 86400000 * 3) return { label: "Warm", color: T.amber, icon: "âš¡", glow: "none", desc: "Actividad en los últimos 3 días" };
+    if (diff >= 86400000 * 5) return { label: "Cold", color: T.whiteDim, icon: "â„ï¸", glow: "none", desc: "Sin actividad por más de 5 días", cold: true };
     return { label: "Normal", color: T.green, icon: "ðŸŒ±", glow: "none", desc: "Actividad regular" };
   };
 
   const chequearComision = async (dealId, etapaId, valor) => {
     const pl = db.pipelines.find(p => p.id === plActivo);
     const etapa = pl?.etapas.find(e => e.id === etapaId);
-    if (etapa && (etapa.es_ganado || ["ganado", "venta", "exito", "Ã©xito", "cerrado"].some(k => (etapa.nombre || "").toLowerCase().includes(k)))) {
+    if (etapa && (etapa.es_ganado || ["ganado", "venta", "exito", "éxito", "cerrado"].some(k => (etapa.nombre || "").toLowerCase().includes(k)))) {
       const yaExiste = (db.finanzas_comisiones || []).some(c => c.deal_id === dealId);
       if (!yaExiste) {
         const comision = {
@@ -511,7 +511,7 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
     try {
       await executeRules(db, deal, nuevaEtapaId, { guardarEnSupa });
     } catch (err) {
-      console.error("Error al ejecutar automatizaciones dinÃ¡micas:", err);
+      console.error("Error al ejecutar automatizaciones dinámicas:", err);
     }
   };
 
@@ -538,7 +538,7 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
     // RBAC: Los vendedores solo ven sus propios leads
     if (db.usuario?.role !== "admin" && d.responsable !== db.usuario?.name) return false;
 
-    // Filtro RÃ¡pido
+    // Filtro Rápido
     if (filtroRapido === "mios") { if (d.responsable !== db.usuario?.name) return false; }
     else if (filtroRapido === "frios") {
       const acts = (db.actividades || []).filter(a => a.deal_id === d.id);
@@ -675,7 +675,7 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
         }
       }
 
-      // NotificaciÃ³n si cambia el responsable
+      // Notificación si cambia el responsable
       if (form.responsable && form.responsable !== editDeal.responsable) {
         const targetUser = db.usuariosApp?.find(u => u.name === form.responsable);
         if (targetUser && targetUser.id !== db.usuario?.id) {
@@ -704,7 +704,7 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
         etapa_id: form.etapa_id || db.pipelines?.find(p => p.id === (form.pipeline_id || plActivo))?.etapas?.[0]?.id
       };
 
-      // NotificaciÃ³n si se asigna a otro al crear
+      // Notificación si se asigna a otro al crear
       if (nv.responsable && nv.responsable !== db.usuario?.name) {
         const targetUser = db.usuariosApp?.find(u => u.name === nv.responsable);
         if (targetUser) {
@@ -748,13 +748,13 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
   };
 
   const eliminarCampo = async (id) => {
-    if (!confirm("Â¿Eliminar este campo global? Se borrarÃ¡n sus valores en todos los deals.")) return;
+    if (!confirm("¿Eliminar este campo global? Se borrarán sus valores en todos los deals.")) return;
     setDb(d => ({ ...d, campos_personalizados: d.campos_personalizados.filter(c => c.id !== id) }));
     await eliminarDeSupa("campos_personalizados", id);
   };
 
   const eliminarDeal = async (id) => {
-    if (!confirm("Â¿Eliminar deal?")) return;
+    if (!confirm("¿Eliminar deal?")) return;
     setDb(d => ({ ...d, deals: d.deals.filter(deal => deal.id !== id) }));
     await eliminarDeSupa("deals", id);
   };
@@ -790,7 +790,7 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
   };
 
   const handleBulkDelete = async () => {
-    if (!selectedIds.length || !confirm(`Â¿Eliminar ${selectedIds.length} negocios seleccionados?`)) return;
+    if (!selectedIds.length || !confirm(`¿Eliminar ${selectedIds.length} negocios seleccionados?`)) return;
     setDb(prev => ({
       ...prev,
       deals: prev.deals.filter(d => !selectedIds.includes(d.id))
@@ -803,7 +803,7 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
 
   const handleBulkImport = async (data) => {
     const nuevosDeals = data.map(item => {
-      const titulo = item.titulo || item.title || "Negocio Sin TÃ­tulo";
+      const titulo = item.titulo || item.title || "Negocio Sin Título";
       
       // Resolve Contact ID
       const contactoNombre = item.contacto || item.contact || "";
@@ -845,7 +845,7 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
       const etapa = (pipeline?.etapas || []).find(et => et.id === d.etapa_id);
 
       return {
-        TÃ­tulo: d.titulo || "Sin tÃ­tulo",
+        Título: d.titulo || "Sin Título",
         Valor: d.valor || 0,
         Probabilidad: (d.prob || 0) + "%",
         Etapa: etapa?.nombre || "N/A",
@@ -896,7 +896,7 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
              }
            `}</style>
           <div style={{ background: "rgba(0,0,0,0.8)", padding: "20px 40px", borderRadius: 20, border: `2px solid ${T.green}`, color: "#fff", fontSize: 24, fontWeight: 900, boxShadow: "var(--shadow-xl)", animation: "pop-in 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)" }}>
-            ðŸŽ‰ Â¡DEAL GANADO! ðŸš€
+            ðŸŽ‰ ¡DEAL GANADO! ðŸš€
           </div>
           <style>{`
              @keyframes pop-in {
@@ -927,8 +927,8 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
             options={[
               { value: "todos", label: "Todos", icon: "board" },
               { value: "mios", label: "Mis Leads", icon: "users" },
-              { value: "frios", label: "FrÃ­os", icon: "clock" },
-              { value: "cierre", label: "Cierre PrÃ³ximo", icon: "calendar" }
+              { value: "frios", label: "Fríos", icon: "clock" },
+              { value: "cierre", label: "Cierre Próximo", icon: "calendar" }
             ]}
           />
         </div>
@@ -937,7 +937,7 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
           <Ico k="search" size={16} style={{ color: T.whiteDim }} />
           <input
             type="text"
-            placeholder="Buscar por tÃ­tulo o contacto..."
+            placeholder="Buscar por Título o contacto..."
             value={busqueda}
             onChange={e => setBusqueda(e.target.value)}
             style={{ border: "none", background: "transparent", color: T.white, fontSize: 13, outline: "none", width: "100%", fontFamily: "inherit" }}
@@ -967,11 +967,11 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
             </select>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <span style={{ fontSize: 11, fontWeight: 700, color: T.whiteDim, textTransform: "uppercase" }}>Fecha CreaciÃ³n</span>
+            <span style={{ fontSize: 11, fontWeight: 700, color: T.whiteDim, textTransform: "uppercase" }}>Fecha Creación</span>
             <select value={fFecha} onChange={e => setFFecha(e.target.value)} style={{ background: T.bg2, color: T.white, border: `1px solid ${T.borderHi}`, borderRadius: 8, padding: "6px 12px", fontSize: 13, cursor: "pointer", outline: "none" }}>
               <option value="todas">Cualquier fecha</option>
               <option value="hoy">Creados Hoy</option>
-              <option value="semana">Ãšltimos 7 dÃ­as</option>
+              <option value="semana">Ãšltimos 7 días</option>
               <option value="mes">Este mes</option>
             </select>
           </div>
@@ -1226,7 +1226,7 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
                 <span style={{ fontWeight: 800, fontSize: 16, color: T.white, flex: 1 }}>{pl.nombre}</span>
                 {pl.es_principal && <Chip label="Principal" color={T.teal} />}
                 <span style={{ fontSize: 13, color: T.whiteDim, fontWeight: 600 }}>{db.deals.filter(d => d.pipeline_id === pl.id).length} deals</span>
-                {!pl.es_principal && <Btn variant="peligro" size="sm" onClick={() => { if (confirm("Â¿Eliminar pipeline?")) setDb(d => ({ ...d, pipelines: d.pipelines.filter(p => p.id !== pl.id) })); }}><Ico k="trash" size={12} />Eliminar</Btn>}
+                {!pl.es_principal && <Btn variant="peligro" size="sm" onClick={() => { if (confirm("¿Eliminar pipeline?")) setDb(d => ({ ...d, pipelines: d.pipelines.filter(p => p.id !== pl.id) })); }}><Ico k="trash" size={12} />Eliminar</Btn>}
               </div>
               <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 16 }}>
                 {pl.etapas.map((et, idx) => (
@@ -1332,15 +1332,15 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
               <Campo label="Tipo de Dato">
                 <Sel value={nuevoCampo.tipo} onChange={e => setNuevoCampo(p => ({ ...p, tipo: e.target.value }))}>
                   <option value="cadena">Cadena (Texto)</option>
-                  <option value="lista">Lista (SelecciÃ³n)</option>
+                  <option value="lista">Lista (Selección)</option>
                   <option value="fecha">Fecha</option>
                   <option value="dinero">Dinero</option>
-                  <option value="numero">NÃºmero</option>
-                  <option value="si_no">SÃ­/No</option>
+                  <option value="numero">Número</option>
+                  <option value="si_no">Sí/No</option>
                 </Sel>
               </Campo>
               {nuevoCampo.tipo === "lista" && (
-                <Campo label="Opciones (separadas por coma)"><Inp value={nuevoCampo.opciones} onChange={e => setNuevoCampo(p => ({ ...p, opciones: e.target.value }))} placeholder="OpciÃ³n 1, OpciÃ³n 2..." /></Campo>
+                <Campo label="Opciones (separadas por coma)"><Inp value={nuevoCampo.opciones} onChange={e => setNuevoCampo(p => ({ ...p, opciones: e.target.value }))} placeholder="Opción 1, Opción 2..." /></Campo>
               )}
               <Btn onClick={crearCampo} disabled={!nuevoCampo.nombre.trim()} style={{ marginTop: 8 }}>Crear campo global</Btn>
             </div>
@@ -1411,3 +1411,5 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
     </div>
   );
 };
+
+
