@@ -125,6 +125,7 @@ export const LocalInput = ({ value, onChange, onCommit, type = "text", ...props 
 
 export const Sel = ({ value, onChange, children, style = {}, innerStyle = {}, placeholder = "Seleccionar..." }) => {
   const [open, setOpen] = useState(false);
+  const [openUp, setOpenUp] = useState(false);
   const ref = useRef(null);
 
   useEffect(() => {
@@ -133,34 +134,63 @@ export const Sel = ({ value, onChange, children, style = {}, innerStyle = {}, pl
     return () => document.removeEventListener("mousedown", clickAfuera);
   }, []);
 
+  const handleToggle = () => {
+    if (!open) {
+      const rect = ref.current.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.bottom;
+      setOpenUp(spaceBelow < 280); // Si hay menos de 280px abajo, abrir hacia arriba
+    }
+    setOpen(!open);
+  };
+
   const options = React.Children.toArray(children).map(c => ({
     val: c.props.value,
     lab: c.props.children
   }));
 
   const sel = options.find(o => o.val === value) || { lab: placeholder };
+  const txtColor = style.color || innerStyle.color || T.whiteOff;
 
   return (
     <div ref={ref} style={{ position: "relative", width: "100%", ...style }}>
-      <div onClick={() => setOpen(!open)}
+      <div onClick={handleToggle}
         style={{ background: "rgba(255,255,255,0.03)", border: `1px solid ${T.whiteFade}`, borderRadius: 12, padding: "10px 16px", display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", backdropFilter: "blur(12px)", transition: "all 0.2s", ...innerStyle }}
         onMouseEnter={e => e.currentTarget.style.borderColor = T.teal}
         onMouseLeave={e => e.currentTarget.style.borderColor = innerStyle.border ? innerStyle.border : T.borderHi}
       >
-        <span style={{ fontSize: 13, color: T.whiteOff, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, marginRight: 8 }}>{sel.lab}</span>
-        <Ico k="chevron-down" size={14} style={{ transform: open ? "rotate(180deg)" : "none", transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)", color: open ? T.teal : T.whiteDim, flexShrink: 0 }} />
+        <span style={{ fontSize: 13, color: txtColor, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, marginRight: 8 }}>{sel.lab}</span>
+        <Ico k="chevron-down" size={14} style={{ transform: open ? (openUp ? "rotate(0deg)" : "rotate(180deg)") : (openUp ? "rotate(180deg)" : "none"), transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)", color: open ? T.teal : T.whiteDim, flexShrink: 0 }} />
       </div>
       {open && (
-        <div style={{ position: "absolute", top: "calc(100% + 8px)", left: 0, right: 0, background: T.bg1, border: `1px solid ${T.borderHi}`, borderRadius: 12, zIndex: 10000, boxShadow: "var(--shadow-xl)", padding: 6, maxHeight: 220, overflowY: "auto", animation: "slideIn .2s forwards" }}>
+        <div style={{ 
+          position: "absolute", 
+          [openUp ? "bottom" : "top"]: "calc(100% + 8px)", 
+          left: 0, 
+          right: 0, 
+          background: T.bg1, 
+          border: `1px solid ${T.borderHi}`, 
+          borderRadius: 16, 
+          zIndex: 10000, 
+          boxShadow: "0 20px 50px rgba(0,0,0,0.4)", 
+          padding: 8, 
+          maxHeight: 250, 
+          overflowY: "auto", 
+          animation: openUp ? "fadeInUp .3s forwards" : "slideIn .3s forwards",
+          backdropFilter: "blur(20px)"
+        }}>
           {options.map(o => (
             <div key={o.val} onClick={() => { onChange({ target: { value: o.val } }); setOpen(false); }}
-              style={{ padding: "10px 14px", borderRadius: 8, fontSize: 13, color: o.val === value ? T.teal : T.whiteOff, background: o.val === value ? T.bg2 : "transparent", cursor: "pointer", transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)", fontWeight: o.val === value ? 800 : 500 }}
+              style={{ padding: "12px 16px", borderRadius: 10, fontSize: 13, color: o.val === value ? T.teal : T.whiteOff, background: o.val === value ? "rgba(20, 184, 166, 0.1)" : "transparent", cursor: "pointer", transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)", fontWeight: o.val === value ? 800 : 500, display: "flex", alignItems: "center", justifyContent: "space-between" }}
               onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,255,255,0.08)"; }}
-              onMouseLeave={e => { e.currentTarget.style.background = o.val === value ? T.bg2 : "transparent"; }}
+              onMouseLeave={e => { e.currentTarget.style.background = o.val === value ? "rgba(20, 184, 166, 0.1)" : "transparent"; }}
             >
-              {o.lab}
+              <span>{o.lab}</span>
+              {o.val === value && <div style={{ width: 6, height: 6, borderRadius: "50%", background: T.teal }} />}
             </div>
           ))}
+          <style dangerouslySetInnerHTML={{ __html: `
+            @keyframes fadeInUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+          `}} />
         </div>
       )}
     </div>

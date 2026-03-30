@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+﻿import { useState, useEffect, useRef } from "react";
 import { T } from "../theme";
 import { uid, money, fdate, getApiUrl } from "../utils";
 import { Chip, Btn, Inp, Sel, LocalInput, Campo, Modal, SidePanel, Tarjeta, SelColor, EncabezadoSeccion, ControlSegmentado, MenuVistas, Ico, Barra, Vacio, MenuDatos } from "../components/ui";
@@ -123,17 +123,17 @@ const FormDeal = ({ db, setDb, f, setF, editDeal, onGuardar, onCancelar, guardar
                   <div style={{ width: 32, height: 32, borderRadius: 10, background: T.tealSoft, display: "flex", alignItems: "center", justifyContent: "center" }}>
                     <Ico k="board" size={16} style={{ color: T.teal }} />
                   </div>
-                  <div style={{ fontSize: 13, fontWeight: 900, color: T.teal, letterSpacing: ".15em", textTransform: "uppercase" }}>Información Central</div>
+                  <div style={{ fontSize: 13, fontWeight: 900, color: T.teal, letterSpacing: ".15em", textTransform: "uppercase" }}>InformaciÃ³n Central</div>
                 </div>
                 <div style={{ background: "#F1F5F9", padding: "8px 16px", borderRadius: 12, fontSize: 11, fontWeight: 900, color: "#64748B", border: "1px solid #E2E8F0" }}>AI SCORE: {calculateLeadScore(db, f)}</div>
              </div>
 
              <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
-               <Campo label="TÍTULO DEL NEGOCIO">
+               <Campo label="TÃTULO DEL NEGOCIO">
                  <LocalInput value={f.titulo} onCommit={v => {
                    const nf = { ...f, titulo: v }; setF(nf);
                    if (editDeal) guardarEnSupa("deals", { ...editDeal, ...nf });
-                 }} style={{ fontSize: 26, fontWeight: 900, background: "transparent", border: "none", borderBottom: "2px solid #E2E8F0", borderRadius: 0, height: 50, padding: "0 0 8px 0", color: "#1E293B" }} placeholder="Ej: Proyecto Expansión Q2" />
+                 }} style={{ fontSize: 26, fontWeight: 900, background: "transparent", border: "none", borderBottom: "2px solid #E2E8F0", borderRadius: 0, height: 50, padding: "0 0 8px 0", color: "#1E293B" }} placeholder="Ej: Proyecto ExpansiÃ³n Q2" />
                </Campo>
 
                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 32 }}>
@@ -170,184 +170,207 @@ const FormDeal = ({ db, setDb, f, setF, editDeal, onGuardar, onCancelar, guardar
 
              </div>
           </div>
-          {/* SECTION 2: RELACIONES & STAFF */}
-          <div style={{ 
-            background: "rgba(255,255,255,0.7)", 
-            backdropFilter: "blur(20px) saturate(180%)",
-            border: "1px solid rgba(255,255,255,0.5)", 
-            borderRadius: 32, 
-            padding: "32px 36px",
-            boxShadow: "0 10px 40px rgba(0,0,0,0.03)"
-          }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 28 }}>
-               <div style={{ width: 32, height: 32, borderRadius: 12, background: "#F0F9FF", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                 <Ico k="users" size={14} style={{ color: "#0EA5E9" }} />
-               </div>
-               <div style={{ fontSize: 13, fontWeight: 900, color: "#1E293B", letterSpacing: ".1em", textTransform: "uppercase" }}>Relaciones & Staff</div>
-            </div>
-            
-            <div style={{ display: "flex", flexDirection: "column", gap: 28 }}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 28 }}>
-                 <Campo label="CONTACTO PRINCIPAL"><Sel value={f.contacto_id} onChange={async e => {
-                   const val = e.target.value; const nextF = { ...f, contacto_id: val }; setF(nextF);
-                   if (editDeal) await guardarEnSupa("deals", { ...editDeal, ...nextF });
-                 }} style={{ background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 16, height: 50 }}>{/* ... options ... */}<option value="">— Sin Asignar —</option>{db.contactos?.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}</Sel></Campo>
-                 <Campo label="EMPRESA ASOCIADA"><Sel value={f.empresa_id} onChange={async e => {
-                   const val = e.target.value; const nextF = { ...f, empresa_id: val }; setF(nextF);
-                   if (editDeal) await guardarEnSupa("deals", { ...editDeal, ...nextF });
-                 }} style={{ background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 16, height: 50 }}>{/* ... options ... */}<option value="">— Independiente —</option>{db.empresas?.map(e => <option key={e.id} value={e.id}>{e.nombre}</option>)}</Sel></Campo>
-              </div>
-
-              {selContacto && (
-                <div style={{ background: "rgba(14, 165, 233, 0.03)", padding: 24, borderRadius: 24, border: "1px solid rgba(14, 165, 233, 0.1)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                   <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                     <div style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 14, color: "#475569", fontWeight: 600 }}>
-                       <Ico k="mail" size={14} style={{ color: "#0EA5E9" }} /> {selContacto.email || "Sin email"}
-                     </div>
-                     <div style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 14, color: "#475569", fontWeight: 600 }}>
-                       <Ico k="phone" size={14} style={{ color: "#10B981" }} /> {selContacto.telefono || "Sin teléfono"}
-                     </div>
-                   </div>
-                   <Btn variant="turquesa" size="sm" style={{ borderRadius: 12, padding: "8px 16px" }}>Ver ficha</Btn>
-                </div>
-              )}
-              
-              <Campo label="RESPONSABLE DEL CIERRE"><Sel value={f.responsable} onChange={async e => {
-                const val = e.target.value; const nextF = { ...f, responsable: val }; setF(nextF);
-                if (editDeal) await guardarEnSupa("deals", { ...editDeal, ...nextF });
-              }} style={{ background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 16, height: 50 }}>{db.usuariosApp?.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}</Sel></Campo>
-            </div>
-          </div>
-            {/* SECTION 3: ATRIBUTOS AVANZADOS */}
-          <div style={{ 
-            background: "rgba(255,255,255,0.7)", 
-            backdropFilter: "blur(20px) saturate(180%)",
-            border: "1px solid rgba(255,255,255,0.5)", 
-            borderRadius: 32, 
-            padding: "32px 36px",
-            boxShadow: "0 10px 40px rgba(0,0,0,0.03)"
-          }}>
-             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 32 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                   <div style={{ width: 32, height: 32, borderRadius: 12, background: "#F5F3FF", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                     <Ico k="cog" size={14} style={{ color: "#7C3AED" }} />
-                   </div>
-                   <div style={{ fontSize: 13, fontWeight: 900, color: "#1E293B", letterSpacing: ".1em", textTransform: "uppercase" }}>Atributos Avanzados</div>
-                </div>
-                <Btn variant="fantasma" size="xs" onClick={() => setShowConfigCampos(true)} style={{ color: T.teal, gap: 8, padding: "6px 16px", background: "rgba(20, 184, 166, 0.05)", borderRadius: 12, fontWeight: 800, fontSize: 11 }}>
-                   <Ico k="cog" size={12} /> GESTIONAR
-                </Btn>
-             </div>
-             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 32 }}>
-                {customFieldsDef.map(cf => {
-                  const val = f.custom_fields?.[cf.id] || "";
-                  const handleChange = (v) => setF(prev => ({ ...prev, custom_fields: { ...(prev.custom_fields || {}), [cf.id]: v } }));
-                  const handleBlur = async () => { if (editDeal) await guardarEnSupa("deals", { ...editDeal, custom_fields: f.custom_fields }); };
-
-                  return (
-                    <Campo key={cf.id} label={cf.nombre.toUpperCase()}>
-                      {cf.tipo === "lista" ? (
-                        <Sel value={val} onChange={e => handleChange(e.target.value)} onBlur={handleBlur} style={{ background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 16, height: 48 }}>
-                          <option value="">— Seleccionar —</option>
-                          {cf.opciones?.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                        </Sel>
-                      ) : (
-                        <LocalInput value={val} onCommit={v => { handleChange(v); handleBlur(); }} style={{ background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 16, color: "#1E293B", height: 48, fontSize: 14, fontWeight: 600, padding: "0 16px" }} />
-                      )}
-                    </Campo>
-                  );
-                })}
-             </div>
-          </div>
-            {/* SECTION 4: NOTAS ESTRATÉGICAS */}
-          <div style={{ 
-            background: "rgba(255,255,255,0.7)", 
-            backdropFilter: "blur(20px) saturate(180%)",
-            border: "1px solid rgba(255,255,255,0.5)", 
-            borderRadius: 32, 
-            padding: "32px 36px",
-            boxShadow: "0 10px 40px rgba(0,0,0,0.03)"
-          }}>
+           {/* SECTION 2: RELACIONES & STAFF */}
+           <div style={{ 
+             background: "rgba(255,255,255,0.85)", 
+             backdropFilter: "blur(20px)",
+             border: "1px solid rgba(0,0,0,0.05)", 
+             borderRadius: 32, 
+             padding: "32px 36px",
+             boxShadow: "0 10px 40px rgba(0,0,0,0.05)"
+           }}>
              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 28 }}>
-                <div style={{ width: 32, height: 32, borderRadius: 12, background: "#FFFBEB", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <Ico k="file" size={14} style={{ color: "#F59E0B" }} />
+                <div style={{ width: 32, height: 32, borderRadius: 12, background: "#0EA5E915", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <Ico k="users" size={14} style={{ color: "#0EA5E9" }} />
                 </div>
-                <div style={{ fontSize: 13, fontWeight: 900, color: "#1E293B", letterSpacing: ".1em", textTransform: "uppercase" }}>Notas Estratégicas</div>
+                <div style={{ fontSize: 13, fontWeight: 900, color: "#1E293B", letterSpacing: ".05em", textTransform: "uppercase" }}>Relaciones & Staff</div>
              </div>
-             <textarea 
-                value={f.notas || ""} 
-                onChange={e => setF(prev => ({ ...prev, notas: e.target.value }))}
-                onBlur={async () => { if (editDeal) await guardarEnSupa("deals", { ...editDeal, notas: f.notas }); }}
-                placeholder="Describa aquí el plan de acción, puntos de dolor detectados o próximos pasos críticos del negocio..."
-                style={{ width: "100%", minHeight: 160, background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 24, padding: 24, color: "#334155", fontSize: 15, fontFamily: "inherit", resize: "none", outline: "none", lineHeight: 1.7, transition: "all .3s" }}
-                onFocus={e => { e.target.style.borderColor = T.teal; e.target.style.background = "#FFF"; e.target.style.boxShadow = `0 10px 30px ${T.teal}10`; }}
-             />
-          </div>
-          {/* SECTION 5: VAULT DE DOCUMENTOS */}
-          <div style={{ 
-            background: "rgba(255,255,255,0.7)", 
-            backdropFilter: "blur(20px) saturate(180%)",
-            border: "1px solid rgba(255,255,255,0.5)", 
-            borderRadius: 32, 
-            padding: "32px 36px",
-            boxShadow: "0 10px 40px rgba(0,0,0,0.03)"
-          }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 28 }}>
-                <div style={{ width: 32, height: 32, borderRadius: 12, background: "#F0FDF4", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                   <Ico k="upload" size={14} style={{ color: "#10B981" }} />
-                </div>
-                <div style={{ fontSize: 13, fontWeight: 900, color: "#1E293B", letterSpacing: ".1em", textTransform: "uppercase" }}>Vault de Documentos</div>
-            </div>
-            <div 
+             
+             <div style={{ display: "flex", flexDirection: "column", gap: 28 }}>
+               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 28 }}>
+                  <Campo label="CONTACTO PRINCIPAL">
+                    <Sel value={f.contacto_id} onChange={async e => {
+                      const val = e.target.value; const nextF = { ...f, contacto_id: val }; setF(nextF);
+                      if (editDeal) await guardarEnSupa("deals", { ...editDeal, ...nextF });
+                    }} style={{ background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 16, height: 52, color: "#1E293B", fontWeight: 600 }}>
+                      <option value="">— Sin Asignar —</option>
+                      {db.contactos?.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+                    </Sel>
+                  </Campo>
+                  <Campo label="EMPRESA ASOCIADA">
+                    <Sel value={f.empresa_id} onChange={async e => {
+                      const val = e.target.value; const nextF = { ...f, empresa_id: val }; setF(nextF);
+                      if (editDeal) await guardarEnSupa("deals", { ...editDeal, ...nextF });
+                    }} style={{ background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 16, height: 52, color: "#1E293B", fontWeight: 600 }}>
+                      <option value="">— Independiente —</option>
+                      {db.empresas?.map(e => <option key={e.id} value={e.id}>{e.nombre}</option>)}
+                    </Sel>
+                  </Campo>
+               </div>
+
+               {selContacto && (
+                 <div style={{ background: "rgba(14, 165, 233, 0.04)", padding: 24, borderRadius: 24, border: "1px solid rgba(14, 165, 233, 0.1)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 14, color: "#475569", fontWeight: 700 }}>
+                        <Ico k="mail" size={14} style={{ color: "#0EA5E9" }} /> {selContacto.email || "Sin email"}
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 14, color: "#475569", fontWeight: 700 }}>
+                        <Ico k="phone" size={14} style={{ color: "#10B981" }} /> {selContacto.telefono || "Sin teléfono"}
+                      </div>
+                    </div>
+                    <Btn variant="turquesa" size="sm" style={{ borderRadius: 14, padding: "10px 20px", fontWeight: 800 }}>Ver Perfil</Btn>
+                 </div>
+               )}
+               
+               <Campo label="RESPONSABLE ASIGNADO">
+                 <Sel value={f.responsable} onChange={async e => {
+                   const val = e.target.value; const nextF = { ...f, responsable: val }; setF(nextF);
+                   if (editDeal) await guardarEnSupa("deals", { ...editDeal, ...nextF });
+                 }} style={{ background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 16, height: 52, color: "#1E293B", fontWeight: 600 }}>
+                   {db.usuariosApp?.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
+                 </Sel>
+               </Campo>
+             </div>
+           </div>
+           {/* SECTION 3: ATRIBUTOS AVANZADOS */}
+           <div style={{ 
+             background: "rgba(255,255,255,0.85)", 
+             backdropFilter: "blur(20px)",
+             border: "1px solid rgba(0,0,0,0.05)", 
+             borderRadius: 32, 
+             padding: "32px 36px",
+             boxShadow: "0 10px 40px rgba(0,0,0,0.05)"
+           }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 32 }}>
+                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                    <div style={{ width: 32, height: 32, borderRadius: 12, background: "#7C3AED15", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <Ico k="cog" size={14} style={{ color: "#7C3AED" }} />
+                    </div>
+                    <div style={{ fontSize: 13, fontWeight: 900, color: "#1E293B", letterSpacing: ".05em", textTransform: "uppercase" }}>Atributos Avanzados</div>
+                 </div>
+                 <Btn variant="fantasma" size="xs" onClick={() => setShowConfigCampos(true)} style={{ color: T.teal, gap: 8, padding: "8px 20px", background: "rgba(20, 184, 166, 0.08)", borderRadius: 14, fontWeight: 900, fontSize: 11 }}>
+                    <Ico k="cog" size={12} /> GESTIONAR
+                 </Btn>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 32 }}>
+                 {customFieldsDef.map(cf => {
+                   const val = f.custom_fields?.[cf.id] || "";
+                   const handleChange = (v) => setF(prev => ({ ...prev, custom_fields: { ...(prev.custom_fields || {}), [cf.id]: v } }));
+                   const handleBlur = async () => { if (editDeal) await guardarEnSupa("deals", { ...editDeal, custom_fields: f.custom_fields }); };
+
+                   return (
+                     <Campo key={cf.id} label={cf.nombre.toUpperCase()}>
+                       {cf.tipo === "lista" ? (
+                         <Sel value={val} onChange={e => handleChange(e.target.value)} onBlur={handleBlur} style={{ background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 16, height: 50, color: "#1E293B", fontWeight: 600 }}>
+                           <option value="">â€” Seleccionar â€”</option>
+                           {cf.opciones?.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                         </Sel>
+                       ) : (
+                         <LocalInput value={val} onCommit={v => { handleChange(v); handleBlur(); }} style={{ background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 16, color: "#1E293B", height: 50, fontSize: 14, fontWeight: 700, padding: "0 18px" }} />
+                       )}
+                     </Campo>
+                   );
+                 })}
+                 {customFieldsDef.length === 0 && (
+                   <div style={{ gridColumn: "1 / -1", textAlign: "center", padding: "40px", border: "2px dashed #E2E8F0", borderRadius: 24, background: "#F8FAFC" }}>
+                     <div style={{ color: "#64748B", fontSize: 14, fontWeight: 700, marginBottom: 16 }}>Personaliza tu flujo con campos Ãºnicos.</div>
+                     <Btn variant="turquesa" size="sm" onClick={() => setShowConfigCampos(true)} style={{ borderRadius: 12, padding: "10px 24px" }}>Configurar ahora</Btn>
+                   </div>
+                 )}
+              </div>
+           </div>
+             {/* SECTION 4: NOTAS ESTRATÉGICAS */}
+           <div style={{ 
+             background: "rgba(255,255,255,0.85)", 
+             backdropFilter: "blur(20px)",
+             border: "1px solid rgba(0,0,0,0.05)", 
+             borderRadius: 32, 
+             padding: "32px 36px",
+             boxShadow: "0 10px 40px rgba(0,0,0,0.05)"
+           }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 28 }}>
+                 <div style={{ width: 32, height: 32, borderRadius: 12, background: "#F59E0B15", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                   <Ico k="file" size={14} style={{ color: "#F59E0B" }} />
+                 </div>
+                 <div style={{ fontSize: 13, fontWeight: 900, color: "#1E293B", letterSpacing: ".05em", textTransform: "uppercase" }}>Notas Estratégicas</div>
+              </div>
+              <textarea 
+                 value={f.notas || ""} 
+                 onChange={e => setF(prev => ({ ...prev, notas: e.target.value }))}
+                 onBlur={async () => { if (editDeal) await guardarEnSupa("deals", { ...editDeal, notas: f.notas }); }}
+                 placeholder="Describa aquí el plan de acción, puntos de dolor detectados o próximos pasos críticos del negocio..."
+                 style={{ width: "100%", minHeight: 180, background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 24, padding: 24, color: "#334155", fontSize: 15, fontFamily: "inherit", resize: "none", outline: "none", lineHeight: 1.8, transition: "all .4s", fontWeight: 500 }}
+                 onFocus={e => { e.target.style.borderColor = T.teal; e.target.style.background = "#FFF"; e.target.style.boxShadow = "0 10px 40px rgba(20, 184, 166, 0.1)"; }}
+              />
+           </div>
+           {/* SECTION 5: VAULT DE DOCUMENTOS */}
+           <div style={{ 
+             background: "rgba(255,255,255,0.85)", 
+             backdropFilter: "blur(20px)",
+             border: `1px solid rgba(0,0,0,0.05)`, 
+             borderRadius: 32, 
+             padding: "32px 36px",
+             boxShadow: "0 10px 40px rgba(0,0,0,0.05)"
+           }}>
+             <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 28 }}>
+                 <div style={{ width: 32, height: 32, borderRadius: 12, background: "#10B98115", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <Ico k="upload" size={14} style={{ color: "#10B981" }} />
+                 </div>
+                 <div style={{ fontSize: 13, fontWeight: 900, color: "#1E293B", letterSpacing: ".05em", textTransform: "uppercase" }}>Vault de Documentos</div>
+             </div>
+             
+             <div 
                 onClick={() => fileInputRef.current?.click()}
                 style={{ 
                     flex: 1, 
                     cursor: "pointer",
-                    border: `2px dashed #CBD5E1`, 
+                    border: `2px dashed #E2E8F0`, 
                     borderRadius: 28, 
                     display: "flex", 
                     flexDirection: "column", 
                     alignItems: "center", 
                     justifyContent: "center", 
                     gap: 16, 
-                    padding: 48, 
-                    background: dragActive ? "#F0FDF4" : "#F8FAFC", 
-                    transition: "all .4s cubic-bezier(0.4, 0, 0.2, 1)",
-                    outline: "none"
+                    padding: "60px 20px", 
+                    background: dragActive ? "rgba(16, 185, 129, 0.04)" : "#F8FAFC", 
+                    transition: "all .4s cubic-bezier(0.4, 0, 0.2, 1)"
                 }} 
-                onMouseEnter={e => { e.currentTarget.style.borderColor = T.teal; e.currentTarget.style.background = "#FFF"; e.currentTarget.style.boxShadow = `0 10px 30px rgba(0,0,0,0.05)`; }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = dragActive ? T.teal : "#CBD5E1"; e.currentTarget.style.background = dragActive ? "#F0FDF4" : "#F8FAFC"; e.currentTarget.style.boxShadow = "none"; }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = T.teal; e.currentTarget.style.background = "#FFF"; e.currentTarget.style.boxShadow = `0 15px 40px rgba(0,0,0,0.06)`; }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = dragActive ? T.teal : "#E2E8F0"; e.currentTarget.style.background = dragActive ? "rgba(16, 185, 129, 0.04)" : "#F8FAFC"; e.currentTarget.style.boxShadow = "none"; }}
                 onDragOver={e => { e.preventDefault(); setDragActive(true); }} 
                 onDragLeave={() => setDragActive(false)} 
                 onDrop={handleDrop}>
-               <input type="file" multiple ref={fileInputRef} style={{ display: "none" }} onChange={e => procesarArchivos(e.target.files)} />
-               <div style={{ background: "#F0FDF4", padding: 14, borderRadius: "50%", marginBottom: 8, boxShadow: "0 8px 16px rgba(16, 185, 129, 0.15)" }}>
-                 <Ico k="upload" size={28} style={{ color: "#10B981" }} />
+               <input type="file" multiple ref={fileInputRef} hidden onChange={e => procesarArchivos(e.target.files)} />
+               <div style={{ width: 64, height: 64, background: "#10B98110", padding: 16, borderRadius: "50%", marginBottom: 12, boxShadow: "0 10px 30px rgba(16, 185, 129, 0.1)" }}>
+                 <Ico k="upload" size={32} style={{ color: "#10B981" }} />
                </div>
                <div style={{ textAlign: "center" }}>
-                 <div style={{ fontSize: 15, color: "#1E293B", fontWeight: 800, marginBottom: 6 }}>Subir archivos</div>
-                 <div style={{ fontSize: 12, color: "#64748B", fontWeight: 600 }}>Arrastra aquí o presiona para buscar</div>
+                 <div style={{ fontSize: 17, color: "#1E293B", fontWeight: 900, marginBottom: 8 }}>Subir DocumentaciÃ³n</div>
+                 <div style={{ fontSize: 13, color: "#64748B", fontWeight: 700 }}>Click para explorar o arrastra tus archivos aquÃ­</div>
                </div>
-            </div>
-            {f.archivos?.length > 0 && (
-              <div style={{ marginTop: 28, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-                {(f.archivos || []).map(a => (
-                  <div key={a.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#FFF", padding: "14px 20px", borderRadius: 20, border: "1px solid #E2E8F0", boxShadow: "0 4px 12px rgba(0,0,0,0.02)" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 14, overflow: "hidden" }}>
-                      <Ico k={a.tipo === "img" ? "image" : "file"} size={16} style={{ color: T.teal }} />
-                      <div style={{ display: "flex", flexDirection: "column", overflow: "hidden" }}>
-                        <span style={{ fontSize: 13, color: "#1E293B", fontWeight: 700, whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden" }}>{a.nombre}</span>
-                        <span style={{ fontSize: 10, color: "#64748B", fontWeight: 700 }}>{a.size}</span>
-                      </div>
-                    </div>
-                    <Btn variant="fantasma" size="xs" onClick={() => quitarArchivo(a.id)} style={{ color: T.red, opacity: 0.6 }}><Ico k="trash" size={14} /></Btn>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+             </div>
 
-          {/* SECCIÓN DE BOTONES MOVIDA ARRIBA */}
+             {f.archivos?.length > 0 && (
+               <div style={{ marginTop: 32, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+                 {(f.archivos || []).map(a => (
+                   <div key={a.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#FFF", padding: "16px 20px", borderRadius: 24, border: "1px solid #E2E8F0", boxShadow: "0 4px 15px rgba(0,0,0,0.02)" }}>
+                     <div style={{ display: "flex", alignItems: "center", gap: 14, overflow: "hidden" }}>
+                       <div style={{ width: 36, height: 36, borderRadius: 12, background: T.teal + "10", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                         <Ico k={a.tipo === "img" ? "image" : "file"} size={16} style={{ color: T.teal }} />
+                       </div>
+                       <div style={{ display: "flex", flexDirection: "column", overflow: "hidden" }}>
+                         <span style={{ fontSize: 13, color: "#1E293B", fontWeight: 800, whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden" }}>{a.nombre}</span>
+                         <span style={{ fontSize: 10, color: "#94A3B8", fontWeight: 800 }}>{a.size}</span>
+                       </div>
+                     </div>
+                     <Btn variant="fantasma" size="xs" onClick={(e) => { e.stopPropagation(); quitarArchivo(a.id); }} style={{ color: T.red, opacity: 0.5 }}><Ico k="trash" size={14} /></Btn>
+                   </div>
+                 ))}
+               </div>
+             )}
+           </div>
+
+          {/* SECCIÃ“N DE BOTONES MOVIDA ARRIBA */}
         </div>
 
         {/* COLUMNA DERECHA: ACTIVITY FEED & MATRIX */}
@@ -371,7 +394,7 @@ const FormDeal = ({ db, setDb, f, setF, editDeal, onGuardar, onCancelar, guardar
               />
             )}
 
-            {rightTab === "whatsapp" && <div style={{ padding: 60, textAlign: "center", color: T.whiteFade, fontSize: 13 }}>Sincronización de WhatsApp pendiente.</div>}
+            {rightTab === "whatsapp" && <div style={{ padding: 60, textAlign: "center", color: T.whiteFade, fontSize: 13 }}>SincronizaciÃ³n de WhatsApp pendiente.</div>}
             
             {rightTab === "finanzas" && (
               <div style={{ padding: 40 }}>
@@ -395,7 +418,7 @@ const FormDeal = ({ db, setDb, f, setF, editDeal, onGuardar, onCancelar, guardar
                   <div key={a.id} style={{ display: "flex", gap: 16, padding: "16px 20px", background: "rgba(255,255,255,0.02)", borderRadius: 16, border: `1px solid ${T.white}05` }}>
                      <div style={{ width: 4, background: T.teal, borderRadius: 2, height: 16, marginTop: 4 }} />
                      <div style={{ fontSize: 13, color: T.whiteOff }}>
-                       <span style={{ fontWeight: 800, color: T.white }}>{a.usuario_nombre}</span> actualizó {a.campo} a <span style={{ color: T.teal }}>{a.valor_nuevo}</span>
+                       <span style={{ fontWeight: 800, color: T.white }}>{a.usuario_nombre}</span> actualizÃ³ {a.campo} a <span style={{ color: T.teal }}>{a.valor_nuevo}</span>
                      </div>
                   </div>
                 ))}
@@ -412,7 +435,7 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
   const [plActivo, setPlActivo] = useState(localStorage.getItem("crm_active_pipeline") || db.pipelines?.[0]?.id || "");
   useEffect(() => { if (plActivo) localStorage.setItem("crm_active_pipeline", plActivo); }, [plActivo]);
 
-  // Si db.pipelines carga después y plActivo está vacío, inicializar con el primero
+  // Si db.pipelines carga despuÃ©s y plActivo estÃ¡ vacÃ­o, inicializar con el primero
   useEffect(() => {
     if (!plActivo && db.pipelines?.length > 0) {
       setPlActivo(db.pipelines[0].id);
@@ -458,16 +481,16 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
 
     // TODO: Considerar mensajes de WhatsApp si estuvieran en db.whatsapp_messages
 
-    if (diff <= 86400000) return { label: "Hot", color: "#FF4500", icon: "🔥", glow: "0 0 12px #FF450060", desc: "Actividad en las últimas 24h" };
-    if (diff <= 86400000 * 3) return { label: "Warm", color: T.amber, icon: "⚡", glow: "none", desc: "Actividad en los últimos 3 días" };
-    if (diff >= 86400000 * 5) return { label: "Cold", color: T.whiteDim, icon: "❄️", glow: "none", desc: "Sin actividad por más de 5 días", cold: true };
-    return { label: "Normal", color: T.green, icon: "🌱", glow: "none", desc: "Actividad regular" };
+    if (diff <= 86400000) return { label: "Hot", color: "#FF4500", icon: "ðŸ”¥", glow: "0 0 12px #FF450060", desc: "Actividad en las Ãºltimas 24h" };
+    if (diff <= 86400000 * 3) return { label: "Warm", color: T.amber, icon: "âš¡", glow: "none", desc: "Actividad en los Ãºltimos 3 dÃ­as" };
+    if (diff >= 86400000 * 5) return { label: "Cold", color: T.whiteDim, icon: "â„ï¸", glow: "none", desc: "Sin actividad por mÃ¡s de 5 dÃ­as", cold: true };
+    return { label: "Normal", color: T.green, icon: "ðŸŒ±", glow: "none", desc: "Actividad regular" };
   };
 
   const chequearComision = async (dealId, etapaId, valor) => {
     const pl = db.pipelines.find(p => p.id === plActivo);
     const etapa = pl?.etapas.find(e => e.id === etapaId);
-    if (etapa && (etapa.es_ganado || ["ganado", "venta", "exito", "éxito", "cerrado"].some(k => (etapa.nombre || "").toLowerCase().includes(k)))) {
+    if (etapa && (etapa.es_ganado || ["ganado", "venta", "exito", "Ã©xito", "cerrado"].some(k => (etapa.nombre || "").toLowerCase().includes(k)))) {
       const yaExiste = (db.finanzas_comisiones || []).some(c => c.deal_id === dealId);
       if (!yaExiste) {
         const comision = {
@@ -488,7 +511,7 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
     try {
       await executeRules(db, deal, nuevaEtapaId, { guardarEnSupa });
     } catch (err) {
-      console.error("Error al ejecutar automatizaciones dinámicas:", err);
+      console.error("Error al ejecutar automatizaciones dinÃ¡micas:", err);
     }
   };
 
@@ -515,7 +538,7 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
     // RBAC: Los vendedores solo ven sus propios leads
     if (db.usuario?.role !== "admin" && d.responsable !== db.usuario?.name) return false;
 
-    // Filtro Rápido
+    // Filtro RÃ¡pido
     if (filtroRapido === "mios") { if (d.responsable !== db.usuario?.name) return false; }
     else if (filtroRapido === "frios") {
       const acts = (db.actividades || []).filter(a => a.deal_id === d.id);
@@ -632,7 +655,7 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
       }
 
       // 4. NOTIFICACIONES & WEBHOOKS (Phase 40 & 42)
-      // DISPARAR WEBHOOKS SEGÚN ETAPA (Phase 42)
+      // DISPARAR WEBHOOKS SEGÃšN ETAPA (Phase 42)
       const pl = db.pipelines?.find(p => p.id === form.pipeline_id);
       const etapa = pl?.etapas?.find(e => e.id === form.etapa_id);
 
@@ -652,14 +675,14 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
         }
       }
 
-      // Notificación si cambia el responsable
+      // NotificaciÃ³n si cambia el responsable
       if (form.responsable && form.responsable !== editDeal.responsable) {
         const targetUser = db.usuariosApp?.find(u => u.name === form.responsable);
         if (targetUser && targetUser.id !== db.usuario?.id) {
           const noti = {
             id: "not" + uid(),
             usuario_id: targetUser.id,
-            titulo: "🤝 Nuevo Lead Asignado",
+            titulo: "ðŸ¤ Nuevo Lead Asignado",
             mensaje: `Se te ha asignado el lead: ${form.titulo || editDeal.titulo}`,
             tipo: "success",
             url: "pipeline",
@@ -681,14 +704,14 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
         etapa_id: form.etapa_id || db.pipelines?.find(p => p.id === (form.pipeline_id || plActivo))?.etapas?.[0]?.id
       };
 
-      // Notificación si se asigna a otro al crear
+      // NotificaciÃ³n si se asigna a otro al crear
       if (nv.responsable && nv.responsable !== db.usuario?.name) {
         const targetUser = db.usuariosApp?.find(u => u.name === nv.responsable);
         if (targetUser) {
           const noti = {
             id: "not" + uid(),
             usuario_id: targetUser.id,
-            titulo: "🆕 Nuevo Lead",
+            titulo: "ðŸ†• Nuevo Lead",
             mensaje: `Tienes un nuevo lead asignado: ${nv.titulo}`,
             tipo: "info",
             url: "pipeline",
@@ -725,13 +748,13 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
   };
 
   const eliminarCampo = async (id) => {
-    if (!confirm("¿Eliminar este campo global? Se borrarán sus valores en todos los deals.")) return;
+    if (!confirm("Â¿Eliminar este campo global? Se borrarÃ¡n sus valores en todos los deals.")) return;
     setDb(d => ({ ...d, campos_personalizados: d.campos_personalizados.filter(c => c.id !== id) }));
     await eliminarDeSupa("campos_personalizados", id);
   };
 
   const eliminarDeal = async (id) => {
-    if (!confirm("¿Eliminar deal?")) return;
+    if (!confirm("Â¿Eliminar deal?")) return;
     setDb(d => ({ ...d, deals: d.deals.filter(deal => deal.id !== id) }));
     await eliminarDeSupa("deals", id);
   };
@@ -767,7 +790,7 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
   };
 
   const handleBulkDelete = async () => {
-    if (!selectedIds.length || !confirm(`¿Eliminar ${selectedIds.length} negocios seleccionados?`)) return;
+    if (!selectedIds.length || !confirm(`Â¿Eliminar ${selectedIds.length} negocios seleccionados?`)) return;
     setDb(prev => ({
       ...prev,
       deals: prev.deals.filter(d => !selectedIds.includes(d.id))
@@ -780,7 +803,7 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
 
   const handleBulkImport = async (data) => {
     const nuevosDeals = data.map(item => {
-      const titulo = item.titulo || item.title || "Negocio Sin Título";
+      const titulo = item.titulo || item.title || "Negocio Sin TÃ­tulo";
       
       // Resolve Contact ID
       const contactoNombre = item.contacto || item.contact || "";
@@ -822,7 +845,7 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
       const etapa = (pipeline?.etapas || []).find(et => et.id === d.etapa_id);
 
       return {
-        Título: d.titulo || "Sin título",
+        TÃ­tulo: d.titulo || "Sin tÃ­tulo",
         Valor: d.valor || 0,
         Probabilidad: (d.prob || 0) + "%",
         Etapa: etapa?.nombre || "N/A",
@@ -873,7 +896,7 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
              }
            `}</style>
           <div style={{ background: "rgba(0,0,0,0.8)", padding: "20px 40px", borderRadius: 20, border: `2px solid ${T.green}`, color: "#fff", fontSize: 24, fontWeight: 900, boxShadow: "var(--shadow-xl)", animation: "pop-in 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)" }}>
-            🎉 ¡DEAL GANADO! 🚀
+            ðŸŽ‰ Â¡DEAL GANADO! ðŸš€
           </div>
           <style>{`
              @keyframes pop-in {
@@ -904,8 +927,8 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
             options={[
               { value: "todos", label: "Todos", icon: "board" },
               { value: "mios", label: "Mis Leads", icon: "users" },
-              { value: "frios", label: "Fríos", icon: "clock" },
-              { value: "cierre", label: "Cierre Próximo", icon: "calendar" }
+              { value: "frios", label: "FrÃ­os", icon: "clock" },
+              { value: "cierre", label: "Cierre PrÃ³ximo", icon: "calendar" }
             ]}
           />
         </div>
@@ -914,7 +937,7 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
           <Ico k="search" size={16} style={{ color: T.whiteDim }} />
           <input
             type="text"
-            placeholder="Buscar por título o contacto..."
+            placeholder="Buscar por tÃ­tulo o contacto..."
             value={busqueda}
             onChange={e => setBusqueda(e.target.value)}
             style={{ border: "none", background: "transparent", color: T.white, fontSize: 13, outline: "none", width: "100%", fontFamily: "inherit" }}
@@ -944,11 +967,11 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
             </select>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <span style={{ fontSize: 11, fontWeight: 700, color: T.whiteDim, textTransform: "uppercase" }}>Fecha Creación</span>
+            <span style={{ fontSize: 11, fontWeight: 700, color: T.whiteDim, textTransform: "uppercase" }}>Fecha CreaciÃ³n</span>
             <select value={fFecha} onChange={e => setFFecha(e.target.value)} style={{ background: T.bg2, color: T.white, border: `1px solid ${T.borderHi}`, borderRadius: 8, padding: "6px 12px", fontSize: 13, cursor: "pointer", outline: "none" }}>
               <option value="todas">Cualquier fecha</option>
               <option value="hoy">Creados Hoy</option>
-              <option value="semana">Últimos 7 días</option>
+              <option value="semana">Ãšltimos 7 dÃ­as</option>
               <option value="mes">Este mes</option>
             </select>
           </div>
@@ -957,7 +980,7 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
         </div>
       )}
 
-      {/* KANBAN — ESTILO BITRIX24 DARK */}
+      {/* KANBAN â€” ESTILO BITRIX24 DARK */}
       {tab === "kanban" && pipeline && (
         <div style={{ display: "flex", gap: 10, overflowX: "auto", paddingBottom: 20, minHeight: "70vh", alignItems: "flex-start" }}>
           {pipeline.etapas?.map((etapa, etapaIdx) => {
@@ -984,7 +1007,7 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
                 }}
                 onDragLeave={() => setDragSobre(null)}>
 
-                {/* CABECERA SÓLIDA DE COLOR — compacta como Bitrix24 */}
+                {/* CABECERA SÃ“LIDA DE COLOR â€” compacta como Bitrix24 */}
                 <div style={{ background: etapa.color, padding: "7px 10px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 6 }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 10, fontWeight: 800, color: "#fff", textTransform: "uppercase", letterSpacing: ".08em", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{etapa.nombre}</div>
@@ -993,7 +1016,7 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
                   <span style={{ background: "rgba(0,0,0,0.25)", color: "#fff", borderRadius: 20, padding: "1px 8px", fontSize: 10, fontWeight: 800, flexShrink: 0 }}>{etDeals.length}</span>
                 </div>
 
-                {/* BOTÓN AGREGAR */}
+                {/* BOTÃ“N AGREGAR */}
                 <button onClick={() => { setEditDeal(null); setPreEtapa(etapa.id); setShowDealForm(true); }}
                   style={{ background: "transparent", border: "none", borderBottom: `1px solid ${T.borderHi}`, padding: "9px 14px", color: etapa.color, cursor: "pointer", fontSize: 12, fontWeight: 700, display: "flex", alignItems: "center", gap: 5, fontFamily: "inherit", textAlign: "left", width: "100%", transition: "background .15s" }}
                   onMouseEnter={e => e.currentTarget.style.background = etapa.color.startsWith("#") ? etapa.color + "12" : etapa.color}
@@ -1112,7 +1135,7 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
         </div>
       )}
 
-      {/* VISTA DE LISTA — TABULAR */}
+      {/* VISTA DE LISTA â€” TABULAR */}
       {tab === "lista" && pipeline && (
         <div style={{ background: T.bg1, border: `1px solid ${T.borderHi}`, borderRadius: 16, overflow: "hidden" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
@@ -1162,7 +1185,7 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
                       </div>
                     </td>
                     <td style={{ padding: "12px 16px", fontWeight: 700, color: T.white }}>{deal.titulo}</td>
-                    <td style={{ padding: "12px 16px", color: T.whiteOff }}>{contacto?.nombre || "—"}</td>
+                    <td style={{ padding: "12px 16px", color: T.whiteOff }}>{contacto?.nombre || "â€”"}</td>
                     <td style={{ padding: "12px 16px", fontWeight: 800, color: T.green }}>{money(deal.valor)}</td>
                     <td style={{ padding: "12px 16px" }}>
                       <div style={{ display: "inline-block", background: etapa.color.startsWith("#") ? etapa.color + "20" : etapa.color, color: etapa.color, border: `1px solid ${etapa.color}`, padding: "2px 8px", borderRadius: 12, fontSize: 10, fontWeight: 800, textTransform: "uppercase" }}>
@@ -1203,7 +1226,7 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
                 <span style={{ fontWeight: 800, fontSize: 16, color: T.white, flex: 1 }}>{pl.nombre}</span>
                 {pl.es_principal && <Chip label="Principal" color={T.teal} />}
                 <span style={{ fontSize: 13, color: T.whiteDim, fontWeight: 600 }}>{db.deals.filter(d => d.pipeline_id === pl.id).length} deals</span>
-                {!pl.es_principal && <Btn variant="peligro" size="sm" onClick={() => { if (confirm("¿Eliminar pipeline?")) setDb(d => ({ ...d, pipelines: d.pipelines.filter(p => p.id !== pl.id) })); }}><Ico k="trash" size={12} />Eliminar</Btn>}
+                {!pl.es_principal && <Btn variant="peligro" size="sm" onClick={() => { if (confirm("Â¿Eliminar pipeline?")) setDb(d => ({ ...d, pipelines: d.pipelines.filter(p => p.id !== pl.id) })); }}><Ico k="trash" size={12} />Eliminar</Btn>}
               </div>
               <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 16 }}>
                 {pl.etapas.map((et, idx) => (
@@ -1267,7 +1290,7 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
                   </button>
                 ))}
               </div>
-              <div style={{ fontSize: 11, color: T.teal, fontWeight: 600, background: T.tealSoft, padding: "8px 12px", borderRadius: 6, display: "inline-block" }}>💡 Haz click en una etapa para editarla · <strong>Arrastra las etapas para reordenarlas</strong></div>
+              <div style={{ fontSize: 11, color: T.teal, fontWeight: 600, background: T.tealSoft, padding: "8px 12px", borderRadius: 6, display: "inline-block" }}>ðŸ’¡ Haz click en una etapa para editarla Â· <strong>Arrastra las etapas para reordenarlas</strong></div>
             </Tarjeta>
           ))}
         </div>
@@ -1299,7 +1322,7 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
           setFocusEmailId={setFocusEmailId}
         />
       </SidePanel>
-      {/* CONFIGURACIÓN DE CAMPOS PERSONALIZADOS */}
+      {/* CONFIGURACIÃ“N DE CAMPOS PERSONALIZADOS */}
       <Modal open={showConfigCampos} onClose={() => setShowConfigCampos(false)} title="Configurar Campos Globales" width={500}>
         <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
           <div style={{ background: T.bg2, padding: 16, borderRadius: 10, border: `1px solid ${T.border}` }}>
@@ -1309,15 +1332,15 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
               <Campo label="Tipo de Dato">
                 <Sel value={nuevoCampo.tipo} onChange={e => setNuevoCampo(p => ({ ...p, tipo: e.target.value }))}>
                   <option value="cadena">Cadena (Texto)</option>
-                  <option value="lista">Lista (Selección)</option>
+                  <option value="lista">Lista (SelecciÃ³n)</option>
                   <option value="fecha">Fecha</option>
                   <option value="dinero">Dinero</option>
-                  <option value="numero">Número</option>
-                  <option value="si_no">Sí/No</option>
+                  <option value="numero">NÃºmero</option>
+                  <option value="si_no">SÃ­/No</option>
                 </Sel>
               </Campo>
               {nuevoCampo.tipo === "lista" && (
-                <Campo label="Opciones (separadas por coma)"><Inp value={nuevoCampo.opciones} onChange={e => setNuevoCampo(p => ({ ...p, opciones: e.target.value }))} placeholder="Opción 1, Opción 2..." /></Campo>
+                <Campo label="Opciones (separadas por coma)"><Inp value={nuevoCampo.opciones} onChange={e => setNuevoCampo(p => ({ ...p, opciones: e.target.value }))} placeholder="OpciÃ³n 1, OpciÃ³n 2..." /></Campo>
               )}
               <Btn onClick={crearCampo} disabled={!nuevoCampo.nombre.trim()} style={{ marginTop: 8 }}>Crear campo global</Btn>
             </div>
@@ -1341,30 +1364,46 @@ export const Pipeline = ({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setModul
 
       {/* BARRA DE ACCIONES MASIVAS */}
       {selectedIds.length > 0 && (
-        <div style={{ position: "fixed", bottom: 24, left: "50%", transform: "translateX(-50%)", background: T.bg1, border: `1px solid ${T.teal}`, borderRadius: 12, padding: "12px 24px", display: "flex", alignItems: "center", gap: 24, boxShadow: "0 20px 25px -5px rgba(0,0,0,0.5)", zIndex: 10000, animation: "pop-up 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28)" }}>
+        <div style={{ 
+          position: "fixed", 
+          bottom: 40, 
+          left: "50%", 
+          transform: "translateX(-50%)", 
+          background: "rgba(255,255,255,0.9)", 
+          backdropFilter: "blur(20px)",
+          border: `1px solid ${T.teal}40`, 
+          borderRadius: 24, 
+          padding: "16px 32px", 
+          display: "flex", 
+          alignItems: "center", 
+          gap: 24, 
+          boxShadow: "0 20px 50px rgba(0,0,0,0.3)", 
+          zIndex: 10000, 
+          animation: "pop-up 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28)" 
+        }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <span style={{ fontSize: 13, fontWeight: 800, color: T.teal }}>{selectedIds.length} seleccionados</span>
-            <Btn variant="fantasma" size="xs" onClick={() => setSelectedIds([])} style={{ color: T.whiteDim }}>Deseleccionar</Btn>
+            <span style={{ fontSize: 14, fontWeight: 900, color: T.teal }}>{selectedIds.length} seleccionados</span>
+            <Btn variant="fantasma" size="xs" onClick={() => setSelectedIds([])} style={{ color: "#64748B", fontWeight: 700 }}>Deseleccionar</Btn>
           </div>
 
-          <div style={{ height: 24, width: 1, background: T.border }} />
+          <div style={{ height: 32, width: 1, background: "rgba(0,0,0,0.05)" }} />
 
-          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            <span style={{ fontSize: 11, color: T.whiteDim, fontWeight: 700 }}>ACCIONES:</span>
+          <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+            <span style={{ fontSize: 11, color: "#94A3B8", fontWeight: 800, letterSpacing: ".05em" }}>ACCIONES:</span>
 
-            <Sel value="" onChange={e => handleBulkStage(e.target.value)} style={{ width: 140, fontSize: 11, padding: "6px 10px" }}>
+            <Sel value="" onChange={e => handleBulkStage(e.target.value)} style={{ width: 160, fontSize: 12, height: 40, background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 12, color: "#1E293B" }}>
               <option value="">Cambiar Etapa...</option>
-              {pipeline?.etapas?.map(et => <option key={et.id} value={et.id}>{et.nombre}</option>)}
+              {pipeline?.etapas?.map(et => <option key={et.id} value={et.id} style={{ color: "#1E293B" }}>{et.nombre}</option>)}
             </Sel>
 
-            <Sel value="" onChange={e => handleBulkResp(e.target.value)} style={{ width: 140, fontSize: 11, padding: "6px 10px" }}>
+            <Sel value="" onChange={e => handleBulkResp(e.target.value)} style={{ width: 160, fontSize: 12, height: 40, background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 12, color: "#1E293B" }}>
               <option value="">Cambiar Responsable...</option>
-              {db.usuariosApp?.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
+              {db.usuariosApp?.map(u => <option key={u.id} value={u.name} style={{ color: "#1E293B" }}>{u.name}</option>)}
             </Sel>
 
-            <Btn variant="peligro" size="sm" onClick={handleBulkDelete}><Ico k="trash" size={14} /> Eliminar</Btn>
+            <Btn variant="peligro" size="sm" onClick={handleBulkDelete} style={{ height: 40, borderRadius: 12, padding: "0 20px" }}><Ico k="trash" size={14} /> Eliminar</Btn>
           </div>
-          <style>{`@keyframes pop-up { from { opacity:0; transform:translate(-50%, 20px); } to { opacity:1; transform:translate(-50%, 0); } }`}</style>
+          <style>{`@keyframes pop-up { from { opacity:0; transform:translate(-50%, 40px); } to { opacity:1; transform:translate(-50%, 0); } }`}</style>
         </div>
       )}
 

@@ -9,8 +9,8 @@ export const Playbook = ({ db, guardarEnSupa, eliminarDeSupa, t }) => {
   const [editando, setEditando] = useState(false);
   const [form, setForm] = useState({ titulo: "", contenido: "", categoria: "Ventas" });
 
-  const articulos = (db.sales_playbook || []).filter(a => 
-    a.titulo.toLowerCase().includes(busqueda.toLowerCase()) || 
+  const articulos = (db.sales_playbook || []).filter(a =>
+    a.titulo.toLowerCase().includes(busqueda.toLowerCase()) ||
     a.contenido.toLowerCase().includes(busqueda.toLowerCase())
   );
 
@@ -51,23 +51,23 @@ export const Playbook = ({ db, guardarEnSupa, eliminarDeSupa, t }) => {
       <div style={{ width: 320, display: "flex", flexDirection: "column", gap: 16 }}>
         <div style={{ position: "relative" }}>
           <Ico k="search" size={14} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: T.whiteDim }} />
-          <Inp 
-            placeholder="Buscar en el Playbook..." 
-            value={busqueda} 
-            onChange={e => setBusqueda(e.target.value)} 
+          <Inp
+            placeholder="Buscar en el Playbook..."
+            value={busqueda}
+            onChange={e => setBusqueda(e.target.value)}
             style={{ paddingLeft: 34 }}
           />
         </div>
 
         <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 8 }}>
           {articulos.map(a => (
-            <div 
-              key={a.id} 
+            <div
+              key={a.id}
               onClick={() => { setArticuloSeleccionado(a); setEditando(false); }}
-              style={{ 
-                padding: "12px 16px", 
-                borderRadius: 10, 
-                background: articuloseleccionado?.id === a.id ? T.tealSoft : T.bg1, 
+              style={{
+                padding: "12px 16px",
+                borderRadius: 10,
+                background: articuloseleccionado?.id === a.id ? T.tealSoft : T.bg1,
                 cursor: "pointer",
                 border: `1px solid ${articuloseleccionado?.id === a.id ? T.teal : T.border}`,
                 transition: "all .2s"
@@ -98,16 +98,16 @@ export const Playbook = ({ db, guardarEnSupa, eliminarDeSupa, t }) => {
                 <Btn onClick={guardar}>Guardar Playbook</Btn>
               </div>
             </div>
-            
+
             <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 16 }}>
-              <Inp 
-                placeholder="Título del artículo" 
-                value={form.titulo} 
-                onChange={e => setForm({ ...form, titulo: e.target.value })} 
+              <Inp
+                placeholder="Título del artículo"
+                value={form.titulo}
+                onChange={e => setForm({ ...form, titulo: e.target.value })}
                 style={{ fontSize: 18, fontWeight: 700 }}
               />
-              <select 
-                value={form.categoria} 
+              <select
+                value={form.categoria}
                 onChange={e => setForm({ ...form, categoria: e.target.value })}
                 style={{ background: T.bg2, color: T.white, border: `1px solid ${T.border}`, borderRadius: 10, padding: 12, outline: "none" }}
               >
@@ -119,23 +119,23 @@ export const Playbook = ({ db, guardarEnSupa, eliminarDeSupa, t }) => {
               </select>
             </div>
 
-            <textarea 
+            <textarea
               placeholder="Escribe el contenido aquí (puedes usar Markdown)..."
               value={form.contenido}
               onChange={e => setForm({ ...form, contenido: e.target.value })}
-              style={{ 
-                flex: 1, 
-                minHeight: 400, 
-                background: T.bg2, 
-                color: T.white, 
-                border: `1px solid ${T.border}`, 
-                borderRadius: 12, 
-                padding: 20, 
-                fontFamily: "inherit", 
-                fontSize: 15, 
-                lineHeight: 1.6, 
+              style={{
+                flex: 1,
+                minHeight: 400,
+                background: T.bg2,
+                color: T.white,
+                border: `1px solid ${T.border}`,
+                borderRadius: 12,
+                padding: 20,
+                fontFamily: "inherit",
+                fontSize: 15,
+                lineHeight: 1.6,
                 resize: "none",
-                outline: "none" 
+                outline: "none"
               }}
             />
           </div>
@@ -155,10 +155,10 @@ export const Playbook = ({ db, guardarEnSupa, eliminarDeSupa, t }) => {
               )}
             </div>
 
-            <div style={{ 
-              fontSize: 16, 
-              color: T.whiteOff, 
-              lineHeight: 1.8, 
+            <div style={{
+              fontSize: 16,
+              color: T.whiteOff,
+              lineHeight: 1.8,
               whiteSpace: "pre-wrap",
               background: T.bg2,
               padding: 32,
