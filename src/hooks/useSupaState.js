@@ -67,7 +67,8 @@ export function useSupaState() {
   const [session, setSession] = useState(null);
   const [isRecoveryMode, setIsRecoveryMode] = useState(false);
   const channelRef = useRef(null);
-  const [intentoCarga, setIntentoCarga] = useState(0); // Para forzar reintentos si falla algo crítico
+  const userLoadedRef = useRef(null); // tracks which userId has been fully loaded
+  const [intentoCarga, setIntentoCarga] = useState(0);
 
   const setDb = useCallback((next) => {
     setDbRaw((prev) => {
@@ -317,6 +318,8 @@ export function useSupaState() {
         if (montado) {
           const targetOrg = uLocal?.org_id || db.usuario?.org_id || session?.user?.user_metadata?.org_id;
           await cargarDeSupa(targetOrg);
+          // Marcar que este usuario ya fue cargado correctamente
+          userLoadedRef.current = session?.user?.id || null;
         }
       } catch (err) {
         console.error("❌ Error en iniciarApp:", err);
@@ -330,7 +333,7 @@ export function useSupaState() {
 
     iniciarApp();
 
-    const { data: { subscription } } = sb.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = sb.auth.onAuthStateChange(async (event, session) => {
       if (!montado) return;
 
       if (event === "PASSWORD_RECOVERY") {
@@ -338,13 +341,14 @@ export function useSupaState() {
         setIsRecoveryMode(true);
       }
 
-      // Handle token refresh failures gracefully — prevents blue screen hang
+      // Handle token refresh failures gracefully
       if (event === "TOKEN_REFRESH_FAILED" || event === "SIGNED_OUT") {
         if (event === "TOKEN_REFRESH_FAILED") {
-          console.warn("🔑 TOKEN_REFRESH_FAILED: limpiando sesión y redirigiendo al login...");
+          console.warn("🔑 TOKEN_REFRESH_FAILED: limpiando sesión...");
           localStorage.removeItem("crm_usuario_activo");
           sb.auth.signOut();
         }
+        userLoadedRef.current = null;
         setSession(null);
         setDb((d) => ({ ...d, usuario: null }));
         setCargando(false);
@@ -353,76 +357,75 @@ export function useSupaState() {
       }
 
       setSession(session);
+
       if (!session) {
+        userLoadedRef.current = null;
         setDb((d) => {
           if (d.usuario && !localStorage.getItem("crm_usuario_activo")) return { ...d, usuario: null };
           return d;
         });
         setCargando(false);
         setIsAppReady(true);
-      } else if (event === "SIGNED_IN" || event === "INITIAL_SESSION") {
-        // ── MÓVILES: el token puede llegar después del montaje inicial ──
-        // Si el usuario no está cargado o no tiene org_id, cargar perfil y datos ahora
-        setDbRaw(prev => {
-          if (!prev.usuario?.org_id && !prev.usuario?.id) {
-            // Lanzar la carga de perfil y datos de forma asíncrona sin bloquear el render
-            (async () => {
-              if (!montado) return;
-              try {
-                const meta = session.user.user_metadata || {};
-                const metaName = meta.name || session.user.email?.split("@")[0] || "Usuario";
-                const metaInitials = metaName.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase() || "U";
+        return;
+      }
 
-                // Intentar obtener el perfil de la base de datos
-                const { data: userRow } = await sb.from("usuariosApp").select("*").eq("email", session.user.email).maybeSingle();
+      // ── MÓVILES: SIGNED_IN llega después del montaje inicial ──
+      // Solo actuar si este usuario específico NO fue cargado aún por iniciarApp
+      if (event === "SIGNED_IN" && userLoadedRef.current !== session.user.id) {
+        try {
+          const meta = session.user.user_metadata || {};
+          const metaName = meta.name || session.user.email?.split("@")[0] || "Usuario";
+          const metaInitials = metaName.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase() || "U";
 
-                let orgId = null;
-                if (userRow) {
-                  orgId = userRow.org_id;
-                  if (userRow.tema) {
-                    applyTheme(userRow.tema);
-                    localStorage.setItem("crm_theme", userRow.tema);
-                  }
-                  const mappedUser = {
-                    name: userRow.name || metaName,
-                    email: session.user.email,
-                    role: userRow.role || "ventas",
-                    avatar: userRow.avatar || metaInitials,
-                    whatsappAccess: userRow.whatsappAccess || false,
-                    profilePic: userRow.profilePic || null,
-                    tema: userRow.tema || null,
-                    waServerUrl: userRow.waServerUrl || null,
-                    activo: userRow.activo !== false,
-                    id: userRow.id,
-                    org_id: userRow.org_id || null,
-                  };
-                  try { localStorage.setItem("crm_usuario_activo", JSON.stringify(mappedUser)); } catch (e) { }
-                  if (montado) setDb(d => ({ ...d, usuario: { ...d.usuario, ...mappedUser } }));
-                } else {
-                  // Nuevo usuario sin perfil: usar metadata del token
-                  orgId = meta.org_id || null;
-                  const nuevoUsuario = {
-                    name: metaName,
-                    email: session.user.email,
-                    role: meta.role || "ventas",
-                    avatar: metaInitials,
-                    id: session.user.id,
-                    org_id: orgId,
-                    activo: true,
-                  };
-                  try { localStorage.setItem("crm_usuario_activo", JSON.stringify(nuevoUsuario)); } catch (e) { }
-                  if (montado) setDb(d => ({ ...d, usuario: { ...d.usuario, ...nuevoUsuario } }));
-                }
+          const { data: userRow } = await sb.from("usuariosApp").select("*").eq("email", session.user.email).maybeSingle();
+          if (!montado) return;
 
-                if (montado) await cargarDeSupa(orgId || meta.org_id);
-              } catch (err) {
-                console.error("❌ [onAuthStateChange SIGNED_IN] Error cargando perfil:", err);
-                if (montado) { setCargando(false); setIsAppReady(true); }
-              }
-            })();
+          let orgId = null;
+          if (userRow) {
+            orgId = userRow.org_id;
+            if (userRow.tema) {
+              applyTheme(userRow.tema);
+              localStorage.setItem("crm_theme", userRow.tema);
+            }
+            const mappedUser = {
+              name: userRow.name || metaName,
+              email: session.user.email,
+              role: userRow.role || "ventas",
+              avatar: userRow.avatar || metaInitials,
+              whatsappAccess: userRow.whatsappAccess || false,
+              profilePic: userRow.profilePic || null,
+              tema: userRow.tema || null,
+              waServerUrl: userRow.waServerUrl || null,
+              activo: userRow.activo !== false,
+              id: userRow.id,
+              org_id: userRow.org_id || null,
+            };
+            try { localStorage.setItem("crm_usuario_activo", JSON.stringify(mappedUser)); } catch (e) { }
+            if (montado) setDb(d => ({ ...d, usuario: { ...d.usuario, ...mappedUser } }));
+          } else {
+            // Usuario nuevo: usar metadata del token
+            orgId = meta.org_id || null;
+            const nuevoUsuario = {
+              name: metaName,
+              email: session.user.email,
+              role: meta.role || "ventas",
+              avatar: metaInitials,
+              id: session.user.id,
+              org_id: orgId,
+              activo: true,
+            };
+            try { localStorage.setItem("crm_usuario_activo", JSON.stringify(nuevoUsuario)); } catch (e) { }
+            if (montado) setDb(d => ({ ...d, usuario: { ...d.usuario, ...nuevoUsuario } }));
           }
-          return prev;
-        });
+
+          if (montado) {
+            await cargarDeSupa(orgId || meta.org_id);
+            userLoadedRef.current = session.user.id; // marcar como cargado
+          }
+        } catch (err) {
+          console.error("❌ [SIGNED_IN] Error cargando perfil en móvil:", err);
+          if (montado) { setCargando(false); setIsAppReady(true); }
+        }
       }
     });
 
