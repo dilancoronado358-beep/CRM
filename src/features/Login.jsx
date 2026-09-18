@@ -3,7 +3,7 @@ import { useSupaState, sb } from "../hooks/useSupaState";
 import { T } from '../theme';
 import { Ico, Inp, Btn, Av } from '../components/ui';
 
-export const Login = ({ forceView, db: propDb, setDb: propSetDb }) => {
+export const Login = ({ forceView, db: propDb, setDb: propSetDb, recargar: propRecargar }) => {
   const supaState = useSupaState();
   const db = propDb || supaState.db;
   const setDb = propSetDb || supaState.setDb;
@@ -61,6 +61,10 @@ export const Login = ({ forceView, db: propDb, setDb: propSetDb }) => {
           const fallbackUser = { name: locUser.name, email: locUser.email, role: locUser.role, avatar: locUser.name.charAt(0) };
           try { localStorage.setItem("crm_usuario_activo", JSON.stringify(fallbackUser)); } catch (e) {}
           setDb(d => ({ ...d, usuario: fallbackUser }));
+          // Si entramos con cuenta local, intentamos cargar datos (funcionará si RLS lo permite)
+          if (propRecargar || supaState.recargar) {
+            (propRecargar || supaState.recargar)(locUser.org_id);
+          }
           // No recargamos la página para no perder el estado local
           return;
         }

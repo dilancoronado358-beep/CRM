@@ -456,7 +456,7 @@ export default function App() {
   }
 
   if (!session && !db.usuario) {
-    return <Login db={db} setDb={setDb} />;
+    return <Login db={db} setDb={setDb} cargarDeSupa={useSupaState().cargarDeSupa} />;
   }
 
   // Guardia de seguridad: si hay sesión pero el perfil aún no cargó (móviles),
