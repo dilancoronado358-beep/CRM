@@ -7,8 +7,8 @@ import { sileo as toast } from "../utils/sileo";
 /* ═══════════════════════════════════════════
    SUPABASE
 ═══════════════════════════════════════════ */
-const SUPA_URL = "https://eoylgxwlhsmwqgadahvk.supabase.co";
-const SUPA_KEY = "sb_publishable_wKUbf7IFOoH4HIUayIAJdQ_Boj1jgZa";
+const SUPA_URL = "https://wzjotqragegymyejudnm.supabase.co";
+const SUPA_KEY = "sb_publishable_c93g3MVcUxODgTKUG3PrFQ_8YZA6bun";
 export const sb = createClient(SUPA_URL, SUPA_KEY);
 
 // Tablas que se sincronizan con Supabase

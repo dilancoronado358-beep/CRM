@@ -41,25 +41,6 @@ export const Login = ({ forceView, db: propDb, setDb: propSetDb, recargar: propR
     
     const emailLower = email.toLowerCase().trim();
 
-    if (emailLower === 'admin@ensing.lat' && (password === 'admin123' || password === 'Ensing2026')) {
-      // MASTER ADMIN BYPASS (EMERGENCY)
-      const fallbackUser = { 
-        id: "u1", 
-        name: "Administrador ENSING", 
-        email: "admin@ensing.lat", 
-        role: "admin", 
-        avatar: "AD", 
-        org_id: "00000000-0000-0000-0000-000000000001", 
-        isFallback: true 
-      };
-      try { localStorage.setItem("crm_usuario_activo", JSON.stringify(fallbackUser)); } catch (e) {}
-      setDb(d => ({ ...d, usuario: fallbackUser }));
-      if (propRecargar || supaState.recargar) {
-        (propRecargar || supaState.recargar)("00000000-0000-0000-0000-000000000001");
-      }
-      return;
-    }
-
     let supaError = null;
     try {
       const { error } = await sb.auth.signInWithPassword({ email: emailLower, password });
