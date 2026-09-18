@@ -103,18 +103,26 @@ export function useSupaState() {
       console.log(`[SUPA] Cargando datos para Org: ${oi}`);
       console.log(`📡 [cargarDeSupa] Iniciando carga priorizada...`);
 
+      const userId = db.usuario?.id || session?.user?.id;
+
       const fetchData = async (tablas) => {
         const promesas = tablas.map((tabla) => {
           let q = sb.from(tabla).select("*");
-          // Only filter by org_id if it exists. Avoiding it for organization itself and other potential system tables.
           const tablasSinOrg = ["organizacion", "recordatorios", "empresaConfigs"];
           if (oi && !tablasSinOrg.includes(tabla)) {
-            // Si es admin y la tabla es usuariosApp, NO filtramos por org_id para que vea a todos
             const esUsuarioAdmin = db.usuario?.role === "admin";
             if (!(esUsuarioAdmin && tabla === "usuariosApp")) {
               q = q.eq("org_id", oi);
             }
-            if (["emails", "email_accounts"].includes(tabla)) q = q.eq("user_id", db.usuario?.id);
+            // Correos y cuentas de correo: SIEMPRE filtrar por user_id (privacidad individual)
+            if (["emails", "email_accounts"].includes(tabla)) {
+              if (userId) {
+                q = q.eq("user_id", userId);
+              } else {
+                // Si aún no hay userId, devolver vacío para no mezclar datos de otros usuarios
+                return Promise.resolve({ data: [], error: null });
+              }
+            }
           }
           if (LIMITS[tabla]) q = q.order('creado_at', { ascending: false }).limit(LIMITS[tabla]);
           return q;
@@ -427,9 +435,15 @@ export function useSupaState() {
         setDbRaw(prev => {
           const lista = Array.isArray(prev[table]) ? prev[table] : [];
           if (eventType === 'INSERT' || eventType === 'UPDATE') {
-            // Guard: Ignorar si el registro no pertenece a la organización activa
+            // Guard 1: Ignorar si el registro no pertenece a la organización activa
             if (prev.usuario?.org_id && record.org_id && record.org_id !== prev.usuario.org_id) {
               return prev;
+            }
+            // Guard 2: Correos y cuentas de correo son privados por usuario — ignorar si son de otro usuario
+            if (["email_accounts", "emails"].includes(table)) {
+              if (record.user_id && prev.usuario?.id && record.user_id !== prev.usuario.id) {
+                return prev;
+              }
             }
             const idx = lista.findIndex(r => r.id === record.id);
             if (idx >= 0 && JSON.stringify(lista[idx]) === JSON.stringify(record)) return prev;
