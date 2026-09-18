@@ -254,6 +254,7 @@ export function useSupaState() {
           const { data: userRow, error: fetchError } = await sb.from("usuariosApp").select("*").eq("email", session.user.email).maybeSingle();
           uLocal = userRow;
           if (fetchError) console.warn("Supabase user fetch error:", fetchError);
+
           if (uLocal && montado) {
             if (uLocal.tema) {
               applyTheme(uLocal.tema);
@@ -270,17 +271,43 @@ export function useSupaState() {
                 tema: uLocal.tema || null,
                 waServerUrl: uLocal.waServerUrl || null,
                 activo: uLocal.activo !== false,
-                id: uLocal.id, // IMPORTANTE: Guardar el ID para poder actualizar el perfil
-                org_id: uLocal.org_id || null, // Guardar org_id en el estado
+                id: uLocal.id,
+                org_id: uLocal.org_id || null,
               };
               return { ...d, usuario: { ...d.usuario, ...mapped } };
             });
+          } else if (!uLocal && montado) {
+            // ── NUEVO USUARIO: perfil aún no existe en usuariosApp ──
+            // Usar user_metadata del token de sesión como fallback para no quedarse en pantalla azul
+            const meta = session.user.user_metadata || {};
+            const metaName = meta.name || session.user.email?.split("@")[0] || "Usuario";
+            const metaInitials = metaName.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase() || "U";
+            const metaOrgId = meta.org_id || null;
+            const metaRole = meta.role || "ventas";
+            console.warn("⚠️ Perfil no encontrado en usuariosApp. Usando user_metadata como fallback:", { metaName, metaOrgId, metaRole });
+            setDb((d) => {
+              const nuevoUsuario = {
+                ...d.usuario,
+                name: metaName,
+                email: session.user.email,
+                role: metaRole,
+                avatar: metaInitials,
+                id: session.user.id,
+                org_id: metaOrgId,
+                activo: true,
+              };
+              // Persistir en localStorage para que no se quede sin sesión
+              try { localStorage.setItem("crm_usuario_activo", JSON.stringify(nuevoUsuario)); } catch (e) { }
+              return { ...d, usuario: nuevoUsuario };
+            });
+            // Asignar para que cargarDeSupa use el org_id correcto
+            uLocal = { org_id: metaOrgId };
           }
         }
 
         // 2. Cargar datos desde Supabase
         if (montado) {
-          const targetOrg = uLocal?.org_id || db.usuario?.org_id;
+          const targetOrg = uLocal?.org_id || db.usuario?.org_id || session?.user?.user_metadata?.org_id;
           await cargarDeSupa(targetOrg);
         }
       } catch (err) {
