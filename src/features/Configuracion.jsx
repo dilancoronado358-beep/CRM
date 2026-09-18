@@ -93,7 +93,15 @@ export const Configuracion = ({ db, setDb, guardarEnSupa, eliminarDeSupa, estado
   const [showQRModal, setShowQRModal] = useState(false);
   const [currentAccountQR, setCurrentAccountQR] = useState(null);
 
-  const [fWAAccount, setFWAAccount] = useState({ nombre: "", acceso: "todos" });
+  const [fWAAccount, setFWAAccount] = useState({ 
+    nombre: "", 
+    acceso: "todos", 
+    provider: "wwebjs", 
+    meta_token: "", 
+    meta_phone_id: "", 
+    meta_verify_token: "" 
+  });
+  const [metaStep, setMetaStep] = useState(1);
 
   useEffect(() => {
     const finalUrl = fWaUrl || getApiUrl(db);
@@ -168,16 +176,25 @@ export const Configuracion = ({ db, setDb, guardarEnSupa, eliminarDeSupa, estado
         user_id: db.usuario?.id,
         nombre: fWAAccount.nombre,
         acceso: fWAAccount.acceso,
+        provider: fWAAccount.provider,
+        meta_token: fWAAccount.provider === 'meta' ? fWAAccount.meta_token : null,
+        meta_phone_id: fWAAccount.provider === 'meta' ? fWAAccount.meta_phone_id : null,
+        meta_verify_token: fWAAccount.provider === 'meta' ? fWAAccount.meta_verify_token : null,
         activo: true,
-        estado: 'desconectado'
+        estado: fWAAccount.provider === 'meta' ? 'conectado' : 'desconectado'
     };
     
     const { data: confirmado, error } = await guardarEnSupa("whatsapp_accounts", nueva);
     
     if (!error) {
         setShowWAModal(false);
-        sileo.success("✅ Canal creado. Ahora puedes vincularlo.");
-        setFWAAccount({ nombre: "", acceso: "todos" }); // Reset form
+        if (fWAAccount.provider === 'meta') {
+            sileo.success("✅ Canal Meta Creado. ¡Ya está conectado!");
+        } else {
+            sileo.success("✅ Canal creado. Ahora puedes vincularlo.");
+        }
+        setFWAAccount({ nombre: "", acceso: "todos", provider: "wwebjs", meta_token: "", meta_phone_id: "", meta_verify_token: "" }); // Reset form
+        setMetaStep(1);
     } else {
         console.error("Error guardando cuenta WA:", error);
         sileo.error(`❌ Error: ${error?.message || "No se pudo guardar el canal"}`);
@@ -1519,21 +1536,106 @@ END $$;`;
         </Modal>
       )}
 
-      <Modal open={showWAModal} onClose={() => setShowWAModal(false)} title="Agregar Nuevo Canal de WhatsApp">
+      <Modal open={showWAModal} onClose={() => { setShowWAModal(false); setMetaStep(1); }} title={fWAAccount.provider === 'meta' && metaStep > 1 ? `Configurar Meta (Paso ${metaStep}/3)` : "Agregar Nuevo Canal de WhatsApp"}>
         <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-          <Campo label="Nombre del Canal (Ej: Ventas, Soporte)">
-            <Inp placeholder="Canal..." value={fWAAccount.nombre} onChange={e => setFWAAccount({ ...fWAAccount, nombre: e.target.value })} />
-          </Campo>
-          <Campo label="Nivel de Acceso">
-            <Sel value={fWAAccount.acceso} onChange={e => setFWAAccount({ ...fWAAccount, acceso: e.target.value })}>
-              <div value="todos">Público (Todos pueden ver los chats)</div>
-              <div value="personal">Personal (Solo tú y admins)</div>
-            </Sel>
-          </Campo>
-          <div style={{ padding: 12, background: T.tealSoft, borderRadius: 8, fontSize: 12, color: T.whiteDim }}>
-            ℹ️ Una vez creado el canal, deberás "Vincularlo" escaneando el código QR desde tu celular.
-          </div>
-          <Btn onClick={agregarCuentaWA} full>Crear Canal</Btn>
+          {fWAAccount.provider !== 'meta' || metaStep === 1 ? (
+            <>
+              <Campo label="Proveedor del Servicio">
+                <Sel value={fWAAccount.provider} onChange={e => { setFWAAccount({ ...fWAAccount, provider: e.target.value }); setMetaStep(1); }}>
+                  <div value="wwebjs">📲 WhatsApp Web (Escanear QR)</div>
+                  <div value="meta">🏢 API Oficial de Meta (Cloud API)</div>
+                </Sel>
+              </Campo>
+              
+              <Campo label="Nombre del Canal (Ej: Ventas, Soporte)">
+                <Inp placeholder="Canal..." value={fWAAccount.nombre} onChange={e => setFWAAccount({ ...fWAAccount, nombre: e.target.value })} />
+              </Campo>
+              
+              <Campo label="Nivel de Acceso">
+                <Sel value={fWAAccount.acceso} onChange={e => setFWAAccount({ ...fWAAccount, acceso: e.target.value })}>
+                  <div value="todos">Público (Todos pueden ver los chats)</div>
+                  <div value="personal">Personal (Solo tú y admins)</div>
+                </Sel>
+              </Campo>
+
+              {fWAAccount.provider === 'meta' && (
+                <div style={{ padding: 16, background: T.tealSoft, borderRadius: 12, border: `1px solid ${T.teal}40`, marginTop: 8 }}>
+                  <h4 style={{ margin: "0 0 8px 0", color: T.white, display: "flex", alignItems: "center", gap: 8 }}>
+                    <Ico k="check-circle" size={18} color={T.teal} /> Conexión Segura (Recomendada)
+                  </h4>
+                  <p style={{ margin: 0, fontSize: 13, color: T.whiteDim, lineHeight: 1.5 }}>
+                    Para conectar la API Oficial, te guiaremos en 3 sencillos pasos. Primero, necesitarás crear una app en el portal de desarrolladores de Facebook.
+                  </p>
+                  <div style={{ marginTop: 16, display: "flex", justifyContent: "flex-end" }}>
+                    <Btn variant="primario" onClick={() => setMetaStep(2)}>Siguiente Paso ➡️</Btn>
+                  </div>
+                </div>
+              )}
+
+              {fWAAccount.provider === 'wwebjs' && (
+                <>
+                  <div style={{ padding: 12, background: T.bg2, border: `1px solid ${T.whiteDim}30`, borderRadius: 8, fontSize: 12, color: T.whiteDim, lineHeight: 1.5 }}>
+                    ⚠️ <strong>Ojo:</strong> El código QR es ideal para trabajos rápidos o pruebas, pero <strong>no es seguro/estable para automatización intensiva</strong>.
+                  </div>
+                  <Btn onClick={agregarCuentaWA} full style={{ marginTop: 8 }}>Crear Canal</Btn>
+                </>
+              )}
+            </>
+          ) : metaStep === 2 ? (
+            <>
+              <div style={{ background: T.bg2, borderRadius: 12, padding: 16, border: `1px solid ${T.whiteDim}20` }}>
+                <p style={{ margin: "0 0 16px 0", fontSize: 13, color: T.whiteDim, lineHeight: 1.5 }}>
+                  1. Ve a <a href="https://developers.facebook.com/apps" target="_blank" rel="noreferrer" style={{ color: T.teal, textDecoration: "none", fontWeight: "bold" }}>Meta for Developers</a>.<br/>
+                  2. Crea una App tipo <b>Negocios</b>, añade WhatsApp, y copia aquí tus credenciales:
+                </p>
+                
+                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                  <Campo label="Access Token (Permanente)">
+                    <Inp placeholder="EAAI..." value={fWAAccount.meta_token} onChange={e => setFWAAccount({ ...fWAAccount, meta_token: e.target.value })} />
+                  </Campo>
+                  <Campo label="Identificador de Número de Teléfono (Phone ID)">
+                    <Inp placeholder="1234567890" value={fWAAccount.meta_phone_id} onChange={e => setFWAAccount({ ...fWAAccount, meta_phone_id: e.target.value })} />
+                  </Campo>
+                  <Campo label="Crea un Verify Token (Invéntate una contraseña)">
+                    <Inp placeholder="ejemplo: mi_empresa_123" value={fWAAccount.meta_verify_token} onChange={e => setFWAAccount({ ...fWAAccount, meta_verify_token: e.target.value })} />
+                  </Campo>
+                </div>
+              </div>
+              <div style={{ display: "flex", gap: 12, marginTop: 8 }}>
+                <Btn variant="secundario" onClick={() => setMetaStep(1)} full>Atrás</Btn>
+                <Btn variant="primario" onClick={() => {
+                  if(!fWAAccount.meta_token || !fWAAccount.meta_phone_id || !fWAAccount.meta_verify_token) {
+                    return sileo.error("Completa todos los campos para continuar.");
+                  }
+                  setMetaStep(3);
+                }} full>Siguiente ➡️</Btn>
+              </div>
+            </>
+          ) : (
+            <>
+              <div style={{ background: T.tealSoft, borderRadius: 12, padding: 16, border: `1px solid ${T.teal}40`, textAlign: "center" }}>
+                <Ico k="bell" size={40} color={T.teal} style={{ marginBottom: 12 }} />
+                <h3 style={{ margin: "0 0 8px 0", color: T.white }}>¡Último Paso! Activar Webhook</h3>
+                <p style={{ margin: "0 0 16px 0", fontSize: 13, color: T.whiteDim, lineHeight: 1.5 }}>
+                  En el panel de Meta, ve a la sección <b>Configuración > Webhooks</b>. Dale a editar e ingresa la siguiente URL y el Token que inventaste:
+                </p>
+                
+                <div style={{ background: "#000", padding: "12px 16px", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                  <span style={{ fontFamily: "monospace", color: T.teal, fontSize: 14 }}>{getApiUrl(db)}/webhook/meta</span>
+                  <button onClick={() => { navigator.clipboard.writeText(`${getApiUrl(db)}/webhook/meta`); sileo.info("URL copiada"); }} style={{ background: "none", border: "none", color: T.whiteDim, cursor: "pointer" }} title="Copiar"><Ico k="copy" size={16}/></button>
+                </div>
+                
+                <p style={{ margin: 0, fontSize: 12, color: T.whiteDim }}>
+                  Asegúrate de suscribirte al evento <b>"messages"</b>. Luego haz clic abajo para finalizar en el CRM.
+                </p>
+              </div>
+              
+              <div style={{ display: "flex", gap: 12, marginTop: 8 }}>
+                <Btn variant="secundario" onClick={() => setMetaStep(2)} full>Atrás</Btn>
+                <Btn variant="primario" onClick={agregarCuentaWA} full style={{ background: T.teal, color: "#000" }}>Finalizar y Conectar ✅</Btn>
+              </div>
+            </>
+          )}
         </div>
       </Modal>
 

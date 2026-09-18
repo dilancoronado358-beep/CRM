@@ -459,6 +459,25 @@ export default function App() {
     return <Login />;
   }
 
+  // Guardia de seguridad: si hay sesión pero el perfil aún no cargó (móviles),
+  // mostrar carga en lugar de renderizar la app sin datos de usuario (pantalla negra)
+  if (session && !db.usuario) {
+    return (
+      <div style={{ display: "flex", flexDirection: "column", height: "100vh", width: "100vw", alignItems: "center", justifyContent: "center", background: T.bg0, color: T.white }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 16, alignItems: "center" }}>
+          <div style={{ marginBottom: 16 }}>
+            <img src={logoUrl} alt="Logo" style={{ width: 220, height: "auto", objectFit: "contain", transform: "translateX(12px)" }} />
+          </div>
+          <div style={{ display: "flex", gap: 8, alignItems: "center", color: T.whiteDim, fontSize: 13, fontWeight: 500 }}>
+            <div style={{ width: 14, height: 14, border: `2px solid ${T.tealSoft}`, borderTopColor: T.teal, borderRadius: "50%", animation: "spin 1s linear infinite" }} />
+            Cargando tu perfil...
+          </div>
+        </div>
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      </div>
+    );
+  }
+
   // 3. Bloqueo de carga: asegurar que todos los datos iniciales estén listos
   if (!isAppReady) {
     return (

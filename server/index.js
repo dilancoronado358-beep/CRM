@@ -243,9 +243,28 @@ const whatsappInstances = {}; // { [accountId]: { client, ready, qr, orgId } }
 let autoRules = [];
 
 // Función para inicializar un cliente de WhatsApp específico
-async function initWhatsAppAccount(accountId, orgId) {
+async function initWhatsAppAccount(acc) {
+  const accountId = acc.id;
+  const orgId = acc.org_id;
+
   if (whatsappInstances[accountId]) {
     logFile(`⚠️ [WA] La cuenta ${accountId} ya está inicializada.`);
+    return whatsappInstances[accountId];
+  }
+
+  if (acc.provider === 'meta') {
+    logFile(`🚀 [WA] Cargando cuenta Meta API ${accountId} (Org: ${orgId})...`);
+    whatsappInstances[accountId] = { 
+      client: 'META_API', 
+      ready: true, 
+      qr: "", 
+      orgId, 
+      accountId, 
+      provider: 'meta',
+      meta_token: acc.meta_token,
+      meta_phone_id: acc.meta_phone_id,
+      meta_verify_token: acc.meta_verify_token
+    };
     return whatsappInstances[accountId];
   }
 
@@ -384,13 +403,113 @@ async function bootWhatsAppAccounts() {
 
   logFile(`ℹ️ [WA] Se encontraron ${accounts.length} cuentas activas para inicializar.`);
   for (const acc of accounts) {
-    await initWhatsAppAccount(acc.id, acc.org_id);
+    await initWhatsAppAccount(acc);
   }
 }
 
 // Reemplazar la inicialización única
 bootWhatsAppAccounts();
 
+// ═══════════════════════════════════════════
+// META WHATSAPP CLOUD API - WEBHOOKS Y ENVÍO
+// ═══════════════════════════════════════════
+
+async function sendMetaMessage(instance, to, body) {
+  try {
+    const cleanTo = to.replace('@c.us', '');
+    const url = `https://graph.facebook.com/v19.0/${instance.meta_phone_id}/messages`;
+    const payload = {
+      messaging_product: "whatsapp",
+      recipient_type: "individual",
+      to: cleanTo,
+      type: "text",
+      text: { preview_url: false, body: body }
+    };
+    const { data } = await axios.post(url, payload, {
+      headers: { 'Authorization': `Bearer ${instance.meta_token}`, 'Content-Type': 'application/json' }
+    });
+    return data;
+  } catch (err) {
+    logFile(`❌ [Meta] Error al enviar mensaje: ${err.response?.data?.error?.message || err.message}`);
+    throw err;
+  }
+}
+
+app.get('/webhook/meta', (req, res) => {
+  const mode = req.query['hub.mode'];
+  const token = req.query['hub.verify_token'];
+  const challenge = req.query['hub.challenge'];
+
+  if (mode === 'subscribe' && token) {
+    const isTokenValid = Object.values(whatsappInstances).some(inst => inst.provider === 'meta' && inst.meta_verify_token === token);
+    if (isTokenValid) {
+      logFile(`✅ [Meta Webhook] Verificado con éxito (token: ${token})`);
+      res.status(200).send(challenge);
+    } else {
+      logFile(`❌ [Meta Webhook] Token inválido: ${token}`);
+      res.sendStatus(403);
+    }
+  } else {
+    res.sendStatus(400);
+  }
+});
+
+app.post('/webhook/meta', async (req, res) => {
+  const body = req.body;
+  if (body.object) {
+    if (body.entry && body.entry[0].changes && body.entry[0].changes[0].value.messages && body.entry[0].changes[0].value.messages[0]) {
+      const value = body.entry[0].changes[0].value;
+      const phoneId = value.metadata.phone_number_id;
+      const instance = Object.values(whatsappInstances).find(inst => inst.provider === 'meta' && inst.meta_phone_id === phoneId);
+      
+      if (instance) {
+        const message = value.messages[0];
+        const contact = value.contacts && value.contacts[0] ? value.contacts[0] : null;
+        
+        // Normalizar formato
+        const fromNumber = message.from;
+        const normalizedMsg = {
+          id: message.id, // Meta ID format is different, but we use it as is
+          chat_id: `${fromNumber}@c.us`,
+          body: message.text ? message.text.body : '',
+          from_me: false,
+          timestamp: Number(message.timestamp),
+          ack: 0,
+          has_media: ['image', 'video', 'document', 'audio'].includes(message.type),
+          account_id: instance.accountId,
+          contact_name: contact?.profile?.name || fromNumber,
+          contact_number: fromNumber,
+          org_id: instance.orgId
+        };
+        
+        // Frontend expects 'fromMe' in some places, but socket uses snake_case mostly, we'll map to frontend format
+        const frontendMsg = {
+          ...normalizedMsg,
+          id: { _serialized: message.id }, // Mimic WWebJS for UI
+          from: `${fromNumber}@c.us`,
+          to: `${value.metadata.display_phone_number}@c.us`,
+          fromMe: false
+        };
+
+        io.to(`org_${instance.orgId}`).emit('whatsapp_message', frontendMsg);
+
+        // Guardar en Supabase
+        const persistData = { ...normalizedMsg };
+        delete persistData.contact_name; // Columnas no existentes
+        delete persistData.contact_number;
+
+        const { error: upsertErr } = await supabase.from('whatsapp_messages').upsert(persistData, { onConflict: 'id' });
+        if (upsertErr) logFile(`⚠️ [Meta Persist Error]: ${upsertErr.message}`);
+
+        // Chatbots
+        handleChatbotRules(instance.accountId, instance.orgId, frontendMsg);
+      }
+    }
+    res.sendStatus(200);
+  } else {
+    res.sendStatus(404);
+  }
+});
 
 // Cargar reglas desde Supabase al iniciar
 // Endpoint interno para disparar webhooks desde el frontend (sin auth para simplicidad de puente local)
@@ -709,10 +828,19 @@ io.on('connection', (socket) => {
     if (!instance || !instance.ready) return;
 
     try {
-      const sentMsg = await instance.client.sendMessage(to, text);
+      let sentMsg;
+      let finalMsgId;
+      if (instance.provider === 'meta') {
+        const metaRes = await sendMetaMessage(instance, to, text);
+        finalMsgId = metaRes?.messages?.[0]?.id || `out_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+      } else {
+        sentMsg = await instance.client.sendMessage(to, text);
+        finalMsgId = sentMsg?.id?._serialized || `out_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+      }
+      
       const activeDealId = data.dealId || await getActiveDealId(to);
       const msgOut = {
-        id: sentMsg?.id?._serialized || `out_${Date.now()}_${Math.random().toString(36).substring(7)}`,
+        id: finalMsgId,
         chat_id: to,
         body: sentMsg?.body || text,
         from_me: true,
@@ -1072,12 +1200,14 @@ async function handleChatbotRules(accountId, orgId, msg) {
 
     // 2. TRANSCRIPCIÓN DE AUDIOS
     if (msg.hasMedia && (msg.type === 'audio' || msg.type === 'voice')) {
-      const media = await msg.downloadMedia();
-      if (media && media.mimetype?.startsWith('audio/')) {
-        const transcript = await transcribeAudio(media);
-        if (transcript) {
-          const transcriptMsg = `🎤 [Audio Transcrito]: ${transcript}`;
-          io.to(`org_${orgId}`).emit('whatsapp_message', { chat_id: msg.from, body: transcriptMsg, account_id: accountId });
+      if (instance.provider !== 'meta' && typeof msg.downloadMedia === 'function') {
+        const media = await msg.downloadMedia();
+        if (media && media.mimetype?.startsWith('audio/')) {
+          const transcript = await transcribeAudio(media);
+          if (transcript) {
+            const transcriptMsg = `🎤 [Audio Transcrito]: ${transcript}`;
+            io.to(`org_${orgId}`).emit('whatsapp_message', { chat_id: msg.from, body: transcriptMsg, account_id: accountId });
+          }
         }
       }
     }
@@ -1101,8 +1231,10 @@ async function handleChatbotRules(accountId, orgId, msg) {
 
         if (currentTime >= startTime && currentTime <= endTime) {
           responded = true;
-          const chat = await msg.getChat();
-          await chat.sendStateTyping();
+          if (instance.provider !== 'meta' && typeof msg.getChat === 'function') {
+            const chat = await msg.getChat();
+            await chat.sendStateTyping();
+          }
 
           const finalDelay = Math.max(1500, (parseFloat(rule.delay) || 0) * 1000);
 
@@ -1113,12 +1245,18 @@ async function handleChatbotRules(accountId, orgId, msg) {
               if (aiResult) finalReply = aiResult;
             }
 
-            if (rule.media_url) {
-              const media = await MessageMedia.fromUrl(rule.media_url).catch(() => null);
-              if (media) await instance.client.sendMessage(msg.from, media, { caption: finalReply });
-              else if (finalReply) await msg.reply(finalReply);
-            } else if (finalReply) {
-              await msg.reply(finalReply);
+            if (instance.provider === 'meta') {
+              if (finalReply) {
+                await sendMetaMessage(instance, msg.from, finalReply);
+              }
+            } else {
+              if (rule.media_url) {
+                const media = await MessageMedia.fromUrl(rule.media_url).catch(() => null);
+                if (media) await instance.client.sendMessage(msg.from, media, { caption: finalReply });
+                else if (finalReply && typeof msg.reply === 'function') await msg.reply(finalReply);
+              } else if (finalReply && typeof msg.reply === 'function') {
+                await msg.reply(finalReply);
+              }
             }
 
             const botReply = {

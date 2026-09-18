@@ -90,10 +90,19 @@ export function ChatWhatsApp({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setM
         socket.emit('join_org', db.usuario.org_id);
     }
 
-    // Pedir estado de todas mis cuentas
-    misCuentas.forEach(acc => {
-        socket.emit('get_whatsapp_status', { accountId: acc.id });
+    // Pedir estado al conectarse (y reconectarse)
+    socket.on('connect', () => {
+        misCuentas.forEach(acc => {
+            socket.emit('get_whatsapp_status', { accountId: acc.id });
+        });
     });
+
+    // Si ya está conectado (ej. re-render), pedirlo de una vez
+    if (socket.connected) {
+        misCuentas.forEach(acc => {
+            socket.emit('get_whatsapp_status', { accountId: acc.id });
+        });
+    }
 
     socket.on('whatsapp_qr', ({ accountId, qr }) => {
       setWaStatuses(prev => ({ ...prev, [accountId]: { ...prev[accountId], qr, ready: false } }));
@@ -670,7 +679,7 @@ export function ChatWhatsApp({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setM
                       </div>
 
                       {/* OVERLAY DESCONECTADO */}
-                      {selectedAccountId && !waStatuses[selectedAccountId]?.ready && (
+                      {selectedAccountId && !waStatuses[selectedAccountId]?.ready && misCuentas.find(a => a.id === selectedAccountId)?.provider !== 'meta' && (
                         <div style={{ position: "absolute", top: 100, bottom: 0, left: 0, right: 0, background: "rgba(0,0,0,0.85)", backdropFilter: "blur(4px)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 32, textAlign: "center", zIndex: 10 }}>
                            <div style={{ width: 60, height: 60, borderRadius: "50%", background: T.redS, color: T.red, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 20 }}>
                               <Ico k="slash" size={30} />
