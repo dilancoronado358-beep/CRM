@@ -352,6 +352,69 @@ export function useSupaState() {
         });
         setCargando(false);
         setIsAppReady(true);
+      } else if (event === "SIGNED_IN" || event === "INITIAL_SESSION") {
+        // ── MÓVILES: el token puede llegar después del montaje inicial ──
+        // Si el usuario no está cargado o no tiene org_id, cargar perfil y datos ahora
+        setDbRaw(prev => {
+          if (!prev.usuario?.org_id && !prev.usuario?.id) {
+            // Lanzar la carga de perfil y datos de forma asíncrona sin bloquear el render
+            (async () => {
+              if (!montado) return;
+              try {
+                const meta = session.user.user_metadata || {};
+                const metaName = meta.name || session.user.email?.split("@")[0] || "Usuario";
+                const metaInitials = metaName.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase() || "U";
+
+                // Intentar obtener el perfil de la base de datos
+                const { data: userRow } = await sb.from("usuariosApp").select("*").eq("email", session.user.email).maybeSingle();
+
+                let orgId = null;
+                if (userRow) {
+                  orgId = userRow.org_id;
+                  if (userRow.tema) {
+                    applyTheme(userRow.tema);
+                    localStorage.setItem("crm_theme", userRow.tema);
+                  }
+                  const mappedUser = {
+                    name: userRow.name || metaName,
+                    email: session.user.email,
+                    role: userRow.role || "ventas",
+                    avatar: userRow.avatar || metaInitials,
+                    whatsappAccess: userRow.whatsappAccess || false,
+                    profilePic: userRow.profilePic || null,
+                    tema: userRow.tema || null,
+                    waServerUrl: userRow.waServerUrl || null,
+                    activo: userRow.activo !== false,
+                    id: userRow.id,
+                    org_id: userRow.org_id || null,
+                  };
+                  try { localStorage.setItem("crm_usuario_activo", JSON.stringify(mappedUser)); } catch (e) { }
+                  if (montado) setDb(d => ({ ...d, usuario: { ...d.usuario, ...mappedUser } }));
+                } else {
+                  // Nuevo usuario sin perfil: usar metadata del token
+                  orgId = meta.org_id || null;
+                  const nuevoUsuario = {
+                    name: metaName,
+                    email: session.user.email,
+                    role: meta.role || "ventas",
+                    avatar: metaInitials,
+                    id: session.user.id,
+                    org_id: orgId,
+                    activo: true,
+                  };
+                  try { localStorage.setItem("crm_usuario_activo", JSON.stringify(nuevoUsuario)); } catch (e) { }
+                  if (montado) setDb(d => ({ ...d, usuario: { ...d.usuario, ...nuevoUsuario } }));
+                }
+
+                if (montado) await cargarDeSupa(orgId || meta.org_id);
+              } catch (err) {
+                console.error("❌ [onAuthStateChange SIGNED_IN] Error cargando perfil:", err);
+                if (montado) { setCargando(false); setIsAppReady(true); }
+              }
+            })();
+          }
+          return prev;
+        });
       }
     });
 
