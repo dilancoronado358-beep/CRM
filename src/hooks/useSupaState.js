@@ -230,9 +230,19 @@ export function useSupaState() {
         if (!montado) return;
         setSession(session);
 
-        // If no session at all, show login immediately (don't hang)
+        // If no session at all, check if we have a valid fallback user
         if (!session) {
-          // Also clear stale user from localStorage so Login renders
+          if (uLocal && uLocal.isFallback && montado) {
+            // Es un usuario de respaldo local, confiamos en él y cargamos sus datos
+            setDb((d) => ({ ...d, usuario: uLocal }));
+            await cargarDeSupa(uLocal.org_id);
+            setIsAppReady(true);
+            setCargando(false);
+            clearTimeout(timeoutFallback);
+            return;
+          }
+
+          // Otherwise, clear stale user from localStorage so Login renders
           localStorage.removeItem("crm_usuario_activo");
           setDb((d) => ({ ...d, usuario: null }));
           setCargando(false);
