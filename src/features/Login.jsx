@@ -58,7 +58,7 @@ export const Login = ({ forceView, db: propDb, setDb: propSetDb, recargar: propR
         if (!locUser.activo) {
           setError('Tu cuenta local ha sido suspendida/revocada.');
         } else {
-          const fallbackUser = { name: locUser.name, email: locUser.email, role: locUser.role, avatar: locUser.name.charAt(0) };
+          const fallbackUser = { id: locUser.id, name: locUser.name, email: locUser.email, role: locUser.role, avatar: locUser.name.charAt(0), org_id: locUser.org_id };
           try { localStorage.setItem("crm_usuario_activo", JSON.stringify(fallbackUser)); } catch (e) {}
           setDb(d => ({ ...d, usuario: fallbackUser }));
           // Si entramos con cuenta local, intentamos cargar datos (funcionará si RLS lo permite)
