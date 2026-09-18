@@ -259,7 +259,7 @@ const DICT = {
 
 
 export default function App() {
-  const { db, setDb, session, estadoSupa, cargando, cargandoFondo, isAppReady, guardarEnSupa, eliminarDeSupa, sendBroadcast, isRecoveryMode, setIsRecoveryMode } = useSupaState();
+  const { db, setDb, session, estadoSupa, cargando, cargandoFondo, isAppReady, guardarEnSupa, eliminarDeSupa, sendBroadcast, isRecoveryMode, setIsRecoveryMode, recargar } = useSupaState();
   
   const currentThemeId = db?.usuario?.tema || localStorage.getItem("crm_theme") || "dark";
   const logoUrl = currentThemeId === 'light' 
