@@ -1617,7 +1617,7 @@ END $$;`;
                 <Ico k="bell" size={40} color={T.teal} style={{ marginBottom: 12 }} />
                 <h3 style={{ margin: "0 0 8px 0", color: T.white }}>¡Último Paso! Activar Webhook</h3>
                 <p style={{ margin: "0 0 16px 0", fontSize: 13, color: T.whiteDim, lineHeight: 1.5 }}>
-                  En el panel de Meta, ve a la sección <b>Configuración > Webhooks</b>. Dale a editar e ingresa la siguiente URL y el Token que inventaste:
+                  En el panel de Meta, ve a la sección <b>Configuración &gt; Webhooks</b>. Dale a editar e ingresa la siguiente URL y el Token que inventaste:
                 </p>
                 
                 <div style={{ background: "#000", padding: "12px 16px", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
