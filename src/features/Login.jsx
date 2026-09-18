@@ -69,7 +69,7 @@ export const Login = ({ forceView, db: propDb, setDb: propSetDb, recargar: propR
           setDb(d => ({ ...d, usuario: fallbackUser }));
           // Si entramos con cuenta local, intentamos cargar datos (funcionará si RLS lo permite)
           if (propRecargar || supaState.recargar) {
-            (propRecargar || supaState.recargar)(locUser.org_id);
+            (propRecargar || supaState.recargar)(assignedOrg);
           }
           // No recargamos la página para no perder el estado local
           return;
