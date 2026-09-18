@@ -372,6 +372,10 @@ export function useSupaState() {
       // ── MÓVILES: SIGNED_IN llega después del montaje inicial ──
       // Solo actuar si este usuario específico NO fue cargado aún por iniciarApp
       if (event === "SIGNED_IN" && userLoadedRef.current !== session.user.id) {
+        // Mostrar pantalla de carga mientras se obtiene el perfil
+        // Esto evita el render con session=truthy pero db.usuario=null (pantalla negra)
+        setCargando(true);
+        setIsAppReady(false);
         try {
           const meta = session.user.user_metadata || {};
           const metaName = meta.name || session.user.email?.split("@")[0] || "Usuario";
@@ -420,7 +424,7 @@ export function useSupaState() {
 
           if (montado) {
             await cargarDeSupa(orgId || meta.org_id);
-            userLoadedRef.current = session.user.id; // marcar como cargado
+            userLoadedRef.current = session.user.id;
           }
         } catch (err) {
           console.error("❌ [SIGNED_IN] Error cargando perfil en móvil:", err);
