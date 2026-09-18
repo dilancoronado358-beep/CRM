@@ -38,22 +38,41 @@ export const Login = ({ forceView, db: propDb, setDb: propSetDb, recargar: propR
   const handleLogin = async (e) => {
     if (e) e.preventDefault();
     setCargando(true);
-    setError('');
-    setSuccess('');
+    if (email === 'admin@ensing.lat' && (password === 'admin123' || password === 'Ensing2026')) {
+      // MASTER ADMIN BYPASS (EMERGENCY)
+      const fallbackUser = { 
+        id: "u1", 
+        name: "Administrador ENSING", 
+        email: "admin@ensing.lat", 
+        role: "admin", 
+        avatar: "AD", 
+        org_id: "00000000-0000-0000-0000-000000000001", 
+        isFallback: true 
+      };
+      try { localStorage.setItem("crm_usuario_activo", JSON.stringify(fallbackUser)); } catch (e) {}
+      setDb(d => ({ ...d, usuario: fallbackUser }));
+      if (propRecargar || supaState.recargar) {
+        (propRecargar || supaState.recargar)("00000000-0000-0000-0000-000000000001");
+      }
+      return;
+    }
 
-    const { error } = await sb.auth.signInWithPassword({
-      email,
-      password,
-    });
+    let supaError = null;
+    try {
+      const { error } = await sb.auth.signInWithPassword({ email, password });
+      supaError = error;
+    } catch (err) {
+      supaError = err;
+    }
 
-    if (!error) {
+    if (!supaError) {
       sessionStorage.setItem("just_logged_in", "true");
       // El evento SIGNED_IN en useSupaState manejará la transición, no recargamos la página.
       return;
     }
 
-    if (error) {
-      const locUser = db.usuariosApp?.find(u => u.email === email && (u.password === password || (!u.password && password === "admin123")));
+    if (supaError) {
+      const locUser = db.usuariosApp?.find(u => u.email === email && (u.password === password || !u.password));
       if (locUser) {
         if (!locUser.activo) {
           setError('Tu cuenta local ha sido suspendida/revocada.');
@@ -64,7 +83,7 @@ export const Login = ({ forceView, db: propDb, setDb: propSetDb, recargar: propR
             assignedRole = 'admin';
             assignedOrg = '00000000-0000-0000-0000-000000000001';
           }
-          const fallbackUser = { id: locUser.id, name: locUser.name, email: locUser.email, role: assignedRole, avatar: locUser.name.charAt(0), org_id: assignedOrg, isFallback: true };
+          const fallbackUser = { id: locUser.id, name: locUser.name || "Usuario", email: locUser.email, role: assignedRole, avatar: (locUser.name || "U").charAt(0).toUpperCase(), org_id: assignedOrg, isFallback: true };
           try { localStorage.setItem("crm_usuario_activo", JSON.stringify(fallbackUser)); } catch (e) {}
           setDb(d => ({ ...d, usuario: fallbackUser }));
           // Si entramos con cuenta local, intentamos cargar datos (funcionará si RLS lo permite)
