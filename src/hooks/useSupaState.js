@@ -205,6 +205,11 @@ export function useSupaState() {
 
       try {
         let uLocal = null;
+        try {
+          const raw = localStorage.getItem("crm_usuario_activo");
+          if (raw) uLocal = JSON.parse(raw);
+        } catch (e) { console.warn("Error leyendo user local", e); }
+
         // 1. Obtener sesión actual
         const { data: { session }, error: sessionError } = await sb.auth.getSession();
 

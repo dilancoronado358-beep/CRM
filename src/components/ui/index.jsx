@@ -29,7 +29,7 @@ export const Chip = ({ label, color, bg }) => (
   </span>
 );
 
-export const Btn = ({ children, variant = "primario", size = "md", onClick, disabled, style = {}, full }) => {
+export const Btn = ({ children, variant = "primario", size = "md", onClick, disabled, style = {}, full, type = "button" }) => {
   const V = {
     primario: { bg: T.teal, color: T.btnText, border: T.teal, shadow: "var(--shadow-sm)" },
     secundario: { bg: T.bg1, color: T.whiteOff, border: T.borderHi, shadow: "var(--shadow-sm)" },
@@ -41,7 +41,7 @@ export const Btn = ({ children, variant = "primario", size = "md", onClick, disa
   const S = { sm: { padding: "5px 10px", fontSize: 11 }, md: { padding: "8px 14px", fontSize: 12.5 }, lg: { padding: "11px 22px", fontSize: 14 } };
   const v = V[variant] || V.primario; const s = S[size] || S.md;
   return (
-    <button onClick={onClick} disabled={disabled}
+    <button type={type} onClick={onClick} disabled={disabled}
       onMouseEnter={e => {
         if (disabled) return;
         e.currentTarget.style.transform = "translateY(-1.5px)";
