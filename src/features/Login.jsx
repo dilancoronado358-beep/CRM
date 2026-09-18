@@ -45,7 +45,7 @@ export function Login({ forceView }) {
 
     if (!error) {
       sessionStorage.setItem("just_logged_in", "true");
-      window.location.reload();
+      // El evento SIGNED_IN en useSupaState manejará la transición, no recargamos la página.
       return;
     }
 
@@ -56,7 +56,7 @@ export function Login({ forceView }) {
           setError('Tu cuenta local ha sido suspendida/revocada.');
         } else {
           setDb(d => ({ ...d, usuario: { name: locUser.name, email: locUser.email, role: locUser.role, avatar: locUser.name.charAt(0) } }));
-          setTimeout(() => window.location.reload(), 100);
+          // No recargamos la página para no perder el estado local
           return;
         }
       } else {
