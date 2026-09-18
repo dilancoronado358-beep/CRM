@@ -375,7 +375,6 @@ export function useSupaState() {
         // Mostrar pantalla de carga mientras se obtiene el perfil
         // Esto evita el render con session=truthy pero db.usuario=null (pantalla negra)
         setCargando(true);
-        setIsAppReady(false);
         try {
           const meta = session.user.user_metadata || {};
           const metaName = meta.name || session.user.email?.split("@")[0] || "Usuario";
