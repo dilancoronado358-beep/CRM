@@ -456,7 +456,7 @@ export default function App() {
   }
 
   if (!session && !db.usuario) {
-    return <Login />;
+    return <Login db={db} setDb={setDb} />;
   }
 
   // Guardia de seguridad: si hay sesión pero el perfil aún no cargó (móviles),

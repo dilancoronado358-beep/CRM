@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
+import { useSupaState, sb } from "../hooks/useSupaState";
 import { T } from '../theme';
-import { sb, useSupaState } from '../hooks/useSupaState';
-import { Btn, Ico } from '../components/ui';
+import { Ico, Inp, Btn, Av } from '../components/ui';
 
-export function Login({ forceView }) {
-  const { db, setDb, setIsRecoveryMode } = useSupaState();
+export const Login = ({ forceView, db: propDb, setDb: propSetDb }) => {
+  const supaState = useSupaState();
+  const db = propDb || supaState.db;
+  const setDb = propSetDb || supaState.setDb;
+  const { setIsRecoveryMode } = supaState;
   const [view, setView] = useState(forceView || 'login'); // 'login' | 'recovery' | 'new-password'
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -55,7 +58,9 @@ export function Login({ forceView }) {
         if (!locUser.activo) {
           setError('Tu cuenta local ha sido suspendida/revocada.');
         } else {
-          setDb(d => ({ ...d, usuario: { name: locUser.name, email: locUser.email, role: locUser.role, avatar: locUser.name.charAt(0) } }));
+          const fallbackUser = { name: locUser.name, email: locUser.email, role: locUser.role, avatar: locUser.name.charAt(0) };
+          try { localStorage.setItem("crm_usuario_activo", JSON.stringify(fallbackUser)); } catch (e) {}
+          setDb(d => ({ ...d, usuario: fallbackUser }));
           // No recargamos la página para no perder el estado local
           return;
         }
