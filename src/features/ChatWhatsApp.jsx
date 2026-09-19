@@ -138,6 +138,26 @@ export function ChatWhatsApp({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setM
       }
     });
 
+    // Cuando WA termina de sincronizar el historial completo, recargamos los chats automáticamente
+    socket.on('whatsapp_chats_ready', ({ accountId }) => {
+      if (accountId === selectedAccountId) {
+        socket.emit('get_whatsapp_chats', { accountId });
+      }
+    });
+
+    // Actualización individual de un chat (cuando llega/se envía un mensaje desde el celular)
+    socket.on('whatsapp_chat_update', ({ accountId: accId, chat }) => {
+      if (accId !== selectedAccountId) return;
+      setChats(prev => {
+        const exists = prev.find(c => c.id._serialized === chat.id._serialized);
+        if (exists) {
+          return prev.map(c => c.id._serialized === chat.id._serialized ? { ...c, ...chat } : c)
+            .sort((a, b) => b.timestamp - a.timestamp);
+        }
+        return [chat, ...prev].sort((a, b) => b.timestamp - a.timestamp);
+      });
+    });
+
     socket.on('whatsapp_avatar_res', ({ accountId, id, url }) => {
       if (accountId === selectedAccountId && url) {
         setAvatars(prev => ({ ...prev, [id]: url }));
@@ -605,10 +625,33 @@ export function ChatWhatsApp({ db, setDb, guardarEnSupa, eliminarDeSupa, t, setM
             <>
                 {tab === "chats" && (
                   <div style={{ display: "flex", gap: 0, flex: 1, minHeight: 0, minWidth: 0 }}>
-                    {/* LISTA DE CHATS */}
                     <div style={{ width: 360, minWidth: 360, display: "flex", flexDirection: "column", borderRight: `1px solid ${T.border}`, background: T.bg1, flexShrink: 0, position: "relative" }}>
                       <div style={{ padding: "24px 20px", background: T.bg1 }}>
-                        <div style={{ fontSize: 12, color: T.whiteDim, fontWeight: 800, textTransform: "uppercase", letterSpacing: 1, marginBottom: 12 }}>Canal Activo</div>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                            <div style={{ fontSize: 12, color: T.whiteDim, fontWeight: 800, textTransform: "uppercase", letterSpacing: 1 }}>Canal Activo</div>
+                            <button 
+                                onClick={() => {
+                                    const num = window.prompt("Ingresa el número de WhatsApp con código de país (ej. 573001234567):");
+                                    if(num) {
+                                        const cleanNum = num.replace(/\D/g, '');
+                                        const cid = `${cleanNum}@c.us`;
+                                        setChats(prev => {
+                                            if (prev.find(c => c.id._serialized === cid)) return prev;
+                                            return [{
+                                                id: { _serialized: cid, user: cleanNum },
+                                                name: cleanNum,
+                                                timestamp: Math.floor(Date.now() / 1000),
+                                                lastMessage: { body: '' }
+                                            }, ...prev];
+                                        });
+                                        setActiveChatId(cid);
+                                    }
+                                }}
+                                style={{ background: T.tealSoft, color: T.teal, border: "none", borderRadius: 8, padding: "6px 10px", fontSize: 12, fontWeight: 800, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}
+                            >
+                                <Ico k="plus" size={14} /> NUEVO
+                            </button>
+                        </div>
                         <select 
                             value={selectedAccountId || ""} 
                             onChange={e => setSelectedAccountId(e.target.value)}

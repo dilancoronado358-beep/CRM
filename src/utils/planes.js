@@ -110,7 +110,7 @@ export const getUsageStats = (db) => {
 
   return {
     usuarios:      { actual: (db.usuariosApp || []).filter(u => u.org_id === orgId).length,          limite: limits.usuarios },
-    whatsapp:      { actual: (db.whatsapp_accounts || []).filter(a => a.org_id === orgId || !a.org_id).length, limite: limits.whatsapp },
+    whatsapp:      { actual: (db.whatsapp_accounts || []).filter(a => (a.org_id === orgId || !a.org_id) && a.activo !== false).length, limite: limits.whatsapp },
     contactos:     { actual: (db.contactos || []).filter(x => x.org_id === orgId).length,            limite: limits.contactos },
     pipelines:     { actual: (db.pipelines || []).filter(x => x.org_id === orgId).length,            limite: limits.pipelines },
     plantillas:    { actual: (db.plantillasEmail || []).filter(x => x.org_id === orgId).length,      limite: limits.plantillas },
@@ -150,7 +150,7 @@ export const checkPlanLimit = (db, resource, currentCount = null) => {
   if (count === null) {
     switch (resource) {
       case "whatsapp":
-        count = (db.whatsapp_accounts || []).filter(a => a.org_id === orgId || !a.org_id).length;
+        count = (db.whatsapp_accounts || []).filter(a => (a.org_id === orgId || !a.org_id) && a.activo !== false).length;
         break;
       case "usuarios":
         count = (db.usuariosApp || []).filter(u => u.org_id === orgId).length;

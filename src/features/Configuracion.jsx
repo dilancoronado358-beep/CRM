@@ -194,7 +194,7 @@ export const Configuracion = ({ db, setDb, guardarEnSupa, eliminarDeSupa, estado
         socketRef.current.disconnect();
       }
     };
-  }, [fWaUrl, db.usuario?.org_id, db.whatsapp_accounts?.length]);
+  }, [fWaUrl, db.usuario?.org_id]);
 
 
   useEffect(() => {
@@ -225,11 +225,19 @@ export const Configuracion = ({ db, setDb, guardarEnSupa, eliminarDeSupa, estado
 
   const agregarCuentaWA = async () => {
     if (!fWAAccount.nombre) return sileo.error("Nombre del canal requerido");
+    
+    // Evitar duplicados: verificar si ya existe un canal con el mismo nombre
+    const nombreLower = fWAAccount.nombre.trim().toLowerCase();
+    const yaExiste = (db.whatsapp_accounts || []).some(
+      a => a.activo !== false && a.nombre?.toLowerCase() === nombreLower
+    );
+    if (yaExiste) return sileo.error(`Ya existe un canal llamado "${fWAAccount.nombre}". Usa un nombre diferente.`);
+
     const nueva = {
         id: uuid(),
         org_id: db.usuario?.org_id,
         user_id: db.usuario?.id,
-        nombre: fWAAccount.nombre,
+        nombre: fWAAccount.nombre.trim(),
         acceso: fWAAccount.acceso,
         provider: fWAAccount.provider,
         meta_token: fWAAccount.provider === 'meta' ? fWAAccount.meta_token : null,
@@ -248,17 +256,31 @@ export const Configuracion = ({ db, setDb, guardarEnSupa, eliminarDeSupa, estado
         } else {
             sileo.success("✅ Canal creado. Ahora puedes vincularlo.");
         }
-        setFWAAccount({ nombre: "", acceso: "todos", provider: "wwebjs", meta_token: "", meta_phone_id: "", meta_verify_token: "" }); // Reset form
+        setFWAAccount({ nombre: "", acceso: "todos", provider: "wwebjs", meta_token: "", meta_phone_id: "", meta_verify_token: "" });
         setMetaStep(1);
+        setTimeout(() => window.location.reload(), 1000); // 🚀 FORZAR RECARGA PARA MOSTRAR CANAL INMEDIATAMENTE
     } else {
         console.error("Error guardando cuenta WA:", error);
+        fetch('http://localhost:3001/log-error', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ error, payload: nueva }) }).catch(() => {});
+        alert(`Error Supabase: ${error?.message || JSON.stringify(error)}`);
         sileo.error(`❌ Error: ${error?.message || "No se pudo guardar el canal"}`);
     }
   };
 
   const eliminarWhatsAppAcc = async (id) => {
     if (!confirm("¿Eliminar este canal permanentemente?")) return;
-    await eliminarDeSupa("whatsapp_accounts", id);
+    // Usar eliminarDeSupa que maneja RLS correctamente y actualiza el estado
+    const { error } = await eliminarDeSupa("whatsapp_accounts", id);
+    if (!error) {
+      // Actualizar el estado local para que la UI se refresque de inmediato
+      setDb(prev => ({
+        ...prev,
+        whatsapp_accounts: (prev.whatsapp_accounts || []).filter(a => a.id !== id)
+      }));
+      sileo.success("Canal eliminado.");
+    } else {
+      sileo.error("Error al eliminar el canal: " + error?.message);
+    }
   };
 
 

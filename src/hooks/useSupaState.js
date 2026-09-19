@@ -112,6 +112,11 @@ export function useSupaState() {
       let oi = orgIdForzado;
       if (!esUUID(oi)) oi = orgIdDefecto;
 
+      // CRÍTICO: Esperar a que la sesión de Supabase esté restaurada desde localStorage
+      // antes de hacer queries. Si no esperamos, las peticiones salen sin token (ANON),
+      // RLS las bloquea, devuelven [], y se borra toda la UI al presionar F5.
+      await sb.auth.getSession();
+
       console.log(`[SUPA] Cargando datos para Org: ${oi}`);
       console.log(`📡 [cargarDeSupa] Iniciando carga priorizada...`);
 
@@ -120,7 +125,7 @@ export function useSupaState() {
       const fetchData = async (tablas) => {
         const promesas = tablas.map((tabla) => {
           let q = sb.from(tabla).select("*");
-          const tablasSinOrg = ["organizacion", "recordatorios", "empresaConfigs"];
+          const tablasSinOrg = ["organizacion", "recordatorios", "empresaConfigs", "whatsapp_accounts"];
           if (oi && !tablasSinOrg.includes(tabla)) {
             // Para usuariosApp de admins: cargar todos los usuarios de la org sin filtrar
             if (tabla !== "usuariosApp") {
@@ -535,12 +540,26 @@ export function useSupaState() {
               localStorage.setItem("crm_usuario_activo", JSON.stringify(userUpdate.usuario));
             }
 
+            // Actualizar cache en sessionStorage para que F5 no borre estos datos
+            try {
+              const cache = JSON.parse(sessionStorage.getItem("crm_db_cache") || "{}");
+              cache[table] = nuevaLista;
+              sessionStorage.setItem("crm_db_cache", JSON.stringify(cache));
+            } catch(e) {}
+
             return { ...prev, [table]: nuevaLista, ...userUpdate };
 
           }
           if (eventType === 'DELETE') {
             if (!lista.find(r => r.id === old.id)) return prev;
-            return { ...prev, [table]: lista.filter(r => r.id !== old.id) };
+            const filtrada = lista.filter(r => r.id !== old.id);
+            // Actualizar cache en sessionStorage para que F5 no muestre el elemento borrado
+            try {
+              const cache = JSON.parse(sessionStorage.getItem("crm_db_cache") || "{}");
+              cache[table] = filtrada;
+              sessionStorage.setItem("crm_db_cache", JSON.stringify(cache));
+            } catch(e) {}
+            return { ...prev, [table]: filtrada };
           }
           return prev;
         });
@@ -638,14 +657,24 @@ export function useSupaState() {
       const { error } = await sb.from(tabla).delete().eq("id", id);
       if (error) {
         console.warn(`Error eliminando de ${tabla}:`, error.message);
+        return { error };
       } else {
         setDb((d) => {
           const lista = Array.isArray(d[tabla]) ? d[tabla] : [];
-          return { ...d, [tabla]: lista.filter((r) => r.id !== id) };
+          const nuevaLista = lista.filter((r) => r.id !== id);
+          // Actualizar el sessionStorage para que F5 no muestre el elemento borrado
+          try {
+            const cache = JSON.parse(sessionStorage.getItem("crm_db_cache") || "{}");
+            cache[tabla] = (cache[tabla] || []).filter(r => r.id !== id);
+            sessionStorage.setItem("crm_db_cache", JSON.stringify(cache));
+          } catch (e) {}
+          return { ...d, [tabla]: nuevaLista };
         });
+        return { error: null };
       }
     } catch (e) {
       console.warn("Supabase no disponible:", e.message);
+      return { error: e };
     }
   };
 

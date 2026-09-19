@@ -97,6 +97,14 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 
 app.get('/', (req, res) => res.send('CRM WhatsApp Multi-Account Server is Running! 🚀'));
+app.post('/log-error', (req, res) => {
+  try {
+    const fs = require('fs');
+    fs.appendFileSync('frontend_errors.log', JSON.stringify(req.body) + "\n");
+    console.log("🔥 ERROR FRONTEND CAPTURADO:", JSON.stringify(req.body));
+  } catch (e) {}
+  res.send({ ok: true });
+});
 app.get('/health', (req, res) => {
   const activeInstances = Object.keys(whatsappInstances).map(id => ({ id, ready: whatsappInstances[id].ready }));
   res.json({ status: 'ok', instances: activeInstances, count: activeInstances.length });
@@ -279,6 +287,9 @@ async function initWhatsAppAccount(acc) {
   // Cada cuenta usa su propia carpeta de sesión aislada
   const client = new Client({
     authStrategy: new LocalAuth({ clientId: accountId }),
+    webVersionCache: {
+      type: 'local'
+    },
     puppeteer: {
       headless: true,
       args: [
@@ -303,6 +314,12 @@ async function initWhatsAppAccount(acc) {
       instance.raw_qr = qr;
       instance.ready = false;
       logFile(`✨ [WA] QR generado para cuenta ${accountId} (Enviando a sala org_${orgId})`);
+      
+      // Imprimir el QR directamente en la terminal para que sea lo primero que se vea
+      qrcode.toString(qr, { type: 'terminal', small: true }, function (err, url) {
+        if (!err) console.log(`\n📱 Escanea este código QR con WhatsApp para la cuenta ${accountId}:\n` + url);
+      });
+
       latestQRUrl = qrDataUrl; // Fallback global
       io.to(`org_${orgId}`).emit('whatsapp_qr', { accountId, qr: qrDataUrl, raw_qr: qr });
     } catch (err) {
@@ -310,26 +327,64 @@ async function initWhatsAppAccount(acc) {
     }
   });
 
-  client.on('ready', () => {
+  client.on('authenticated', () => {
     const numero = client.info?.wid?.user || null;
-    logFile(`✅ [WA] Cuenta ${accountId} lista! (Número: ${numero})`);
-    instance.ready = true;
+    logFile(`🔓 [WA] Cuenta ${accountId} autenticada. ¡Lista para enviar mensajes!`);
     instance.qr = "";
     instance.raw_qr = "";
-    // Notificar al frontend que esta cuenta específica está lista
+    instance.waReady = true;
+    instance.ready = true;
     io.to(`org_${orgId}`).emit('whatsapp_ready', { accountId, numero });
-    // Actualizar estado en DB
-    supabase.from('whatsapp_accounts').update({ estado: 'conectado', numero: numero }).eq('id', accountId).then(() => { });
+    supabase.from('whatsapp_accounts').update({ estado: 'conectado', numero }).eq('id', accountId).then(({ error }) => { if(error) logFile(`❌ Error DB update auth: ${error.message}`); });
+    // Notificar al frontend para que cargue chats desde Supabase YA
+    io.to(`org_${orgId}`).emit('whatsapp_chats_ready', { accountId });
   });
 
-  client.on('authenticated', () => {
-    logFile(`🔓 [WA] Cuenta ${accountId} autenticada (Sincronizando chats en segundo plano...).`);
-    instance.qr = "";
-    instance.raw_qr = "";
-    // No marcamos instance.ready = true aquí porque aún no puede enviar mensajes.
-    // Solo le avisamos al frontend para que quite el QR de la pantalla.
-    io.to(`org_${orgId}`).emit('whatsapp_ready', { accountId, numero: client.info?.wid?.user || null });
-    supabase.from('whatsapp_accounts').update({ estado: 'conectado' }).eq('id', accountId).then(() => { });
+  // El evento 'ready' llega cuando WA termina de cargar TODO el historial.
+  // AQUI sí podemos usar getChats() de forma segura.
+  client.on('ready', async () => {
+    const numero = client.info?.wid?.user || null;
+    logFile(`✅ [WA] Sincronización completa para ${accountId} (Número: ${numero})`);
+    if (numero && !instance.numero) {
+      instance.numero = numero;
+    }
+    // Siempre forzar 'conectado' en DB al estar ready por si falló en authenticated
+    supabase.from('whatsapp_accounts')
+      .update({ numero, estado: 'conectado' })
+      .eq('id', accountId)
+      .then(({ error }) => { if(error) logFile(`❌ Error DB update ready: ${error.message}`); });
+    instance.waReady = true;
+
+    // Ahora sí podemos obtener chats de WhatsApp y guardarlos en Supabase
+    try {
+      logFile(`📋 [WA] Sincronizando chats desde WhatsApp para ${accountId}...`);
+      const rawChats = await client.getChats();
+      let inserted = 0;
+      for (const chat of rawChats.slice(0, 50)) {
+        if (chat.id._serialized === 'status@broadcast') continue;
+        const chatId = chat.id._serialized;
+        const { data: existing } = await supabase
+          .from('whatsapp_messages').select('id').eq('chat_id', chatId).eq('account_id', accountId).limit(1);
+        if (!existing || existing.length === 0) {
+          await supabase.from('whatsapp_messages').insert({
+            id: `stub_${accountId}_${chatId}_${chat.timestamp}`,
+            chat_id: chatId,
+            body: '',
+            from_me: false,
+            timestamp: chat.timestamp || Math.floor(Date.now() / 1000),
+            account_id: accountId,
+            org_id: orgId,
+            contact_name: chat.name,
+            contact_number: chat.id.user
+          });
+          inserted++;
+        }
+      }
+      logFile(`✅ [WA] ${inserted} chats nuevos guardados en Supabase para ${accountId}.`);
+      io.to(`org_${orgId}`).emit('whatsapp_chats_ready', { accountId });
+    } catch(e) {
+      logFile(`⚠️ [WA] Error al sincronizar chats en ready: ${e.message}`);
+    }
   });
 
   client.on('auth_failure', (msg) => logFile(`❌ [WA] Fallo de autenticación en ${accountId}: ${msg}`));
@@ -337,22 +392,19 @@ async function initWhatsAppAccount(acc) {
   client.on('message_create', async (msg) => {
     if (msg.isStatus || msg.from === 'status@broadcast') return;
 
-    logFile(`📩 [WA] Msg en ${accountId}: ${msg.body}`);
-
-    // Sincronizar con el frontend (solo a la organización correcta)
     const finalChatId = msg.fromMe ? msg.to : msg.from;
+    logFile(`📩 [WA] ${msg.fromMe ? 'ENVIADO' : 'RECIBIDO'} en ${accountId} | OrgRoom: org_${orgId} | Chat: ${finalChatId} | "${(msg.body||'').substring(0,50)}"`);
+
     const activeDealId = await getActiveDealId(finalChatId);
 
-    // Extraer nombre e información del contacto para mandarlo al frontend
+    // Extraer nombre e información del contacto
     let contactName = null;
     let contactNumber = null;
     try {
       const contact = await msg.getContact();
       contactName = contact.name || contact.pushname || contact.shortName || null;
       contactNumber = contact.number || null;
-    } catch (err) {
-      // Ignorar si falla getContact
-    }
+    } catch (err) { }
 
     let finalId = msg.id?._serialized;
     if (!finalId) {
@@ -368,14 +420,30 @@ async function initWhatsAppAccount(acc) {
       ack: msg.ack || 0,
       has_media: msg.hasMedia || false,
       deal_id: activeDealId || null,
-      account_id: accountId, // <--- CRÍTICO
+      account_id: accountId,
       contact_name: contactName,
       contact_number: contactNumber
     };
 
-    io.to(`org_${orgId}`).emit('whatsapp_message', msgData);
+    // Emitir el mensaje en tiempo real al frontend
+    const roomName = `org_${orgId}`;
+    const roomSockets = io.sockets.adapter.rooms.get(roomName);
+    const roomSize = roomSockets ? roomSockets.size : 0;
+    logFile(`📡 [WA] Emitiendo a sala ${roomName} (${roomSize} clientes conectados)`);
+    io.to(roomName).emit('whatsapp_message', msgData);
 
-    // Persistencia — solo columnas que existen en la tabla
+    // También emitir actualización del chat en la lista lateral
+    io.to(roomName).emit('whatsapp_chat_update', {
+      accountId,
+      chat: {
+        id: { _serialized: finalChatId, user: contactNumber || finalChatId.split('@')[0] },
+        name: contactName || contactNumber || finalChatId.split('@')[0],
+        timestamp: msgData.timestamp,
+        lastMessage: { body: msg.body || '' }
+      }
+    });
+
+    // Persistencia en base de datos
     const persistData = {
       id: finalId,
       chat_id: finalChatId,
@@ -390,14 +458,18 @@ async function initWhatsAppAccount(acc) {
     };
 
     const { error: upsertErr } = await supabase.from('whatsapp_messages').upsert(persistData, { onConflict: 'id' });
+    if (upsertErr) {
+      logFile(`⚠️ [WA Message Persist Error]: ${upsertErr.message}`);
+    } else {
+      logFile(`✅ [WA] Mensaje guardado en DB: ${finalId}`);
+    }
 
-    if (upsertErr) logFile(`⚠️ [WA Message Persist Error]: ${upsertErr.message}`);
-
-    // Procesar automatizaciones... (Implementaremos el filtrado por account_id en el motor de reglas)
+    // Procesar automatizaciones
     if (!msg.fromMe) {
       handleChatbotRules(accountId, orgId, msg);
     }
   });
+
 
   client.on('message_ack', async (msg, ack) => {
     io.to(`org_${orgId}`).emit('whatsapp_message_ack', {
@@ -645,7 +717,7 @@ io.on('connection', (socket) => {
     const instance = whatsappInstances[accountId];
     if (instance) {
       const numero = instance.client?.info?.wid?.user || null;
-      if (instance.ready) socket.emit('whatsapp_ready', { accountId, numero });
+      if (instance.waReady) socket.emit('whatsapp_ready', { accountId, numero });
       else if (instance.qr) socket.emit('whatsapp_qr', { accountId, qr: instance.qr, raw_qr: instance.raw_qr });
     }
   });
@@ -653,123 +725,43 @@ io.on('connection', (socket) => {
   socket.on('get_whatsapp_chats', async (data) => {
     const { accountId } = data;
     const instance = whatsappInstances[accountId];
-    if (!instance || !instance.ready) return;
+    if (!instance || !instance.waReady) return;
 
     try {
-      // Extraer todos los chats directamente desde la memoria profunda de WhatsApp Web
-      // Esto esquiva el bug de whatsapp-web.js que devuelve vacío si hay LIDs o cambios en la UI de Meta
-      let rawChats = [];
-      try {
-        rawChats = await instance.client.pupPage.evaluate(() => {
-          try {
-            if (!window.Store || !window.Store.Chat) return [];
-            return window.Store.Chat.getModelsArray().map(c => {
-              let lastMsg = '';
-              try {
-                if (c.msgs && c.msgs.length > 0) {
-                  const m = c.msgs[c.msgs.length - 1];
-                  lastMsg = m.body || m.text || '';
-                }
-              } catch (e) { }
-              return {
-                id: c.id._serialized,
-                user: c.id.user,
-                name: c.name || c.formattedTitle || c.id.user,
-                timestamp: c.t,
-                lastMessage: lastMsg
-              };
-            }).filter(c => c && c.id !== 'status@broadcast');
-          } catch (e) {
-            return [];
+      // SOLO cargar chats desde la base de datos del CRM.
+      // No leemos el historial de WhatsApp - empezamos desde cero
+      // y se van acumulando los chats conforme lleguen/se envíen mensajes.
+      const { data: msgs } = await supabase
+        .from('whatsapp_messages')
+        .select('chat_id, body, timestamp, contact_name, contact_number')
+        .eq('account_id', accountId)
+        .order('timestamp', { ascending: false })
+        .limit(200);
+
+      let list = [];
+      if (msgs && msgs.length > 0) {
+        const uniqueChats = new Map();
+        msgs.forEach(m => {
+          if (!uniqueChats.has(m.chat_id)) {
+            const phoneNum = m.contact_number || m.chat_id.split('@')[0];
+            uniqueChats.set(m.chat_id, {
+              id: { _serialized: m.chat_id, user: phoneNum },
+              name: m.contact_name || phoneNum,
+              timestamp: m.timestamp,
+              lastMessage: { body: m.body }
+            });
           }
         });
-      } catch (evaluateErr) {
-        // Fallback si puppeteer falla
-        try {
-          const chats = await instance.client.getChats();
-          rawChats = chats.map(c => ({
-            id: c.id._serialized,
-            user: c.id.user,
-            name: c.name || c.id.user,
-            timestamp: c.timestamp,
-            lastMessage: c.lastMessage ? c.lastMessage.body : ''
-          }));
-        } catch (e) { }
-      }
-
-      let list = (rawChats || []).slice(0, 50).map(c => ({
-        id: { _serialized: c.id, user: c.user },
-        name: c.name,
-        timestamp: c.timestamp,
-        lastMessage: c.lastMessage ? { body: c.lastMessage } : null
-      }));
-
-      // Obtener contactos para cruzar nombres si whatsapp-web.js devuelve números raros
-      try {
-        const rawContacts = await instance.client.pupPage.evaluate(() => {
-          try {
-            return window.Store.Contact.getModelsArray().map(c => ({
-              id: c.id._serialized,
-              name: c.name,
-              pushname: c.pushname,
-              number: c.userid || c.id.user,
-              lid: c.lid
-            }));
-          } catch (e) {
-            return [];
-          }
-        });
-
-        const contactMap = new Map();
-        rawContacts.forEach(c => {
-          contactMap.set(c.id, c.name || c.pushname || c.number);
-          // Mapear también LIDs si existen
-          if (c.lid) contactMap.set(c.lid, c.name || c.pushname || c.number);
-          if (c.lid) contactMap.set(c.lid + '@lid', c.name || c.pushname || c.number);
-        });
-
-        list = list.map(chat => {
-          let realName = contactMap.get(chat.id._serialized);
-
-          if (realName && chat.name === chat.id.user) {
-            chat.name = realName;
-          }
-          return chat;
-        });
-      } catch (e) { }
-
-      // Fallback a base de datos si whatsapp-web.js devuelve vacío temporalmente
-      if (list.length === 0) {
-        logFile(`⚠️ [WA] getChats vacío para ${accountId}. Recurriendo a BD...`);
-        const { data: msgs } = await supabase
-          .from('whatsapp_messages')
-          .select('chat_id, body, timestamp, contact_name, contact_number')
-          .eq('account_id', accountId)
-          .order('timestamp', { ascending: false })
-          .limit(200);
-
-        if (msgs && msgs.length > 0) {
-          const uniqueChats = new Map();
-          msgs.forEach(m => {
-            if (!uniqueChats.has(m.chat_id)) {
-              const phoneNum = m.contact_number || m.chat_id.split('@')[0];
-              uniqueChats.set(m.chat_id, {
-                id: { _serialized: m.chat_id, user: phoneNum },
-                name: m.contact_name || phoneNum,
-                timestamp: m.timestamp,
-                lastMessage: { body: m.body }
-              });
-            }
-          });
-          list = Array.from(uniqueChats.values()).slice(0, 30);
-        }
+        list = Array.from(uniqueChats.values());
       }
 
       socket.emit('whatsapp_chats_list', { accountId, chats: list });
     } catch (e) {
       logFile(`❌ [WA GetChats Error] ${accountId}: ${e.message}`);
+      socket.emit('whatsapp_chats_list', { accountId, chats: [] });
     }
   });
+
 
   socket.on('whatsapp_get_avatar', async (data) => {
     const { accountId, chatId } = data;
@@ -784,77 +776,24 @@ io.on('connection', (socket) => {
   socket.on('whatsapp_get_chat', async (data) => {
     const { accountId, chatId } = data;
     const instance = whatsappInstances[accountId];
-    if (!instance || !instance.client || !instance.client.pupPage) return;
+    if (!instance) return;
     try {
-      // Usar inyector profundo para extraer el historial sin pasar por whatsapp-web.js (que está crasheando)
-      const rawMsgs = await instance.client.pupPage.evaluate(async (cId) => {
-        try {
-          const chat = window.Store.Chat.get(cId);
-          if (!chat) return [];
-
-          // Cargar mensajes previos si es necesario
-          if (chat.msgs.models.length < 50) {
-            try { await window.Store.Cmd.loadEarlierMsgs(chat); } catch (e) { }
-          }
-
-          return chat.msgs.getModelsArray().slice(-50).map(m => {
-            return {
-              id: m.id._serialized,
-              from: m.from ? m.from._serialized : (m.id.fromMe ? chat.id._serialized : cId),
-              to: m.to ? m.to._serialized : (m.id.fromMe ? cId : chat.id._serialized),
-              body: m.body || m.text || '',
-              fromMe: m.id.fromMe,
-              timestamp: m.t || m.timestamp || m.messageTimestamp || Math.floor(Date.now() / 1000),
-              ack: m.ack,
-              hasMedia: m.isMedia || m.hasMedia,
-              mimeType: m.mimetype || null,
-              fileName: m.filename || null
-            };
-          });
-        } catch (e) {
-          return [];
-        }
-      }, chatId);
-
-      const wid = instance.client.info?.wid?._serialized || '';
-
-      const history = rawMsgs.map(msg => ({
-        id: msg.id,
-        chat_id: msg.from === wid ? msg.to : (msg.fromMe ? msg.to : msg.from),
-        body: msg.body,
-        from_me: msg.fromMe,
-        timestamp: msg.timestamp,
-        ack: msg.ack,
-        account_id: accountId,
-        has_media: msg.hasMedia,
-        mime_type: msg.mimeType,
-        file_name: msg.fileName
-      }));
-
-      // Fusionar con mensajes locales (base de datos) por si hay más historia o no cargaron todos
+      // SOLO cargar mensajes desde la base de datos del CRM (no desde WhatsApp)
       const { data: dbMsgs } = await supabase
         .from('whatsapp_messages')
         .select('*')
         .eq('chat_id', chatId)
         .eq('account_id', accountId)
-        .order('timestamp', { ascending: false })
-        .limit(50);
+        .order('timestamp', { ascending: true })
+        .limit(100);
 
-      let finalHistory = [...history];
-      if (dbMsgs && dbMsgs.length > 0) {
-        dbMsgs.forEach(dbm => {
-          if (!finalHistory.find(m => m.id === dbm.id)) {
-            finalHistory.push(dbm);
-          }
-        });
-        finalHistory.sort((a, b) => a.timestamp - b.timestamp);
-      }
-
-      socket.emit('whatsapp_chat_history', { accountId, chatId, messages: finalHistory });
+      socket.emit('whatsapp_chat_history', { accountId, chatId, messages: dbMsgs || [] });
     } catch (e) {
       logFile(`❌ [WA GetChat Error] ${accountId}: ${e.message}`);
+      socket.emit('whatsapp_chat_history', { accountId, chatId, messages: [] });
     }
   });
+
 
   socket.on('whatsapp_send_message', async (data) => {
     const { accountId, to, text, clientId, org_id } = data;

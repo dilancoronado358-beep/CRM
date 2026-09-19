@@ -1,25 +1,16 @@
+import { createClient } from '@supabase/supabase-js';
+import dotenv from 'dotenv';
 
-const { createClient } = require('@supabase/supabase-js');
-const SUPA_URL = "https://eoylgxwlhsmwqgadahvk.supabase.co";
-const SUPA_KEY = "sb_publishable_wKUbf7IFOoH4HIUayIAJdQ_Boj1jgZa";
-const supabase = createClient(SUPA_URL, SUPA_KEY);
+dotenv.config({ path: '../.env' }); // or whichever path .env is in
+
+const supabase = createClient(process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL, process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_KEY);
 
 async function check() {
-  console.log("Checking whatsapp_automations...");
-  const { data: rules, error } = await supabase.from('whatsapp_automations').select('*');
-  if (error) {
-    console.error("Error rules:", error.message);
-  } else {
-    console.log(`Rules found: ${rules.length}`);
-    rules.forEach(r => console.log(`- ${r.keyword}: AI: ${!!r.ai_prompt}, Active: ${r.active}`));
-  }
-
-  console.log("\nChecking chatbotRules (Legacy)...");
-  const { data: legacy, error: err2 } = await supabase.from('chatbotRules').select('*');
-  if (err2) {
-    console.error("Error legacy:", err2.message);
-  } else {
-    console.log(`Legacy rules found: ${legacy?.length || 0}`);
+  const { data, error } = await supabase.from('whatsapp_messages').select('*').limit(10).order('timestamp', { ascending: false });
+  console.log("Error:", error);
+  console.log("Data count:", data?.length);
+  if (data?.length > 0) {
+    console.log("Sample:", data[0]);
   }
 }
 
