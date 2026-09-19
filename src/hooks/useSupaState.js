@@ -9,7 +9,23 @@ import { sileo as toast } from "../utils/sileo";
 ═══════════════════════════════════════════ */
 const SUPA_URL = "https://wzjotqragegymyejudnm.supabase.co";
 const SUPA_KEY = "sb_publishable_c93g3MVcUxODgTKUG3PrFQ_8YZA6bun";
-export const sb = createClient(SUPA_URL, SUPA_KEY);
+// Instancia única para evitar bloqueos por HMR en Vite
+let sbInstance;
+if (typeof window !== 'undefined' && window.__SUPABASE_CLIENT__) {
+  sbInstance = window.__SUPABASE_CLIENT__;
+} else {
+  sbInstance = createClient(SUPA_URL, SUPA_KEY, {
+    auth: { persistSession: true },
+    realtime: {
+      params: { eventsPerSecond: 10 }
+    }
+  });
+  if (typeof window !== 'undefined') {
+    window.__SUPABASE_CLIENT__ = sbInstance;
+  }
+}
+
+export const sb = sbInstance;
 
 // Tablas que se sincronizan con Supabase
 // Tablas críticas para el arranque inmediato
@@ -145,7 +161,14 @@ export function useSupaState() {
             }
           }
           if (LIMITS[tabla]) q = q.order('creado_at', { ascending: false }).limit(LIMITS[tabla]);
-          return q;
+          // Add timeout wrapper to log which tables hang during fetch
+          return Promise.race([
+            q,
+            new Promise((_, reject) => setTimeout(() => reject(new Error(`Timeout fetching ${tabla}`)), 8000))
+          ]).catch(err => {
+            console.error(`[fetchData] Error o timeout en tabla ${tabla}:`, err.message);
+            return { data: [], error: err };
+          });
         });
         return await Promise.allSettled(promesas);
       };
@@ -614,15 +637,39 @@ export function useSupaState() {
         payload.creado = new Date().toISOString();
       }
 
-      const { data, error } = await sb.from(tabla).upsert(payload).select();
+      // Helper manual fetch to bypass Supabase JS lock bug on upsert
+      let token = undefined;
+      try {
+        const sbStorage = JSON.parse(localStorage.getItem('sb-wzjotqragegymyejudnm-auth-token'));
+        token = sbStorage?.access_token;
+      } catch(e) {}
+      
+      const SUPA_URL = "https://wzjotqragegymyejudnm.supabase.co";
+      const SUPA_KEY = "sb_publishable_c93g3MVcUxODgTKUG3PrFQ_8YZA6bun";
+      
+      const res = await fetch(`${SUPA_URL}/rest/v1/${tabla}`, {
+        method: "POST",
+        headers: {
+          "apikey": SUPA_KEY,
+          "Authorization": token ? `Bearer ${token}` : undefined,
+          "Content-Type": "application/json",
+          "Prefer": "return=representation, resolution=merge-duplicates"
+        },
+        body: JSON.stringify(payload)
+      });
+      
+      if (!res.ok) {
+        const errData = await res.json();
+        const errorMsg = errData.message || errData.error || errData.details || "Error en base de datos";
+        console.error(`🔴 Error en ${tabla}:`, errorMsg);
+        toast.error(`No se pudo guardar en ${tabla}: ${errorMsg}`);
+        return { data: null, error: new Error(errorMsg) };
+      }
+      
+      const data = await res.json();
 
-      if (error) {
-        console.error(`🔴 Error en ${tabla}:`, error.message);
-        toast.error(`No se pudo guardar en ${tabla}: ${error.message}`);
-        return { data: null, error };
-      } else {
-        console.log(`🟢 Éxito en ${tabla}`);
-        const confirmado = data?.[0];
+      console.log(`🟢 Éxito en ${tabla}`);
+      const confirmado = data?.[0];
 
         if (confirmado && tabla === 'deals') {
           // 🚀 DISPARAR WORKFLOW (Fallback Socket.IO via App.jsx)
@@ -644,7 +691,6 @@ export function useSupaState() {
           return { ...d, [tabla]: nueva };
         });
         return { data: confirmado, error: null };
-      }
     } catch (e) {
       console.error(`❌ Fallo crítico guardarEnSupa (${tabla}):`, e);
       toast.error("Error de conexión con el servidor. Por favor, revisa tu internet.");
@@ -654,10 +700,27 @@ export function useSupaState() {
 
   const eliminarDeSupa = async (tabla, id) => {
     try {
-      const { error } = await sb.from(tabla).delete().eq("id", id);
-      if (error) {
-        console.warn(`Error eliminando de ${tabla}:`, error.message);
-        return { error };
+      let token = undefined;
+      try {
+        const sbStorage = JSON.parse(localStorage.getItem('sb-wzjotqragegymyejudnm-auth-token'));
+        token = sbStorage?.access_token;
+      } catch(e) {}
+      const SUPA_URL = "https://wzjotqragegymyejudnm.supabase.co";
+      const SUPA_KEY = "sb_publishable_c93g3MVcUxODgTKUG3PrFQ_8YZA6bun";
+      
+      const res = await fetch(`${SUPA_URL}/rest/v1/${tabla}?id=eq.${id}`, {
+        method: "DELETE",
+        headers: {
+          "apikey": SUPA_KEY,
+          "Authorization": token ? `Bearer ${token}` : undefined
+        }
+      });
+      
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        const errorMsg = errData.message || errData.error || errData.details || "Error al eliminar";
+        console.warn(`Error eliminando de ${tabla}:`, errorMsg);
+        return { error: new Error(errorMsg) };
       } else {
         setDb((d) => {
           const lista = Array.isArray(d[tabla]) ? d[tabla] : [];

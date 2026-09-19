@@ -522,10 +522,10 @@ export const Configuracion = ({ db, setDb, guardarEnSupa, eliminarDeSupa, estado
       sileo.error("La contraseña debe tener al menos 6 caracteres.");
       return;
     }
-    if (fNuevoUser.email.toLowerCase() === db.usuario?.email.toLowerCase()) {
-      sileo.error("No puedes crear un usuario con tu mismo correo.");
-      return;
-    }
+    // if (fNuevoUser.email.toLowerCase() === db.usuario?.email.toLowerCase()) {
+    //   sileo.error("No puedes crear un usuario con tu mismo correo.");
+    //   return;
+    // }
     if (!db.usuario?.org_id) {
       sileo.error("Error: No se pudo identificar la organización activa.");
       return;
@@ -539,6 +539,9 @@ export const Configuracion = ({ db, setDb, guardarEnSupa, eliminarDeSupa, estado
       let viaServer = false;
       try {
         const API_URL = getApiUrl(db);
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000);
+        
         const res = await fetch(`${API_URL}/api/admin/create-user`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -548,8 +551,11 @@ export const Configuracion = ({ db, setDb, guardarEnSupa, eliminarDeSupa, estado
             password: fNuevoUser.password,
             role: fNuevoUser.role,
             org_id: db.usuario.org_id
-          })
+          }),
+          signal: controller.signal
         });
+        clearTimeout(timeoutId);
+        
         const result = await res.json();
         if (!res.ok) throw new Error(result.error || "Error del servidor");
         newUser = result.user;
@@ -589,14 +595,14 @@ export const Configuracion = ({ db, setDb, guardarEnSupa, eliminarDeSupa, estado
           avatar: initials,
           org_id: db.usuario.org_id,
           activo: true,
-          creado: new Date().toISOString()
+          created_at: new Date().toISOString()
         };
         const { error: sError } = await guardarEnSupa("usuariosApp", newUser);
         if (sError) throw new Error("Perfil no guardado: " + sError.message);
       }
 
       // ── ÉXITO ─────────────────────────────────────────────────────────────
-      setDb(d => ({ ...d, usuariosApp: [...(d.usuariosApp || []), newUser] }));
+      // Nota: No inyectamos newUser en db.usuariosApp aquí porque guardarEnSupa ya lo hace internamente.
       sileo.success({
         title: "✅ Usuario creado exitosamente",
         description: `${fNuevoUser.name} ya puede ingresar al CRM con su email y contraseña.`
@@ -631,8 +637,12 @@ export const Configuracion = ({ db, setDb, guardarEnSupa, eliminarDeSupa, estado
       return;
     }
     if (confirm(`⚠️ ALERTA: Estás a punto de revocar el acceso a ${userEmail}. ¿Continuar?`)) {
-      await eliminarDeSupa("usuariosApp", userId);
-      sileo.success("Usuario eliminado del directorio IAM.");
+      const { error } = await eliminarDeSupa("usuariosApp", userId);
+      if (error) {
+        sileo.error("No se pudo eliminar el usuario porque tiene registros vinculados (tareas, contactos, etc).");
+      } else {
+        sileo.success("Usuario eliminado del directorio IAM.");
+      }
     }
   };
 
@@ -643,7 +653,13 @@ export const Configuracion = ({ db, setDb, guardarEnSupa, eliminarDeSupa, estado
     }
     if (confirm(`¿Estás seguro de cambiar el nivel de acceso de ${userEmail} a ${newRole.toUpperCase()}?`)) {
       const u = db.usuariosApp.find(x => x.id === userId);
-      if (u) guardarEnSupa("usuariosApp", { ...u, role: newRole });
+      if (u) {
+        setDb(d => ({
+          ...d,
+          usuariosApp: d.usuariosApp.map(user => user.id === userId ? { ...user, role: newRole } : user)
+        }));
+        guardarEnSupa("usuariosApp", { ...u, role: newRole });
+      }
     }
   };
 
@@ -695,13 +711,15 @@ export const Configuracion = ({ db, setDb, guardarEnSupa, eliminarDeSupa, estado
     if (!fOrg.nombre || !fOrg.slug) return sileo.error("Completa todos los campos");
     setCargandoOrg(true);
     const nuevaId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : uid();
-    const nueva = { id: nuevaId, ...fOrg, creado_at: new Date().toISOString() };
+    const nueva = { id: nuevaId, nombre: fOrg.nombre };
     try {
       const { error } = await guardarEnSupa("organizacion", nueva);
       if (!error) {
         setShowOrgModal(false);
         setFOrg({ nombre: "", slug: "" });
         sileo.success("Organización creada ✅");
+      } else {
+        sileo.error("Error al crear: " + error.message);
       }
     } catch (e) {
       sileo.error("Error: " + e.message);
@@ -715,14 +733,13 @@ export const Configuracion = ({ db, setDb, guardarEnSupa, eliminarDeSupa, estado
     if (!confirm(`⚠️ ¿Borrar organización "${nombre}"?`)) return;
     setCargandoOrg(true);
     try {
-      const { error } = await sb.from("organizacion").delete().eq("id", id);
+      const { error } = await eliminarDeSupa("organizacion", id);
       if (error) {
         if (error.message.includes("foreign key constraint")) {
            throw new Error("No puedes borrar esta empresa porque aún tiene usuarios, contactos o datos vinculados. Debes vaciarla primero.");
         }
         throw error;
       }
-      setDb(d => ({ ...d, organizacion: d.organizacion.filter(o => o.id !== id) }));
       sileo.success("Empresa borrada permanentemente.");
     } catch (e) {
       sileo.error("Error: " + e.message);
@@ -1152,10 +1169,10 @@ END $$;`;
                       <Celda><Chip label={org.slug} /></Celda>
                       <Celda>
                         <select 
-                          value={org.plan || "estandar"} 
+                          value={org.id === '00000000-0000-0000-0000-000000000001' ? "business" : (org.plan || "estandar")} 
                           onChange={e => handleCambiarPlan(org.id, e.target.value)}
                           disabled={org.id === '00000000-0000-0000-0000-000000000001'}
-                          style={{ background: T.bg2, color: T.white, border: `1px solid ${T.borderHi}`, borderRadius: 8, padding: "4px 8px", fontSize: 11, cursor: "pointer", outline: "none", fontWeight: 800 }}
+                          style={{ background: T.bg2, color: T.white, border: `1px solid ${T.borderHi}`, borderRadius: 8, padding: "4px 8px", fontSize: 11, cursor: org.id === '00000000-0000-0000-0000-000000000001' ? "not-allowed" : "pointer", outline: "none", fontWeight: 800 }}
                         >
                           <option value="estandar">ESTÁNDAR</option>
                           <option value="premium">PREMIUM</option>

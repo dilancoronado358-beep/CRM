@@ -268,6 +268,7 @@ export default function App() {
 
   const [modulo, setModulo] = useState(localStorage.getItem("crm_active_module") || "dashboard");
   useEffect(() => { localStorage.setItem("crm_active_module", modulo); }, [modulo]);
+  
   const [focusEmailId, setFocusEmailId] = useState(null);
   const [focusDealId, setFocusDealId] = useState(null);
   const [focusContactoId, setFocusContactoId] = useState(null);

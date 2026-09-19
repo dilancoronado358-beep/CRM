@@ -222,7 +222,7 @@ app.post('/api/admin/create-user', async (req, res) => {
       avatar: initials,
       org_id: org_id,
       activo: true,
-      creado: new Date().toISOString()
+      created_at: new Date().toISOString()
     };
     const { error: profileError } = await supabaseAdmin.from('usuariosApp').upsert(newProfile);
     if (profileError) {

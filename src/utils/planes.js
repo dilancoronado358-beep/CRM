@@ -105,7 +105,7 @@ export const getUsageStats = (db) => {
   if (!db || !db.usuario) return {};
   const orgId = db.usuario.org_id;
   const org = (db.organizacion || []).find(o => o.id === orgId);
-  const planId = org?.plan || "estandar";
+  const planId = orgId === '00000000-0000-0000-0000-000000000001' ? "business" : (org?.plan || "estandar");
   const limits = PLAN_LIMITS[planId] || PLAN_LIMITS.estandar;
 
   return {
