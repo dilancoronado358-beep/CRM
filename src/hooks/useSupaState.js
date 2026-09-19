@@ -279,6 +279,29 @@ export function useSupaState() {
           uLocal = userRow;
           if (fetchError) console.warn("Supabase user fetch error:", fetchError);
 
+          // AUTO-CREAR FILA SI NO EXISTE EN public.usuariosApp (Ej: Creado desde Supabase UI)
+          if (!uLocal && session?.user) {
+            console.log("⚠️ Usuario no existe en public.usuariosApp. Creando automáticamente...");
+            const tempName = session.user.user_metadata?.name || session.user.email.split("@")[0];
+            const tempAvatar = tempName.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase() || "U";
+            const newDbUser = {
+              id: session.user.id,
+              name: tempName,
+              email: session.user.email,
+              role: session.user.user_metadata?.role || "user",
+              avatar: tempAvatar,
+              activo: true,
+              org_id: "00000000-0000-0000-0000-000000000001"
+            };
+            const { data: insertedUser, error: insertError } = await sb.from("usuariosApp").insert(newDbUser).select().single();
+            if (!insertError && insertedUser) {
+              uLocal = insertedUser;
+              console.log("✅ Fila creada en public.usuariosApp exitosamente.");
+            } else {
+              console.error("❌ Error creando usuario en public.usuariosApp:", insertError);
+            }
+          }
+
           if (uLocal && montado) {
             if (uLocal.tema) {
               applyTheme(uLocal.tema);

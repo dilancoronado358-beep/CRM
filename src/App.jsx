@@ -740,27 +740,30 @@ export default function App() {
       <ConfirmModal
         open={showLogoutConfirm}
         onClose={() => { setShowLogoutConfirm(false); setLogoutGlobal(false); }}
-        onConfirm={async () => {
+        onConfirm={() => {
           setLoggingOut(true);
           setShowLogoutConfirm(false);
-          try {
-            const userEmail = db.usuario?.email || session?.user?.email;
-            if (logoutGlobal && userEmail) {
-              await sendBroadcast('force_logout', {
-                email: userEmail,
-                timestamp: Date.now(),
-                origin: window.location.href
-              });
-            }
-            await sb.auth.signOut({ scope: logoutGlobal ? 'global' : 'local' });
-          } catch (err) {
-            console.error("Error during logout:", err);
-          } finally {
+          
+          // Intentar cerrar sesión en Supabase (máximo 1.5 segundos)
+          Promise.race([
+            sb.auth.signOut({ scope: logoutGlobal ? 'global' : 'local' }),
+            new Promise(r => setTimeout(r, 1500))
+          ])
+          .catch(err => console.error("Error during logout:", err))
+          .finally(() => {
+            // Limpieza agresiva obligatoria
             localStorage.removeItem("crm_usuario_activo");
             localStorage.removeItem("crm_theme");
+            
+            Object.keys(localStorage).forEach(key => {
+              if (key.startsWith('sb-') && key.endsWith('-auth-token')) {
+                localStorage.removeItem(key);
+              }
+            });
+            
             sessionStorage.clear();
-            window.location.reload();
-          }
+            window.location.href = window.location.origin + window.location.pathname; // Forzar recarga limpia
+          });
         }}
         title="¿Cerrar sesión?"
         description="Esta acción cerrará tu sesión actual de forma segura."

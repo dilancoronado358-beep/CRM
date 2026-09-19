@@ -51,57 +51,12 @@ export const Login = ({ forceView, db: propDb, setDb: propSetDb, recargar: propR
 
     if (!supaError) {
       sessionStorage.setItem("just_logged_in", "true");
-      // El evento SIGNED_IN en useSupaState manejará la transición, no recargamos la página.
+      // El evento SIGNED_IN en useSupaState manejará la transición
       return;
     }
 
-    if (supaError) {
-      let locUser = db.usuariosApp?.find(u => u.email.toLowerCase() === emailLower);
-      
-      // ABSOLUTE EMERGENCY BYPASS: If user is not even in the local database,
-      // create a temporary Master Admin profile to guarantee access.
-      if (!locUser) {
-        locUser = {
-          id: "u_emergency",
-          name: "Admin Emergencia",
-          email: emailLower,
-          role: "admin",
-          org_id: "00000000-0000-0000-0000-000000000001",
-          activo: true
-        };
-      }
-
-      if (!locUser.activo) {
-        setError('Tu cuenta local ha sido suspendida/revocada.');
-      } else {
-        let assignedRole = locUser.role;
-        let assignedOrg = locUser.org_id;
-        
-        // Force Master Admin if the email looks like admin
-        if (emailLower.includes('admin')) {
-          assignedRole = 'admin';
-          assignedOrg = '00000000-0000-0000-0000-000000000001';
-        }
-
-        const fallbackUser = { 
-          id: locUser.id, 
-          name: locUser.name || "Usuario", 
-          email: locUser.email, 
-          role: assignedRole, 
-          avatar: (locUser.name || "U").charAt(0).toUpperCase(), 
-          org_id: assignedOrg, 
-          isFallback: true 
-        };
-        
-        try { localStorage.setItem("crm_usuario_activo", JSON.stringify(fallbackUser)); } catch (e) {}
-        setDb(d => ({ ...d, usuario: fallbackUser }));
-        
-        if (propRecargar || supaState.recargar) {
-          (propRecargar || supaState.recargar)(assignedOrg);
-        }
-        return;
-      }
-    }
+    console.error("Login failed:", supaError);
+    setError(supaError?.message || "Credenciales incorrectas o error de red.");
     setCargando(false);
   };
 

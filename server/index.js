@@ -248,8 +248,14 @@ async function initWhatsAppAccount(acc) {
   const orgId = acc.org_id;
 
   if (whatsappInstances[accountId]) {
-    logFile(`⚠️ [WA] La cuenta ${accountId} ya está inicializada.`);
-    return whatsappInstances[accountId];
+    if (whatsappInstances[accountId].ready) {
+      logFile(`⚠️ [WA] La cuenta ${accountId} ya está inicializada y lista.`);
+      return whatsappInstances[accountId];
+    } else {
+      logFile(`🔄 [WA] La cuenta ${accountId} está atascada. Forzando reinicio para regenerar QR...`);
+      try { await whatsappInstances[accountId].client.destroy(); } catch(e) {}
+      delete whatsappInstances[accountId];
+    }
   }
 
   if (acc.provider === 'meta') {
@@ -275,7 +281,15 @@ async function initWhatsAppAccount(acc) {
     authStrategy: new LocalAuth({ clientId: accountId }),
     puppeteer: {
       headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-extensions']
+      args: [
+        '--no-sandbox', 
+        '--disable-setuid-sandbox', 
+        '--disable-extensions',
+        '--disable-dev-shm-usage',
+        '--disable-gpu',
+        '--no-first-run',
+        '--no-zygote'
+      ]
     }
   });
 
@@ -286,26 +300,38 @@ async function initWhatsAppAccount(acc) {
     try {
       const qrDataUrl = await qrcode.toDataURL(qr);
       instance.qr = qrDataUrl;
+      instance.raw_qr = qr;
       instance.ready = false;
       logFile(`✨ [WA] QR generado para cuenta ${accountId} (Enviando a sala org_${orgId})`);
       latestQRUrl = qrDataUrl; // Fallback global
-      io.to(`org_${orgId}`).emit('whatsapp_qr', { accountId, qr: qrDataUrl });
+      io.to(`org_${orgId}`).emit('whatsapp_qr', { accountId, qr: qrDataUrl, raw_qr: qr });
     } catch (err) {
       logFile(`❌ [WA QR Error] Account ${accountId}: ${err.message}`);
     }
   });
 
   client.on('ready', () => {
-    logFile(`✅ [WA] Cuenta ${accountId} lista!`);
+    const numero = client.info?.wid?.user || null;
+    logFile(`✅ [WA] Cuenta ${accountId} lista! (Número: ${numero})`);
     instance.ready = true;
     instance.qr = "";
+    instance.raw_qr = "";
     // Notificar al frontend que esta cuenta específica está lista
-    io.to(`org_${orgId}`).emit('whatsapp_ready', { accountId });
+    io.to(`org_${orgId}`).emit('whatsapp_ready', { accountId, numero });
     // Actualizar estado en DB
+    supabase.from('whatsapp_accounts').update({ estado: 'conectado', numero: numero }).eq('id', accountId).then(() => { });
+  });
+
+  client.on('authenticated', () => {
+    logFile(`🔓 [WA] Cuenta ${accountId} autenticada (Sincronizando chats en segundo plano...).`);
+    instance.qr = "";
+    instance.raw_qr = "";
+    // No marcamos instance.ready = true aquí porque aún no puede enviar mensajes.
+    // Solo le avisamos al frontend para que quite el QR de la pantalla.
+    io.to(`org_${orgId}`).emit('whatsapp_ready', { accountId, numero: client.info?.wid?.user || null });
     supabase.from('whatsapp_accounts').update({ estado: 'conectado' }).eq('id', accountId).then(() => { });
   });
 
-  client.on('authenticated', () => logFile(`🔓 [WA] Cuenta ${accountId} autenticada.`));
   client.on('auth_failure', (msg) => logFile(`❌ [WA] Fallo de autenticación en ${accountId}: ${msg}`));
 
   client.on('message_create', async (msg) => {
@@ -607,12 +633,20 @@ io.on('connection', (socket) => {
     }
   });
 
+  socket.on('join_org', (orgId) => {
+    if (orgId) {
+      socket.join(`org_${orgId}`);
+      console.log(`🔌 Cliente unido a la sala: org_${orgId}`);
+    }
+  });
+
   socket.on('get_whatsapp_status', (data) => {
     const { accountId } = data;
     const instance = whatsappInstances[accountId];
     if (instance) {
-      if (instance.ready) socket.emit('whatsapp_ready', { accountId });
-      else if (instance.qr) socket.emit('whatsapp_qr', { accountId, qr: instance.qr });
+      const numero = instance.client?.info?.wid?.user || null;
+      if (instance.ready) socket.emit('whatsapp_ready', { accountId, numero });
+      else if (instance.qr) socket.emit('whatsapp_qr', { accountId, qr: instance.qr, raw_qr: instance.raw_qr });
     }
   });
 
@@ -825,32 +859,42 @@ io.on('connection', (socket) => {
   socket.on('whatsapp_send_message', async (data) => {
     const { accountId, to, text, clientId, org_id } = data;
     const instance = whatsappInstances[accountId];
-    if (!instance || !instance.ready) return;
+    if (!instance || !instance.ready) {
+      logFile(`⚠️ [WA Send] Ignorado para ${accountId}: La instancia aún no está 'ready' (Sincronizando chats).`);
+      return;
+    }
 
     try {
-      let sentMsg;
-      let finalMsgId;
-      if (instance.provider === 'meta') {
-        const metaRes = await sendMetaMessage(instance, to, text);
-        finalMsgId = metaRes?.messages?.[0]?.id || `out_${Date.now()}_${Math.random().toString(36).substring(7)}`;
-      } else {
-        sentMsg = await instance.client.sendMessage(to, text);
-        finalMsgId = sentMsg?.id?._serialized || `out_${Date.now()}_${Math.random().toString(36).substring(7)}`;
-      }
-      
       const activeDealId = data.dealId || await getActiveDealId(to);
+      const outMsgId = `out_${Date.now()}_${Math.random().toString(36).substring(7)}`;
       const msgOut = {
-        id: finalMsgId,
+        id: outMsgId,
         chat_id: to,
-        body: sentMsg?.body || text,
+        body: text,
         from_me: true,
-        timestamp: sentMsg?.timestamp || Math.floor(Date.now() / 1000),
-        ack: sentMsg?.ack || 0,
+        timestamp: Math.floor(Date.now() / 1000),
+        ack: 0, // 0 = Pendiente (Relojito)
         deal_id: activeDealId || null,
         account_id: accountId
       };
+
+      // Guardar inmediatamente para que no desaparezca al refrescar
       socket.emit('whatsapp_message', { ...msgOut, clientId });
       await supabase.from('whatsapp_messages').upsert({ ...msgOut, org_id: org_id }, { onConflict: 'id' });
+
+      // Ahora enviarlo (puede encolarse y tardar si WA está sincronizando)
+      let sentMsg;
+      if (instance.provider === 'meta') {
+        const metaRes = await sendMetaMessage(instance, to, text);
+        if (metaRes?.messages?.[0]?.id) {
+            await supabase.from('whatsapp_messages').update({ id: metaRes.messages[0].id, ack: 1 }).eq('id', outMsgId);
+        }
+      } else {
+        sentMsg = await instance.client.sendMessage(to, text);
+        if (sentMsg?.id?._serialized) {
+            await supabase.from('whatsapp_messages').update({ id: sentMsg.id._serialized, ack: sentMsg.ack }).eq('id', outMsgId);
+        }
+      }
     } catch (e) {
       logFile(`❌ [WA Send Error] ${accountId}: ${e.message}`);
     }
@@ -859,7 +903,10 @@ io.on('connection', (socket) => {
   socket.on('whatsapp_send_media', async (data) => {
     const { accountId, to, mediaData, fileName, caption, clientId, org_id } = data;
     const instance = whatsappInstances[accountId];
-    if (!instance || !instance.ready) return;
+    if (!instance || !instance.ready) {
+      logFile(`⚠️ [WA Send] Ignorado para ${accountId}: La instancia aún no está 'ready' (Sincronizando chats).`);
+      return;
+    }
 
     try {
       const matches = mediaData.match(/^data:(.+?);base64,(.+)$/);
@@ -921,7 +968,13 @@ io.on('connection', (socket) => {
 
   socket.on('init_whatsapp_account', async (data) => {
     const { accountId, orgId } = data;
-    await initWhatsAppAccount(accountId, orgId);
+    // Buscar la cuenta en BD para pasar el objeto completo
+    const { data: acc } = await supabase.from('whatsapp_accounts').select('*').eq('id', accountId).maybeSingle();
+    if (acc) {
+      await initWhatsAppAccount(acc);
+    } else {
+      logFile(`❌ [WA] No se encontro la cuenta ${accountId} en la BD para inicializarla.`);
+    }
   });
 
   socket.on('disconnect', () => {
@@ -1876,7 +1929,6 @@ app.get('/api/auth/azure', (req, res) => {
   if (!userId) return res.status(400).send("Falta userId");
 
   const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'https';
-  // FIJAMOS el redirect a localhost para evitar problemas con Ngrok
   const redirect_uri = `http://localhost:3001/api/auth/azure/callback`;
 
   logFile(`🔗 [OAuth Azure] Redirect URI fijado a: ${redirect_uri}`);
@@ -1914,7 +1966,8 @@ app.get('/api/auth/azure/callback', async (req, res) => {
     });
 
     const email = profile.mail || profile.userPrincipalName;
-    const accId = "acc_" + Buffer.from(email).toString('hex').slice(0, 16);
+    const crypto = require('crypto');
+    const accId = crypto.randomUUID();
 
     const payload = {
       id: accId,
@@ -1959,7 +2012,8 @@ app.get('/api/auth/google/callback', async (req, res) => {
     });
 
     const email = profile.email;
-    const accId = "acc_" + Buffer.from(email).toString('hex').slice(0, 16);
+    const crypto = require('crypto');
+    const accId = crypto.randomUUID();
 
     // 3. Guardar en email_accounts
     const payload = {
@@ -2352,6 +2406,7 @@ supabase
   })
   .subscribe();
 
-server.listen(process.env.PORT || 3001, () => {
-  console.log(`Server CRM corriendo en puerto ${process.env.PORT || 3001}`);
+const port = process.env.PORT || 3001;
+server.listen(port, '0.0.0.0', () => {
+  logFile(`🚀 Server CRM corriendo en puerto ${port} (0.0.0.0)`);
 });

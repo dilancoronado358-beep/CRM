@@ -57,23 +57,20 @@ export const getApiUrl = (db) => {
   const protocol = window.location.protocol;
   const hostname = window.location.hostname;
 
-  // Si estamos desarrollando en local, forzar el backend local
-  if (hostname === 'localhost' || hostname === '127.0.0.1') {
-    return `${protocol}//${hostname}:3001`;
-  }
-
   // 1. Current Org URL (Primary source)
   const orgActual = db?.organizacion?.find(o => o.id === db.usuario?.org_id);
-  if (orgActual?.wa_server_url) return orgActual.wa_server_url;
+  const orgUrl = orgActual?.config?.wa_server_url || orgActual?.wa_server_url;
+  if (orgUrl) return orgUrl;
 
   // 2. Master Org (ENSING) - Global Fallback
   const masterOrg = db?.organizacion?.find(o => o.id === '00000000-0000-0000-0000-000000000001');
-  if (masterOrg?.wa_server_url) return masterOrg.wa_server_url;
+  const masterUrl = masterOrg?.config?.wa_server_url || masterOrg?.wa_server_url;
+  if (masterUrl) return masterUrl;
 
   // 3. Admin user waServerUrl (Legacy backward compatibility)
   const adminWithUrl = db?.usuariosApp?.find(u => u.role === 'admin' && u.waServerUrl);
   if (adminWithUrl?.waServerUrl) return adminWithUrl.waServerUrl;
 
-  // 4. Local Development Fallback
-  return `${protocol}//${hostname}:3001`;
+  // 4. Default Fallback - Hardcoded to the user's Ngrok URL to bypass database RLS issues
+  return `https://bacterium-cubical-giveaway.ngrok-free.dev`;
 };

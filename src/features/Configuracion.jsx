@@ -10,6 +10,30 @@ import { checkPlanLimit, getPlanLimitError, PLAN_META, PLAN_LIMITS, getUsageStat
 // Importamos el cliente de web sockets para comunicarse con el bot local
 import { io } from "socket.io-client";
 
+// Helper para generar el código QR Estilizado usando qr-code-styling
+const StyledQRCode = ({ raw_qr }) => {
+  const ref = useRef(null);
+
+  useEffect(() => {
+    if (ref.current && raw_qr && window.QRCodeStyling) {
+      ref.current.innerHTML = "";
+      const qrCode = new window.QRCodeStyling({
+          width: 280,
+          height: 280,
+          data: raw_qr,
+          image: "https://res.cloudinary.com/dtmqftcsr/image/upload/v1786329945/ChatGPT_Image_9_ago_2026_08_49_19_p.m._1_pjqhul.png",
+          dotsOptions: { color: "#000000", type: "rounded" },
+          cornersSquareOptions: { color: "#00c8b6", type: "extra-rounded" },
+          cornersDotOptions: { color: "#00c8b6", type: "dot" },
+          imageOptions: { crossOrigin: "anonymous", margin: 10, imageSize: 0.4 }
+      });
+      qrCode.append(ref.current);
+    }
+  }, [raw_qr]);
+
+  return <div ref={ref} />;
+};
+
 export const Configuracion = ({ db, setDb, guardarEnSupa, eliminarDeSupa, estadoSupa, esAdminGlobal }) => {
   const API_URL = getApiUrl(db);
 
@@ -31,9 +55,22 @@ export const Configuracion = ({ db, setDb, guardarEnSupa, eliminarDeSupa, estado
     const reader = new FileReader();
     reader.onload = (ev) => {
       const b64 = ev.target.result;
-      const updatedUser = { ...db.usuario, profilePic: b64 };
-      guardarEnSupa("usuariosApp", updatedUser);
-      setDb(d => ({ ...d, usuario: updatedUser }));
+      
+      const payload = {
+        id: db.usuario.id,
+        name: db.usuario.name,
+        email: db.usuario.email,
+        avatar: db.usuario.avatar,
+        role: db.usuario.role,
+        activo: db.usuario.activo,
+        org_id: db.usuario.org_id,
+        whatsappaccess: db.usuario.whatsappaccess,
+        tema: db.usuario.tema,
+        profilePic: b64
+      };
+
+      guardarEnSupa("usuariosApp", payload);
+      setDb(d => ({ ...d, usuario: { ...d.usuario, profilePic: b64 } }));
     };
     reader.readAsDataURL(file);
     e.target.value = null;
@@ -51,8 +88,22 @@ export const Configuracion = ({ db, setDb, guardarEnSupa, eliminarDeSupa, estado
     imap_port: 993
   });
   const [probandoEmail, setProbandoEmail] = useState(false);
-  const [fEmpresa, setFEmpresa] = useState(db.empresaConfigs?.nombre || "");
-  const [fWaUrl, setFWaUrl] = useState(""); 
+  const orgIdInicial = db.usuario?.org_id || '00000000-0000-0000-0000-000000000001';
+  const orgInicial = db.organizacion?.find(o => o.id === orgIdInicial);
+
+  const [fEmpresa, setFEmpresa] = useState(orgInicial?.nombre || db.empresaConfigs?.nombre || "Mi Empresa CRM");
+  const [fWaUrl, setFWaUrl] = useState(orgInicial?.wa_server_url || db.api_settings?.[0]?.wa_server_url || "");
+
+  useEffect(() => {
+    const orgId = db.usuario?.org_id || '00000000-0000-0000-0000-000000000001';
+    const orgData = db.organizacion?.find(o => o.id === orgId);
+    if (orgData) {
+      if (orgData.nombre) setFEmpresa(orgData.nombre);
+      const url = orgData.config?.wa_server_url || orgData.wa_server_url || "";
+      setFWaUrl(url);
+    }
+  }, [db.organizacion, db.usuario?.org_id]);
+
   const [showUserModal, setShowUserModal] = useState(false);
   const [recordatorios, setRecordatorios] = useState(db.recordatorios || {
     dealSinActividadDias: 7, dealCierraCercanoDias: 3,
@@ -116,13 +167,17 @@ export const Configuracion = ({ db, setDb, guardarEnSupa, eliminarDeSupa, estado
         socket.emit('join_org', db.usuario.org_id);
     }
 
-    socket.on('whatsapp_qr', ({ accountId, qr }) => {
-      setWaInstancesStatus(prev => ({ ...prev, [accountId]: { ...prev[accountId], qr, ready: false } }));
+    socket.on('whatsapp_qr', ({ accountId, qr, raw_qr }) => {
+      setWaInstancesStatus(prev => ({ ...prev, [accountId]: { ...prev[accountId], qr, raw_qr, ready: false } }));
     });
 
-    socket.on('whatsapp_ready', ({ accountId }) => {
-      setWaInstancesStatus(prev => ({ ...prev, [accountId]: { ...prev[accountId], qr: "", ready: true } }));
-      sileo.success("✅ WhatsApp vinculado: " + accountId);
+    socket.on('whatsapp_ready', ({ accountId, numero }) => {
+      setWaInstancesStatus(prev => ({ ...prev, [accountId]: { ...prev[accountId], qr: "", raw_qr: "", ready: true } }));
+      sileo.success("✅ WhatsApp vinculado: " + (numero || accountId));
+      setDb(prev => ({
+          ...prev,
+          whatsapp_accounts: (prev.whatsapp_accounts || []).map(a => a.id === accountId ? { ...a, estado: 'conectado', numero: numero || a.numero } : a)
+      }));
     });
 
     socket.on('whatsapp_disconnected', ({ accountId }) => {
@@ -222,12 +277,22 @@ export const Configuracion = ({ db, setDb, guardarEnSupa, eliminarDeSupa, estado
   }, [db.usuario?.id]);
 
   const handleConnectEmail = async (provider) => {
-    const API_URL = getApiUrl(db);
-    const userId = db.usuario?.id;
-    const orgId = db.usuario?.org_id;
-    if (!userId) return sileo.error("Error: No se detectó sesión de usuario.");
-    const url = `${API_URL}/api/auth/${provider}?userId=${userId}&orgId=${orgId || ""}`;
-    window.open(url, "Conectar Email", "width=600,height=700");
+    try {
+      const API_URL = getApiUrl(db);
+      const userId = db.usuario?.id;
+      const orgId = db.usuario?.org_id;
+      if (!userId) return sileo.error("Error: No se detectó sesión de usuario.");
+      
+      const url = `${API_URL}/api/auth/${provider}?userId=${userId}&orgId=${orgId || ""}`;
+      alert(`Intentando abrir:\n\n${url}`); // DEBUG ALERT
+      
+      const win = window.open(url, "Conectar Email", "width=600,height=700");
+      if (!win) {
+        alert("⚠️ Tu navegador bloqueó la ventana emergente (Pop-up). Por favor, permite las ventanas emergentes para este sitio.");
+      }
+    } catch (e) {
+      alert("Error crítico al generar URL: " + e.message);
+    }
   };
 
   const syncEmails = async (accountId) => {
@@ -303,13 +368,37 @@ export const Configuracion = ({ db, setDb, guardarEnSupa, eliminarDeSupa, estado
   ];
 
   const guardarPerfil = async () => {
-    const newAvatar = fPerfil.name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
-    const usuarioActualizado = { ...db.usuario, ...fPerfil, avatar: newAvatar };
-    const { error } = await guardarEnSupa("usuariosApp", usuarioActualizado);
-    if (!error) {
-       setDb(d => ({ ...d, usuario: usuarioActualizado }));
+    if (!db.usuario?.id) {
+      alert("❌ Error: No se detectó un ID de usuario válido en tu sesión. Por favor, cierra sesión y vuelve a entrar para sincronizar tu cuenta con la base de datos.");
+      return;
     }
-    sileo.success("Perfil actualizado correctamente ✨");
+    
+    try {
+      const newAvatar = (fPerfil.name || "U").split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
+      const payload = {
+        id: db.usuario.id,
+        name: fPerfil.name,
+        email: fPerfil.email,
+        avatar: newAvatar,
+        role: db.usuario.role,
+        activo: db.usuario.activo,
+        org_id: db.usuario.org_id,
+        whatsappaccess: db.usuario.whatsappaccess,
+        tema: db.usuario.tema,
+        profilePic: db.usuario.profilePic
+      };
+
+      const { error } = await guardarEnSupa("usuariosApp", payload);
+      
+      if (!error) {
+         setDb(d => ({ ...d, usuario: { ...d.usuario, ...payload } }));
+         alert("✅ ¡Éxito! Tu perfil ha sido actualizado. Los cambios ya están en la base de datos.");
+      } else {
+         alert("❌ Error de Base de Datos al guardar: " + error.message);
+      }
+    } catch (e) {
+      alert("⚠️ Error crítico en JavaScript: " + e.message);
+    }
   };
 
 
@@ -344,9 +433,22 @@ export const Configuracion = ({ db, setDb, guardarEnSupa, eliminarDeSupa, estado
   const cambiarTema = (themeId) => {
     applyTheme(themeId);
     localStorage.setItem("crm_theme", themeId);
-    const updatedUser = { ...db.usuario, tema: themeId };
-    guardarEnSupa("usuariosApp", updatedUser);
-    setDb(d => ({ ...d, usuario: updatedUser }));
+    
+    const payload = {
+        id: db.usuario.id,
+        name: db.usuario.name,
+        email: db.usuario.email,
+        avatar: db.usuario.avatar,
+        role: db.usuario.role,
+        activo: db.usuario.activo,
+        org_id: db.usuario.org_id,
+        whatsappaccess: db.usuario.whatsappaccess,
+        tema: themeId,
+        profilePic: db.usuario.profilePic
+    };
+
+    guardarEnSupa("usuariosApp", payload);
+    setDb(d => ({ ...d, usuario: { ...d.usuario, tema: themeId } }));
   };
 
   const guardarRecordatorios = () => {
@@ -355,16 +457,39 @@ export const Configuracion = ({ db, setDb, guardarEnSupa, eliminarDeSupa, estado
   };
 
   const guardarEmpresa = async () => {
-    const orgActual = db.organizacion?.find(o => o.id === db.usuario?.org_id);
-    if (!orgActual) return sileo.error("No se pudo identificar la organización activa.");
-    const payloadOrg = { ...orgActual, nombre: fEmpresa, wa_server_url: fWaUrl };
-    await guardarEnSupa("organizacion", payloadOrg);
-    setDb(d => ({
-      ...d,
-      organizacion: d.organizacion.map(o => o.id === orgActual.id ? payloadOrg : o),
-      empresaConfigs: { ...d.empresaConfigs, nombre: fEmpresa }
-    }));
-    sileo.success({ title: "¡Estructura sincronizada!", description: "Cambios aplicados correctamente." });
+    try {
+        const orgId = db.usuario?.org_id || '00000000-0000-0000-0000-000000000001';
+        const orgActual = db.organizacion?.find(o => o.id === orgId) || { id: orgId, config: {} };
+        
+        const payloadOrg = { 
+            ...orgActual, 
+            id: orgId,
+            nombre: fEmpresa || "Organización Principal", 
+            config: { ...(orgActual.config || {}), wa_server_url: fWaUrl }
+        };
+        
+        const { error } = await guardarEnSupa("organizacion", payloadOrg);
+        
+        if (!error) {
+            setDb(d => {
+                const orgs = d.organizacion || [];
+                const existe = orgs.some(o => o.id === orgId);
+                const nuevasOrgs = existe ? orgs.map(o => o.id === orgId ? payloadOrg : o) : [...orgs, payloadOrg];
+                return {
+                    ...d,
+                    organizacion: nuevasOrgs,
+                    empresaConfigs: { ...d.empresaConfigs, nombre: fEmpresa }
+                };
+            });
+            alert("✅ ¡Estructura sincronizada correctamente!");
+            sileo.success({ title: "¡Estructura sincronizada!", description: "Cambios aplicados correctamente." });
+        } else {
+            alert("❌ Error guardando organización: " + error.message);
+            sileo.error("❌ Error guardando organización: " + error.message);
+        }
+    } catch (e) {
+        alert("⚠️ Error crítico en JS al sincronizar tenant: " + e.message);
+    }
   };
 
   const handleCrearUsuario = async () => {
@@ -852,13 +977,13 @@ END $$;`;
                         </Celda>
                         <Celda>
                             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                <div style={{ width: 8, height: 8, borderRadius: "50%", background: status.ready ? T.green : T.red, boxShadow: status.ready ? `0 0 10px ${T.green}` : "none" }} />
-                                <span style={{ fontSize: 12, color: T.white }}>{status.ready ? 'Conectado' : 'Desconectado'}</span>
+                                <div style={{ width: 8, height: 8, borderRadius: "50%", background: status.ready || acc.estado === 'conectado' ? T.green : T.red, boxShadow: status.ready || acc.estado === 'conectado' ? `0 0 10px ${T.green}` : "none" }} />
+                                <span style={{ fontSize: 12, color: T.white }}>{status.ready || acc.estado === 'conectado' ? 'Conectado' : 'Desconectado'}</span>
                             </div>
                         </Celda>
                         <Celda align="right">
                             <div style={{ display: "flex", gap: 12, justifyContent: "flex-end", alignItems: "center" }}>
-                                {status.qr && !status.ready && (
+                                {status.qr && !status.ready && acc.estado !== 'conectado' && (
                                     <div 
                                         style={{ background: "#FFF", padding: 6, borderRadius: 10, cursor: "pointer", boxShadow: "0 4px 12px rgba(0,0,0,0.2)", transition: "all .2s" }} 
                                         onMouseEnter={e => e.currentTarget.style.transform = "scale(1.1)"}
@@ -1647,7 +1772,7 @@ END $$;`;
 
            <div style={{ background: "#FFF", padding: 20, borderRadius: 24, boxShadow: "0 20px 50px rgba(0,0,0,0.5)", position: "relative" }}>
               {currentAccountQR && waInstancesStatus[currentAccountQR.id]?.qr ? (
-                 <img src={waInstancesStatus[currentAccountQR.id].qr} style={{ width: 280, height: 280, display: "block" }} />
+                 <StyledQRCode raw_qr={waInstancesStatus[currentAccountQR.id].raw_qr} />
               ) : (
                 <div style={{ width: 280, height: 280, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 16 }}>
                     <div style={{ width: 40, height: 40, border: `4px solid ${T.bg3}`, borderTopColor: T.teal, borderRadius: "50%", animation: "spin 1s linear infinite" }} />

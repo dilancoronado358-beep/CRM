@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS public.usuariosApp (
     org_id TEXT DEFAULT '00000000-0000-0000-0000-000000000001',
     whatsappAccess BOOLEAN DEFAULT true,
     tema TEXT DEFAULT 'dark',
+    "profilePic" TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
 );
 
