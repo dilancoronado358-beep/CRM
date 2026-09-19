@@ -122,8 +122,11 @@ export function useSupaState() {
           let q = sb.from(tabla).select("*");
           const tablasSinOrg = ["organizacion", "recordatorios", "empresaConfigs"];
           if (oi && !tablasSinOrg.includes(tabla)) {
-            const esUsuarioAdmin = db.usuario?.role === "admin";
-            if (!(esUsuarioAdmin && tabla === "usuariosApp")) {
+            // Para usuariosApp de admins: cargar todos los usuarios de la org sin filtrar
+            if (tabla !== "usuariosApp") {
+              q = q.eq("org_id", oi);
+            } else {
+              // usuariosApp: siempre filtrar por org_id para seguridad
               q = q.eq("org_id", oi);
             }
             // Correos y cuentas de correo: SIEMPRE filtrar por user_id (privacidad individual)
@@ -147,11 +150,20 @@ export function useSupaState() {
       const estadoInicial = {};
       TABLAS_CRITICAS.forEach((tabla, i) => {
         if (resCriticos[i].status === 'fulfilled') {
-          // Garantizar que si la respuesta es null/undefined, sea [] para evitar crashes
           estadoInicial[tabla] = resCriticos[i].value.data || [];
         }
       });
-      setDb(d => ({ ...d, ...estadoInicial }));
+      setDb(d => {
+        const nuevoEstado = { ...d, ...estadoInicial };
+        // Guardar críticas en sesión inmediatamente para que F5 muestre datos de org, etc.
+        try {
+          const prevCache = JSON.parse(sessionStorage.getItem("crm_db_cache") || "{}");
+          const cacheData = { ...prevCache };
+          TABLAS_CRITICAS.forEach(t => { if (nuevoEstado[t]) cacheData[t] = nuevoEstado[t]; });
+          sessionStorage.setItem("crm_db_cache", JSON.stringify(cacheData));
+        } catch(e) {}
+        return nuevoEstado;
+      });
       setEstadoSupa("conectado");
       setIsAppReady(true); // APP lista tras las críticas
 

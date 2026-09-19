@@ -97,12 +97,12 @@ export const Configuracion = ({ db, setDb, guardarEnSupa, eliminarDeSupa, estado
   useEffect(() => {
     const orgId = db.usuario?.org_id || '00000000-0000-0000-0000-000000000001';
     const orgData = db.organizacion?.find(o => o.id === orgId);
-    if (orgData) {
-      if (orgData.nombre) setFEmpresa(orgData.nombre);
-      const url = orgData.config?.wa_server_url || orgData.wa_server_url || "";
-      setFWaUrl(url);
-    }
-  }, [db.organizacion, db.usuario?.org_id]);
+    const empresaCfg = Array.isArray(db.empresaConfigs) ? db.empresaConfigs?.[0] : db.empresaConfigs;
+    if (orgData?.nombre) setFEmpresa(orgData.nombre);
+    else if (empresaCfg?.nombre && empresaCfg.nombre !== "Mi Empresa CRM") setFEmpresa(empresaCfg.nombre);
+    const url = orgData?.config?.wa_server_url || orgData?.wa_server_url || db.api_settings?.[0]?.wa_server_url || "";
+    if (url) setFWaUrl(url);
+  }, [db.organizacion, db.empresaConfigs, db.api_settings, db.usuario?.org_id]);
 
   const [showUserModal, setShowUserModal] = useState(false);
   const [recordatorios, setRecordatorios] = useState(db.recordatorios || {
