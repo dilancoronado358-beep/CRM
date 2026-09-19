@@ -258,7 +258,6 @@ export const Configuracion = ({ db, setDb, guardarEnSupa, eliminarDeSupa, estado
         }
         setFWAAccount({ nombre: "", acceso: "todos", provider: "wwebjs", meta_token: "", meta_phone_id: "", meta_verify_token: "" });
         setMetaStep(1);
-        setTimeout(() => window.location.reload(), 1000); // 🚀 FORZAR RECARGA PARA MOSTRAR CANAL INMEDIATAMENTE
     } else {
         console.error("Error guardando cuenta WA:", error);
         fetch('http://localhost:3001/log-error', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ error, payload: nueva }) }).catch(() => {});
