@@ -49,13 +49,21 @@ export function useSupaState() {
     TABLAS_SUPA.forEach(t => { if (!base[t]) base[t] = []; });
 
     try {
-      const raw = localStorage.getItem("crm_usuario_activo");
       const savedTheme = localStorage.getItem("crm_theme") || "dark";
       applyTheme(savedTheme);
-      if (raw) {
-        const usuario = JSON.parse(raw);
-        return { ...base, usuario };
+
+      // Restaurar usuario de localStorage
+      const raw = localStorage.getItem("crm_usuario_activo");
+      const usuario = raw ? JSON.parse(raw) : null;
+
+      // Restaurar datos de tablas desde sessionStorage para evitar pantalla en blanco en F5
+      const cachedData = sessionStorage.getItem("crm_db_cache");
+      if (cachedData) {
+        const parsed = JSON.parse(cachedData);
+        return { ...base, ...parsed, usuario: usuario || parsed.usuario || base.usuario };
       }
+
+      if (usuario) return { ...base, usuario };
     } catch (e) { }
     return base;
   });
@@ -92,19 +100,22 @@ export function useSupaState() {
 
 
   // ── Cargar datos desde Supabase con prioridad ─────────────────────────────
-  const cargarDeSupa = useCallback(async (orgIdForzado) => {
+  const cargarDeSupa = useCallback(async (orgIdForzado, userIdForzado) => {
     try {
       setCargando(true);
       const orgIdDefecto = "00000000-0000-0000-0000-000000000001";
       const esUUID = (id) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
 
-      let oi = orgIdForzado || db.usuario?.org_id;
+      // CRÍTICO: Usar SIEMPRE el parámetro recibido directamente.
+      // Depender de db.usuario?.org_id causaba race condition en F5 porque
+      // el estado de React aún no había hidratado cuando se ejecutaba.
+      let oi = orgIdForzado;
       if (!esUUID(oi)) oi = orgIdDefecto;
 
       console.log(`[SUPA] Cargando datos para Org: ${oi}`);
       console.log(`📡 [cargarDeSupa] Iniciando carga priorizada...`);
 
-      const userId = db.usuario?.id || session?.user?.id;
+      const userId = userIdForzado;
 
       const fetchData = async (tablas) => {
         const promesas = tablas.map((tabla) => {
@@ -150,11 +161,19 @@ export function useSupaState() {
         const estadoFondo = {};
         TABLAS_FONDO.forEach((tabla, i) => {
           if (resFondo[i].status === 'fulfilled') {
-            // Garantizar que si la respuesta es null/undefined, sea [] para evitar crashes en .filter/.map
             estadoFondo[tabla] = resFondo[i].value.data || [];
           }
         });
-        setDb(d => ({ ...d, ...estadoFondo }));
+        setDb(d => {
+          const nuevoEstado = { ...d, ...estadoFondo };
+          // Guardar en sessionStorage para que la siguiente carga (F5) muestre datos inmediatamente
+          try {
+            const cacheData = {};
+            [...TABLAS_CRITICAS, ...TABLAS_FONDO].forEach(t => { if (nuevoEstado[t]) cacheData[t] = nuevoEstado[t]; });
+            sessionStorage.setItem("crm_db_cache", JSON.stringify(cacheData));
+          } catch(e) {}
+          return nuevoEstado;
+        });
         setCargandoFondo(false);
         console.log("✅ Carga de fondo completada.");
       }, 500);
@@ -165,7 +184,7 @@ export function useSupaState() {
     } finally {
       setCargando(false);
     }
-  }, [setDb, session?.user?.id, db.usuario?.org_id]);
+  }, [setDb]);
 
   // ── Sembrar datos iniciales de seed.js en Supabase ────────────────────────
   const sembrarDatos = async () => {
@@ -240,7 +259,7 @@ export function useSupaState() {
           if (uLocal && uLocal.isFallback && montado) {
             // Es un usuario de respaldo local, confiamos en él y cargamos sus datos
             setDb((d) => ({ ...d, usuario: uLocal }));
-            await cargarDeSupa(uLocal.org_id);
+            await cargarDeSupa(uLocal.org_id, uLocal.id);
             setIsAppReady(true);
             setCargando(false);
             clearTimeout(timeoutFallback);
@@ -354,8 +373,9 @@ export function useSupaState() {
 
         // 2. Cargar datos desde Supabase
         if (montado) {
-          const targetOrg = uLocal?.org_id || db.usuario?.org_id || session?.user?.user_metadata?.org_id;
-          await cargarDeSupa(targetOrg);
+          const targetOrg = uLocal?.org_id || session?.user?.user_metadata?.org_id;
+          const targetUserId = uLocal?.id || session?.user?.id;
+          await cargarDeSupa(targetOrg, targetUserId);
           // Marcar que este usuario ya fue cargado correctamente
           userLoadedRef.current = session?.user?.id || null;
         }
@@ -460,7 +480,7 @@ export function useSupaState() {
           }
 
           if (montado) {
-            await cargarDeSupa(orgId || meta.org_id);
+            await cargarDeSupa(orgId || meta.org_id, session.user.id);
             userLoadedRef.current = session.user.id;
           }
         } catch (err) {
