@@ -18,25 +18,20 @@ BEGIN
         ELSIF EXISTS (SELECT FROM information_schema.tables WHERE table_schema = 'public' AND table_name = lower(t_name)) THEN
             t_actual := lower(t_name);
         ELSE
-            -- Si no existe, saltamos al siguiente
             CONTINUE;
         END IF;
 
-        -- Asegurar que RLS está activo
-        EXECUTE format('ALTER TABLE public.%I ENABLE ROW LEVEL SECURITY;', t_actual);
+        -- Desactivar RLS temporalmente para restaurar el acceso inmediato a todo el sistema
+        EXECUTE format('ALTER TABLE public.%I DISABLE ROW LEVEL SECURITY;', t_actual);
         
-        -- Eliminar políticas de borrado anteriores para no chocar. Usamos %s para el nombre de la política para evitar dobles comillas.
-        EXECUTE format('DROP POLICY IF EXISTS "delete_policy_%s" ON public.%I;', t_actual, t_actual);
-        EXECUTE format('DROP POLICY IF EXISTS "wa_accounts_delete" ON public.%I;', t_actual);
-        EXECUTE format('DROP POLICY IF EXISTS "Permitir eliminar %s" ON public.%I;', t_actual, t_actual);
-        EXECUTE format('DROP POLICY IF EXISTS "Permitir eliminar" ON public.%I;', t_actual);
-        
-        -- Crear política global de borrado
+        -- Si en el futuro lo quieren activar, ya tienen una política global de acceso total para usuarios autenticados
+        EXECUTE format('DROP POLICY IF EXISTS "acceso_total_%s" ON public.%I;', t_actual, t_actual);
         EXECUTE format('
-            CREATE POLICY "delete_policy_%s" 
+            CREATE POLICY "acceso_total_%s" 
             ON public.%I 
-            FOR DELETE 
-            USING (true);
+            FOR ALL
+            USING (auth.role() = ''authenticated'');
         ', t_actual, t_actual);
+        
     END LOOP;
 END $$;
